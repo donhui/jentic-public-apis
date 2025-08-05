@@ -8,15 +8,397 @@
   "sourceDescriptions": [
     {
       "name": "openapi_source",
-      "url": "./apis/openapi/elevenlabs.io/main/1.0/openapi.json",
+      "url": "https://raw.githubusercontent.com/jentic/jentic-public-apis/refs/heads/main/apis/openapi/elevenlabs.io/main/1.0/openapi.json",
       "type": "openapi"
     }
   ],
   "workflows": [
     {
-      "workflowId": "dub-video-file",
-      "summary": "Uploads a video file, initiates the dubbing process into a specified target language, checks the status, and retrieves the final dubbed video file.",
-      "description": "Uploads a video file, initiates the dubbing process into a specified target language, checks the status, and retrieves the final dubbed video file.",
+      "workflowId": "generate-and-retrieve-text-to-speech-audio",
+      "summary": "This workflow allows a user to convert a given text into speech using a selected voice, and then retrieve the generated audio file from their history.",
+      "description": "This workflow allows a user to convert a given text into speech using a selected voice, and then retrieve the generated audio file from their history.",
+      "inputs": {
+        "type": "object",
+        "properties": {
+          "show_legacy": {
+            "type": "string"
+          },
+          "xi-api-key": {
+            "type": "string"
+          },
+          "voice_id": {
+            "type": "string"
+          },
+          "enable_logging": {
+            "type": "string"
+          },
+          "optimize_streaming_latency": {
+            "type": "string"
+          },
+          "output_format": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "page_size": {
+            "type": "string"
+          },
+          "start_after_history_item_id": {
+            "type": "string"
+          },
+          "search": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "history_item_id": {
+            "type": "string"
+          }
+        }
+      },
+      "steps": [
+        {
+          "stepId": "list-voices",
+          "description": "Get a list of available voices to choose from.",
+          "operationId": "List_voices_v1_voices_get",
+          "parameters": [
+            {
+              "name": "show_legacy",
+              "in": "query",
+              "value": "$inputs.show_legacy"
+            },
+            {
+              "name": "xi-api-key",
+              "in": "header",
+              "value": "$inputs.xi-api-key"
+            }
+          ],
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 200"
+            }
+          ],
+          "outputs": {
+            "voices": "$response.body#/voices"
+          }
+        },
+        {
+          "stepId": "text-to-speech",
+          "description": "Convert text to speech using a chosen voice. This operation generates the audio and logs it to history.",
+          "operationId": "Text_to_speech_v1_text_to_speech__voice_id__post",
+          "parameters": [
+            {
+              "name": "voice_id",
+              "in": "path",
+              "value": "$steps.list-voices.outputs.voices.voice_id"
+            },
+            {
+              "name": "enable_logging",
+              "in": "query",
+              "value": "$inputs.enable_logging"
+            },
+            {
+              "name": "optimize_streaming_latency",
+              "in": "query",
+              "value": "$inputs.optimize_streaming_latency"
+            },
+            {
+              "name": "output_format",
+              "in": "query",
+              "value": "$inputs.output_format"
+            },
+            {
+              "name": "xi-api-key",
+              "in": "header",
+              "value": "$inputs.xi-api-key"
+            }
+          ],
+          "requestBody": {
+            "contentType": "application/json",
+            "payload": {
+              "voice_id": "$steps.list-voices.outputs.voices[0].voice_id",
+              "text": "$inputs.text"
+            }
+          },
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 200"
+            }
+          ],
+          "outputs": {
+            "audio_file": "$response.body#/audio_file"
+          }
+        },
+        {
+          "stepId": "list-generated-items",
+          "description": "List generated audio items to find the history_item_id of the recently created audio. Filtering by voice_id helps narrow down the search.",
+          "operationId": "List_generated_items_v1_history_get",
+          "parameters": [
+            {
+              "name": "page_size",
+              "in": "query",
+              "value": "$inputs.page_size"
+            },
+            {
+              "name": "start_after_history_item_id",
+              "in": "query",
+              "value": "$inputs.start_after_history_item_id"
+            },
+            {
+              "name": "voice_id",
+              "in": "query",
+              "value": "$steps.list-voices.outputs.voices.voice_id"
+            },
+            {
+              "name": "search",
+              "in": "query",
+              "value": "$inputs.search"
+            },
+            {
+              "name": "source",
+              "in": "query",
+              "value": "$inputs.source"
+            },
+            {
+              "name": "xi-api-key",
+              "in": "header",
+              "value": "$inputs.xi-api-key"
+            }
+          ],
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 200"
+            }
+          ],
+          "outputs": {
+            "history": "$response.body#/history"
+          }
+        },
+        {
+          "stepId": "get-audio-from-history-item",
+          "description": "Retrieve the actual audio file using its history item ID.",
+          "operationId": "Get_audio_from_history_item_v1_history__history_item_id__audio_get",
+          "parameters": [
+            {
+              "name": "history_item_id",
+              "in": "path",
+              "value": "$steps.list-generated-items.outputs.history.history_item_id"
+            },
+            {
+              "name": "xi-api-key",
+              "in": "header",
+              "value": "$inputs.xi-api-key"
+            }
+          ],
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 200"
+            }
+          ],
+          "outputs": {
+            "audio_file": "$response.body#/audio_file"
+          }
+        }
+      ],
+      "outputs": {
+        "voices": "$steps.list-voices.outputs.voices",
+        "audio_file": "$steps.get-audio-from-history-item.outputs.audio_file",
+        "history": "$steps.list-generated-items.outputs.history"
+      },
+      "failureActions": [
+        {
+          "reference": "$components.failureActions.auth_failure"
+        },
+        {
+          "reference": "$components.failureActions.permission_denied"
+        },
+        {
+          "reference": "$components.failureActions.not_found"
+        },
+        {
+          "reference": "$components.failureActions.server_error"
+        }
+      ]
+    },
+    {
+      "workflowId": "automated-audio-project-generation-and-download",
+      "summary": "This workflow allows users to create a new audio project (like a podcast or audiobook) from a given source (text or URL), convert it to audio, and then download the final generated audio.",
+      "description": "This workflow allows users to create a new audio project (like a podcast or audiobook) from a given source (text or URL), convert it to audio, and then download the final generated audio.",
+      "inputs": {
+        "type": "object",
+        "properties": {
+          "xi-api-key": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "default_title_voice_id": {
+            "type": "string"
+          },
+          "default_paragraph_voice_id": {
+            "type": "string"
+          },
+          "default_model_id": {
+            "type": "string"
+          },
+          "project_id": {
+            "type": "string"
+          },
+          "project_snapshot_id": {
+            "type": "string"
+          },
+          "convert_to_mpeg": {
+            "type": "string"
+          }
+        }
+      },
+      "steps": [
+        {
+          "stepId": "create-project",
+          "description": "Create a new audio project, which can be initialized as blank, from a document, or from a URL.",
+          "operationId": "Add_project_v1_projects_add_post",
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "in": "header",
+              "value": "$inputs.xi-api-key"
+            }
+          ],
+          "requestBody": {
+            "contentType": "multipart/form-data",
+            "payload": {
+              "name": "$inputs.name",
+              "default_title_voice_id": "$inputs.default_title_voice_id",
+              "default_paragraph_voice_id": "$inputs.default_paragraph_voice_id",
+              "default_model_id": "$inputs.default_model_id"
+            }
+          },
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 200"
+            }
+          ],
+          "outputs": {
+            "project_id": "$response.body#/project_id"
+          }
+        },
+        {
+          "stepId": "convert-project",
+          "description": "Start the conversion process of the project and all its chapters into audio.",
+          "operationId": "Convert_project_v1_projects__project_id__convert_post",
+          "parameters": [
+            {
+              "name": "project_id",
+              "in": "path",
+              "value": "$steps.create-project.outputs.project_id"
+            },
+            {
+              "name": "xi-api-key",
+              "in": "header",
+              "value": "$inputs.xi-api-key"
+            }
+          ],
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 200"
+            }
+          ],
+          "outputs": {
+            "status": "$response.body#/status"
+          }
+        },
+        {
+          "stepId": "list-project-snapshots",
+          "description": "Retrieve a list of snapshots for the project to get the latest project_snapshot_id after conversion.",
+          "operationId": "Get_project_snapshots_v1_projects__project_id__snapshots_get",
+          "parameters": [
+            {
+              "name": "project_id",
+              "in": "path",
+              "value": "$steps.create-project.outputs.project_id"
+            },
+            {
+              "name": "xi-api-key",
+              "in": "header",
+              "value": "$inputs.xi-api-key"
+            }
+          ],
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 200"
+            }
+          ],
+          "outputs": {
+            "snapshots": "$response.body#/snapshots"
+          }
+        },
+        {
+          "stepId": "stream-project-audio",
+          "description": "Stream or download the audio from the latest project snapshot.",
+          "operationId": "Stream_project_audio_v1_projects__project_id__snapshots__project_snapshot_id__stream_post",
+          "parameters": [
+            {
+              "name": "project_id",
+              "in": "path",
+              "value": "$steps.create-project.outputs.project_id"
+            },
+            {
+              "name": "project_snapshot_id",
+              "in": "path",
+              "value": "$steps.list-project-snapshots.outputs.snapshots.project_snapshot_id"
+            },
+            {
+              "name": "xi-api-key",
+              "in": "header",
+              "value": "$inputs.xi-api-key"
+            }
+          ],
+          "requestBody": {
+            "contentType": "application/json",
+            "payload": {
+              "project_id": "$steps.create-project.outputs.project_id",
+              "project_snapshot_id": "$steps.list-project-snapshots.outputs.snapshots[0].project_snapshot_id",
+              "convert_to_mpeg": "$inputs.convert_to_mpeg"
+            }
+          },
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 200"
+            }
+          ],
+          "outputs": {
+            "audio_stream": "$response.body#/audio_stream"
+          }
+        }
+      ],
+      "outputs": {
+        "project_id": "$steps.create-project.outputs.project_id",
+        "status": "$steps.convert-project.outputs.status",
+        "snapshots": "$steps.list-project-snapshots.outputs.snapshots",
+        "audio_stream": "$steps.stream-project-audio.outputs.audio_stream"
+      },
+      "failureActions": [
+        {
+          "reference": "$components.failureActions.auth_failure"
+        },
+        {
+          "reference": "$components.failureActions.permission_denied"
+        },
+        {
+          "reference": "$components.failureActions.not_found"
+        },
+        {
+          "reference": "$components.failureActions.server_error"
+        }
+      ]
+    },
+    {
+      "workflowId": "dub-media-and-retrieve-output",
+      "summary": "This workflow allows a user to upload an audio or video file, dub it into a target language, and then retrieve the dubbed audio/video and its transcript.",
+      "description": "This workflow allows a user to upload an audio or video file, dub it into a target language, and then retrieve the dubbed audio/video and its transcript.",
       "inputs": {
         "type": "object",
         "properties": {
@@ -24,15 +406,6 @@
             "type": "string"
           },
           "file": {
-            "type": "string"
-          },
-          "csv_file": {
-            "type": "string"
-          },
-          "foreground_audio_file": {
-            "type": "string"
-          },
-          "background_audio_file": {
             "type": "string"
           },
           "name": {
@@ -82,13 +455,16 @@
           },
           "language_code": {
             "type": "string"
+          },
+          "format_type": {
+            "type": "string"
           }
         }
       },
       "steps": [
         {
-          "stepId": "start-video-dubbing",
-          "description": "Initiates a dubbing project by uploading a video file and specifying the target language.",
+          "stepId": "dub-media-file",
+          "description": "Initiate the dubbing process for an audio or video file into a specified target language.",
           "operationId": "Dub_a_video_or_an_audio_file_v1_dubbing_post",
           "parameters": [
             {
@@ -101,9 +477,6 @@
             "contentType": "multipart/form-data",
             "payload": {
               "file": "$inputs.file",
-              "csv_file": "$inputs.csv_file",
-              "foreground_audio_file": "$inputs.foreground_audio_file",
-              "background_audio_file": "$inputs.background_audio_file",
               "name": "$inputs.name",
               "source_url": "$inputs.source_url",
               "source_lang": "$inputs.source_lang",
@@ -131,14 +504,14 @@
           }
         },
         {
-          "stepId": "check-dubbing-status",
-          "description": "Checks the status of the ongoing dubbing project. (Requires polling until status is 'dubbed' or 'failed').",
+          "stepId": "get-dubbing-metadata",
+          "description": "Retrieve metadata about the dubbing project, including its status and target languages.",
           "operationId": "Get_dubbing_v1_dubbing__dubbing_id__get",
           "parameters": [
             {
               "name": "dubbing_id",
               "in": "path",
-              "value": "$steps.start-video-dubbing.outputs.dubbing_id"
+              "value": "$steps.dub-media-file.outputs.dubbing_id"
             },
             {
               "name": "xi-api-key",
@@ -152,28 +525,24 @@
             }
           ],
           "outputs": {
-            "dubbing_id": "$response.body#/dubbing_id",
-            "name": "$response.body#/name",
             "status": "$response.body#/status",
-            "target_languages": "$response.body#/target_languages",
-            "media_metadata": "$response.body#/media_metadata",
-            "error": "$response.body#/error"
+            "target_languages": "$response.body#/target_languages"
           }
         },
         {
-          "stepId": "get-dubbed-video",
-          "description": "Retrieves the final dubbed video file once the dubbing process is complete.",
+          "stepId": "get-dubbed-audio",
+          "description": "Retrieve the final dubbed audio or video file for a specific language.",
           "operationId": "Get_dubbed_file_v1_dubbing__dubbing_id__audio__language_code__get",
           "parameters": [
             {
               "name": "dubbing_id",
               "in": "path",
-              "value": "$steps.start-video-dubbing.outputs.dubbing_id"
+              "value": "$steps.dub-media-file.outputs.dubbing_id"
             },
             {
               "name": "language_code",
               "in": "path",
-              "value": "$inputs.language_code"
+              "value": "$steps.get-dubbing-metadata.outputs.target_languages"
             },
             {
               "name": "xi-api-key",
@@ -189,17 +558,50 @@
           "outputs": {
             "dubbed_file": "$response.body#/dubbed_file"
           }
+        },
+        {
+          "stepId": "get-dubbed-transcript",
+          "description": "Retrieve the transcript for the dubbed content in a specified format (SRT or WEBVTT).",
+          "operationId": "Get_dubbed_transcript_v1_dubbing__dubbing_id__transcript__language_code__get",
+          "parameters": [
+            {
+              "name": "dubbing_id",
+              "in": "path",
+              "value": "$steps.dub-media-file.outputs.dubbing_id"
+            },
+            {
+              "name": "language_code",
+              "in": "path",
+              "value": "$steps.get-dubbing-metadata.outputs.target_languages"
+            },
+            {
+              "name": "format_type",
+              "in": "query",
+              "value": "$inputs.format_type"
+            },
+            {
+              "name": "xi-api-key",
+              "in": "header",
+              "value": "$inputs.xi-api-key"
+            }
+          ],
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 200"
+            }
+          ],
+          "outputs": {
+            "transcript_content": "$response.body#/transcript_content"
+          }
         }
       ],
       "outputs": {
-        "dubbing_id": "$steps.check-dubbing-status.outputs.dubbing_id",
-        "expected_duration_sec": "$steps.start-video-dubbing.outputs.expected_duration_sec",
-        "name": "$steps.check-dubbing-status.outputs.name",
-        "status": "$steps.check-dubbing-status.outputs.status",
-        "target_languages": "$steps.check-dubbing-status.outputs.target_languages",
-        "media_metadata": "$steps.check-dubbing-status.outputs.media_metadata",
-        "error": "$steps.check-dubbing-status.outputs.error",
-        "dubbed_file": "$steps.get-dubbed-video.outputs.dubbed_file"
+        "dubbing_id": "$steps.dub-media-file.outputs.dubbing_id",
+        "expected_duration_sec": "$steps.dub-media-file.outputs.expected_duration_sec",
+        "status": "$steps.get-dubbing-metadata.outputs.status",
+        "target_languages": "$steps.get-dubbing-metadata.outputs.target_languages",
+        "dubbed_file": "$steps.get-dubbed-audio.outputs.dubbed_file",
+        "transcript_content": "$steps.get-dubbed-transcript.outputs.transcript_content"
       },
       "failureActions": [
         {
@@ -217,9 +619,223 @@
       ]
     },
     {
-      "workflowId": "clone-voice-from-samples-and-generate-speech",
-      "summary": "Uploads audio samples to create a new cloned voice, then uses that voice to generate speech from text.",
-      "description": "Uploads audio samples to create a new cloned voice, then uses that voice to generate speech from text.",
+      "workflowId": "deploy-conversational-ai-agent-with-knowledge-base",
+      "summary": "This workflow guides a user through creating a new conversational AI agent, populating its knowledge base with a document, and then obtaining the necessary information to embed or share the agent.",
+      "description": "This workflow guides a user through creating a new conversational AI agent, populating its knowledge base with a document, and then obtaining the necessary information to embed or share the agent.",
+      "inputs": {
+        "type": "object",
+        "properties": {
+          "use_tool_ids": {
+            "type": "string"
+          },
+          "xi-api-key": {
+            "type": "string"
+          },
+          "conversation_config": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "documentation_id": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "agent_id": {
+            "type": "string"
+          },
+          "conversation_signature": {
+            "type": "string"
+          }
+        }
+      },
+      "steps": [
+        {
+          "stepId": "create-agent",
+          "description": "Create a new conversational AI agent with specified configuration.",
+          "operationId": "Create_Agent_v1_convai_agents_create_post",
+          "parameters": [
+            {
+              "name": "use_tool_ids",
+              "in": "query",
+              "value": "$inputs.use_tool_ids"
+            },
+            {
+              "name": "xi-api-key",
+              "in": "header",
+              "value": "$inputs.xi-api-key"
+            }
+          ],
+          "requestBody": {
+            "contentType": "application/json",
+            "payload": {
+              "conversation_config": "$inputs.conversation_config"
+            }
+          },
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 200"
+            }
+          ],
+          "outputs": {
+            "agent_id": "$response.body#/agent_id"
+          }
+        },
+        {
+          "stepId": "add-knowledge-base-to-agent",
+          "description": "Upload a file or reference a webpage to be used as part of the agent's knowledge base.",
+          "operationId": "Add_to_knowledge_base_v1_convai_agents__agent_id__add_to_knowledge_base_post",
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "in": "header",
+              "value": "$inputs.xi-api-key"
+            }
+          ],
+          "requestBody": {
+            "contentType": "multipart/form-data",
+            "payload": {
+              "agent_id": "$steps.create-agent.outputs.agent_id",
+              "name": "$inputs.name",
+              "url": "$inputs.url",
+              "file": "$inputs.file"
+            }
+          },
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 200"
+            }
+          ],
+          "outputs": {
+            "documentation_id": "$response.body#/id",
+            "prompt_injectable": "$response.body#/prompt_injectable"
+          }
+        },
+        {
+          "stepId": "compute-rag-index",
+          "description": "Trigger the RAG (Retrieval Augmented Generation) indexing for the newly added knowledge base document to make it searchable by the agent.",
+          "operationId": "Compute_RAG_index__v1_convai_knowledge_base__documentation_id__rag_index_post",
+          "parameters": [
+            {
+              "name": "documentation_id",
+              "in": "path",
+              "value": "$steps.add-knowledge-base-to-agent.outputs.documentation_id"
+            },
+            {
+              "name": "xi-api-key",
+              "in": "header",
+              "value": "$inputs.xi-api-key"
+            }
+          ],
+          "requestBody": {
+            "contentType": "application/json",
+            "payload": {
+              "documentation_id": "$steps.add-knowledge-base-to-agent.outputs.documentation_id",
+              "model": "$inputs.model"
+            }
+          },
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 200"
+            }
+          ],
+          "outputs": {
+            "status": "$response.body#/status",
+            "progress_percentage": "$response.body#/progress_percentage"
+          }
+        },
+        {
+          "stepId": "get-agent-widget-config",
+          "description": "Retrieve the widget configuration for embedding the agent into a web application.",
+          "operationId": "Get_Agent_widget_config_v1_convai_agents__agent_id__widget_get",
+          "parameters": [
+            {
+              "name": "agent_id",
+              "in": "path",
+              "value": "$steps.create-agent.outputs.agent_id"
+            },
+            {
+              "name": "conversation_signature",
+              "in": "query",
+              "value": "$inputs.conversation_signature"
+            },
+            {
+              "name": "xi-api-key",
+              "in": "header",
+              "value": "$inputs.xi-api-key"
+            }
+          ],
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 200"
+            }
+          ],
+          "outputs": {
+            "widget_config": "$response.body#/widget_config"
+          }
+        },
+        {
+          "stepId": "get-shareable-agent-link",
+          "description": "Get a shareable link that can be used to provide access to the conversational AI agent.",
+          "operationId": "Get_shareable_agent_link_v1_convai_agents__agent_id__link_get",
+          "parameters": [
+            {
+              "name": "agent_id",
+              "in": "path",
+              "value": "$steps.create-agent.outputs.agent_id"
+            },
+            {
+              "name": "xi-api-key",
+              "in": "header",
+              "value": "$inputs.xi-api-key"
+            }
+          ],
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 200"
+            }
+          ],
+          "outputs": {
+            "token": "$response.body#/token"
+          }
+        }
+      ],
+      "outputs": {
+        "agent_id": "$steps.create-agent.outputs.agent_id",
+        "documentation_id": "$steps.add-knowledge-base-to-agent.outputs.documentation_id",
+        "prompt_injectable": "$steps.add-knowledge-base-to-agent.outputs.prompt_injectable",
+        "status": "$steps.compute-rag-index.outputs.status",
+        "progress_percentage": "$steps.compute-rag-index.outputs.progress_percentage",
+        "widget_config": "$steps.get-agent-widget-config.outputs.widget_config",
+        "token": "$steps.get-shareable-agent-link.outputs.token"
+      },
+      "failureActions": [
+        {
+          "reference": "$components.failureActions.auth_failure"
+        },
+        {
+          "reference": "$components.failureActions.permission_denied"
+        },
+        {
+          "reference": "$components.failureActions.not_found"
+        },
+        {
+          "reference": "$components.failureActions.server_error"
+        }
+      ]
+    },
+    {
+      "workflowId": "custom-voice-creation-and-text-to-speech",
+      "summary": "This workflow enables users to create a new custom voice by providing audio samples and then immediately use this newly created voice to generate speech from text.",
+      "description": "This workflow enables users to create a new custom voice by providing audio samples and then immediately use this newly created voice to generate speech from text.",
       "inputs": {
         "type": "object",
         "properties": {
@@ -251,8 +867,8 @@
       },
       "steps": [
         {
-          "stepId": "add-voice-from-samples",
-          "description": "Adds a new voice to the user's VoiceLab based on uploaded audio samples.",
+          "stepId": "add-voice",
+          "description": "Add a new voice to your collection by uploading audio files for voice cloning.",
           "operationId": "Add_voice_v1_voices_add_post",
           "parameters": [
             {
@@ -274,19 +890,18 @@
             }
           ],
           "outputs": {
-            "voice_id": "$response.body#/voice_id",
-            "requires_verification": "$response.body#/requires_verification"
+            "voice_id": "$response.body#/voice_id"
           }
         },
         {
-          "stepId": "generate-speech-with-cloned-voice",
-          "description": "Generates speech audio from text using the previously created cloned voice.",
+          "stepId": "text-to-speech-with-new-voice",
+          "description": "Convert text to speech using the newly created custom voice.",
           "operationId": "Text_to_speech_v1_text_to_speech__voice_id__post",
           "parameters": [
             {
               "name": "voice_id",
               "in": "path",
-              "value": "$steps.add-voice-from-samples.outputs.voice_id"
+              "value": "$steps.add-voice.outputs.voice_id"
             },
             {
               "name": "enable_logging",
@@ -312,7 +927,7 @@
           "requestBody": {
             "contentType": "application/json",
             "payload": {
-              "voice_id": "$steps.add-voice-from-samples.outputs.voice_id",
+              "voice_id": "$steps.add-voice.outputs.voice_id",
               "text": "$inputs.text"
             }
           },
@@ -322,14 +937,13 @@
             }
           ],
           "outputs": {
-            "generated_audio": "$response.body#/generated_audio"
+            "audio_file": "$response.body#/audio_file"
           }
         }
       ],
       "outputs": {
-        "voice_id": "$steps.add-voice-from-samples.outputs.voice_id",
-        "requires_verification": "$steps.add-voice-from-samples.outputs.requires_verification",
-        "generated_audio": "$steps.generate-speech-with-cloned-voice.outputs.generated_audio"
+        "voice_id": "$steps.add-voice.outputs.voice_id",
+        "audio_file": "$steps.text-to-speech-with-new-voice.outputs.audio_file"
       },
       "failureActions": [
         {
@@ -347,40 +961,37 @@
       ]
     },
     {
-      "workflowId": "create-audiobook-from-document",
-      "summary": "Creates a project from an uploaded document, converts the project content to audio using default voices, and retrieves the final audio archive.",
-      "description": "Creates a project from an uploaded document, converts the project content to audio using default voices, and retrieves the final audio archive.",
+      "workflowId": "workspace-user-and-resource-sharing",
+      "summary": "This workflow allows workspace administrators to invite new users and manage access to resources like voices or projects by sharing them with specific users or groups.",
+      "description": "This workflow allows workspace administrators to invite new users and manage access to resources like voices or projects by sharing them with specific users or groups.",
       "inputs": {
         "type": "object",
         "properties": {
           "xi-api-key": {
             "type": "string"
           },
-          "name": {
+          "email": {
             "type": "string"
           },
-          "default_title_voice_id": {
+          "show_legacy": {
             "type": "string"
           },
-          "default_paragraph_voice_id": {
+          "resource_id": {
             "type": "string"
           },
-          "default_model_id": {
+          "role": {
             "type": "string"
           },
-          "project_id": {
-            "type": "string"
-          },
-          "project_snapshot_id": {
+          "resource_type": {
             "type": "string"
           }
         }
       },
       "steps": [
         {
-          "stepId": "create-project-from-document",
-          "description": "Creates a new project, initializing it with content extracted from an uploaded document and setting default voices.",
-          "operationId": "Add_project_v1_projects_add_post",
+          "stepId": "invite-user",
+          "description": "Send an email invitation to a new user to join the workspace.",
+          "operationId": "Invite_user_v1_workspace_invites_add_post",
           "parameters": [
             {
               "name": "xi-api-key",
@@ -389,12 +1000,9 @@
             }
           ],
           "requestBody": {
-            "contentType": "multipart/form-data",
+            "contentType": "application/json",
             "payload": {
-              "name": "$inputs.name",
-              "default_title_voice_id": "$inputs.default_title_voice_id",
-              "default_paragraph_voice_id": "$inputs.default_paragraph_voice_id",
-              "default_model_id": "$inputs.default_model_id"
+              "email": "$inputs.email"
             }
           },
           "successCriteria": [
@@ -403,18 +1011,18 @@
             }
           ],
           "outputs": {
-            "project": "$response.body#/project"
+            "status": "$response.body#/status"
           }
         },
         {
-          "stepId": "convert-project-to-audio",
-          "description": "Starts the conversion process for the entire project.",
-          "operationId": "Convert_project_v1_projects__project_id__convert_post",
+          "stepId": "list-voices-for-sharing",
+          "description": "Retrieve a list of available voices in the workspace that can be shared.",
+          "operationId": "List_voices_v1_voices_get",
           "parameters": [
             {
-              "name": "project_id",
-              "in": "path",
-              "value": "$steps.create-project-from-document.outputs.project.project_id"
+              "name": "show_legacy",
+              "in": "query",
+              "value": "$inputs.show_legacy"
             },
             {
               "name": "xi-api-key",
@@ -428,18 +1036,18 @@
             }
           ],
           "outputs": {
-            "conversion_status": "$response.body#/conversion_status"
+            "voices": "$response.body#/voices"
           }
         },
         {
-          "stepId": "get-project-snapshots",
-          "description": "Retrieves the list of available audio snapshots for the project after conversion.",
-          "operationId": "Get_project_snapshots_v1_projects__project_id__snapshots_get",
+          "stepId": "share-voice-resource",
+          "description": "Grant a specific role (admin, editor, or viewer) on a voice resource to an invited user or an existing group.",
+          "operationId": "Share_workspace_resource_v1_workspace_resources__resource_id__share_post",
           "parameters": [
             {
-              "name": "project_id",
+              "name": "resource_id",
               "in": "path",
-              "value": "$steps.create-project-from-document.outputs.project.project_id"
+              "value": "$steps.list-voices-for-sharing.outputs.voices.voice_id"
             },
             {
               "name": "xi-api-key",
@@ -447,51 +1055,27 @@
               "value": "$inputs.xi-api-key"
             }
           ],
+          "requestBody": {
+            "contentType": "application/json",
+            "payload": {
+              "resource_id": "$steps.list-voices-for-sharing.outputs.voices[0].voice_id",
+              "role": "$inputs.role",
+              "resource_type": "$inputs.resource_type"
+            }
+          },
           "successCriteria": [
             {
               "condition": "$statusCode == 200"
             }
           ],
           "outputs": {
-            "snapshots": "$response.body#/snapshots"
-          }
-        },
-        {
-          "stepId": "download-audiobook-archive",
-          "description": "Downloads the complete audio output of the project as a compressed archive from a specific snapshot.",
-          "operationId": "Streams_archive_with_project_audio_v1_projects__project_id__snapshots__project_snapshot_id__archive_post",
-          "parameters": [
-            {
-              "name": "project_id",
-              "in": "path",
-              "value": "$steps.create-project-from-document.outputs.project.project_id"
-            },
-            {
-              "name": "project_snapshot_id",
-              "in": "path",
-              "value": "$steps.get-project-snapshots.outputs.snapshots.snapshots[0].project_snapshot_id"
-            },
-            {
-              "name": "xi-api-key",
-              "in": "header",
-              "value": "$inputs.xi-api-key"
-            }
-          ],
-          "successCriteria": [
-            {
-              "condition": "$statusCode == 200"
-            }
-          ],
-          "outputs": {
-            "audio_archive": "$response.body#/audio_archive"
+            "status": "$response.body#/status"
           }
         }
       ],
       "outputs": {
-        "project": "$steps.create-project-from-document.outputs.project",
-        "conversion_status": "$steps.convert-project-to-audio.outputs.conversion_status",
-        "snapshots": "$steps.get-project-snapshots.outputs.snapshots",
-        "audio_archive": "$steps.download-audiobook-archive.outputs.audio_archive"
+        "status": "$steps.share-voice-resource.outputs.status",
+        "voices": "$steps.list-voices-for-sharing.outputs.voices"
       },
       "failureActions": [
         {
