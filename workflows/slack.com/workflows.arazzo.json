@@ -1952,7 +1952,9 @@
           "filename": { "type": "string" },
           "length": { "type": "integer" },
           "file_bytes": { "type": "string" },
-          "mime_type": { "type": "string" }
+          "mime_type": { "type": "string" },
+          "alt_text": { "type": "string" },
+          "initial_comment": { "type": "string" }
         },
         "required": ["channel_id", "filename", "length", "file_bytes", "mime_type"]
       },
@@ -1963,7 +1965,8 @@
           "operationId": "files_getUploadURLExternal",
           "parameters": [
             { "name": "filename", "in": "query", "value": "$inputs.filename" },
-            { "name": "length", "in": "query", "value": "$inputs.length" }
+            { "name": "length", "in": "query", "value": "$inputs.length" },
+            { "name": "alt_text", "in": "query", "value": "$inputs.alt_text" }
           ],
           "successCriteria": [
             { "condition": "$statusCode == 200" },
@@ -1979,7 +1982,19 @@
           "description": "Upload the file bytes to the returned URL",
           "operationId": "files_postRawFileContent", 
           "parameters": [
-            { "name": "file_path", "in": "path", "value": "${steps.get-upload-url.outputs.upload_url.split('/').pop()}" }
+            {
+              "name": "file_path",
+              "in": "path",
+              "value": "$steps.get-upload-url.outputs.upload_url",
+              "x-transform": [
+                {
+                  "type": "regex",
+                  "pattern": ".*/(?P<basename>[^/]+)$",
+                  "result": "\\<basename>",
+                  "description": "Extract the basename (portion after the last slash) from the upload URL"
+                }
+              ]
+            }
           ],
           "requestBody": {
             "contentType": "multipart/form-data",
@@ -2006,7 +2021,8 @@
             "contentType": "application/json",
             "payload": {
               "files": [{"id": "$steps.get-upload-url.outputs.file_id"}],
-              "channel_id": "$inputs.channel_id"
+              "channel_id": "$inputs.channel_id",
+              "initial_comment": "$inputs.initial_comment"
             }
           },
           "successCriteria": [
