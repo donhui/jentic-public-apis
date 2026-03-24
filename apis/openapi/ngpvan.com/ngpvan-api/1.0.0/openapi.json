@@ -1,0 +1,398 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "NGP VAN API",
+    "description": "NGP VAN provides technology for Democratic and progressive campaigns and organizations. The VAN API enables programmatic access to manage people, events, contributions, canvass responses, codes, export jobs, bulk imports, and other campaign and organizing data.",
+    "version": "1.0.0",
+    "contact": {"name": "NGP VAN Developer Support", "url": "https://docs.ngpvan.com"},
+    "x-jentic-source-url": "https://docs.ngpvan.com/reference"
+  },
+  "servers": [{"url": "https://api.securevan.com/v4", "description": "NGP VAN Production API"}],
+  "security": [{"apiKeyAuth": []}],
+  "paths": {
+    "/people": {
+      "get": {
+        "summary": "List people",
+        "operationId": "listPeople",
+        "tags": ["People"],
+        "parameters": [
+          {"name": "$top", "in": "query", "description": "Maximum number of records to return.", "schema": {"type": "integer", "default": 50}},
+          {"name": "$skip", "in": "query", "description": "Number of records to skip.", "schema": {"type": "integer", "default": 0}}
+        ],
+        "responses": {"200": {"description": "A paginated list of people.", "content": {"application/json": {"schema": {"type": "object", "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/Person"}}, "count": {"type": "integer"}, "nextPageLink": {"type": "string"}}}}}}, "401": {"description": "Unauthorized"}}
+      }
+    },
+    "/people/{vanId}": {
+      "get": {
+        "summary": "Get a person",
+        "operationId": "getPerson",
+        "tags": ["People"],
+        "parameters": [{"name": "vanId", "in": "path", "required": true, "schema": {"type": "integer"}}, {"name": "$expand", "in": "query", "description": "Related resources to expand.", "schema": {"type": "string"}}],
+        "responses": {"200": {"description": "Person details.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Person"}}}}, "404": {"description": "Person not found"}}
+      },
+      "post": {
+        "summary": "Update a person",
+        "operationId": "updatePerson",
+        "tags": ["People"],
+        "parameters": [{"name": "vanId", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PersonUpdate"}}}},
+        "responses": {"204": {"description": "Person updated."}, "400": {"description": "Bad request"}, "404": {"description": "Not found"}}
+      },
+      "delete": {
+        "summary": "Delete a person",
+        "operationId": "deletePerson",
+        "tags": ["People"],
+        "parameters": [{"name": "vanId", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "responses": {"204": {"description": "Person suppressed."}, "404": {"description": "Not found"}}
+      }
+    },
+    "/people/find": {
+      "post": {
+        "summary": "Find people",
+        "operationId": "findPeople",
+        "tags": ["People"],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "properties": {"firstName": {"type": "string"}, "lastName": {"type": "string"}, "email": {"type": "string"}, "phone": {"type": "string"}, "dateOfBirth": {"type": "string", "format": "date"}, "address": {"type": "object", "properties": {"addressLine1": {"type": "string"}, "city": {"type": "string"}, "stateOrProvince": {"type": "string"}, "zipOrPostalCode": {"type": "string"}}}}}}}},
+        "responses": {"200": {"description": "Matching people.", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Person"}}}}}, "404": {"description": "No match found"}}
+      }
+    },
+    "/people/findOrCreate": {
+      "post": {
+        "summary": "Find or create a person",
+        "operationId": "findOrCreatePerson",
+        "tags": ["People"],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PersonCreate"}}}},
+        "responses": {"200": {"description": "Existing person found.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Person"}}}}, "201": {"description": "New person created.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Person"}}}}}
+      }
+    },
+    "/people/findByPhone": {
+      "post": {
+        "summary": "Find people by phone",
+        "operationId": "findPeopleByPhone",
+        "tags": ["People"],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["phoneNumber"], "properties": {"phoneNumber": {"type": "string"}}}}}},
+        "responses": {"200": {"description": "Matching people.", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Person"}}}}}}
+      }
+    },
+    "/people/{vanId}/canvassResponses": {
+      "post": {
+        "summary": "Record canvass responses",
+        "operationId": "createCanvassResponse",
+        "tags": ["Canvass Responses"],
+        "parameters": [{"name": "vanId", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CanvassResponseCreate"}}}},
+        "responses": {"204": {"description": "Responses recorded."}, "400": {"description": "Bad request"}}
+      }
+    },
+    "/people/{vanId}/canvassResponses/{canvassResponseId}": {
+      "get": {
+        "summary": "Get a canvass response",
+        "operationId": "getCanvassResponse",
+        "tags": ["Canvass Responses"],
+        "parameters": [{"name": "vanId", "in": "path", "required": true, "schema": {"type": "integer"}}, {"name": "canvassResponseId", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "responses": {"200": {"description": "Canvass response details.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CanvassResponse"}}}}, "404": {"description": "Not found"}}
+      },
+      "patch": {
+        "summary": "Update a canvass response",
+        "operationId": "updateCanvassResponse",
+        "tags": ["Canvass Responses"],
+        "parameters": [{"name": "vanId", "in": "path", "required": true, "schema": {"type": "integer"}}, {"name": "canvassResponseId", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CanvassResponseCreate"}}}},
+        "responses": {"204": {"description": "Updated."}, "404": {"description": "Not found"}}
+      }
+    },
+    "/people/{vanId}/codes": {
+      "post": {
+        "summary": "Assign a code to a person",
+        "operationId": "assignCodeToPerson",
+        "tags": ["People"],
+        "parameters": [{"name": "vanId", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["codeId"], "properties": {"codeId": {"type": "integer"}}}}}},
+        "responses": {"204": {"description": "Code assigned."}}
+      }
+    },
+    "/people/{vanId}/mergeInto": {
+      "put": {
+        "summary": "Merge person records",
+        "operationId": "mergePerson",
+        "tags": ["People"],
+        "parameters": [{"name": "vanId", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["vanId"], "properties": {"vanId": {"type": "integer"}}}}}},
+        "responses": {"204": {"description": "Merged."}, "404": {"description": "Not found"}}
+      }
+    },
+    "/events": {
+      "get": {
+        "summary": "List events",
+        "operationId": "listEvents",
+        "tags": ["Events"],
+        "parameters": [{"name": "$top", "in": "query", "schema": {"type": "integer", "default": 50}}, {"name": "$skip", "in": "query", "schema": {"type": "integer", "default": 0}}, {"name": "startingAfter", "in": "query", "schema": {"type": "string", "format": "date"}}, {"name": "startingBefore", "in": "query", "schema": {"type": "string", "format": "date"}}],
+        "responses": {"200": {"description": "A list of events.", "content": {"application/json": {"schema": {"type": "object", "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/Event"}}, "count": {"type": "integer"}}}}}}}
+      },
+      "post": {
+        "summary": "Create an event",
+        "operationId": "createEvent",
+        "tags": ["Events"],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/EventCreate"}}}},
+        "responses": {"201": {"description": "Event created.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Event"}}}}, "400": {"description": "Bad request"}}
+      }
+    },
+    "/events/{eventId}": {
+      "get": {
+        "summary": "Get an event",
+        "operationId": "getEvent",
+        "tags": ["Events"],
+        "parameters": [{"name": "eventId", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "responses": {"200": {"description": "Event details.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Event"}}}}, "404": {"description": "Not found"}}
+      }
+    },
+    "/events/{eventId}/shifts": {
+      "post": {
+        "summary": "Create an event shift",
+        "operationId": "createEventShift",
+        "tags": ["Events"],
+        "parameters": [{"name": "eventId", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["name", "startTime", "endTime"], "properties": {"name": {"type": "string"}, "startTime": {"type": "string", "format": "date-time"}, "endTime": {"type": "string", "format": "date-time"}}}}}},
+        "responses": {"201": {"description": "Shift created."}, "400": {"description": "Bad request"}}
+      }
+    },
+    "/signups": {
+      "get": {
+        "summary": "List signups",
+        "operationId": "listSignups",
+        "tags": ["Events"],
+        "parameters": [{"name": "eventId", "in": "query", "schema": {"type": "integer"}}, {"name": "vanId", "in": "query", "schema": {"type": "integer"}}, {"name": "$top", "in": "query", "schema": {"type": "integer"}}, {"name": "$skip", "in": "query", "schema": {"type": "integer"}}],
+        "responses": {"200": {"description": "A list of signups.", "content": {"application/json": {"schema": {"type": "object", "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/Signup"}}, "count": {"type": "integer"}}}}}}}
+      },
+      "post": {
+        "summary": "Create a signup",
+        "operationId": "createSignup",
+        "tags": ["Events"],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/SignupCreate"}}}},
+        "responses": {"201": {"description": "Signup created."}, "400": {"description": "Bad request"}}
+      }
+    },
+    "/signups/{eventSignupId}": {
+      "delete": {
+        "summary": "Delete a signup",
+        "operationId": "deleteSignup",
+        "tags": ["Events"],
+        "parameters": [{"name": "eventSignupId", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "responses": {"204": {"description": "Signup deleted."}, "404": {"description": "Not found"}}
+      }
+    },
+    "/contributions": {
+      "post": {
+        "summary": "Record a contribution",
+        "operationId": "createContribution",
+        "tags": ["Contributions"],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ContributionCreate"}}}},
+        "responses": {"201": {"description": "Contribution recorded.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Contribution"}}}}, "400": {"description": "Bad request"}}
+      }
+    },
+    "/contributions/{contributionId}": {
+      "get": {
+        "summary": "Get a contribution",
+        "operationId": "getContribution",
+        "tags": ["Contributions"],
+        "parameters": [{"name": "contributionId", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "responses": {"200": {"description": "Contribution details.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Contribution"}}}}, "404": {"description": "Not found"}}
+      }
+    },
+    "/contributions/{contributionId}/attributions/{vanId}": {
+      "put": {
+        "summary": "Update contribution attribution",
+        "operationId": "updateContributionAttribution",
+        "tags": ["Contributions"],
+        "parameters": [{"name": "contributionId", "in": "path", "required": true, "schema": {"type": "integer"}}, {"name": "vanId", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": {"attributionType": {"type": "string"}}}}}},
+        "responses": {"204": {"description": "Attribution updated."}, "404": {"description": "Not found"}}
+      }
+    },
+    "/contributions/payments": {
+      "post": {
+        "summary": "Process a payment",
+        "operationId": "createPayment",
+        "tags": ["Contributions"],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "properties": {"contributionId": {"type": "integer"}, "amount": {"type": "number"}, "paymentType": {"type": "string"}}}}}},
+        "responses": {"201": {"description": "Payment processed."}, "400": {"description": "Bad request"}}
+      }
+    },
+    "/commitments": {
+      "post": {
+        "summary": "Create a commitment",
+        "operationId": "createCommitment",
+        "tags": ["Contributions"],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "properties": {"vanId": {"type": "integer"}, "amount": {"type": "number"}, "pledgeDate": {"type": "string", "format": "date"}, "designation": {"type": "string"}}}}}},
+        "responses": {"201": {"description": "Commitment created."}, "400": {"description": "Bad request"}}
+      }
+    },
+    "/commitments/{commitmentId}": {
+      "patch": {
+        "summary": "Update a commitment",
+        "operationId": "updateCommitment",
+        "tags": ["Contributions"],
+        "parameters": [{"name": "commitmentId", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "properties": {"amount": {"type": "number"}, "status": {"type": "string"}}}}}},
+        "responses": {"204": {"description": "Updated."}, "404": {"description": "Not found"}}
+      }
+    },
+    "/codes": {
+      "get": {
+        "summary": "List codes",
+        "operationId": "listCodes",
+        "tags": ["Codes"],
+        "parameters": [{"name": "$top", "in": "query", "schema": {"type": "integer"}}, {"name": "$skip", "in": "query", "schema": {"type": "integer"}}],
+        "responses": {"200": {"description": "A list of codes.", "content": {"application/json": {"schema": {"type": "object", "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/Code"}}, "count": {"type": "integer"}}}}}}}
+      },
+      "post": {
+        "summary": "Create a code",
+        "operationId": "createCode",
+        "tags": ["Codes"],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["name"], "properties": {"name": {"type": "string"}, "parentCodeId": {"type": "integer"}, "codeType": {"type": "string"}, "description": {"type": "string"}}}}}},
+        "responses": {"201": {"description": "Code created.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Code"}}}}}
+      }
+    },
+    "/codes/{codeId}": {
+      "patch": {
+        "summary": "Update a code",
+        "operationId": "updateCode",
+        "tags": ["Codes"],
+        "parameters": [{"name": "codeId", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "properties": {"name": {"type": "string"}, "description": {"type": "string"}}}}}},
+        "responses": {"204": {"description": "Updated."}, "404": {"description": "Not found"}}
+      },
+      "delete": {
+        "summary": "Delete a code",
+        "operationId": "deleteCode",
+        "tags": ["Codes"],
+        "parameters": [{"name": "codeId", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "responses": {"204": {"description": "Deleted."}, "404": {"description": "Not found"}}
+      }
+    },
+    "/activistCodes": {
+      "get": {
+        "summary": "List activist codes",
+        "operationId": "listActivistCodes",
+        "tags": ["Codes"],
+        "parameters": [{"name": "$top", "in": "query", "schema": {"type": "integer"}}, {"name": "$skip", "in": "query", "schema": {"type": "integer"}}],
+        "responses": {"200": {"description": "A list of activist codes.", "content": {"application/json": {"schema": {"type": "object", "properties": {"items": {"type": "array", "items": {"type": "object", "properties": {"activistCodeId": {"type": "integer"}, "name": {"type": "string"}, "type": {"type": "string"}, "status": {"type": "string"}}}}, "count": {"type": "integer"}}}}}}}
+      }
+    },
+    "/canvassResponses/contactTypes": {
+      "get": {
+        "summary": "List contact types",
+        "operationId": "listContactTypes",
+        "tags": ["Canvass Responses"],
+        "responses": {"200": {"description": "A list of contact types.", "content": {"application/json": {"schema": {"type": "array", "items": {"type": "object", "properties": {"contactTypeId": {"type": "integer"}, "name": {"type": "string"}}}}}}}}
+      }
+    },
+    "/canvassResponses/inputTypes": {
+      "get": {
+        "summary": "List input types",
+        "operationId": "listInputTypes",
+        "tags": ["Canvass Responses"],
+        "responses": {"200": {"description": "A list of input types.", "content": {"application/json": {"schema": {"type": "array", "items": {"type": "object", "properties": {"inputTypeId": {"type": "integer"}, "name": {"type": "string"}}}}}}}}
+      }
+    },
+    "/exportJobs": {
+      "post": {
+        "summary": "Create an export job",
+        "operationId": "createExportJob",
+        "tags": ["Data Operations"],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "properties": {"savedListId": {"type": "integer"}, "type": {"type": "integer"}, "webhookUrl": {"type": "string", "format": "uri"}}}}}},
+        "responses": {"201": {"description": "Export job created.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ExportJob"}}}}}
+      }
+    },
+    "/exportJobs/{exportJobId}": {
+      "get": {
+        "summary": "Get export job status",
+        "operationId": "getExportJob",
+        "tags": ["Data Operations"],
+        "parameters": [{"name": "exportJobId", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "responses": {"200": {"description": "Export job details.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ExportJob"}}}}, "404": {"description": "Not found"}}
+      }
+    },
+    "/bulkImportJobs": {
+      "post": {
+        "summary": "Create a bulk import job",
+        "operationId": "createBulkImportJob",
+        "tags": ["Data Operations"],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "properties": {"description": {"type": "string"}, "file": {"type": "object", "properties": {"fileName": {"type": "string"}}}, "actions": {"type": "array", "items": {"type": "string"}}}}}}},
+        "responses": {"201": {"description": "Job created."}, "400": {"description": "Bad request"}}
+      }
+    },
+    "/bulkImportJobs/{jobId}": {
+      "get": {
+        "summary": "Get bulk import job status",
+        "operationId": "getBulkImportJob",
+        "tags": ["Data Operations"],
+        "parameters": [{"name": "jobId", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "responses": {"200": {"description": "Job details.", "content": {"application/json": {"schema": {"type": "object", "properties": {"jobId": {"type": "integer"}, "status": {"type": "string"}, "description": {"type": "string"}}}}}}, "404": {"description": "Not found"}}
+      }
+    },
+    "/savedLists": {
+      "get": {
+        "summary": "List saved lists",
+        "operationId": "listSavedLists",
+        "tags": ["Data Operations"],
+        "parameters": [{"name": "$top", "in": "query", "schema": {"type": "integer"}}, {"name": "$skip", "in": "query", "schema": {"type": "integer"}}],
+        "responses": {"200": {"description": "A list of saved lists.", "content": {"application/json": {"schema": {"type": "object", "properties": {"items": {"type": "array", "items": {"type": "object", "properties": {"savedListId": {"type": "integer"}, "name": {"type": "string"}, "listCount": {"type": "integer"}}}}, "count": {"type": "integer"}}}}}}}
+      }
+    },
+    "/campaigns": {
+      "get": {
+        "summary": "List campaigns",
+        "operationId": "listCampaigns",
+        "tags": ["Campaigns"],
+        "parameters": [{"name": "$top", "in": "query", "schema": {"type": "integer"}}, {"name": "$skip", "in": "query", "schema": {"type": "integer"}}],
+        "responses": {"200": {"description": "A list of campaigns.", "content": {"application/json": {"schema": {"type": "object", "properties": {"items": {"type": "array", "items": {"type": "object", "properties": {"campaignId": {"type": "integer"}, "name": {"type": "string"}}}}, "count": {"type": "integer"}}}}}}}
+      }
+    },
+    "/campaigns/{campaignId}": {
+      "get": {
+        "summary": "Get a campaign",
+        "operationId": "getCampaign",
+        "tags": ["Campaigns"],
+        "parameters": [{"name": "campaignId", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "responses": {"200": {"description": "Campaign details."}, "404": {"description": "Not found"}}
+      }
+    },
+    "/departments": {
+      "get": {
+        "summary": "List departments",
+        "operationId": "listDepartments",
+        "tags": ["Campaigns"],
+        "responses": {"200": {"description": "A list of departments.", "content": {"application/json": {"schema": {"type": "array", "items": {"type": "object", "properties": {"departmentId": {"type": "integer"}, "name": {"type": "string"}}}}}}}}
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyAuth": {"type": "apiKey", "in": "header", "name": "Authorization", "description": "API key in format VAN {username}|{apiKey}."}
+    },
+    "schemas": {
+      "Person": {"type": "object", "properties": {"vanId": {"type": "integer"}, "firstName": {"type": "string"}, "middleName": {"type": "string"}, "lastName": {"type": "string"}, "dateOfBirth": {"type": "string", "format": "date"}, "sex": {"type": "string"}, "party": {"type": "string"}, "emails": {"type": "array", "items": {"type": "object", "properties": {"email": {"type": "string", "format": "email"}, "type": {"type": "string"}, "isPreferred": {"type": "boolean"}}}}, "phones": {"type": "array", "items": {"type": "object", "properties": {"phoneNumber": {"type": "string"}, "phoneType": {"type": "string"}, "isPreferred": {"type": "boolean"}}}}, "addresses": {"type": "array", "items": {"type": "object", "properties": {"addressLine1": {"type": "string"}, "addressLine2": {"type": "string"}, "city": {"type": "string"}, "stateOrProvince": {"type": "string"}, "zipOrPostalCode": {"type": "string"}, "countryCode": {"type": "string"}, "type": {"type": "string"}, "isPreferred": {"type": "boolean"}}}}}},
+      "PersonCreate": {"type": "object", "required": ["firstName", "lastName"], "properties": {"firstName": {"type": "string"}, "middleName": {"type": "string"}, "lastName": {"type": "string"}, "dateOfBirth": {"type": "string", "format": "date"}, "sex": {"type": "string"}, "emails": {"type": "array", "items": {"type": "object", "properties": {"email": {"type": "string"}, "type": {"type": "string"}, "isPreferred": {"type": "boolean"}}}}, "phones": {"type": "array", "items": {"type": "object", "properties": {"phoneNumber": {"type": "string"}, "phoneType": {"type": "string"}}}}, "addresses": {"type": "array", "items": {"type": "object", "properties": {"addressLine1": {"type": "string"}, "city": {"type": "string"}, "stateOrProvince": {"type": "string"}, "zipOrPostalCode": {"type": "string"}}}}}},
+      "PersonUpdate": {"type": "object", "properties": {"firstName": {"type": "string"}, "middleName": {"type": "string"}, "lastName": {"type": "string"}, "dateOfBirth": {"type": "string", "format": "date"}, "sex": {"type": "string"}}},
+      "Event": {"type": "object", "properties": {"eventId": {"type": "integer"}, "name": {"type": "string"}, "shortName": {"type": "string"}, "description": {"type": "string"}, "startDate": {"type": "string", "format": "date-time"}, "endDate": {"type": "string", "format": "date-time"}, "eventType": {"type": "string"}, "shifts": {"type": "array", "items": {"type": "object", "properties": {"eventShiftId": {"type": "integer"}, "name": {"type": "string"}, "startTime": {"type": "string", "format": "date-time"}, "endTime": {"type": "string", "format": "date-time"}}}}}},
+      "EventCreate": {"type": "object", "required": ["name", "startDate", "endDate", "eventType"], "properties": {"name": {"type": "string"}, "shortName": {"type": "string"}, "description": {"type": "string"}, "startDate": {"type": "string", "format": "date-time"}, "endDate": {"type": "string", "format": "date-time"}, "eventType": {"type": "string"}}},
+      "Signup": {"type": "object", "properties": {"eventSignupId": {"type": "integer"}, "vanId": {"type": "integer"}, "eventId": {"type": "integer"}, "eventShiftId": {"type": "integer"}, "status": {"type": "string"}}},
+      "SignupCreate": {"type": "object", "required": ["vanId", "eventId", "eventShiftId"], "properties": {"vanId": {"type": "integer"}, "eventId": {"type": "integer"}, "eventShiftId": {"type": "integer"}, "role": {"type": "string"}, "status": {"type": "string"}}},
+      "Contribution": {"type": "object", "properties": {"contributionId": {"type": "integer"}, "vanId": {"type": "integer"}, "amount": {"type": "number"}, "dateReceived": {"type": "string", "format": "date"}, "designation": {"type": "string"}, "contributionStatus": {"type": "string"}, "paymentType": {"type": "string"}}},
+      "ContributionCreate": {"type": "object", "required": ["vanId", "amount", "dateReceived"], "properties": {"vanId": {"type": "integer"}, "amount": {"type": "number"}, "dateReceived": {"type": "string", "format": "date"}, "designation": {"type": "string"}, "paymentType": {"type": "string"}}},
+      "Code": {"type": "object", "properties": {"codeId": {"type": "integer"}, "name": {"type": "string"}, "parentCodeId": {"type": "integer"}, "codeType": {"type": "string"}, "dateCreated": {"type": "string", "format": "date-time"}}},
+      "CanvassResponse": {"type": "object", "properties": {"canvassResponseId": {"type": "integer"}, "vanId": {"type": "integer"}, "contactTypeId": {"type": "integer"}, "inputTypeId": {"type": "integer"}, "dateCanvassed": {"type": "string", "format": "date-time"}, "responses": {"type": "array", "items": {"type": "object", "properties": {"type": {"type": "string"}, "activistCodeId": {"type": "integer"}, "surveyQuestionId": {"type": "integer"}, "surveyResponseId": {"type": "integer"}, "action": {"type": "string"}}}}}},
+      "CanvassResponseCreate": {"type": "object", "required": ["contactTypeId", "inputTypeId"], "properties": {"contactTypeId": {"type": "integer"}, "inputTypeId": {"type": "integer"}, "dateCanvassed": {"type": "string", "format": "date-time"}, "responses": {"type": "array", "items": {"type": "object", "properties": {"type": {"type": "string"}, "activistCodeId": {"type": "integer"}, "surveyQuestionId": {"type": "integer"}, "surveyResponseId": {"type": "integer"}, "action": {"type": "string"}}}}}},
+      "ExportJob": {"type": "object", "properties": {"exportJobId": {"type": "integer"}, "status": {"type": "string"}, "downloadUrl": {"type": "string", "format": "uri"}, "dateExpired": {"type": "string", "format": "date-time"}}}
+    }
+  },
+  "tags": [
+    {"name": "People", "description": "Manage people records."},
+    {"name": "Canvass Responses", "description": "Record and manage canvass responses."},
+    {"name": "Events", "description": "Manage events and signups."},
+    {"name": "Contributions", "description": "Manage financial contributions."},
+    {"name": "Codes", "description": "Manage classification and activist codes."},
+    {"name": "Data Operations", "description": "Export jobs, bulk imports, and saved lists."},
+    {"name": "Campaigns", "description": "Manage campaigns and departments."}
+  ]
+}
