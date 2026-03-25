@@ -1,0 +1,714 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Lexigram Clinical NLP API",
+    "description": "The Lexigram API provides clinical natural language processing (NLP) capabilities for healthcare applications. It extracts medical concepts from unstructured clinical text, maps them to standard medical ontologies (ICD-10, SNOMED CT, RxNorm, MeSH), and provides concept search and relationship traversal across medical knowledge graphs.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Lexigram Support",
+      "url": "https://docs.lexigram.io"
+    },
+    "x-jentic-source-url": "https://docs.lexigram.io/"
+  },
+  "servers": [
+    {
+      "url": "https://api.lexigram.io/v1",
+      "description": "Lexigram API v1 Production"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "NLP",
+      "description": "Clinical natural language processing and entity extraction"
+    },
+    {
+      "name": "Concepts",
+      "description": "Medical concept lookup and search"
+    },
+    {
+      "name": "Ontology",
+      "description": "Medical ontology mapping and relationships"
+    },
+    {
+      "name": "Graph",
+      "description": "Medical knowledge graph traversal"
+    }
+  ],
+  "paths": {
+    "/lexigraph/entities": {
+      "post": {
+        "operationId": "extractEntities",
+        "summary": "Extract medical entities from text",
+        "description": "Analyzes unstructured clinical text and extracts medical entities such as diagnoses, symptoms, medications, procedures, and anatomical terms. Returns entities mapped to standard ontology codes.",
+        "tags": ["NLP"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/EntityExtractionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully extracted medical entities.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EntityExtractionResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/lexigraph/highlight": {
+      "post": {
+        "operationId": "highlightEntities",
+        "summary": "Highlight medical entities in text",
+        "description": "Returns the input text with medical entity annotations, including positional information for highlighting entities in the original text.",
+        "tags": ["NLP"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/EntityExtractionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Text with highlighted medical entities.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HighlightResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/lexigraph/search": {
+      "get": {
+        "operationId": "searchConcepts",
+        "summary": "Search medical concepts",
+        "description": "Search for medical concepts by keyword or phrase across supported ontologies. Returns matching concepts with their codes and types.",
+        "tags": ["Concepts"],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search query string.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results to return.",
+            "schema": { "type": "integer", "default": 10, "maximum": 100 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Offset for pagination.",
+            "schema": { "type": "integer", "default": 0 }
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "description": "Comma-separated list of concept types to filter (e.g., disease, symptom, drug, procedure).",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ConceptSearchResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/lexigraph/concepts/{conceptId}": {
+      "get": {
+        "operationId": "getConcept",
+        "summary": "Get a medical concept by ID",
+        "description": "Retrieve detailed information about a specific medical concept, including its ontology mappings, types, and descriptions.",
+        "tags": ["Concepts"],
+        "parameters": [
+          {
+            "name": "conceptId",
+            "in": "path",
+            "required": true,
+            "description": "The unique concept identifier.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Concept details.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Concept" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/lexigraph/concepts/{conceptId}/ancestors": {
+      "get": {
+        "operationId": "getConceptAncestors",
+        "summary": "Get concept ancestors",
+        "description": "Retrieve the ancestor (parent) concepts in the ontology hierarchy for a given concept.",
+        "tags": ["Graph"],
+        "parameters": [
+          {
+            "name": "conceptId",
+            "in": "path",
+            "required": true,
+            "description": "The concept identifier.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "depth",
+            "in": "query",
+            "description": "Maximum depth of ancestor traversal.",
+            "schema": { "type": "integer", "default": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of ancestor concepts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Concept" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/lexigraph/concepts/{conceptId}/descendants": {
+      "get": {
+        "operationId": "getConceptDescendants",
+        "summary": "Get concept descendants",
+        "description": "Retrieve the descendant (child) concepts in the ontology hierarchy for a given concept.",
+        "tags": ["Graph"],
+        "parameters": [
+          {
+            "name": "conceptId",
+            "in": "path",
+            "required": true,
+            "description": "The concept identifier.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "depth",
+            "in": "query",
+            "description": "Maximum depth of descendant traversal.",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results.",
+            "schema": { "type": "integer", "default": 20 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of descendant concepts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Concept" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/lexigraph/concepts/{conceptId}/related": {
+      "get": {
+        "operationId": "getRelatedConcepts",
+        "summary": "Get related concepts",
+        "description": "Retrieve concepts that are semantically related to the given concept through medical knowledge graph relationships.",
+        "tags": ["Graph"],
+        "parameters": [
+          {
+            "name": "conceptId",
+            "in": "path",
+            "required": true,
+            "description": "The concept identifier.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "relationship",
+            "in": "query",
+            "description": "Type of relationship to follow (e.g., has_symptom, treated_by, caused_by).",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results.",
+            "schema": { "type": "integer", "default": 20 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of related concepts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/RelatedConcept" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/lexigraph/ontologies/icd10/map": {
+      "get": {
+        "operationId": "mapToICD10",
+        "summary": "Map concept to ICD-10 codes",
+        "description": "Map a medical concept to its corresponding ICD-10 classification codes.",
+        "tags": ["Ontology"],
+        "parameters": [
+          {
+            "name": "conceptId",
+            "in": "query",
+            "required": true,
+            "description": "The concept identifier to map.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ICD-10 mappings.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OntologyMappingResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/lexigraph/ontologies/snomedct/map": {
+      "get": {
+        "operationId": "mapToSNOMEDCT",
+        "summary": "Map concept to SNOMED CT codes",
+        "description": "Map a medical concept to its corresponding SNOMED CT codes.",
+        "tags": ["Ontology"],
+        "parameters": [
+          {
+            "name": "conceptId",
+            "in": "query",
+            "required": true,
+            "description": "The concept identifier to map.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SNOMED CT mappings.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OntologyMappingResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/lexigraph/ontologies/rxnorm/map": {
+      "get": {
+        "operationId": "mapToRxNorm",
+        "summary": "Map concept to RxNorm codes",
+        "description": "Map a medical concept to its corresponding RxNorm medication codes.",
+        "tags": ["Ontology"],
+        "parameters": [
+          {
+            "name": "conceptId",
+            "in": "query",
+            "required": true,
+            "description": "The concept identifier to map.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "RxNorm mappings.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OntologyMappingResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/lexigraph/ontologies/mesh/map": {
+      "get": {
+        "operationId": "mapToMeSH",
+        "summary": "Map concept to MeSH codes",
+        "description": "Map a medical concept to its corresponding MeSH (Medical Subject Headings) codes.",
+        "tags": ["Ontology"],
+        "parameters": [
+          {
+            "name": "conceptId",
+            "in": "query",
+            "required": true,
+            "description": "The concept identifier to map.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "MeSH mappings.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OntologyMappingResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "API Key",
+        "description": "API key provided as a Bearer token in the Authorization header."
+      }
+    },
+    "schemas": {
+      "EntityExtractionRequest": {
+        "type": "object",
+        "required": ["text"],
+        "description": "Request body for medical entity extraction.",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Clinical text to analyze for medical entities.",
+            "example": "Patient presents with type 2 diabetes mellitus and hypertension. Prescribed metformin 500mg twice daily."
+          },
+          "withContext": {
+            "type": "boolean",
+            "description": "Include surrounding context for each extracted entity.",
+            "default": false
+          },
+          "withNegation": {
+            "type": "boolean",
+            "description": "Detect negated entities (e.g., 'no fever').",
+            "default": true
+          }
+        }
+      },
+      "EntityExtractionResponse": {
+        "type": "object",
+        "description": "Result of medical entity extraction from text.",
+        "properties": {
+          "entities": {
+            "type": "array",
+            "description": "Extracted medical entities.",
+            "items": { "$ref": "#/components/schemas/ExtractedEntity" }
+          },
+          "text": {
+            "type": "string",
+            "description": "The original input text."
+          }
+        }
+      },
+      "ExtractedEntity": {
+        "type": "object",
+        "description": "A medical entity extracted from clinical text.",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "The text span that was identified as a medical entity."
+          },
+          "conceptId": {
+            "type": "string",
+            "description": "Unique concept identifier in the Lexigram knowledge graph."
+          },
+          "types": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Semantic types of the entity (e.g., disease, symptom, drug, procedure, anatomy)."
+          },
+          "start": {
+            "type": "integer",
+            "description": "Character offset of the entity start in the original text."
+          },
+          "end": {
+            "type": "integer",
+            "description": "Character offset of the entity end in the original text."
+          },
+          "negated": {
+            "type": "boolean",
+            "description": "Whether the entity is negated in context."
+          },
+          "codes": {
+            "type": "object",
+            "description": "Ontology code mappings.",
+            "properties": {
+              "icd10": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "snomedct": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "rxnorm": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "mesh": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          },
+          "confidence": {
+            "type": "number",
+            "format": "double",
+            "description": "Confidence score of the extraction.",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      },
+      "HighlightResponse": {
+        "type": "object",
+        "description": "Text with highlighted medical entity annotations.",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Original text."
+          },
+          "annotations": {
+            "type": "array",
+            "description": "Entity annotations with positional information.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": { "type": "string" },
+                "conceptId": { "type": "string" },
+                "types": { "type": "array", "items": { "type": "string" } },
+                "start": { "type": "integer" },
+                "end": { "type": "integer" },
+                "negated": { "type": "boolean" }
+              }
+            }
+          }
+        }
+      },
+      "ConceptSearchResponse": {
+        "type": "object",
+        "description": "Search results for medical concepts.",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "description": "Total number of matching results."
+          },
+          "concepts": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Concept" }
+          }
+        }
+      },
+      "Concept": {
+        "type": "object",
+        "description": "A medical concept from the Lexigram knowledge graph.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique concept identifier."
+          },
+          "label": {
+            "type": "string",
+            "description": "Preferred label/name for the concept."
+          },
+          "types": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Semantic types (e.g., disease, symptom, drug, procedure, anatomy)."
+          },
+          "synonyms": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Alternative names and synonyms."
+          },
+          "description": {
+            "type": "string",
+            "description": "Textual description of the concept."
+          },
+          "codes": {
+            "type": "object",
+            "description": "Ontology code mappings.",
+            "properties": {
+              "icd10": { "type": "array", "items": { "type": "string" } },
+              "snomedct": { "type": "array", "items": { "type": "string" } },
+              "rxnorm": { "type": "array", "items": { "type": "string" } },
+              "mesh": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      },
+      "RelatedConcept": {
+        "type": "object",
+        "description": "A related concept with relationship information.",
+        "properties": {
+          "concept": { "$ref": "#/components/schemas/Concept" },
+          "relationship": {
+            "type": "string",
+            "description": "Type of relationship (e.g., has_symptom, treated_by, caused_by, finding_site)."
+          },
+          "direction": {
+            "type": "string",
+            "enum": ["outgoing", "incoming"],
+            "description": "Direction of the relationship."
+          }
+        }
+      },
+      "OntologyMappingResponse": {
+        "type": "object",
+        "description": "Ontology mapping results.",
+        "properties": {
+          "conceptId": {
+            "type": "string",
+            "description": "Source concept identifier."
+          },
+          "mappings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": { "type": "string", "description": "Ontology code." },
+                "label": { "type": "string", "description": "Code description." },
+                "system": { "type": "string", "description": "Ontology system name." }
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "description": "Error response.",
+        "properties": {
+          "error": { "type": "string", "description": "Error type." },
+          "message": { "type": "string", "description": "Human-readable error message." },
+          "status": { "type": "integer", "description": "HTTP status code." }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request. Missing required parameters or invalid input.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized. Missing or invalid API key.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Rate limit exceeded.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Internal server error.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      }
+    }
+  }
+}
