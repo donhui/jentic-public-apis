@@ -1,0 +1,886 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Angel One SmartAPI",
+    "description": "SmartAPI by Angel One (formerly Angel Broking) provides comprehensive trading APIs for Indian stock markets. Enables order placement, market data access, portfolio management, and real-time data streaming for equities, derivatives, commodities, and currency trading.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Angel One SmartAPI Support",
+      "url": "https://smartapi.angelbroking.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://apiconnect.angelbroking.com",
+      "description": "Production server"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/rest/auth/angelbroking/user/v1/loginByPassword": {
+      "post": {
+        "summary": "Generate Session",
+        "description": "Authenticate user and generate JWT session token using client credentials and TOTP.",
+        "operationId": "generateSession",
+        "tags": ["Authentication"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["clientcode", "password", "totp"],
+                "properties": {
+                  "clientcode": {
+                    "type": "string",
+                    "description": "Client ID provided by Angel One"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "Account password"
+                  },
+                  "totp": {
+                    "type": "string",
+                    "description": "Time-based one-time password generated from QR token"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "jwtToken": {
+                          "type": "string",
+                          "description": "JWT token for subsequent API calls"
+                        },
+                        "refreshToken": {
+                          "type": "string",
+                          "description": "Token for refreshing the session"
+                        },
+                        "feedToken": {
+                          "type": "string",
+                          "description": "Token for market data feed"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rest/auth/angelbroking/jwt/v1/generateTokens": {
+      "post": {
+        "summary": "Generate Token",
+        "description": "Refresh the JWT token using the refresh token.",
+        "operationId": "generateToken",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["refreshToken"],
+                "properties": {
+                  "refreshToken": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token refreshed successfully"
+          }
+        }
+      }
+    },
+    "/rest/secure/angelbroking/user/v1/logout": {
+      "post": {
+        "summary": "Terminate Session",
+        "description": "Logout and terminate the current session.",
+        "operationId": "terminateSession",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["clientcode"],
+                "properties": {
+                  "clientcode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Logged out successfully"
+          }
+        }
+      }
+    },
+    "/rest/secure/angelbroking/user/v1/getProfile": {
+      "get": {
+        "summary": "Get Profile",
+        "description": "Retrieve user profile and exchange information.",
+        "operationId": "getProfile",
+        "tags": ["User"],
+        "parameters": [
+          {
+            "name": "refreshToken",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "clientcode": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "mobileno": {
+                          "type": "string"
+                        },
+                        "exchanges": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rest/secure/angelbroking/user/v1/getRMS": {
+      "get": {
+        "summary": "Get RMS Limits",
+        "description": "Retrieve Risk Management System limits and available margins.",
+        "operationId": "getRMS",
+        "tags": ["User"],
+        "responses": {
+          "200": {
+            "description": "RMS limits"
+          }
+        }
+      }
+    },
+    "/rest/secure/angelbroking/order/v1/placeOrder": {
+      "post": {
+        "summary": "Place Order",
+        "description": "Place a new trading order.",
+        "operationId": "placeOrder",
+        "tags": ["Orders"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["variety", "tradingsymbol", "symboltoken", "transactiontype", "exchange", "ordertype", "producttype", "duration", "quantity", "price"],
+                "properties": {
+                  "variety": {
+                    "type": "string",
+                    "enum": ["NORMAL", "STOPLOSS", "AMO", "ROBO"],
+                    "description": "Order variety"
+                  },
+                  "tradingsymbol": {
+                    "type": "string",
+                    "description": "Trading symbol"
+                  },
+                  "symboltoken": {
+                    "type": "string",
+                    "description": "Symbol token"
+                  },
+                  "transactiontype": {
+                    "type": "string",
+                    "enum": ["BUY", "SELL"]
+                  },
+                  "exchange": {
+                    "type": "string",
+                    "enum": ["NSE", "BSE", "NFO", "MCX", "BFO", "CDS"],
+                    "description": "Exchange"
+                  },
+                  "ordertype": {
+                    "type": "string",
+                    "enum": ["MARKET", "LIMIT", "STOPLOSS_LIMIT", "STOPLOSS_MARKET"],
+                    "description": "Order type"
+                  },
+                  "producttype": {
+                    "type": "string",
+                    "enum": ["DELIVERY", "CARRYFORWARD", "MARGIN", "INTRADAY", "BO"],
+                    "description": "Product type"
+                  },
+                  "duration": {
+                    "type": "string",
+                    "enum": ["DAY", "IOC"],
+                    "description": "Order duration"
+                  },
+                  "price": {
+                    "type": "number",
+                    "description": "Order price"
+                  },
+                  "squareoff": {
+                    "type": "number",
+                    "description": "Square off value (for bracket orders)"
+                  },
+                  "stoploss": {
+                    "type": "number",
+                    "description": "Stoploss value"
+                  },
+                  "quantity": {
+                    "type": "integer",
+                    "description": "Order quantity"
+                  },
+                  "triggerprice": {
+                    "type": "number",
+                    "description": "Trigger price for stop loss orders"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order placed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "orderid": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rest/secure/angelbroking/order/v1/modifyOrder": {
+      "post": {
+        "summary": "Modify Order",
+        "description": "Modify an existing order.",
+        "operationId": "modifyOrder",
+        "tags": ["Orders"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["variety", "orderid", "ordertype", "producttype", "duration", "price", "quantity"],
+                "properties": {
+                  "variety": {
+                    "type": "string"
+                  },
+                  "orderid": {
+                    "type": "string"
+                  },
+                  "ordertype": {
+                    "type": "string"
+                  },
+                  "producttype": {
+                    "type": "string"
+                  },
+                  "duration": {
+                    "type": "string"
+                  },
+                  "price": {
+                    "type": "number"
+                  },
+                  "quantity": {
+                    "type": "integer"
+                  },
+                  "tradingsymbol": {
+                    "type": "string"
+                  },
+                  "symboltoken": {
+                    "type": "string"
+                  },
+                  "exchange": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order modified successfully"
+          }
+        }
+      }
+    },
+    "/rest/secure/angelbroking/order/v1/cancelOrder": {
+      "post": {
+        "summary": "Cancel Order",
+        "description": "Cancel an existing order.",
+        "operationId": "cancelOrder",
+        "tags": ["Orders"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["variety", "orderid"],
+                "properties": {
+                  "variety": {
+                    "type": "string"
+                  },
+                  "orderid": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order cancelled successfully"
+          }
+        }
+      }
+    },
+    "/rest/secure/angelbroking/order/v1/getOrderBook": {
+      "get": {
+        "summary": "Get Order Book",
+        "description": "Retrieve all orders for the day.",
+        "operationId": "getOrderBook",
+        "tags": ["Orders"],
+        "responses": {
+          "200": {
+            "description": "Order book"
+          }
+        }
+      }
+    },
+    "/rest/secure/angelbroking/order/v1/getTradeBook": {
+      "get": {
+        "summary": "Get Trade Book",
+        "description": "Retrieve all executed trades for the day.",
+        "operationId": "getTradeBook",
+        "tags": ["Orders"],
+        "responses": {
+          "200": {
+            "description": "Trade book"
+          }
+        }
+      }
+    },
+    "/rest/secure/angelbroking/portfolio/v1/getHolding": {
+      "get": {
+        "summary": "Get Holdings",
+        "description": "Retrieve user's holdings.",
+        "operationId": "getHolding",
+        "tags": ["Portfolio"],
+        "responses": {
+          "200": {
+            "description": "Holdings information"
+          }
+        }
+      }
+    },
+    "/rest/secure/angelbroking/portfolio/v1/getPosition": {
+      "get": {
+        "summary": "Get Positions",
+        "description": "Retrieve user's open positions.",
+        "operationId": "getPosition",
+        "tags": ["Portfolio"],
+        "responses": {
+          "200": {
+            "description": "Positions information"
+          }
+        }
+      }
+    },
+    "/rest/secure/angelbroking/portfolio/v1/convertPosition": {
+      "post": {
+        "summary": "Convert Position",
+        "description": "Convert position between product types (e.g., INTRADAY to DELIVERY).",
+        "operationId": "convertPosition",
+        "tags": ["Portfolio"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["exchange", "oldproducttype", "newproducttype", "tradingsymbol", "transactiontype", "quantity", "type"],
+                "properties": {
+                  "exchange": {
+                    "type": "string"
+                  },
+                  "oldproducttype": {
+                    "type": "string"
+                  },
+                  "newproducttype": {
+                    "type": "string"
+                  },
+                  "tradingsymbol": {
+                    "type": "string"
+                  },
+                  "transactiontype": {
+                    "type": "string"
+                  },
+                  "quantity": {
+                    "type": "integer"
+                  },
+                  "type": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Position converted successfully"
+          }
+        }
+      }
+    },
+    "/rest/secure/angelbroking/market/v1/getCandleData": {
+      "post": {
+        "summary": "Get Candle Data",
+        "description": "Retrieve historical OHLC candle data.",
+        "operationId": "getCandleData",
+        "tags": ["Market Data"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["exchange", "symboltoken", "interval", "fromdate", "todate"],
+                "properties": {
+                  "exchange": {
+                    "type": "string",
+                    "enum": ["NSE", "BSE", "NFO", "MCX", "BFO", "CDS"]
+                  },
+                  "symboltoken": {
+                    "type": "string"
+                  },
+                  "interval": {
+                    "type": "string",
+                    "enum": ["ONE_MINUTE", "THREE_MINUTE", "FIVE_MINUTE", "TEN_MINUTE", "FIFTEEN_MINUTE", "THIRTY_MINUTE", "ONE_HOUR", "ONE_DAY"],
+                    "description": "Candle interval"
+                  },
+                  "fromdate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "From date in YYYY-MM-DD HH:MM format"
+                  },
+                  "todate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "To date in YYYY-MM-DD HH:MM format"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Candle data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "array",
+                        "description": "[timestamp, open, high, low, close, volume]"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rest/secure/angelbroking/market/v1/quote": {
+      "post": {
+        "summary": "Get Quote",
+        "description": "Get real-time quote for a symbol.",
+        "operationId": "getQuote",
+        "tags": ["Market Data"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["mode", "exchangeTokens"],
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": ["LTP", "OHLC", "FULL"]
+                  },
+                  "exchangeTokens": {
+                    "type": "object",
+                    "description": "Map of exchange to array of tokens",
+                    "additionalProperties": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Quote data"
+          }
+        }
+      }
+    },
+    "/rest/secure/angelbroking/market/v1/getAllMarketData": {
+      "post": {
+        "summary": "Get All Market Data",
+        "description": "Get market data for multiple symbols.",
+        "operationId": "getAllMarketData",
+        "tags": ["Market Data"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["mode", "exchangeTokens"],
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": ["LTP", "OHLC", "FULL"]
+                  },
+                  "exchangeTokens": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Market data for multiple symbols"
+          }
+        }
+      }
+    },
+    "/rest/secure/angelbroking/gtt-rule/v1/createRule": {
+      "post": {
+        "summary": "Create GTT Rule",
+        "description": "Create a Good-Till-Triggered (GTT) rule.",
+        "operationId": "createGTTRule",
+        "tags": ["GTT"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tradingsymbol": {
+                    "type": "string"
+                  },
+                  "symboltoken": {
+                    "type": "string"
+                  },
+                  "exchange": {
+                    "type": "string"
+                  },
+                  "transactiontype": {
+                    "type": "string"
+                  },
+                  "producttype": {
+                    "type": "string"
+                  },
+                  "price": {
+                    "type": "number"
+                  },
+                  "qty": {
+                    "type": "integer"
+                  },
+                  "triggerprice": {
+                    "type": "number"
+                  },
+                  "timeperiod": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "GTT rule created"
+          }
+        }
+      }
+    },
+    "/rest/secure/angelbroking/gtt-rule/v1/ruleList": {
+      "post": {
+        "summary": "List GTT Rules",
+        "description": "Retrieve all GTT rules.",
+        "operationId": "listGTTRules",
+        "tags": ["GTT"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": ["NEW", "CANCELLED", "ACTIVE", "SENTTOEXCHANGE", "FORALL"]
+                    }
+                  },
+                  "page": {
+                    "type": "integer"
+                  },
+                  "count": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "GTT rules list"
+          }
+        }
+      }
+    },
+    "/rest/secure/angelbroking/gtt-rule/v1/modifyRule": {
+      "post": {
+        "summary": "Modify GTT Rule",
+        "description": "Modify an existing GTT rule.",
+        "operationId": "modifyGTTRule",
+        "tags": ["GTT"],
+        "responses": {
+          "200": {
+            "description": "GTT rule modified"
+          }
+        }
+      }
+    },
+    "/rest/secure/angelbroking/gtt-rule/v1/cancelRule": {
+      "post": {
+        "summary": "Cancel GTT Rule",
+        "description": "Cancel a GTT rule.",
+        "operationId": "cancelGTTRule",
+        "tags": ["GTT"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["id", "symboltoken", "exchange"],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "symboltoken": {
+                    "type": "string"
+                  },
+                  "exchange": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "GTT rule cancelled"
+          }
+        }
+      }
+    },
+    "/rest/secure/angelbroking/order/v1/searchScrip": {
+      "post": {
+        "summary": "Search Scrip",
+        "description": "Search for trading symbols by exchange and keyword.",
+        "operationId": "searchScrip",
+        "tags": ["Market Data"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["exchange", "searchscrip"],
+                "properties": {
+                  "exchange": {
+                    "type": "string"
+                  },
+                  "searchscrip": {
+                    "type": "string",
+                    "description": "Search keyword"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Search results"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token obtained from generateSession endpoint"
+      },
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-ClientLocalIP",
+        "description": "Client local IP address"
+      },
+      "ApiKeyAuth2": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-ClientPublicIP",
+        "description": "Client public IP address"
+      },
+      "ApiKeyAuth3": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-MACAddress",
+        "description": "Client MAC address"
+      },
+      "ApiKeyAuth4": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-PrivateKey",
+        "description": "API key provided by Angel One"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Session management and authentication"
+    },
+    {
+      "name": "User",
+      "description": "User profile and account information"
+    },
+    {
+      "name": "Orders",
+      "description": "Order placement, modification, and tracking"
+    },
+    {
+      "name": "Portfolio",
+      "description": "Holdings and positions management"
+    },
+    {
+      "name": "Market Data",
+      "description": "Real-time and historical market data"
+    },
+    {
+      "name": "GTT",
+      "description": "Good-Till-Triggered orders"
+    }
+  ]
+}

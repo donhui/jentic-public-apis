@@ -1,0 +1,271 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "SRP Energy API",
+    "description": "API for accessing Salt River Project (SRP) energy usage data, including hourly consumption details and billing information.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "SRP",
+      "url": "https://www.srpnet.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://myaccount.srpnet.com/myaccountapi/api",
+      "description": "Production server"
+    }
+  ],
+  "security": [
+    {
+      "xsrfToken": []
+    }
+  ],
+  "paths": {
+    "/login/authorize": {
+      "post": {
+        "summary": "Authenticate user",
+        "description": "Authenticate with username and password to obtain session credentials",
+        "operationId": "loginAuthorize",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "Account username"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "Account password"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful authentication",
+            "headers": {
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Session cookie for authenticated requests"
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed"
+          }
+        }
+      },
+      "get": {
+        "summary": "Get XSRF token",
+        "description": "Fetch XSRF token required for subsequent API requests",
+        "operationId": "getXsrfToken",
+        "tags": ["Authentication"],
+        "responses": {
+          "200": {
+            "description": "XSRF token returned",
+            "headers": {
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "xsrf-token cookie"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usage/hourlydetail": {
+      "get": {
+        "summary": "Get hourly usage detail",
+        "description": "Retrieve hourly energy usage and cost details for a specified date range",
+        "operationId": "getHourlyUsageDetail",
+        "tags": ["Usage"],
+        "parameters": [
+          {
+            "name": "billaccount",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Billing account number"
+          },
+          {
+            "name": "beginDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Start date in MM-DD-YYYY format",
+            "example": "01-01-2024"
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "End date in MM-DD-YYYY format",
+            "example": "01-31-2024"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hourly usage data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HourlyUsageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters"
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid XSRF token"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "xsrfToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-xsrf-token",
+        "description": "XSRF token obtained from authentication flow"
+      }
+    },
+    "schemas": {
+      "HourlyUsageResponse": {
+        "type": "object",
+        "properties": {
+          "hourlyUsageList": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HourlyUsage"
+            }
+          },
+          "hourlyConsumptionList": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "hourlyGenerationList": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "hourlyReceivedList": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "demandList": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "HourlyUsage": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Date timestamp"
+          },
+          "hour": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Hour timestamp"
+          },
+          "onPeakKwh": {
+            "type": "number",
+            "format": "float",
+            "description": "On-peak kilowatt hours"
+          },
+          "offPeakKwh": {
+            "type": "number",
+            "format": "float",
+            "description": "Off-peak kilowatt hours"
+          },
+          "shoulderKwh": {
+            "type": "number",
+            "format": "float",
+            "description": "Shoulder period kilowatt hours"
+          },
+          "superOffPeakKwh": {
+            "type": "number",
+            "format": "float",
+            "description": "Super off-peak kilowatt hours"
+          },
+          "totalKwh": {
+            "type": "number",
+            "format": "float",
+            "description": "Total kilowatt hours"
+          },
+          "onPeakCost": {
+            "type": "number",
+            "format": "float",
+            "description": "On-peak cost"
+          },
+          "offPeakCost": {
+            "type": "number",
+            "format": "float",
+            "description": "Off-peak cost"
+          },
+          "shoulderCost": {
+            "type": "number",
+            "format": "float",
+            "description": "Shoulder period cost"
+          },
+          "superOffPeakCost": {
+            "type": "number",
+            "format": "float",
+            "description": "Super off-peak cost"
+          },
+          "totalCost": {
+            "type": "number",
+            "format": "float",
+            "description": "Total cost"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Authentication and authorization endpoints"
+    },
+    {
+      "name": "Usage",
+      "description": "Energy usage data endpoints"
+    }
+  ]
+}

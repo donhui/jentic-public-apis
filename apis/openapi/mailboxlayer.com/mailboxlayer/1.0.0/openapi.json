@@ -1,0 +1,465 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "mailboxlayer API",
+    "description": "Real-time email address validation and verification API. Performs syntax validation, MX record verification, SMTP existence checks, catch-all mailbox detection, disposable and free provider filtering, typo detection with suggestions, and deliverability scoring.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "mailboxlayer",
+      "url": "https://mailboxlayer.com",
+      "email": "support@apilayer.com"
+    },
+    "x-jentic-source-url": "https://mailboxlayer.com"
+  },
+  "servers": [
+    {
+      "url": "http://apilayer.net/api",
+      "description": "Production server (HTTP - free plans)"
+    },
+    {
+      "url": "https://apilayer.net/api",
+      "description": "Production server (HTTPS - paid plans)"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Email Validation",
+      "description": "Email address validation and verification operations"
+    }
+  ],
+  "paths": {
+    "/check": {
+      "get": {
+        "tags": ["Email Validation"],
+        "summary": "Validate a single email address",
+        "description": "Validates a single email address with full metadata including syntax check, MX record verification, SMTP existence check, catch-all detection, role account detection, disposable provider check, free provider check, typo suggestions, and deliverability scoring.",
+        "operationId": "checkEmail",
+        "parameters": [
+          {
+            "name": "access_key",
+            "in": "query",
+            "required": true,
+            "description": "API access key for authentication",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "required": true,
+            "description": "Email address to validate",
+            "schema": {
+              "type": "string",
+              "format": "email"
+            },
+            "example": "test@example.com"
+          },
+          {
+            "name": "smtp",
+            "in": "query",
+            "description": "Enable or disable SMTP check (1 = enabled, 0 = disabled). Enabled by default.",
+            "schema": {
+              "type": "integer",
+              "enum": [0, 1],
+              "default": 1
+            }
+          },
+          {
+            "name": "catch_all",
+            "in": "query",
+            "description": "Enable catch-all mailbox detection (1 = enabled, 0 = disabled)",
+            "schema": {
+              "type": "integer",
+              "enum": [0, 1],
+              "default": 0
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Pretty-print JSON output (1 = enabled, 0 = disabled)",
+            "schema": {
+              "type": "integer",
+              "enum": [0, 1]
+            }
+          },
+          {
+            "name": "callback",
+            "in": "query",
+            "description": "JSONP callback function name for cross-domain requests",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Email validation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailValidationResponse"
+                },
+                "examples": {
+                  "valid": {
+                    "summary": "Valid email",
+                    "value": {
+                      "email": "john.doe@example.com",
+                      "did_you_mean": "",
+                      "user": "john.doe",
+                      "domain": "example.com",
+                      "format_valid": true,
+                      "mx_found": true,
+                      "smtp_check": true,
+                      "catch_all": false,
+                      "role": false,
+                      "disposable": false,
+                      "free": false,
+                      "score": 0.96
+                    }
+                  },
+                  "typo": {
+                    "summary": "Email with typo suggestion",
+                    "value": {
+                      "email": "user@gmial.com",
+                      "did_you_mean": "user@gmail.com",
+                      "user": "user",
+                      "domain": "gmial.com",
+                      "format_valid": true,
+                      "mx_found": false,
+                      "smtp_check": false,
+                      "catch_all": null,
+                      "role": false,
+                      "disposable": false,
+                      "free": false,
+                      "score": 0.48
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or malformed parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing access key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "example": {
+                  "success": false,
+                  "error": {
+                    "code": 101,
+                    "type": "invalid_access_key",
+                    "info": "You have not supplied a valid API Access Key."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Feature not available on current plan (e.g., catch-all detection)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error or timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bulk_check": {
+      "get": {
+        "tags": ["Email Validation"],
+        "summary": "Validate multiple email addresses",
+        "description": "Validates multiple email addresses in a single request. Available on Pro Plus (up to 25 emails) and Enterprise Plus (up to 100 emails) plans only.",
+        "operationId": "bulkCheckEmails",
+        "parameters": [
+          {
+            "name": "access_key",
+            "in": "query",
+            "required": true,
+            "description": "API access key for authentication",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "emails",
+            "in": "query",
+            "required": true,
+            "description": "Comma-separated list of email addresses to validate",
+            "schema": {
+              "type": "string"
+            },
+            "example": "user1@example.com,user2@example.com"
+          },
+          {
+            "name": "smtp",
+            "in": "query",
+            "description": "Enable or disable SMTP check (1 = enabled, 0 = disabled)",
+            "schema": {
+              "type": "integer",
+              "enum": [0, 1]
+            }
+          },
+          {
+            "name": "catch_all",
+            "in": "query",
+            "description": "Enable catch-all mailbox detection (1 = enabled, 0 = disabled)",
+            "schema": {
+              "type": "integer",
+              "enum": [0, 1]
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Pretty-print JSON output (1 = enabled, 0 = disabled)",
+            "schema": {
+              "type": "integer",
+              "enum": [0, 1]
+            }
+          },
+          {
+            "name": "callback",
+            "in": "query",
+            "description": "JSONP callback function name for cross-domain requests",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bulk email validation results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EmailValidationResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or malformed parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing access key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Feature not available on current plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Bulk request exceeds plan limit (25 for Pro Plus, 100 for Enterprise Plus)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error or timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "access_key",
+        "description": "API access key obtained from the mailboxlayer dashboard"
+      }
+    },
+    "schemas": {
+      "EmailValidationResponse": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "The email address that was checked"
+          },
+          "did_you_mean": {
+            "type": "string",
+            "nullable": true,
+            "description": "Suggested correction for potential typos, empty string if no typo detected"
+          },
+          "user": {
+            "type": "string",
+            "nullable": true,
+            "description": "Local part of the email (before @)"
+          },
+          "domain": {
+            "type": "string",
+            "nullable": true,
+            "description": "Domain part of the email (after @)"
+          },
+          "format_valid": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Whether the email format is valid per RFC standards"
+          },
+          "mx_found": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Whether MX records were found for the domain"
+          },
+          "smtp_check": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Whether the SMTP mailbox existence check passed"
+          },
+          "catch_all": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Whether the domain accepts all email addresses (null if not checked)"
+          },
+          "role": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Whether this is a role-based email account (e.g., admin@, info@)"
+          },
+          "disposable": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Whether the email uses a disposable/temporary provider"
+          },
+          "free": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Whether the email uses a free provider (e.g., Gmail, Yahoo)"
+          },
+          "score": {
+            "type": "number",
+            "format": "float",
+            "minimum": 0,
+            "maximum": 1,
+            "nullable": true,
+            "description": "Overall quality and deliverability score (0 to 1)"
+          }
+        }
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false,
+            "description": "Always false for error responses"
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "integer",
+                "description": "Error code"
+              },
+              "type": {
+                "type": "string",
+                "description": "Error type identifier"
+              },
+              "info": {
+                "type": "string",
+                "description": "Human-readable error description"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

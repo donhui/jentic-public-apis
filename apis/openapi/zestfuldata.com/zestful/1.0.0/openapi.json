@@ -1,0 +1,183 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Zestful API",
+    "version": "1.0.0",
+    "description": "Recipe and Ingredient Analysis API that parses raw ingredient strings into structured JSON format with USDA database matching.",
+    "contact": {
+      "url": "https://zestfuldata.com/"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://zestfuldata.com/api",
+      "description": "Production server (via RapidAPI)"
+    }
+  ],
+  "paths": {
+    "/parseIngredients": {
+      "post": {
+        "summary": "Parse ingredient strings",
+        "description": "Parses raw ingredient strings into structured JSON format with quantity, unit, product, preparation notes, and USDA database matches",
+        "operationId": "parseIngredients",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["ingredients"],
+                "properties": {
+                  "ingredients": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 1024,
+                      "description": "Raw ingredient string (Unicode supported, HTML tags ignored)"
+                    },
+                    "description": "Array of ingredient strings to parse"
+                  }
+                }
+              },
+              "examples": {
+                "simple": {
+                  "summary": "Simple ingredients",
+                  "value": {
+                    "ingredients": [
+                      "2 cups flour",
+                      "1 tablespoon sugar",
+                      "3 large eggs"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response with parsed ingredients",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ParsedIngredient"
+                      }
+                    },
+                    "requestsRemaining": {
+                      "type": "integer",
+                      "description": "Remaining sandbox quota"
+                    },
+                    "error": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Request-level error message if applicable"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid input format"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ParsedIngredient": {
+        "type": "object",
+        "properties": {
+          "ingredientRaw": {
+            "type": "string",
+            "description": "Original ingredient string as submitted"
+          },
+          "ingredientParsed": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "quantity": {
+                "type": "number",
+                "nullable": true,
+                "description": "Numeric quantity"
+              },
+              "unit": {
+                "type": "string",
+                "nullable": true,
+                "description": "Unit of measurement (e.g., 'cup', 'tablespoon')"
+              },
+              "productSizeModifier": {
+                "type": "string",
+                "nullable": true,
+                "description": "Size modifier (e.g., 'large', 'small')"
+              },
+              "product": {
+                "type": "string",
+                "nullable": true,
+                "description": "Main ingredient/product name"
+              },
+              "preparationNotes": {
+                "type": "string",
+                "nullable": true,
+                "description": "Preparation instructions (e.g., 'chopped', 'diced')"
+              }
+            },
+            "description": "Structured ingredient data"
+          },
+          "usdaInfo": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "fdcId": {
+                "type": "string",
+                "description": "USDA FoodData Central ID"
+              },
+              "matchMethod": {
+                "type": "string",
+                "description": "Method used to match USDA database entry"
+              },
+              "category": {
+                "type": "string",
+                "description": "USDA food category"
+              },
+              "description": {
+                "type": "string",
+                "description": "USDA food description"
+              }
+            },
+            "description": "USDA database match information (2021-04-28 database)"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Confidence score of the parse (0.0 to 1.0)"
+          },
+          "error": {
+            "type": "string",
+            "nullable": true,
+            "description": "Parsing error message if applicable"
+          }
+        }
+      }
+    }
+  },
+  "x-limitations": {
+    "cannotParse": [
+      "Mixtures of units",
+      "Non-numeric quantities",
+      "Ingredient mixtures"
+    ]
+  }
+}
