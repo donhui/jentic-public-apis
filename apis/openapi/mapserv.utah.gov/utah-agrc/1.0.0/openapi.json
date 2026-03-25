@@ -1,0 +1,802 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Utah AGRC Web API",
+    "description": "The Utah Geospatial Resource Center (UGRC) API provides geocoding, reverse geocoding, milepost geocoding, and spatial data searching across 300+ data layers and 1,000,000+ rows of SGID (State Geographic Information Datasource) data for the state of Utah.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "UGRC",
+      "email": "ugrc-developers@utah.gov",
+      "url": "https://gis.utah.gov"
+    },
+    "x-jentic-source-url": "https://api.mapserv.utah.gov"
+  },
+  "servers": [
+    {
+      "url": "https://api.mapserv.utah.gov/api/v1",
+      "description": "UGRC API v1 production server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Geocoding",
+      "description": "Address and milepost geocoding operations"
+    },
+    {
+      "name": "Reverse Geocoding",
+      "description": "Reverse geocoding from coordinates to addresses"
+    },
+    {
+      "name": "Search",
+      "description": "Spatial data search across SGID layers"
+    },
+    {
+      "name": "Info",
+      "description": "Metadata about available feature classes and attributes"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "paths": {
+    "/geocode/{street}/{zone}": {
+      "get": {
+        "tags": ["Geocoding"],
+        "summary": "Geocode a Utah street address",
+        "description": "Convert a Utah street address and zone (city name or ZIP code) to geographic coordinates.",
+        "operationId": "geocodeAddress",
+        "parameters": [
+          {
+            "name": "street",
+            "in": "path",
+            "required": true,
+            "description": "A Utah street address (e.g., '326 east south temple st')",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "zone",
+            "in": "path",
+            "required": true,
+            "description": "A Utah place name or 5-digit ZIP code (e.g., 'slc' or '84111')",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "apikey",
+            "in": "query",
+            "required": true,
+            "description": "API key for authentication",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "acceptScore",
+            "in": "query",
+            "description": "Minimum confidence score threshold (0-100)",
+            "schema": {
+              "type": "integer",
+              "default": 70,
+              "minimum": 0,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "pobox",
+            "in": "query",
+            "description": "Enable P.O. Box location matching",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "locators",
+            "in": "query",
+            "description": "Data source selection for geocoding",
+            "schema": {
+              "type": "string",
+              "enum": ["all", "addressPoints", "roadCenterlines"],
+              "default": "all"
+            }
+          },
+          {
+            "name": "suggest",
+            "in": "query",
+            "description": "Number of alternative candidates to return (0-5)",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0,
+              "maximum": 5
+            }
+          },
+          {
+            "name": "scoreDifference",
+            "in": "query",
+            "description": "Return score gap between top matches",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "spatialReference",
+            "in": "query",
+            "description": "Coordinate system WKID (e.g., 26912 for UTM Zone 12N, 4326 for WGS84)",
+            "schema": {
+              "type": "integer",
+              "default": 26912
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Output format",
+            "schema": {
+              "type": "string",
+              "enum": ["json", "esrijson", "geojson"],
+              "default": "json"
+            }
+          },
+          {
+            "name": "callback",
+            "in": "query",
+            "description": "JSONP callback function name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful geocode result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeocodeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/geocode/reverse/{x}/{y}": {
+      "get": {
+        "tags": ["Reverse Geocoding"],
+        "summary": "Reverse geocode coordinates",
+        "description": "Convert geographic coordinates to a Utah street address.",
+        "operationId": "reverseGeocode",
+        "parameters": [
+          {
+            "name": "x",
+            "in": "path",
+            "required": true,
+            "description": "Longitude, easting, or horizontal coordinate value",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "y",
+            "in": "path",
+            "required": true,
+            "description": "Latitude, northing, or vertical coordinate value",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "apikey",
+            "in": "query",
+            "required": true,
+            "description": "API key for authentication",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "distance",
+            "in": "query",
+            "description": "Search radius in meters (0-2000)",
+            "schema": {
+              "type": "number",
+              "default": 5,
+              "minimum": 0,
+              "maximum": 2000
+            }
+          },
+          {
+            "name": "spatialReference",
+            "in": "query",
+            "description": "Coordinate system WKID",
+            "schema": {
+              "type": "integer",
+              "default": 26912
+            }
+          },
+          {
+            "name": "callback",
+            "in": "query",
+            "description": "JSONP callback function name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful reverse geocode result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReverseGeocodeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/geocode/milepost/{route}/{milepost}": {
+      "get": {
+        "tags": ["Geocoding"],
+        "summary": "Geocode a route and milepost",
+        "description": "Convert a Utah highway route and milepost number to geographic coordinates.",
+        "operationId": "geocodeMilepost",
+        "parameters": [
+          {
+            "name": "route",
+            "in": "path",
+            "required": true,
+            "description": "Utah highway identifier without prefix (e.g., '15')",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "milepost",
+            "in": "path",
+            "required": true,
+            "description": "Position along route, precise to 1/1000 mile (e.g., '309.001')",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "apikey",
+            "in": "query",
+            "required": true,
+            "description": "API key for authentication",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "side",
+            "in": "query",
+            "description": "Side of the route",
+            "schema": {
+              "type": "string",
+              "enum": ["increasing", "decreasing"],
+              "default": "increasing"
+            }
+          },
+          {
+            "name": "fullRoute",
+            "in": "query",
+            "description": "Search the full route or just the main route",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "spatialReference",
+            "in": "query",
+            "description": "Coordinate system WKID",
+            "schema": {
+              "type": "integer",
+              "default": 26912
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Output format",
+            "schema": {
+              "type": "string",
+              "enum": ["json", "esrijson", "geojson"],
+              "default": "json"
+            }
+          },
+          {
+            "name": "callback",
+            "in": "query",
+            "description": "JSONP callback function name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful milepost geocode result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MilepostGeocodeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/search/{table}/{fields}": {
+      "get": {
+        "tags": ["Search"],
+        "summary": "Search SGID spatial data",
+        "description": "Query spatial data from 300+ SGID layers with optional spatial and attribute filtering.",
+        "operationId": "searchSgidData",
+        "parameters": [
+          {
+            "name": "table",
+            "in": "path",
+            "required": true,
+            "description": "Schema-qualified Open SGID table name (e.g., 'boundaries.county_boundaries')",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fields",
+            "in": "path",
+            "required": true,
+            "description": "Comma-separated field names. Use 'shape@' for geometry and 'shape@envelope' for bounding box.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "apikey",
+            "in": "query",
+            "required": true,
+            "description": "API key for authentication",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "predicate",
+            "in": "query",
+            "description": "PostgreSQL filter predicate (e.g., \"UPPER(name) like '%K'\")",
+            "schema": {
+              "type": "string",
+              "default": "1=1"
+            }
+          },
+          {
+            "name": "geometry",
+            "in": "query",
+            "description": "Spatial filter in format 'geometryType:ArcGIS JSON'. Supports point, polyline, polygon, multipoint, envelope.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "buffer",
+            "in": "query",
+            "description": "Buffer distance in meters (max 2000)",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0,
+              "maximum": 2000
+            }
+          },
+          {
+            "name": "attributeStyle",
+            "in": "query",
+            "description": "Controls response key casing",
+            "schema": {
+              "type": "string",
+              "enum": ["lower", "upper", "input"],
+              "default": "lower"
+            }
+          },
+          {
+            "name": "spatialReference",
+            "in": "query",
+            "description": "Coordinate system WKID",
+            "schema": {
+              "type": "integer",
+              "default": 26912
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Output format",
+            "schema": {
+              "type": "string",
+              "enum": ["json", "esrijson", "geojson"]
+            }
+          },
+          {
+            "name": "callback",
+            "in": "query",
+            "description": "JSONP callback function name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful search result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/info/featureClassNames": {
+      "get": {
+        "tags": ["Info"],
+        "summary": "List feature class names",
+        "description": "Returns a list of Open SGID table names usable by the search endpoint.",
+        "operationId": "listFeatureClassNames",
+        "parameters": [
+          {
+            "name": "apikey",
+            "in": "query",
+            "required": true,
+            "description": "API key for authentication",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sgidCategory",
+            "in": "query",
+            "description": "Filter by SGID category (e.g., boundaries, cadastre, water)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "callback",
+            "in": "query",
+            "description": "JSONP callback function name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of feature class names",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfoListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/info/fieldnames/{tableName}": {
+      "get": {
+        "tags": ["Info"],
+        "summary": "List feature class attributes",
+        "description": "Returns a list of attribute names for a given Open SGID table.",
+        "operationId": "listFieldNames",
+        "parameters": [
+          {
+            "name": "tableName",
+            "in": "path",
+            "required": true,
+            "description": "Open SGID table name (e.g., 'county_boundaries')",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "apikey",
+            "in": "query",
+            "required": true,
+            "description": "API key for authentication",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "SGID category filter",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "callback",
+            "in": "query",
+            "description": "JSONP callback function name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of field names",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfoListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "apikey",
+        "description": "API key obtained from the UGRC developer portal at developer.mapserv.utah.gov"
+      }
+    },
+    "schemas": {
+      "GeocodeResponse": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "$ref": "#/components/schemas/Location"
+              },
+              "score": {
+                "type": "number",
+                "description": "Confidence score (0-100)"
+              },
+              "locator": {
+                "type": "string",
+                "description": "Data source used for match"
+              },
+              "matchAddress": {
+                "type": "string",
+                "description": "The matched address"
+              },
+              "inputAddress": {
+                "type": "string",
+                "description": "The original input address"
+              },
+              "standardizedAddress": {
+                "type": "string",
+                "description": "Standardized version of the input address"
+              },
+              "addressGrid": {
+                "type": "string",
+                "description": "The address grid used for matching"
+              },
+              "scoreDifference": {
+                "type": "integer",
+                "description": "Score gap between top matches (if requested)"
+              },
+              "candidates": {
+                "type": "array",
+                "description": "Alternative match candidates (if suggest > 0)",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "address": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "$ref": "#/components/schemas/Location"
+                    },
+                    "score": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "status": {
+            "type": "integer",
+            "description": "HTTP status code"
+          }
+        }
+      },
+      "ReverseGeocodeResponse": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "object",
+            "properties": {
+              "inputLocation": {
+                "$ref": "#/components/schemas/Location"
+              },
+              "address": {
+                "type": "object",
+                "properties": {
+                  "street": {
+                    "type": "string",
+                    "description": "The matched street address"
+                  }
+                }
+              }
+            }
+          },
+          "status": {
+            "type": "integer"
+          }
+        }
+      },
+      "MilepostGeocodeResponse": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "description": "Data source (e.g., 'UDOT Roads and Highways')"
+              },
+              "location": {
+                "$ref": "#/components/schemas/Location"
+              },
+              "matchRoute": {
+                "type": "string",
+                "description": "The matched route identifier"
+              }
+            }
+          },
+          "status": {
+            "type": "integer"
+          }
+        }
+      },
+      "SearchResponse": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "attributes": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "description": "Key-value pairs of requested field values"
+                }
+              }
+            }
+          },
+          "status": {
+            "type": "integer"
+          }
+        }
+      },
+      "InfoListResponse": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "integer"
+          }
+        }
+      },
+      "Location": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "number",
+            "format": "double",
+            "description": "X coordinate (longitude or easting)"
+          },
+          "y": {
+            "type": "number",
+            "format": "double",
+            "description": "Y coordinate (latitude or northing)"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "API key is missing, invalid, or expired",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found or no match",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+}

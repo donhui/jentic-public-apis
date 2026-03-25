@@ -1,0 +1,403 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Smarty US ZipCode API",
+    "description": "The Smarty US ZipCode API provides detailed information about US ZIP codes including city, state, latitude, longitude, and more. It validates ZIP codes and returns associated metadata including alternate city names, county information, and timezone data.",
+    "version": "4.0.0",
+    "contact": {
+      "name": "Smarty",
+      "url": "https://www.smarty.com"
+    },
+    "x-jentic-source-url": "https://www.smarty.com/docs/cloud/us-zipcode-api"
+  },
+  "servers": [
+    {
+      "url": "https://us-zipcode.api.smarty.com",
+      "description": "Smarty US ZipCode API production server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "ZipCode Lookup",
+      "description": "ZIP code lookup and validation operations"
+    }
+  ],
+  "security": [
+    {
+      "authId": [],
+      "authToken": []
+    }
+  ],
+  "paths": {
+    "/lookup": {
+      "get": {
+        "tags": ["ZipCode Lookup"],
+        "summary": "Single ZIP code lookup",
+        "description": "Look up a single ZIP code or city/state combination to retrieve detailed information.",
+        "operationId": "zipcodeLookupGet",
+        "parameters": [
+          {
+            "name": "auth-id",
+            "in": "query",
+            "description": "Authentication ID (can also use Referer header for website keys)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "auth-token",
+            "in": "query",
+            "description": "Authentication token (raw or URL-encoded)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "zipcode",
+            "in": "query",
+            "description": "The 5-digit ZIP code to look up",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]{5}$"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "description": "City name for city/state lookup",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "description": "State name or abbreviation for city/state lookup",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "input_id",
+            "in": "query",
+            "description": "A unique identifier for this request, passed through to the response",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful ZIP code lookup",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ZipCodeResult"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/PaymentRequired"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "tags": ["ZipCode Lookup"],
+        "summary": "Batch ZIP code lookup",
+        "description": "Look up multiple ZIP codes or city/state combinations in a single request. Maximum 100 lookups per request.",
+        "operationId": "zipcodeLookupPost",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "$ref": "#/components/schemas/ZipCodeLookupInput"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful batch lookup",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ZipCodeResult"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/PaymentRequired"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "authId": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "auth-id",
+        "description": "Smarty authentication ID"
+      },
+      "authToken": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "auth-token",
+        "description": "Smarty authentication token (secret key)"
+      }
+    },
+    "schemas": {
+      "ZipCodeLookupInput": {
+        "type": "object",
+        "properties": {
+          "zipcode": {
+            "type": "string",
+            "description": "5-digit ZIP code"
+          },
+          "city": {
+            "type": "string",
+            "description": "City name"
+          },
+          "state": {
+            "type": "string",
+            "description": "State name or 2-letter abbreviation"
+          },
+          "input_id": {
+            "type": "string",
+            "description": "Unique identifier passed through to the response"
+          }
+        }
+      },
+      "ZipCodeResult": {
+        "type": "object",
+        "properties": {
+          "input_index": {
+            "type": "integer",
+            "description": "Index of the input record"
+          },
+          "input_id": {
+            "type": "string",
+            "description": "Echoed input_id from request"
+          },
+          "city_states": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CityState"
+            }
+          },
+          "zipcodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ZipCode"
+            }
+          },
+          "status": {
+            "type": "string",
+            "description": "Status of the lookup (blank for valid, or reason for invalid input)",
+            "enum": ["blank", "invalid_zipcode", "invalid_state", "invalid_city", "conflict"]
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason for invalid status"
+          }
+        }
+      },
+      "CityState": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "City name"
+          },
+          "state_abbreviation": {
+            "type": "string",
+            "description": "2-letter state abbreviation"
+          },
+          "state": {
+            "type": "string",
+            "description": "Full state name"
+          },
+          "mailable_city": {
+            "type": "boolean",
+            "description": "Whether this city name is acceptable for mailing"
+          }
+        }
+      },
+      "ZipCode": {
+        "type": "object",
+        "properties": {
+          "zipcode": {
+            "type": "string",
+            "description": "5-digit ZIP code"
+          },
+          "zipcode_type": {
+            "type": "string",
+            "description": "Type of ZIP code",
+            "enum": ["S", "M", "P", "U"]
+          },
+          "default_city": {
+            "type": "string",
+            "description": "Default city name for this ZIP code"
+          },
+          "county_fips": {
+            "type": "string",
+            "description": "County FIPS code"
+          },
+          "county_name": {
+            "type": "string",
+            "description": "County name"
+          },
+          "state_abbreviation": {
+            "type": "string",
+            "description": "2-letter state abbreviation"
+          },
+          "state": {
+            "type": "string",
+            "description": "Full state name"
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double",
+            "description": "Latitude of the ZIP code centroid"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double",
+            "description": "Longitude of the ZIP code centroid"
+          },
+          "precision": {
+            "type": "string",
+            "description": "Precision of the coordinates",
+            "enum": ["None", "Zip5", "Zip7", "Zip9"]
+          },
+          "alternate_counties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "county_fips": {
+                  "type": "string"
+                },
+                "county_name": {
+                  "type": "string"
+                },
+                "state_abbreviation": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request - malformed input",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized - invalid or missing credentials",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "PaymentRequired": {
+        "description": "Payment required - subscription inactive or over limit",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "UnprocessableEntity": {
+        "description": "Unprocessable entity - input could not be processed",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Too many requests - rate limit exceeded",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  }
+}
