@@ -1,0 +1,713 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "NPR One API",
+    "description": "The NPR One API provides access to personalized NPR audio content. It powers the NPR One listening experience, offering recommendations, search, user identity management, station finding, and ratings/history tracking. The API uses OAuth 2.0 for authentication and returns Collection.Doc+JSON responses.",
+    "version": "2.0.0",
+    "contact": {
+      "name": "NPR Developer Support",
+      "url": "https://dev.npr.org/"
+    },
+    "termsOfService": "https://dev.npr.org/terms/",
+    "x-jentic-source-url": "https://dev.npr.org/api/"
+  },
+  "servers": [
+    {
+      "url": "https://listening.api.npr.org",
+      "description": "NPR One Listening API"
+    },
+    {
+      "url": "https://identity.api.npr.org",
+      "description": "NPR One Identity API"
+    },
+    {
+      "url": "https://station.api.npr.org",
+      "description": "NPR One Station Finder API"
+    }
+  ],
+  "security": [
+    {
+      "oauth2": []
+    },
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Listening",
+      "description": "Personalized audio recommendations and playback"
+    },
+    {
+      "name": "Search",
+      "description": "Search for NPR audio content"
+    },
+    {
+      "name": "Identity",
+      "description": "User identity and profile management"
+    },
+    {
+      "name": "Stations",
+      "description": "Find and manage NPR member stations"
+    },
+    {
+      "name": "Authorization",
+      "description": "OAuth 2.0 token management"
+    }
+  ],
+  "paths": {
+    "/v2/recommendations": {
+      "get": {
+        "operationId": "getRecommendations",
+        "summary": "Get personalized audio recommendations",
+        "description": "Returns a list of audio recommendations personalized for the authenticated user. The recommendations are based on listening history, preferences, and the selected channel.",
+        "tags": ["Listening"],
+        "servers": [
+          { "url": "https://listening.api.npr.org" }
+        ],
+        "parameters": [
+          {
+            "name": "channel",
+            "in": "query",
+            "description": "The channel to get recommendations for (e.g., npr, recommended, history, explore)",
+            "schema": {
+              "type": "string",
+              "default": "npr"
+            }
+          },
+          {
+            "name": "sharedMediaId",
+            "in": "query",
+            "description": "A shared media ID to load a specific piece of audio",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "notifiedMediaId",
+            "in": "query",
+            "description": "The media ID from a push notification",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with audio recommendations",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CollectionDocResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing access token",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/ratings": {
+      "post": {
+        "operationId": "postRating",
+        "summary": "Send a rating or interaction event",
+        "description": "Record a user interaction with a piece of audio content, such as start, completed, skip, share, or thumbs up/down.",
+        "tags": ["Listening"],
+        "servers": [
+          { "url": "https://listening.api.npr.org" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RatingRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rating recorded and new recommendations returned",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CollectionDocResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/channels": {
+      "get": {
+        "operationId": "getChannels",
+        "summary": "Get available listening channels",
+        "description": "Returns a list of available channels the user can listen to.",
+        "tags": ["Listening"],
+        "servers": [
+          { "url": "https://listening.api.npr.org" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with channels",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CollectionDocResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/history": {
+      "get": {
+        "operationId": "getHistory",
+        "summary": "Get listening history",
+        "description": "Returns the user's recent listening history.",
+        "tags": ["Listening"],
+        "servers": [
+          { "url": "https://listening.api.npr.org" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with listening history",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CollectionDocResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/search/recommendations": {
+      "get": {
+        "operationId": "searchRecommendations",
+        "summary": "Search for audio content",
+        "description": "Search for NPR audio content by keyword or phrase.",
+        "tags": ["Search"],
+        "servers": [
+          { "url": "https://listening.api.npr.org" }
+        ],
+        "parameters": [
+          {
+            "name": "searchTerms",
+            "in": "query",
+            "description": "Search query terms",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with search results",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CollectionDocResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/user": {
+      "get": {
+        "operationId": "getUser",
+        "summary": "Get the authenticated user's profile",
+        "description": "Returns the profile information for the currently authenticated user.",
+        "tags": ["Identity"],
+        "servers": [
+          { "url": "https://identity.api.npr.org" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with user profile",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateUser",
+        "summary": "Update user profile",
+        "description": "Update profile information for the currently authenticated user.",
+        "tags": ["Identity"],
+        "servers": [
+          { "url": "https://identity.api.npr.org" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User profile updated successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/stations": {
+      "get": {
+        "operationId": "searchStations",
+        "summary": "Search for NPR member stations",
+        "description": "Search for NPR member stations by location, call sign, or other criteria.",
+        "tags": ["Stations"],
+        "servers": [
+          { "url": "https://station.api.npr.org" }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Search query (city name, state, call letters, or zip code)",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "description": "Latitude for geographic search",
+            "schema": { "type": "number", "format": "double" }
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "description": "Longitude for geographic search",
+            "schema": { "type": "number", "format": "double" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with stations",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CollectionDocResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/authorize": {
+      "get": {
+        "operationId": "authorize",
+        "summary": "OAuth 2.0 authorization endpoint",
+        "description": "Initiate the OAuth 2.0 authorization code flow.",
+        "tags": ["Authorization"],
+        "servers": [
+          { "url": "https://authorization.api.npr.org" }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": true,
+            "description": "Your application's client ID",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "required": true,
+            "description": "The URI to redirect to after authorization",
+            "schema": { "type": "string", "format": "uri" }
+          },
+          {
+            "name": "response_type",
+            "in": "query",
+            "required": true,
+            "description": "The type of response requested",
+            "schema": {
+              "type": "string",
+              "enum": ["code", "token"]
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "Space-separated list of scopes",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "description": "Opaque value for preventing CSRF attacks",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to authorization page"
+          }
+        },
+        "security": []
+      }
+    },
+    "/v2/token": {
+      "post": {
+        "operationId": "createToken",
+        "summary": "Exchange authorization code for access token",
+        "description": "Exchange an authorization code for an access token, or refresh an existing token.",
+        "tags": ["Authorization"],
+        "servers": [
+          { "url": "https://authorization.api.npr.org" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "grant_type": {
+                    "type": "string",
+                    "enum": ["authorization_code", "refresh_token", "device_code", "client_credentials"],
+                    "description": "The type of grant being requested"
+                  },
+                  "client_id": {
+                    "type": "string",
+                    "description": "Your application's client ID"
+                  },
+                  "client_secret": {
+                    "type": "string",
+                    "description": "Your application's client secret"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "The authorization code (for authorization_code grant)"
+                  },
+                  "redirect_uri": {
+                    "type": "string",
+                    "description": "The redirect URI used in the authorization request"
+                  },
+                  "refresh_token": {
+                    "type": "string",
+                    "description": "The refresh token (for refresh_token grant)"
+                  }
+                },
+                "required": ["grant_type", "client_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful token response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid client credentials",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "OAuth 2.0 Bearer token obtained through the authorization flow"
+      },
+      "oauth2": {
+        "type": "oauth2",
+        "description": "OAuth 2.0 authentication for NPR One API",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://authorization.api.npr.org/v2/authorize",
+            "tokenUrl": "https://authorization.api.npr.org/v2/token",
+            "scopes": {
+              "listening.readonly": "Read access to listening recommendations",
+              "listening.write": "Write access to record ratings and interactions",
+              "identity.readonly": "Read access to user profile",
+              "identity.write": "Write access to update user profile",
+              "station.readonly": "Read access to station information"
+            }
+          },
+          "clientCredentials": {
+            "tokenUrl": "https://authorization.api.npr.org/v2/token",
+            "scopes": {
+              "listening.readonly": "Read access to listening recommendations"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "CollectionDocResponse": {
+        "type": "object",
+        "description": "Collection.Doc+JSON format response used across NPR One API endpoints",
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "The version of the Collection.Doc+JSON spec"
+          },
+          "href": {
+            "type": "string",
+            "format": "uri",
+            "description": "A URL for the current request"
+          },
+          "attributes": {
+            "type": "object",
+            "description": "Top-level attributes for the response"
+          },
+          "items": {
+            "type": "array",
+            "description": "Array of items (audio, station, channel, etc.)",
+            "items": { "$ref": "#/components/schemas/CollectionDocItem" }
+          },
+          "links": {
+            "type": "object",
+            "description": "Related links for navigation and actions",
+            "additionalProperties": {
+              "type": "array",
+              "items": { "$ref": "#/components/schemas/Link" }
+            }
+          },
+          "errors": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ErrorItem" }
+          }
+        }
+      },
+      "CollectionDocItem": {
+        "type": "object",
+        "properties": {
+          "version": { "type": "string" },
+          "href": { "type": "string", "format": "uri" },
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "audioTitle": { "type": "string" },
+              "title": { "type": "string" },
+              "duration": { "type": "integer" },
+              "date": { "type": "string", "format": "date-time" },
+              "description": { "type": "string" },
+              "program": { "type": "string" },
+              "uid": { "type": "string" },
+              "slug": { "type": "string" },
+              "provider": { "type": "string" },
+              "rationale": { "type": "string" },
+              "skippable": { "type": "boolean" },
+              "type": { "type": "string" }
+            }
+          },
+          "links": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": { "$ref": "#/components/schemas/Link" }
+            }
+          }
+        }
+      },
+      "Link": {
+        "type": "object",
+        "properties": {
+          "href": { "type": "string", "format": "uri" },
+          "content-type": { "type": "string" }
+        }
+      },
+      "ErrorItem": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer" },
+          "text": { "type": "string" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "version": { "type": "string" },
+          "href": { "type": "string", "format": "uri" },
+          "attributes": { "type": "object" },
+          "items": { "type": "array", "items": {} },
+          "links": { "type": "object" },
+          "errors": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ErrorItem" }
+          }
+        }
+      },
+      "RatingRequest": {
+        "type": "object",
+        "required": ["channel", "mediaId", "rating"],
+        "properties": {
+          "channel": {
+            "type": "string",
+            "description": "The channel the audio was played from"
+          },
+          "mediaId": {
+            "type": "string",
+            "description": "The media ID of the audio being rated"
+          },
+          "rating": {
+            "type": "string",
+            "description": "The rating action",
+            "enum": ["START", "COMPLETED", "SKIP", "SRCHCOMPL", "TAPTHRU", "THUMBUP", "SHARE", "TIMEOUT"]
+          },
+          "elapsed": {
+            "type": "integer",
+            "description": "Seconds elapsed in playback"
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Total duration of the audio in seconds"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the interaction"
+          }
+        }
+      },
+      "UserResponse": {
+        "type": "object",
+        "properties": {
+          "version": { "type": "string" },
+          "href": { "type": "string", "format": "uri" },
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "email": { "type": "string", "format": "email" },
+              "firstName": { "type": "string" },
+              "lastName": { "type": "string" },
+              "cohort": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "name": { "type": "string" }
+                }
+              },
+              "organizations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "displayName": { "type": "string" },
+                    "call": { "type": "string" }
+                  }
+                }
+              },
+              "affiliations": {
+                "type": "array",
+                "items": { "type": "object" }
+              }
+            }
+          },
+          "items": { "type": "array", "items": {} },
+          "links": { "type": "object" },
+          "errors": { "type": "array", "items": {} }
+        }
+      },
+      "UserUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "description": "The access token to use for authenticated requests"
+          },
+          "token_type": {
+            "type": "string",
+            "description": "Token type (always 'Bearer')"
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Token lifetime in seconds"
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "Token for refreshing the access token"
+          }
+        }
+      }
+    }
+  }
+}
