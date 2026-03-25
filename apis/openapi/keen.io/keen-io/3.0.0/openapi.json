@@ -1,0 +1,991 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Keen IO Analytics API",
+    "description": "Keen IO provides a set of powerful APIs that allow you to stream, compute, and access event data. Use it to build custom analytics features, embed analytics dashboards, and collect event data from any source.",
+    "version": "3.0.0",
+    "contact": {
+      "name": "Keen IO",
+      "url": "https://keen.io"
+    },
+    "x-jentic-source-url": "https://keen.io/docs/api/"
+  },
+  "servers": [
+    {
+      "url": "https://api.keen.io/3.0",
+      "description": "Keen IO API v3"
+    }
+  ],
+  "security": [
+    {
+      "AuthorizationHeader": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Events",
+      "description": "Record and manage event data in collections"
+    },
+    {
+      "name": "Queries",
+      "description": "Run analytics queries on event data"
+    },
+    {
+      "name": "Properties",
+      "description": "Inspect event collection properties"
+    }
+  ],
+  "paths": {
+    "/projects/{projectId}/events": {
+      "get": {
+        "tags": ["Events"],
+        "summary": "List all event collections",
+        "description": "Returns a list of all event collections in the project along with their properties and schema.",
+        "operationId": "listEventCollections",
+        "security": [
+          {
+            "ReadKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with list of event collections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventCollection"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Events"],
+        "summary": "Record multiple events",
+        "description": "Record multiple events across one or more event collections in a single request.",
+        "operationId": "recordMultipleEvents",
+        "security": [
+          {
+            "WriteKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "example": {
+                  "purchases": [
+                    {"item": "widget", "price": 29.99}
+                  ],
+                  "pageviews": [
+                    {"page": "/home", "referrer": "google.com"}
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Events recorded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/events/{collectionName}": {
+      "get": {
+        "tags": ["Events"],
+        "summary": "Inspect event collection",
+        "description": "Returns the schema and properties for a specific event collection.",
+        "operationId": "inspectEventCollection",
+        "security": [
+          {
+            "ReadKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          },
+          {
+            "$ref": "#/components/parameters/CollectionName"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with collection schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventCollection"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Events"],
+        "summary": "Record a single event",
+        "description": "Record a single event to the specified event collection.",
+        "operationId": "recordSingleEvent",
+        "security": [
+          {
+            "WriteKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          },
+          {
+            "$ref": "#/components/parameters/CollectionName"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "example": {
+                  "item": "widget",
+                  "price": 29.99,
+                  "keen": {
+                    "timestamp": "2024-01-15T12:00:00.000Z"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Event created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "created": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Events"],
+        "summary": "Delete event collection",
+        "description": "Delete an entire event collection and all events within it. This action is irreversible.",
+        "operationId": "deleteEventCollection",
+        "security": [
+          {
+            "MasterKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          },
+          {
+            "$ref": "#/components/parameters/CollectionName"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Collection deleted successfully"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/events/{collectionName}/properties/{propertyName}": {
+      "get": {
+        "tags": ["Properties"],
+        "summary": "Inspect event property",
+        "description": "Returns information about a specific property in an event collection, including its type.",
+        "operationId": "inspectEventProperty",
+        "security": [
+          {
+            "ReadKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          },
+          {
+            "$ref": "#/components/parameters/CollectionName"
+          },
+          {
+            "name": "propertyName",
+            "in": "path",
+            "required": true,
+            "description": "The name of the event property to inspect",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with property details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "property_name": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/queries/count": {
+      "post": {
+        "tags": ["Queries"],
+        "summary": "Count events",
+        "description": "Returns the number of events in a collection matching the given criteria.",
+        "operationId": "queryCount",
+        "security": [
+          {
+            "ReadKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "504": {
+            "$ref": "#/components/responses/QueryTimeout"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/queries/count_unique": {
+      "post": {
+        "tags": ["Queries"],
+        "summary": "Count unique property values",
+        "description": "Returns the number of unique values for a target property in the event collection.",
+        "operationId": "queryCountUnique",
+        "security": [
+          {
+            "ReadKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetPropertyQueryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "504": {
+            "$ref": "#/components/responses/QueryTimeout"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/queries/sum": {
+      "post": {
+        "tags": ["Queries"],
+        "summary": "Sum property values",
+        "description": "Returns the sum of all values for a target property in the event collection.",
+        "operationId": "querySum",
+        "security": [
+          {
+            "ReadKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetPropertyQueryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "504": {
+            "$ref": "#/components/responses/QueryTimeout"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/queries/average": {
+      "post": {
+        "tags": ["Queries"],
+        "summary": "Average property values",
+        "description": "Returns the average of all values for a target property in the event collection.",
+        "operationId": "queryAverage",
+        "security": [
+          {
+            "ReadKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetPropertyQueryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "504": {
+            "$ref": "#/components/responses/QueryTimeout"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/queries/minimum": {
+      "post": {
+        "tags": ["Queries"],
+        "summary": "Minimum property value",
+        "description": "Returns the minimum value for a target property in the event collection.",
+        "operationId": "queryMinimum",
+        "security": [
+          {
+            "ReadKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetPropertyQueryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "504": {
+            "$ref": "#/components/responses/QueryTimeout"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/queries/maximum": {
+      "post": {
+        "tags": ["Queries"],
+        "summary": "Maximum property value",
+        "description": "Returns the maximum value for a target property in the event collection.",
+        "operationId": "queryMaximum",
+        "security": [
+          {
+            "ReadKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetPropertyQueryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "504": {
+            "$ref": "#/components/responses/QueryTimeout"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/queries/median": {
+      "post": {
+        "tags": ["Queries"],
+        "summary": "Median property value",
+        "description": "Returns the median value for a target property in the event collection.",
+        "operationId": "queryMedian",
+        "security": [
+          {
+            "ReadKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetPropertyQueryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "504": {
+            "$ref": "#/components/responses/QueryTimeout"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AuthorizationHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "API key passed in the Authorization header. Use the appropriate key type (Master, Write, Read) for the endpoint."
+      },
+      "ReadKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Read Key for querying and data analysis operations."
+      },
+      "WriteKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Write Key for event recording and data insertion."
+      },
+      "MasterKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Master Key for full administrative access including deletions."
+      }
+    },
+    "parameters": {
+      "ProjectId": {
+        "name": "projectId",
+        "in": "path",
+        "required": true,
+        "description": "The unique identifier for the Keen IO project.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "CollectionName": {
+        "name": "collectionName",
+        "in": "path",
+        "required": true,
+        "description": "The name of the event collection.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "EventCollection": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the event collection"
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "description": "Property type (e.g., string, num, datetime, bool, list)"
+            },
+            "description": "Map of property names to their types"
+          },
+          "url": {
+            "type": "string",
+            "description": "API URL for this collection"
+          }
+        }
+      },
+      "QueryRequest": {
+        "type": "object",
+        "required": ["event_collection", "timeframe"],
+        "properties": {
+          "event_collection": {
+            "type": "string",
+            "description": "The name of the event collection to query"
+          },
+          "timeframe": {
+            "type": "string",
+            "description": "The timeframe for the query (e.g., 'this_7_days', 'previous_month', or absolute range)"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "Timezone offset for relative timeframes (e.g., 'US/Eastern')"
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QueryFilter"
+            },
+            "description": "Filters to narrow down the events"
+          },
+          "group_by": {
+            "type": "string",
+            "description": "Property name to group results by"
+          },
+          "interval": {
+            "type": "string",
+            "description": "Time interval for grouping (e.g., 'hourly', 'daily', 'weekly', 'monthly')"
+          },
+          "include_metadata": {
+            "type": "boolean",
+            "description": "Whether to include execution metadata in the response"
+          }
+        }
+      },
+      "TargetPropertyQueryRequest": {
+        "type": "object",
+        "required": ["event_collection", "target_property", "timeframe"],
+        "properties": {
+          "event_collection": {
+            "type": "string",
+            "description": "The name of the event collection to query"
+          },
+          "target_property": {
+            "type": "string",
+            "description": "The property to perform the calculation on"
+          },
+          "timeframe": {
+            "type": "string",
+            "description": "The timeframe for the query"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "Timezone offset for relative timeframes"
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QueryFilter"
+            }
+          },
+          "group_by": {
+            "type": "string",
+            "description": "Property name to group results by"
+          },
+          "interval": {
+            "type": "string",
+            "description": "Time interval for grouping"
+          },
+          "include_metadata": {
+            "type": "boolean"
+          }
+        }
+      },
+      "QueryFilter": {
+        "type": "object",
+        "required": ["property_name", "operator", "property_value"],
+        "properties": {
+          "property_name": {
+            "type": "string",
+            "description": "The property to filter on"
+          },
+          "operator": {
+            "type": "string",
+            "enum": ["eq", "ne", "lt", "lte", "gt", "gte", "exists", "in", "contains", "not_contains", "within"],
+            "description": "The filter operator"
+          },
+          "property_value": {
+            "description": "The value to compare against"
+          }
+        }
+      },
+      "QueryResult": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "description": "The query result value (number, array of objects for grouped/interval queries)"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "execution_time": {
+                "type": "number",
+                "description": "Execution time in milliseconds"
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message"
+          },
+          "error_code": {
+            "type": "string",
+            "description": "Machine-readable error code"
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request - invalid parameters or malformed JSON",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized - invalid or missing API key",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Forbidden - insufficient permissions for this operation",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Not found - the specified resource does not exist",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "RateLimitExceeded": {
+        "description": "Rate limit exceeded - too many requests",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Internal server error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "QueryTimeout": {
+        "description": "Query timeout - the query took longer than the 5 minute limit",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  }
+}
