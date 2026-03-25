@@ -1,0 +1,847 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AbuseIPDB API",
+    "description": "The AbuseIPDB API allows you to check and report IP addresses associated with malicious activity such as spamming, hacking, and DDoS attacks. It provides a community-driven database of reported abusive IP addresses.",
+    "version": "2.0.0",
+    "contact": {
+      "name": "AbuseIPDB",
+      "url": "https://www.abuseipdb.com"
+    },
+    "termsOfService": "https://www.abuseipdb.com/legal"
+  },
+  "servers": [
+    {
+      "url": "https://api.abuseipdb.com/api/v2",
+      "description": "AbuseIPDB API v2"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "paths": {
+    "/check": {
+      "get": {
+        "operationId": "checkIp",
+        "summary": "Check an IP address",
+        "description": "Checks an IP address against the AbuseIPDB database and returns abuse confidence score, reports, and other details.",
+        "parameters": [
+          {
+            "name": "ipAddress",
+            "in": "query",
+            "required": true,
+            "description": "IPv4 or IPv6 address to check.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "maxAgeInDays",
+            "in": "query",
+            "required": false,
+            "description": "Maximum age in days of reports to consider (1-365). Default is 30.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365,
+              "default": 30
+            }
+          },
+          {
+            "name": "verbose",
+            "in": "query",
+            "required": false,
+            "description": "Include verbose report data including reporter details.",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with IP check data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CheckResult"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - invalid parameters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["IP Lookup"]
+      }
+    },
+    "/reports": {
+      "get": {
+        "operationId": "getReports",
+        "summary": "Get reports for an IP address",
+        "description": "Returns paginated reports filed against an IP address.",
+        "parameters": [
+          {
+            "name": "ipAddress",
+            "in": "query",
+            "required": true,
+            "description": "IPv4 or IPv6 address to get reports for.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "maxAgeInDays",
+            "in": "query",
+            "required": false,
+            "description": "Maximum age in days of reports (1-365). Default is 30.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365,
+              "default": 30
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number for pagination. Default is 1.",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "perPage",
+            "in": "query",
+            "required": false,
+            "description": "Results per page (1-100). Default is 25.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with paginated reports.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "description": "Total number of reports."
+                        },
+                        "page": {
+                          "type": "integer",
+                          "description": "Current page number."
+                        },
+                        "count": {
+                          "type": "integer",
+                          "description": "Number of reports on current page."
+                        },
+                        "perPage": {
+                          "type": "integer",
+                          "description": "Results per page."
+                        },
+                        "lastPage": {
+                          "type": "integer",
+                          "description": "Last page number."
+                        },
+                        "nextPageUrl": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "URL for next page."
+                        },
+                        "previousPageUrl": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "URL for previous page."
+                        },
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Report"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed."
+          },
+          "422": {
+            "description": "Unprocessable entity."
+          },
+          "429": {
+            "description": "Rate limit exceeded."
+          }
+        },
+        "tags": ["IP Lookup"]
+      }
+    },
+    "/blacklist": {
+      "get": {
+        "operationId": "getBlacklist",
+        "summary": "Get blacklisted IP addresses",
+        "description": "Returns a list of the most reported IP addresses with high abuse confidence scores.",
+        "parameters": [
+          {
+            "name": "confidenceMinimum",
+            "in": "query",
+            "required": false,
+            "description": "Minimum abuse confidence score (25-100). Default is 100. Subscriber feature.",
+            "schema": {
+              "type": "integer",
+              "minimum": 25,
+              "maximum": 100,
+              "default": 100
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum number of results. Default is 10000.",
+            "schema": {
+              "type": "integer",
+              "default": 10000
+            }
+          },
+          {
+            "name": "plaintext",
+            "in": "query",
+            "required": false,
+            "description": "When set, returns results in plaintext format (one IP per line).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "onlyCountries",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated list of ISO 3166 alpha-2 country codes to include. Subscriber feature.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exceptCountries",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated list of ISO 3166 alpha-2 country codes to exclude. Subscriber feature.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ipVersion",
+            "in": "query",
+            "required": false,
+            "description": "Filter by IP version: 4 or 6.",
+            "schema": {
+              "type": "integer",
+              "enum": [4, 6]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with blacklisted IPs.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "generatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BlacklistEntry"
+                      }
+                    }
+                  }
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "description": "One IP address per line."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed."
+          },
+          "402": {
+            "description": "Payment required - feature not available for your tier."
+          },
+          "429": {
+            "description": "Rate limit exceeded."
+          }
+        },
+        "tags": ["Blacklist"]
+      }
+    },
+    "/report": {
+      "post": {
+        "operationId": "reportIp",
+        "summary": "Report an abusive IP address",
+        "description": "Files an abuse report against an IP address with specified categories and optional comments.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["ip", "categories"],
+                "properties": {
+                  "ip": {
+                    "type": "string",
+                    "description": "IPv4 or IPv6 address to report."
+                  },
+                  "categories": {
+                    "type": "string",
+                    "description": "Comma-separated list of abuse category IDs (e.g., '18,22'). Maximum 30 categories."
+                  },
+                  "comment": {
+                    "type": "string",
+                    "description": "Describe the type of malicious activity. Strip any personally identifiable information.",
+                    "maxLength": 1024
+                  },
+                  "timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "ISO 8601 timestamp of the abuse event. Defaults to current time."
+                  }
+                }
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["ip", "categories"],
+                "properties": {
+                  "ip": {
+                    "type": "string",
+                    "description": "IPv4 or IPv6 address to report."
+                  },
+                  "categories": {
+                    "type": "string",
+                    "description": "Comma-separated list of abuse category IDs."
+                  },
+                  "comment": {
+                    "type": "string",
+                    "description": "Describe the type of malicious activity.",
+                    "maxLength": 1024
+                  },
+                  "timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "ISO 8601 timestamp of the abuse event."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Report filed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "ipAddress": {
+                          "type": "string"
+                        },
+                        "abuseConfidenceScore": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed."
+          },
+          "422": {
+            "description": "Unprocessable entity - invalid parameters."
+          },
+          "429": {
+            "description": "Rate limit exceeded."
+          }
+        },
+        "tags": ["Reporting"]
+      }
+    },
+    "/check-block": {
+      "get": {
+        "operationId": "checkBlock",
+        "summary": "Check a CIDR network block",
+        "description": "Checks an entire subnet against the AbuseIPDB database. Returns network details and reported IPs within the block.",
+        "parameters": [
+          {
+            "name": "network",
+            "in": "query",
+            "required": true,
+            "description": "CIDR notation subnet (e.g., '207.126.144.0/20').",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "maxAgeInDays",
+            "in": "query",
+            "required": false,
+            "description": "Maximum age in days of reports (1-365). Default is 30.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365,
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with network block check data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CheckBlockResult"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed."
+          },
+          "402": {
+            "description": "Payment required - CIDR range exceeds tier limit."
+          },
+          "422": {
+            "description": "Unprocessable entity - invalid parameters."
+          },
+          "429": {
+            "description": "Rate limit exceeded."
+          }
+        },
+        "tags": ["IP Lookup"]
+      }
+    },
+    "/bulk-report": {
+      "post": {
+        "operationId": "bulkReport",
+        "summary": "Bulk report abusive IP addresses via CSV",
+        "description": "Submits a CSV file containing multiple IP abuse reports at once.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["csv"],
+                "properties": {
+                  "csv": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "CSV file containing IP abuse reports."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bulk report processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "savedReports": {
+                          "type": "integer",
+                          "description": "Number of reports successfully saved."
+                        },
+                        "invalidReports": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "error": {
+                                "type": "string"
+                              },
+                              "input": {
+                                "type": "string"
+                              },
+                              "rowNumber": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed."
+          },
+          "422": {
+            "description": "Unprocessable entity."
+          },
+          "429": {
+            "description": "Rate limit exceeded."
+          }
+        },
+        "tags": ["Reporting"]
+      }
+    },
+    "/clear-address": {
+      "delete": {
+        "operationId": "clearAddress",
+        "summary": "Clear reports for an IP address",
+        "description": "Deletes your own reports for a specific IP address. Cannot delete other users' reports.",
+        "parameters": [
+          {
+            "name": "ipAddress",
+            "in": "query",
+            "required": true,
+            "description": "IPv4 or IPv6 address to clear reports for.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reports cleared successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "numReportsDeleted": {
+                          "type": "integer",
+                          "description": "Number of reports deleted."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed."
+          },
+          "422": {
+            "description": "Unprocessable entity."
+          },
+          "429": {
+            "description": "Rate limit exceeded."
+          }
+        },
+        "tags": ["Reporting"]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Key",
+        "description": "AbuseIPDB API key passed via the 'Key' header."
+      }
+    },
+    "schemas": {
+      "CheckResult": {
+        "type": "object",
+        "properties": {
+          "ipAddress": {
+            "type": "string",
+            "description": "The checked IP address."
+          },
+          "isPublic": {
+            "type": "boolean",
+            "description": "Whether the IP is a public address."
+          },
+          "ipVersion": {
+            "type": "integer",
+            "description": "IP version (4 or 6)."
+          },
+          "isWhitelisted": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Whether the IP is whitelisted."
+          },
+          "abuseConfidenceScore": {
+            "type": "integer",
+            "description": "Abuse confidence score (0-100)."
+          },
+          "countryCode": {
+            "type": "string",
+            "description": "ISO 3166 alpha-2 country code."
+          },
+          "countryName": {
+            "type": "string",
+            "description": "Country name."
+          },
+          "usageType": {
+            "type": "string",
+            "description": "Type of usage (e.g., 'Data Center/Web Hosting/Transit')."
+          },
+          "isp": {
+            "type": "string",
+            "description": "Internet Service Provider name."
+          },
+          "domain": {
+            "type": "string",
+            "description": "Domain associated with the IP."
+          },
+          "hostnames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Hostnames associated with the IP."
+          },
+          "isTor": {
+            "type": "boolean",
+            "description": "Whether the IP is a known Tor exit node."
+          },
+          "totalReports": {
+            "type": "integer",
+            "description": "Total number of reports."
+          },
+          "numDistinctUsers": {
+            "type": "integer",
+            "description": "Number of distinct users who reported this IP."
+          },
+          "lastReportedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Timestamp of the most recent report."
+          },
+          "reports": {
+            "type": "array",
+            "description": "Array of recent reports (when verbose flag is used).",
+            "items": {
+              "$ref": "#/components/schemas/Report"
+            }
+          }
+        }
+      },
+      "Report": {
+        "type": "object",
+        "properties": {
+          "reportedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "reporterId": {
+            "type": "integer"
+          },
+          "reporterCountryCode": {
+            "type": "string"
+          },
+          "reporterCountryName": {
+            "type": "string"
+          }
+        }
+      },
+      "BlacklistEntry": {
+        "type": "object",
+        "properties": {
+          "ipAddress": {
+            "type": "string"
+          },
+          "abuseConfidenceScore": {
+            "type": "integer"
+          },
+          "lastReportedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CheckBlockResult": {
+        "type": "object",
+        "properties": {
+          "networkAddress": {
+            "type": "string",
+            "description": "Network address."
+          },
+          "netmask": {
+            "type": "string",
+            "description": "Subnet mask."
+          },
+          "minAddress": {
+            "type": "string",
+            "description": "First address in the range."
+          },
+          "maxAddress": {
+            "type": "string",
+            "description": "Last address in the range."
+          },
+          "numPossibleHosts": {
+            "type": "integer",
+            "description": "Number of possible hosts in the block."
+          },
+          "addressSpaceDesc": {
+            "type": "string",
+            "description": "Description of the address space."
+          },
+          "reportedAddress": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ipAddress": {
+                  "type": "string"
+                },
+                "numReports": {
+                  "type": "integer"
+                },
+                "mostRecentReport": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "abuseConfidenceScore": {
+                  "type": "integer"
+                },
+                "countryCode": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "detail": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "integer"
+                }
+              },
+              "required": ["detail", "status"]
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "IP Lookup",
+      "description": "Check IP addresses and network blocks for abuse reports."
+    },
+    {
+      "name": "Blacklist",
+      "description": "Retrieve blacklisted IP addresses."
+    },
+    {
+      "name": "Reporting",
+      "description": "Report and manage abuse reports."
+    }
+  ]
+}
