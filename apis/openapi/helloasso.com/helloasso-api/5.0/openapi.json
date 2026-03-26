@@ -2,9 +2,10 @@
   "openapi": "3.0.3",
   "info": {
     "title": "HelloAsso API",
-    "description": "You can find a complete HelloAsso API guide by following this [link](https://dev.helloasso.com/).\r\n\r\nA python wrapper is also available by following this [link](https://github.com/HelloAsso/HaApiV5).\r\n\r\nIn order to access any endpoint you will need to authenticate using **OAuth 2.0** authentication server : `https://api.helloasso.com/oauth2`\r\n\r\nWhen browsing the Swagger documentation :\r\n- The easiest way to use it is to use the Swagger Authorize feature.  \r\n- Or you can override the Input `Bearer JWT` in the Authorization Header field. You can easily generate a JWT using Postman's Request Token feature\r\n\r\nThere are two levels of authorization :\r\n  - Client privileges : this defines the endpoints the client has access to.\r\n  - User Roles : being authorized by an organization grants rights on this organization.\r\n\r\n<details><summary>Connecting to the API with OAuth 2.0</summary>\r\n\r\n**In order to use the API, you must authenticate with the OAuth 2.0 server using a private API Client.**\r\n\r\n*What is OAuth 2.0 ? : https://tools.ietf.org/html/rfc6749*\r\n\r\n* If you are an **organization** (i.e. association), you can obtain a client (Id and Secret) in your administration area. You will be granted the following privileges : AccessPublicData, AccessTransactions and Checkout.\r\n* If you are a **partner**, please contact HelloAsso at partenariats@helloasso.org in order to obtain a client.\r\n\r\nIn any case, please keep the client (id and secret) to yourself.\r\n\r\nOn HelloAsso, we support the following grants :\r\n* Client Credentials\r\n  `grant_type=client_credentials`\r\n  If used by an organization, the rights are limited to the current organization to which the client has been issued.\r\n  If used by a partner, it does not grant you any rights (User Roles) on resource owned by an organization, you can only access routes without any User Role required.\r\n  See [more information below](#DescClientCredentials).\r\n* Refresh\r\n  `grant_type=refresh_token`\r\n  See [more information below](#DescRefreshToken).\r\n* Authorization Code\r\n  `grant_type=authorization_code`\r\n  Only for partners : it permits you to access private resources of organizations, by using the [authorization flow](#DescAuthorizeFlow).\r\n* Disconnect (custom endpoint)\r\n  By calling https://api.helloasso.com/oauth2/disconnect, with a valid Bearer token in the Authorization Header, you will disconnect the user, and revoke its tokens. See [more information below](#DescDisconnect).\r\n\r\nWhen authenticating, you will receive an `access_token` which is short-lived (30 minutes), and a `refresh_token`, that will permit you to obtain a new `access_token` for one month. When you have an `access_token` and a `refresh_token`, **you MUST obtain a new `access_token` using the `refresh_token` issued to you** (with the `grant_type=refresh_token`), **and MUST NOT obtain a new `access_token` by using the client**. When refreshing, you will obtain a new `access_token` valid for 30 minutes, and a new `refresh_token` valid for another month. If you continue to use each `refresh_token` that you receive, you could stay authenticated forever, without requiring to enter again your client secret or prompting the user for its login and password.\r\n\r\n<details><summary id=\"DescClientCredentials\">Client Credentials</summary>\r\n\r\nThis is your first route to obtain an `access_token` to communicate with the API.\r\n\r\nRoute : **POST** `https://api.helloasso.com/oauth2/token`\r\n\r\n<details><summary>Headers</summary>\r\n\r\nKey          | Value\r\n-------------|------------------------------------\r\nContent-Type | *application/x-www-form-urlencoded*\r\n</details>\r\n<details><summary>Body</summary>\r\n\r\nKey           | Information          | Required/Optional\r\n--------------|----------------------|------------------\r\nclient_id     | Your Client Id       | **Required**\r\nclient_secret | Your Client Secret   | **Required**\r\ngrant_type    | *client_credentials* | **Required**\r\n</details>\r\n<details><summary>Result (JSON)</summary>\r\n\r\nKey                | Information\r\n-------------------|-------------------------------------------------------------------------\r\naccess_token       | The JWT token to use in future requests\r\nrefresh_token      | Token used to refresh the token and get a new JWT token after expiration\r\ntoken_type         | Token Type : always \"*bearer*\"\r\nexpires_in         | The lifetime in seconds of the access token\r\n</details>\r\n<details><summary>CURL Example</summary>\r\n\r\n```\r\ncurl -X POST \\\r\n  https://api.helloasso.com/oauth2/token \\\r\n  -H 'content-type: application/x-www-form-urlencoded' \\\r\n  -d 'grant_type=client_credentials&client_id=9fdc22226bf24ff99b875f4a7c503715&client_secret=AvUYelYH1aSZZ3QNBiZOybmBlZTpUcNSonsufB5txuw='\r\n```\r\n</details>\r\n</details>\r\n<details><summary id=\"DescRefreshToken\">Refresh Token</summary>\r\n\r\nYour route to refresh indefinitely your `access_token` and obtain a new one.\r\n\r\nRoute : **POST** `https://api.helloasso.com/oauth2/token`\r\n\r\n<details><summary>Headers</summary>\r\n\r\nKey          | Value\r\n-------------|------------------------------------\r\nContent-Type | *application/x-www-form-urlencoded*\r\n</details>\r\n<details><summary>Body</summary>\r\n\r\nKey           | Information        | Required/Optional\r\n--------------|--------------------|------------------\r\ngrant_type    | *refresh_token*    | **Required**\r\nrefresh_token | Your Refresh Token | **Required**\r\n</details>\r\n<details><summary>Result (JSON)</summary>\r\n\r\nKey                | Information\r\n-------------------|-------------------------------------------------------------------------\r\naccess_token       | The JWT token to use in future requests\r\nrefresh_token      | Token used to refresh the token and get a new JWT token after expiration\r\ntoken_type         | Token Type : always \"*bearer*\"\r\nexpires_in         | The lifetime in seconds of the access token\r\n</details>\r\n<details><summary>CURL Example</summary>\r\n\r\n```\r\ncurl -X POST \\\r\n  https://api.helloasso.com/oauth2/token \\\r\n  -H 'content-type: application/x-www-form-urlencoded' \\\r\n  -d 'grant_type=refresh_token&client_id=9fdc22226bf24ff99b875f4a7c503715&refresh_token=REFRESH_TOKEN'\r\n```\r\n</details>\r\n</details>\r\n<details><summary id=\"DescAuthorizeFlow\">Authorize flow</summary>\r\n\r\nThe authorize flow will permit partner's applications to access protected resources (resources owned by an organization). Typically, you must display a button to your user to ask him to login on HelloAsso, and authorize you to access his resources.\r\n\r\nButton example :\r\n\r\n![](/img/ImgHaAuthorizeButton.png)\r\n\r\n<details><summary>Button Code (HTML & CSS)</summary>\r\n```\r\n<button class=\"HaAuthorizeButton\">\r\n  <img src=\"/img/logo-ha.svg\" alt=\"\" class=\"HaAuthorizeButtonLogo\">\r\n  <span class=\"HaAuthorizeButtonTitle\">Connecter à HelloAsso</span>\r\n</button>\r\n\r\n<style>\r\n.HaAuthorizeButton {\r\n  align-items: center;\r\n  -webkit-box-pack: center;\r\n  -ms-flex-pack: center;\r\n  background-color: #FFFFFF;\r\n  border: 0.0625rem solid #49D38A;\r\n  border-radius: 0.125rem;\r\n  display: -webkit-box;\r\n  display: -ms-flexbox;\r\n  display: flex;\r\n  padding: 0;\r\n}\r\n.HaAuthorizeButton:disabled {\r\n  background-color: #E9E9F0;\r\n  border-color: transparent;\r\n  cursor: not-allowed;\r\n}\r\n.HaAuthorizeButton:not(:disabled):focus {\r\n  box-shadow: 0 0 0 0.25rem rgba(73, 211, 138, 0.25);\r\n  -webkit-box-shadow: 0 0 0 0.25rem rgba(73, 211, 138, 0.25);\r\n}\r\n.HaAuthorizeButtonLogo {\r\n  padding: 0 0.8rem;\r\n  width: 2.25rem;\r\n}\r\n.HaAuthorizeButtonTitle {\r\n  background-color: #49D38A;\r\n  color: #FFFFFF;\r\n  font-size: 1rem;\r\n  font-weight: 700;\r\n  padding: 0.78125rem 1.5rem;\r\n}\r\n.HaAuthorizeButton:disabled .HaAuthorizeButtonTitle {\r\n  background-color: #E9E9F0;\r\n  color: #9A9DA8;\r\n}\r\n.HaAuthorizeButton:not(:disabled):hover .HaAuthorizeButtonTitle,\r\n.HaAuthorizeButton:not(:disabled):focus .HaAuthorizeButtonTitle {\r\n  background-color: #30c677;\r\n}\r\n</style>\r\n```\r\n</details>\r\n\r\nWhen the user clicks on the button or link, you must open a popup window and direct him to this url : https://auth.helloasso.com/authorize with all the appropriate query parameters (see below).\r\n\r\n<details><summary>Authorization Request</summary>\r\n\r\nRoute to display : **GET** `https://auth.helloasso.com/authorize`\r\n\r\n<details><summary>Parameters</summary>\r\n\r\nKey                    | Information                                                      | Required/Optional\r\n-----------------------|------------------------------------------------------------------|------------------\r\nclient_id              | Your Client Id                                                   | **Required**\r\nredirect_uri           | The redirect uri that will be used when the authorize is complete (success or error). For security considerations, the domain of the redirect uri must be the same configured on your client in our database. The redirect uri must use the secure protocol `https`. You can modify this domain with the following endpoint https://api.helloasso.com/v5/partners/me/api-clients (see section \"Partners Managment\" bellow) | **Required**\r\ncode_challenge         | The PKCE code challenge. See section [PKCE](#PKCE) below.        | **Required**\r\ncode_challenge_method  | The PKCE code challenge method, must be \"*S256*\"                 | **Required**\r\nstate                  | A value that will be sent back to you, to maintain state between the request and callback. The parameter should be used for preventing cross-site request forgery : **the state sent back must match the one you sent**. Must be a string, but you can use this to encode any data you want. The state should be less than 500 characters. | Optional\r\n\r\nWe recommend you to open the window with at least an height of 650px and a width of 500px.\r\n\r\n</details>\r\n<details><summary>Request Example</summary>\r\n\r\n```\r\nhttps://auth.helloasso.com/authorize\r\n  ?client_id=9fdc22226bf24ff99b875f4a7c503715\r\n  &redirect_uri=YOUR_REDIRECT_URI\r\n  &code_challenge=YOUR_CODE_CHALLENGE\r\n  &code_challenge_method=S256\r\n  &state=abc\r\n```\r\n</details>\r\n</details>\r\n\r\nThis will display the login window and then the authorize window to the user : \r\n\r\n<img alt=\"\" src=\"/img/ImgHaLoginWindow.png\" style=\"height:400px\"><img alt=\"\" src=\"/img/ImgHaAuthorizeWindow.png\" style=\"height:400px;margin-left:20px\">\r\n\r\nThe user has an option to sign up and register its organization, if he does not have one already.\r\nWhen the user completes the process, the window will redirect to the given `redirect_uri`, with the `authorization_code` in parameter (or with an error code if an error occurred).\r\n\r\n<details><summary>Redirect response</summary>\r\n\r\nIf success :\r\nKey   | Information\r\n------|----------------------------------------------------------------------------------------------\r\ncode  | The authorization code generated by the authorization server. Has a lifetime of five minutes.\r\nstate | If you supplied a state in the request, will be sent back to you\r\n\r\nIf error :\r\nKey               | Information\r\n------------------|-----------------------------------------------------------------\r\nerror             | A single error code.\r\nerror_description | Optional : a text providing additional information\r\nstate             | If you supplied a state in the request, will be sent back to you\r\nSee more info here on error codes : https://tools.ietf.org/html/rfc6749#section-4.1.2.1\r\n</details>\r\n\r\nYou can then exchange the code for an `access_token` and a `refresh_token`.\r\n\r\n<details><summary>Access Token Request</summary>\r\n\r\nRoute : **POST** `https://api.helloasso.com/oauth2/token`\r\n\r\n<details><summary>Headers</summary>\r\n\r\nKey          | Value\r\n-------------|------------------------------------\r\nContent-Type | *application/x-www-form-urlencoded*\r\n</details>\r\n<details><summary>Body</summary>\r\n\r\nKey           | Information                                                       | Required/Optional\r\n--------------|-------------------------------------------------------------------|------------------\r\nclient_id     | Your Client Id                                                    | **Required**\r\nclient_secret | Your Client Secret                                                | **Required**\r\ngrant_type    | *authorization_code*                                              | **Required**\r\ncode          | The authorization code received (when redirecting to your domain) | **Required**\r\nredirect_uri  | The same redirect uri used when displaying the authorize window   | **Required**\r\ncode_verifier | The PKCE code verifier                                            | **Required**\r\n</details>\r\n<details><summary>Result (JSON)</summary>\r\n\r\nKey                | Information\r\n-------------------|-------------------------------------------------------------------------\r\naccess_token       | The JWT token to use in future requests\r\nrefresh_token      | Token used to refresh the token and get a new JWT token after expiration\r\ntoken_type         | Token Type : always \"*bearer*\"\r\nexpires_in         | The lifetime in seconds of the access token\r\norganization_slug  | The slug of the association which authorized the access\r\n</details>\r\n<details><summary>CURL Example</summary>\r\n\r\n```\r\ncurl -X POST \\\r\n  https://api.helloasso.com/oauth2/token \\\r\n  -H 'content-type: application/x-www-form-urlencoded' \\\r\n  -d 'grant_type=authorization_code&client_id=9fdc22226bf24ff99b875f4a7c503715&client_secret=AvUYelYH1aSZZ3QNBiZOybmBlZTpUcNSonsufB5txuw=' \\\r\n  -d 'code=AUTHORIZATION_CODE_RECEIVED&redirect_uri=YOUR_REDIRECT_URI&code_verifier=YOUR_CODE_VERIFIER'\r\n```\r\n</details>\r\n</details>\r\n<details><summary id=\"PKCE\">PKCE</summary>\r\n\r\nPKCE (Proof Key for Code Exchange) is a security measure for the authorization grant.\r\n\r\nThe specification can be found here : https://tools.ietf.org/html/rfc7636\r\n\r\nWe require you to use the challenge_method S256.\r\n\r\nBasically, you must generate a random Code Verifier of 43 to 128 characters, from the following characters : `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~`. You then create the Code Challenge : you hash the code verifier with the SHA-256 hash function, encode it to base64, and then url encode it.\r\n\r\nYou will send the code challenge in the initial request to display the authorize window. HelloAsso will keep it stored with your request. When you will request a token in exchange for your authorization code, you will send the code verifier. HelloAsso will then validate it (length and characters used) and encode it the same way you did it (SHA-256, base 64 & uri encode) and compare the result with the code challenge stored during the authorize request. If it does not match, you will receive the error \"invalid_grant\".\r\n\r\nIf you want to test your code challenge generator, you can do so here with this online tool : https://tonyxu-io.github.io/pkce-generator/\r\n</details>\r\n</details>\r\n<details><summary id=\"DescDisconnect\">Disconnect</summary>\r\n\r\nDisconnect the user, and revoke its tokens. Returns 200 if disconnect worked.\r\n\r\nRoute : **GET** `https://api.helloasso.com/oauth2/disconnect`\r\n\r\n<details><summary>Headers</summary>\r\n\r\nKey           | Value\r\n--------------|----------------------------------------------------------\r\nAuthorization | *Bearer JWT* (replace JWT with your `access_token` value)\r\n</details>\r\n<details><summary>CURL Example</summary>\r\n\r\n```\r\ncurl -X GET \\\r\n  https://api.helloasso.com/oauth2/disconnect \\\r\n  -H 'Authorization: Bearer JWT'\r\n```\r\n</details>\r\n</details>\r\n</details>\r\n<details><summary id=\"DescNotifications\">Handling the notifications system</summary>\r\n\r\nYou will receive a notification when one of the following events occur:\r\n- A campaign is created\r\n- An order is made (including free orders where there are no payments)\r\n- A payment is made (whether it is a single payment or a payment by installment)\r\n- A payment is refunded\r\n- A payment is contested by the payer with his bank\r\n- A payment by installment is refused\r\n- An organization is renamed and his slug change\r\n\r\n<details><summary>Define your notification URL</summary>\r\n\r\n* If you are an **organization** (i.e. association), you can define and manage your notification URL in your administration area.\r\n* If you are a **partner**, You can modify this notification URL with the following endpoint https://api.helloasso.com/v5/partners/me/api-notifications (see section \"Partners Managment\" bellow). \r\n\r\nIn any case, your callback URL **must use the secure protocol `https` and must support the `POST` verb.**\r\n\r\nThen, in your code, you can handle and listen for information coming from the defined URL.\r\n</details>\r\n\r\n<details><summary>Get the notification content</summary>\r\n\r\nThe notification can have 4 different types : **Order**, **Payment**, **Form** (for campaign creation) or **Organization** (when the organization slug changed).\r\n\r\nWhen a new content is available, we will call the notification URL callback defined before with the corresponding data in the body.\r\n\r\n<details><summary>Order Result (JSON)</summary>\r\nKey               | Information\r\n------------------|-------------------------------------------------------------------------\r\neventType         | Order\r\ndata              | The order data. See [more information on the order model below](#model-HelloAsso.Api.V5.Common.Orders.OrderDetail)\r\n</details>\r\n<details><summary id=\"PaymentResultJson\">Payment Result (JSON)</summary>\r\nKey               | Information\r\n------------------|-------------------------------------------------------------------------\r\neventType         | Payment\r\ndata              | The payment data. See [more information on the payment model below](#model-HelloAsso.Api.V5.Common.Orders.PaymentDetail)\r\n</details>\r\n<details><summary>Form Result (JSON)</summary>\r\nKey               | Information\r\n------------------|-------------------------------------------------------------------------\r\neventType         | Form\r\ndata              | The form data. See [more information on the form model below](#model-HelloAsso.Api.V5.Common.Models.Forms.FormPublicModel)\r\n</details>\r\n<details><summary>Organization Result (JSON)</summary>\r\nKey               | Information\r\n------------------|-------------------------------------------------------------------------\r\neventType         | Organization\r\ndata              | { \"data\": { \"old_slug_organization\": \"ctb\", \"new_slug_organization\": \"club tennis bordeaux\"  }, \"eventType\": \"Organization\"}\r\n</details>\r\n</details>\r\n</details>\r\n</details>\r\n<details><summary id=\"DescCheckout\">Checkout Form</summary>\r\n\r\nThe Checkout is a type of form, specifically designed to allow contributors to make payments prefilled by an authorized partner or an organization.\r\nThe partner/organization creates a checkout intent (with all the contributor information that he may have, and specified payment terms ; see the following API route *POST checkout-intents* of the [Checkout intents management](#Checkout%20intents%20management) section), and receives in response a url (which is valid for 15 minutes). The contributor follows the url, and then validates the form and pays. The contributor is then redirected to the page of your choosing, with a result parameter (error, success etc).\r\nThe initiator receives a notification of each Order and Payment authorized (if you have configured them, see [Handling the notifications system](#DescNotifications). You can also verify your checkout intent result and receive the created order. See the route *GET checkout-intents/{checkoutIntentId}* of the [Checkout intents management](#operations-tag-Checkout%20intents%20management) section.\r\n\r\nYou can find a more detailed description on how to integrate by following this [link](https://dev.helloasso.com/docs/int%C3%A9grer-le-paiement-sur-votre-site).\r\n\r\nIf you want try checkout payments please use our test environnement https://www.helloasso-sandbox.com/ to create an organization.\r\nYou can then retrieve your API client in the back office and make calls on https://api.helloasso-sandbox.com/v5.\r\nVirtual credit cards are avaible by following this [link](https://docs.sips.Worldline-solutions.com/fr/cartes-de-test.html).\r\n\r\n</details>",
+    "description": "You can find a complete HelloAsso API guide by following this [link](https://dev.helloasso.com/).\r\n\r\nA python wrapper is also available by following this [link](https://github.com/HelloAsso/HaApiV5).\r\n\r\nIn order to access any endpoint you will need to authenticate using **OAuth 2.0** authentication server : `https://api.helloasso.com/oauth2`\r\n\r\nWhen browsing the Swagger documentation :\r\n- The easiest way to use it is to use the Swagger Authorize feature.  \r\n- Or you can override the Input `Bearer JWT` in the Authorization Header field. You can easily generate a JWT using Postman's Request Token feature\r\n\r\nThere are two levels of authorization :\r\n  - Client privileges : this defines the endpoints the client has access to.\r\n  - User Roles : being authorized by an organization grants rights on this organization.\r\n\r\n<details><summary>Connecting to the API with OAuth 2.0</summary>\r\n\r\n**In order to use the API, you must authenticate with the OAuth 2.0 server using a private API Client.**\r\n\r\n*What is OAuth 2.0 ? : https://tools.ietf.org/html/rfc6749*\r\n\r\n* If you are an **organization** (i.e. association), you can obtain a client (Id and Secret) in your administration area. You will be granted the following privileges : AccessPublicData, AccessTransactions and Checkout.\r\n* If you are a **partner**, please contact HelloAsso at partenariats@helloasso.org in order to obtain a client.\r\n\r\nIn any case, please keep the client (id and secret) to yourself.\r\n\r\nOn HelloAsso, we support the following grants :\r\n* Client Credentials\r\n  `grant_type=client_credentials`\r\n  If used by an organization, the rights are limited to the current organization to which the client has been issued.\r\n  If used by a partner, it does not grant you any rights (User Roles) on resource owned by an organization, you can only access routes without any User Role required.\r\n  See [more information below](#DescClientCredentials).\r\n* Refresh\r\n  `grant_type=refresh_token`\r\n  See [more information below](#DescRefreshToken).\r\n* Authorization Code\r\n  `grant_type=authorization_code`\r\n  Only for partners : it permits you to access private resources of organizations, by using the [authorization flow](#DescAuthorizeFlow).\r\n* Disconnect (custom endpoint)\r\n  By calling https://api.helloasso.com/oauth2/disconnect, with a valid Bearer token in the Authorization Header, you will disconnect the user, and revoke its tokens. See [more information below](#DescDisconnect).\r\n\r\nWhen authenticating, you will receive an `access_token` which is short-lived (30 minutes), and a `refresh_token`, that will permit you to obtain a new `access_token` for one month. When you have an `access_token` and a `refresh_token`, **you MUST obtain a new `access_token` using the `refresh_token` issued to you** (with the `grant_type=refresh_token`), **and MUST NOT obtain a new `access_token` by using the client**. When refreshing, you will obtain a new `access_token` valid for 30 minutes, and a new `refresh_token` valid for another month. If you continue to use each `refresh_token` that you receive, you could stay authenticated forever, without requiring to enter again your client secret or prompting the user for its login and password.\r\n\r\n<details><summary id=\"DescClientCredentials\">Client Credentials</summary>\r\n\r\nThis is your first route to obtain an `access_token` to communicate with the API.\r\n\r\nRoute : **POST** `https://api.helloasso.com/oauth2/token`\r\n\r\n<details><summary>Headers</summary>\r\n\r\nKey          | Value\r\n-------------|------------------------------------\r\nContent-Type | *application/x-www-form-urlencoded*\r\n</details>\r\n<details><summary>Body</summary>\r\n\r\nKey           | Information          | Required/Optional\r\n--------------|----------------------|------------------\r\nclient_id     | Your Client Id       | **Required**\r\nclient_secret | Your Client Secret   | **Required**\r\ngrant_type    | *client_credentials* | **Required**\r\n</details>\r\n<details><summary>Result (JSON)</summary>\r\n\r\nKey                | Information\r\n-------------------|-------------------------------------------------------------------------\r\naccess_token       | The JWT token to use in future requests\r\nrefresh_token      | Token used to refresh the token and get a new JWT token after expiration\r\ntoken_type         | Token Type : always \"*bearer*\"\r\nexpires_in         | The lifetime in seconds of the access token\r\n</details>\r\n<details><summary>CURL Example</summary>\r\n\r\n```\r\ncurl -X POST \\\r\n  https://api.helloasso.com/oauth2/token \\\r\n  -H 'content-type: application/x-www-form-urlencoded' \\\r\n  -d 'grant_type=client_credentials&client_id=9fdc22226bf24ff99b875f4a7c503715&client_secret=AvUYelYH1aSZZ3QNBiZOybmBlZTpUcNSonsufB5txuw='\r\n```\r\n</details>\r\n</details>\r\n<details><summary id=\"DescRefreshToken\">Refresh Token</summary>\r\n\r\nYour route to refresh indefinitely your `access_token` and obtain a new one.\r\n\r\nRoute : **POST** `https://api.helloasso.com/oauth2/token`\r\n\r\n<details><summary>Headers</summary>\r\n\r\nKey          | Value\r\n-------------|------------------------------------\r\nContent-Type | *application/x-www-form-urlencoded*\r\n</details>\r\n<details><summary>Body</summary>\r\n\r\nKey           | Information        | Required/Optional\r\n--------------|--------------------|------------------\r\ngrant_type    | *refresh_token*    | **Required**\r\nrefresh_token | Your Refresh Token | **Required**\r\n</details>\r\n<details><summary>Result (JSON)</summary>\r\n\r\nKey                | Information\r\n-------------------|-------------------------------------------------------------------------\r\naccess_token       | The JWT token to use in future requests\r\nrefresh_token      | Token used to refresh the token and get a new JWT token after expiration\r\ntoken_type         | Token Type : always \"*bearer*\"\r\nexpires_in         | The lifetime in seconds of the access token\r\n</details>\r\n<details><summary>CURL Example</summary>\r\n\r\n```\r\ncurl -X POST \\\r\n  https://api.helloasso.com/oauth2/token \\\r\n  -H 'content-type: application/x-www-form-urlencoded' \\\r\n  -d 'grant_type=refresh_token&client_id=9fdc22226bf24ff99b875f4a7c503715&refresh_token=REFRESH_TOKEN'\r\n```\r\n</details>\r\n</details>\r\n<details><summary id=\"DescAuthorizeFlow\">Authorize flow</summary>\r\n\r\nThe authorize flow will permit partner's applications to access protected resources (resources owned by an organization). Typically, you must display a button to your user to ask him to login on HelloAsso, and authorize you to access his resources.\r\n\r\nButton example :\r\n\r\n![](/img/ImgHaAuthorizeButton.png)\r\n\r\n<details><summary>Button Code (HTML & CSS)</summary>\r\n```\r\n<button class=\"HaAuthorizeButton\">\r\n  <img src=\"/img/logo-ha.svg\" alt=\"\" class=\"HaAuthorizeButtonLogo\">\r\n  <span class=\"HaAuthorizeButtonTitle\">Connecter \u00e0 HelloAsso</span>\r\n</button>\r\n\r\n<style>\r\n.HaAuthorizeButton {\r\n  align-items: center;\r\n  -webkit-box-pack: center;\r\n  -ms-flex-pack: center;\r\n  background-color: #FFFFFF;\r\n  border: 0.0625rem solid #49D38A;\r\n  border-radius: 0.125rem;\r\n  display: -webkit-box;\r\n  display: -ms-flexbox;\r\n  display: flex;\r\n  padding: 0;\r\n}\r\n.HaAuthorizeButton:disabled {\r\n  background-color: #E9E9F0;\r\n  border-color: transparent;\r\n  cursor: not-allowed;\r\n}\r\n.HaAuthorizeButton:not(:disabled):focus {\r\n  box-shadow: 0 0 0 0.25rem rgba(73, 211, 138, 0.25);\r\n  -webkit-box-shadow: 0 0 0 0.25rem rgba(73, 211, 138, 0.25);\r\n}\r\n.HaAuthorizeButtonLogo {\r\n  padding: 0 0.8rem;\r\n  width: 2.25rem;\r\n}\r\n.HaAuthorizeButtonTitle {\r\n  background-color: #49D38A;\r\n  color: #FFFFFF;\r\n  font-size: 1rem;\r\n  font-weight: 700;\r\n  padding: 0.78125rem 1.5rem;\r\n}\r\n.HaAuthorizeButton:disabled .HaAuthorizeButtonTitle {\r\n  background-color: #E9E9F0;\r\n  color: #9A9DA8;\r\n}\r\n.HaAuthorizeButton:not(:disabled):hover .HaAuthorizeButtonTitle,\r\n.HaAuthorizeButton:not(:disabled):focus .HaAuthorizeButtonTitle {\r\n  background-color: #30c677;\r\n}\r\n</style>\r\n```\r\n</details>\r\n\r\nWhen the user clicks on the button or link, you must open a popup window and direct him to this url : https://auth.helloasso.com/authorize with all the appropriate query parameters (see below).\r\n\r\n<details><summary>Authorization Request</summary>\r\n\r\nRoute to display : **GET** `https://auth.helloasso.com/authorize`\r\n\r\n<details><summary>Parameters</summary>\r\n\r\nKey                    | Information                                                      | Required/Optional\r\n-----------------------|------------------------------------------------------------------|------------------\r\nclient_id              | Your Client Id                                                   | **Required**\r\nredirect_uri           | The redirect uri that will be used when the authorize is complete (success or error). For security considerations, the domain of the redirect uri must be the same configured on your client in our database. The redirect uri must use the secure protocol `https`. You can modify this domain with the following endpoint https://api.helloasso.com/v5/partners/me/api-clients (see section \"Partners Managment\" bellow) | **Required**\r\ncode_challenge         | The PKCE code challenge. See section [PKCE](#PKCE) below.        | **Required**\r\ncode_challenge_method  | The PKCE code challenge method, must be \"*S256*\"                 | **Required**\r\nstate                  | A value that will be sent back to you, to maintain state between the request and callback. The parameter should be used for preventing cross-site request forgery : **the state sent back must match the one you sent**. Must be a string, but you can use this to encode any data you want. The state should be less than 500 characters. | Optional\r\n\r\nWe recommend you to open the window with at least an height of 650px and a width of 500px.\r\n\r\n</details>\r\n<details><summary>Request Example</summary>\r\n\r\n```\r\nhttps://auth.helloasso.com/authorize\r\n  ?client_id=9fdc22226bf24ff99b875f4a7c503715\r\n  &redirect_uri=YOUR_REDIRECT_URI\r\n  &code_challenge=YOUR_CODE_CHALLENGE\r\n  &code_challenge_method=S256\r\n  &state=abc\r\n```\r\n</details>\r\n</details>\r\n\r\nThis will display the login window and then the authorize window to the user : \r\n\r\n<img alt=\"\" src=\"/img/ImgHaLoginWindow.png\" style=\"height:400px\"><img alt=\"\" src=\"/img/ImgHaAuthorizeWindow.png\" style=\"height:400px;margin-left:20px\">\r\n\r\nThe user has an option to sign up and register its organization, if he does not have one already.\r\nWhen the user completes the process, the window will redirect to the given `redirect_uri`, with the `authorization_code` in parameter (or with an error code if an error occurred).\r\n\r\n<details><summary>Redirect response</summary>\r\n\r\nIf success :\r\nKey   | Information\r\n------|----------------------------------------------------------------------------------------------\r\ncode  | The authorization code generated by the authorization server. Has a lifetime of five minutes.\r\nstate | If you supplied a state in the request, will be sent back to you\r\n\r\nIf error :\r\nKey               | Information\r\n------------------|-----------------------------------------------------------------\r\nerror             | A single error code.\r\nerror_description | Optional : a text providing additional information\r\nstate             | If you supplied a state in the request, will be sent back to you\r\nSee more info here on error codes : https://tools.ietf.org/html/rfc6749#section-4.1.2.1\r\n</details>\r\n\r\nYou can then exchange the code for an `access_token` and a `refresh_token`.\r\n\r\n<details><summary>Access Token Request</summary>\r\n\r\nRoute : **POST** `https://api.helloasso.com/oauth2/token`\r\n\r\n<details><summary>Headers</summary>\r\n\r\nKey          | Value\r\n-------------|------------------------------------\r\nContent-Type | *application/x-www-form-urlencoded*\r\n</details>\r\n<details><summary>Body</summary>\r\n\r\nKey           | Information                                                       | Required/Optional\r\n--------------|-------------------------------------------------------------------|------------------\r\nclient_id     | Your Client Id                                                    | **Required**\r\nclient_secret | Your Client Secret                                                | **Required**\r\ngrant_type    | *authorization_code*                                              | **Required**\r\ncode          | The authorization code received (when redirecting to your domain) | **Required**\r\nredirect_uri  | The same redirect uri used when displaying the authorize window   | **Required**\r\ncode_verifier | The PKCE code verifier                                            | **Required**\r\n</details>\r\n<details><summary>Result (JSON)</summary>\r\n\r\nKey                | Information\r\n-------------------|-------------------------------------------------------------------------\r\naccess_token       | The JWT token to use in future requests\r\nrefresh_token      | Token used to refresh the token and get a new JWT token after expiration\r\ntoken_type         | Token Type : always \"*bearer*\"\r\nexpires_in         | The lifetime in seconds of the access token\r\norganization_slug  | The slug of the association which authorized the access\r\n</details>\r\n<details><summary>CURL Example</summary>\r\n\r\n```\r\ncurl -X POST \\\r\n  https://api.helloasso.com/oauth2/token \\\r\n  -H 'content-type: application/x-www-form-urlencoded' \\\r\n  -d 'grant_type=authorization_code&client_id=9fdc22226bf24ff99b875f4a7c503715&client_secret=AvUYelYH1aSZZ3QNBiZOybmBlZTpUcNSonsufB5txuw=' \\\r\n  -d 'code=AUTHORIZATION_CODE_RECEIVED&redirect_uri=YOUR_REDIRECT_URI&code_verifier=YOUR_CODE_VERIFIER'\r\n```\r\n</details>\r\n</details>\r\n<details><summary id=\"PKCE\">PKCE</summary>\r\n\r\nPKCE (Proof Key for Code Exchange) is a security measure for the authorization grant.\r\n\r\nThe specification can be found here : https://tools.ietf.org/html/rfc7636\r\n\r\nWe require you to use the challenge_method S256.\r\n\r\nBasically, you must generate a random Code Verifier of 43 to 128 characters, from the following characters : `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~`. You then create the Code Challenge : you hash the code verifier with the SHA-256 hash function, encode it to base64, and then url encode it.\r\n\r\nYou will send the code challenge in the initial request to display the authorize window. HelloAsso will keep it stored with your request. When you will request a token in exchange for your authorization code, you will send the code verifier. HelloAsso will then validate it (length and characters used) and encode it the same way you did it (SHA-256, base 64 & uri encode) and compare the result with the code challenge stored during the authorize request. If it does not match, you will receive the error \"invalid_grant\".\r\n\r\nIf you want to test your code challenge generator, you can do so here with this online tool : https://tonyxu-io.github.io/pkce-generator/\r\n</details>\r\n</details>\r\n<details><summary id=\"DescDisconnect\">Disconnect</summary>\r\n\r\nDisconnect the user, and revoke its tokens. Returns 200 if disconnect worked.\r\n\r\nRoute : **GET** `https://api.helloasso.com/oauth2/disconnect`\r\n\r\n<details><summary>Headers</summary>\r\n\r\nKey           | Value\r\n--------------|----------------------------------------------------------\r\nAuthorization | *Bearer JWT* (replace JWT with your `access_token` value)\r\n</details>\r\n<details><summary>CURL Example</summary>\r\n\r\n```\r\ncurl -X GET \\\r\n  https://api.helloasso.com/oauth2/disconnect \\\r\n  -H 'Authorization: Bearer JWT'\r\n```\r\n</details>\r\n</details>\r\n</details>\r\n<details><summary id=\"DescNotifications\">Handling the notifications system</summary>\r\n\r\nYou will receive a notification when one of the following events occur:\r\n- A campaign is created\r\n- An order is made (including free orders where there are no payments)\r\n- A payment is made (whether it is a single payment or a payment by installment)\r\n- A payment is refunded\r\n- A payment is contested by the payer with his bank\r\n- A payment by installment is refused\r\n- An organization is renamed and his slug change\r\n\r\n<details><summary>Define your notification URL</summary>\r\n\r\n* If you are an **organization** (i.e. association), you can define and manage your notification URL in your administration area.\r\n* If you are a **partner**, You can modify this notification URL with the following endpoint https://api.helloasso.com/v5/partners/me/api-notifications (see section \"Partners Managment\" bellow). \r\n\r\nIn any case, your callback URL **must use the secure protocol `https` and must support the `POST` verb.**\r\n\r\nThen, in your code, you can handle and listen for information coming from the defined URL.\r\n</details>\r\n\r\n<details><summary>Get the notification content</summary>\r\n\r\nThe notification can have 4 different types : **Order**, **Payment**, **Form** (for campaign creation) or **Organization** (when the organization slug changed).\r\n\r\nWhen a new content is available, we will call the notification URL callback defined before with the corresponding data in the body.\r\n\r\n<details><summary>Order Result (JSON)</summary>\r\nKey               | Information\r\n------------------|-------------------------------------------------------------------------\r\neventType         | Order\r\ndata              | The order data. See [more information on the order model below](#model-HelloAsso.Api.V5.Common.Orders.OrderDetail)\r\n</details>\r\n<details><summary id=\"PaymentResultJson\">Payment Result (JSON)</summary>\r\nKey               | Information\r\n------------------|-------------------------------------------------------------------------\r\neventType         | Payment\r\ndata              | The payment data. See [more information on the payment model below](#model-HelloAsso.Api.V5.Common.Orders.PaymentDetail)\r\n</details>\r\n<details><summary>Form Result (JSON)</summary>\r\nKey               | Information\r\n------------------|-------------------------------------------------------------------------\r\neventType         | Form\r\ndata              | The form data. See [more information on the form model below](#model-HelloAsso.Api.V5.Common.Models.Forms.FormPublicModel)\r\n</details>\r\n<details><summary>Organization Result (JSON)</summary>\r\nKey               | Information\r\n------------------|-------------------------------------------------------------------------\r\neventType         | Organization\r\ndata              | { \"data\": { \"old_slug_organization\": \"ctb\", \"new_slug_organization\": \"club tennis bordeaux\"  }, \"eventType\": \"Organization\"}\r\n</details>\r\n</details>\r\n</details>\r\n</details>\r\n<details><summary id=\"DescCheckout\">Checkout Form</summary>\r\n\r\nThe Checkout is a type of form, specifically designed to allow contributors to make payments prefilled by an authorized partner or an organization.\r\nThe partner/organization creates a checkout intent (with all the contributor information that he may have, and specified payment terms ; see the following API route *POST checkout-intents* of the [Checkout intents management](#Checkout%20intents%20management) section), and receives in response a url (which is valid for 15 minutes). The contributor follows the url, and then validates the form and pays. The contributor is then redirected to the page of your choosing, with a result parameter (error, success etc).\r\nThe initiator receives a notification of each Order and Payment authorized (if you have configured them, see [Handling the notifications system](#DescNotifications). You can also verify your checkout intent result and receive the created order. See the route *GET checkout-intents/{checkoutIntentId}* of the [Checkout intents management](#operations-tag-Checkout%20intents%20management) section.\r\n\r\nYou can find a more detailed description on how to integrate by following this [link](https://dev.helloasso.com/docs/int%C3%A9grer-le-paiement-sur-votre-site).\r\n\r\nIf you want try checkout payments please use our test environnement https://www.helloasso-sandbox.com/ to create an organization.\r\nYou can then retrieve your API client in the back office and make calls on https://api.helloasso-sandbox.com/v5.\r\nVirtual credit cards are avaible by following this [link](https://docs.sips.Worldline-solutions.com/fr/cartes-de-test.html).\r\n\r\n</details>",
     "version": "5.0",
-    "x-jentic-source-url": "https://api.helloasso.com/v5/swagger/ui/index"
+    "x-jentic-source-url": "https://api.helloasso.com/v5/swagger/ui/index",
+    "contact": {}
   },
   "servers": [
     {
@@ -67,7 +68,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-organizations-by-organizationslug-checkout-intents-by-checkoutintentid"
       }
     },
     "/organizations/{organizationSlug}/checkout-intents": {
@@ -132,7 +134,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "post-organizations-by-organizationslug-checkout-intents"
       }
     },
     "/directory/forms": {
@@ -208,7 +211,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "post-directory-forms"
       }
     },
     "/directory/organizations": {
@@ -284,7 +288,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "post-directory-organizations"
       }
     },
     "/organizations/{organizationSlug}/forms/{formType}/action/quick-create": {
@@ -360,7 +365,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "post-organizations-by-organizationslug-forms-by-formtype-action-quick-create"
       }
     },
     "/organizations/{organizationSlug}/forms/{formType}/{formSlug}/state": {
@@ -441,7 +447,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "put-organizations-by-organizationslug-forms-by-formtype-by-formslug-state"
       }
     },
     "/organizations/{organizationSlug}/forms/{formType}/{formSlug}/public": {
@@ -498,7 +505,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-organizations-by-organizationslug-forms-by-formtype-by-formslug-public"
       }
     },
     "/organizations/{organizationSlug}/formTypes": {
@@ -552,7 +560,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-organizations-by-organizationslug-formtypes"
       }
     },
     "/organizations/{organizationSlug}/forms": {
@@ -646,7 +655,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-organizations-by-organizationslug-forms"
       }
     },
     "/items/{itemId}": {
@@ -698,7 +708,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-items-by-itemid"
       }
     },
     "/organizations/{organizationSlug}/forms/{formType}/{formSlug}/items": {
@@ -884,7 +895,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-organizations-by-organizationslug-forms-by-formtype-by-formslug-items"
       }
     },
     "/organizations/{organizationSlug}/items": {
@@ -1052,7 +1064,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-organizations-by-organizationslug-items"
       }
     },
     "/orders/{orderId}": {
@@ -1104,7 +1117,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-orders-by-orderid"
       }
     },
     "/organizations/{organizationSlug}/forms/{formType}/{formSlug}/orders": {
@@ -1235,7 +1249,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-organizations-by-organizationslug-forms-by-formtype-by-formslug-orders"
       }
     },
     "/organizations/{organizationSlug}/orders": {
@@ -1360,7 +1375,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-organizations-by-organizationslug-orders"
       }
     },
     "/orders/{orderId}/cancel": {
@@ -1403,7 +1419,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "post-orders-by-orderid-cancel"
       }
     },
     "/organizations/{organizationSlug}/cash-out/{cashOutId}/export": {
@@ -1455,7 +1472,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-organizations-by-organizationslug-cash-out-by-cashoutid-export"
       }
     },
     "/organizations/{organizationSlug}": {
@@ -1497,7 +1515,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-organizations-by-organizationslug"
       }
     },
     "/partners/me/api-clients": {
@@ -1552,7 +1571,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "put-partners-me-api-clients"
       }
     },
     "/partners/me/api-notifications/organizations/{organizationSlug}": {
@@ -1619,7 +1639,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "put-partners-me-api-notifications-organizations-by-organizationslug"
       },
       "delete": {
         "tags": [
@@ -1667,7 +1688,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "delete-partners-me-api-notifications-organizations-by-organizationslug"
       }
     },
     "/partners/me/api-notifications": {
@@ -1723,7 +1745,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "put-partners-me-api-notifications"
       },
       "delete": {
         "tags": [
@@ -1762,7 +1785,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "delete-partners-me-api-notifications"
       }
     },
     "/partners/me": {
@@ -1793,7 +1817,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-partners-me"
       }
     },
     "/partners/me/organizations": {
@@ -1844,7 +1869,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-partners-me-organizations"
       }
     },
     "/payments/{paymentId}": {
@@ -1896,7 +1922,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-payments-by-paymentid"
       }
     },
     "/organizations/{organizationSlug}/forms/{formType}/{formSlug}/payments": {
@@ -2038,7 +2065,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-organizations-by-organizationslug-forms-by-formtype-by-formslug-payments"
       }
     },
     "/organizations/{organizationSlug}/payments": {
@@ -2162,7 +2190,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-organizations-by-organizationslug-payments"
       }
     },
     "/payments/{paymentId}/refund": {
@@ -2271,7 +2300,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "post-payments-by-paymentid-refund"
       }
     },
     "/tags/{tagName}": {
@@ -2331,7 +2361,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-tags-by-tagname"
       }
     },
     "/users/me/organizations": {
@@ -2362,7 +2393,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-users-me-organizations"
       }
     },
     "/values/form/{formType}/types": {
@@ -2403,7 +2435,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-values-form-by-formtype-types"
       }
     },
     "/values/organization/categories": {
@@ -2434,7 +2467,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-values-organization-categories"
       }
     },
     "/values/tags": {
@@ -2465,7 +2499,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-values-tags"
       }
     },
     "/values/company-legal-status": {
@@ -2496,7 +2531,8 @@
           {
             "bearer": []
           }
-        ]
+        ],
+        "operationId": "get-values-company-legal-status"
       }
     }
   },
@@ -2538,41 +2574,6 @@
           "domain": {
             "type": "string",
             "description": "Client domain : Url used to grant authorization redirection",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "HelloAsso.Api.V5.Common.Models.Accounts.CompanyLegalStatusModel": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "description": "Company legal status id",
-            "format": "int32"
-          },
-          "label": {
-            "type": "string",
-            "description": "Company legal status label",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false,
-        "description": "user/payer company legal status"
-      },
-      "HelloAsso.Api.V5.Common.Models.Accounts.OrganismCategoryModel": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "label": {
-            "type": "string",
-            "nullable": true
-          },
-          "shortLabel": {
-            "type": "string",
             "nullable": true
           }
         },
@@ -2620,29 +2621,6 @@
           },
           "notificationType": {
             "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.ApiNotifications.ApiNotificationType"
-          }
-        },
-        "additionalProperties": false
-      },
-      "HelloAsso.Api.V5.Common.Models.Carts.CheckoutIntentResponse": {
-        "type": "object",
-        "properties": {
-          "metadata": {
-            "description": "Metadata (Json object)\r\nOnly if metadata were sent on the checkout form initialization",
-            "nullable": true
-          },
-          "order": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Statistics.OrderDetail"
-          },
-          "id": {
-            "type": "integer",
-            "description": "Id of the checkout intent",
-            "format": "int32"
-          },
-          "redirectUrl": {
-            "type": "string",
-            "description": "Url where the contributor must be redirected to",
-            "nullable": true
           }
         },
         "additionalProperties": false
@@ -2803,22 +2781,6 @@
         },
         "additionalProperties": false
       },
-      "HelloAsso.Api.V5.Common.Models.Carts.InitCheckoutResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "description": "Id of the checkout intent",
-            "format": "int32"
-          },
-          "redirectUrl": {
-            "type": "string",
-            "description": "Url where the contributor must be redirected to",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
       "HelloAsso.Api.V5.Common.Models.Common.ContactModel": {
         "type": "object",
         "properties": {
@@ -2970,139 +2932,6 @@
         },
         "additionalProperties": false,
         "description": "PlaceModel class"
-      },
-      "HelloAsso.Api.V5.Common.Models.Common.ResultsWithPaginationModel_FormLightModel": {
-        "title": "ResultsWithPaginationModel<FormLightModel>",
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Forms.FormLightModel"
-            },
-            "description": "Data property",
-            "nullable": true
-          },
-          "pagination": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Common.PaginationModel"
-          }
-        },
-        "additionalProperties": false,
-        "description": "ResultsWithPaginationModel class"
-      },
-      "HelloAsso.Api.V5.Common.Models.Common.ResultsWithPaginationModel_Item": {
-        "title": "ResultsWithPaginationModel<Item>",
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Statistics.Item"
-            },
-            "description": "Data property",
-            "nullable": true
-          },
-          "pagination": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Common.PaginationModel"
-          }
-        },
-        "additionalProperties": false,
-        "description": "ResultsWithPaginationModel class"
-      },
-      "HelloAsso.Api.V5.Common.Models.Common.ResultsWithPaginationModel_Order": {
-        "title": "ResultsWithPaginationModel<Order>",
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Statistics.Order"
-            },
-            "description": "Data property",
-            "nullable": true
-          },
-          "pagination": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Common.PaginationModel"
-          }
-        },
-        "additionalProperties": false,
-        "description": "ResultsWithPaginationModel class"
-      },
-      "HelloAsso.Api.V5.Common.Models.Common.ResultsWithPaginationModel_PartnerOrganizationModel": {
-        "title": "ResultsWithPaginationModel<PartnerOrganizationModel>",
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Directory.PartnerOrganizationModel"
-            },
-            "description": "Data property",
-            "nullable": true
-          },
-          "pagination": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Common.PaginationModel"
-          }
-        },
-        "additionalProperties": false,
-        "description": "ResultsWithPaginationModel class"
-      },
-      "HelloAsso.Api.V5.Common.Models.Common.ResultsWithPaginationModel_Payment": {
-        "title": "ResultsWithPaginationModel<Payment>",
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Statistics.Payment"
-            },
-            "description": "Data property",
-            "nullable": true
-          },
-          "pagination": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Common.PaginationModel"
-          }
-        },
-        "additionalProperties": false,
-        "description": "ResultsWithPaginationModel class"
-      },
-      "HelloAsso.Api.V5.Common.Models.Common.ResultsWithPaginationModel_SynchronizableFormModel": {
-        "title": "ResultsWithPaginationModel<SynchronizableFormModel>",
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Directory.SynchronizableFormModel"
-            },
-            "description": "Data property",
-            "nullable": true
-          },
-          "pagination": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Common.PaginationModel"
-          }
-        },
-        "additionalProperties": false,
-        "description": "ResultsWithPaginationModel class"
-      },
-      "HelloAsso.Api.V5.Common.Models.Common.ResultsWithPaginationModel_SynchronizableOrganizationModel": {
-        "title": "ResultsWithPaginationModel<SynchronizableOrganizationModel>",
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Directory.SynchronizableOrganizationModel"
-            },
-            "description": "Data property",
-            "nullable": true
-          },
-          "pagination": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Common.PaginationModel"
-          }
-        },
-        "additionalProperties": false,
-        "description": "ResultsWithPaginationModel class"
       },
       "HelloAsso.Api.V5.Common.Models.Common.VideoModel": {
         "type": "object",
@@ -3679,7 +3508,7 @@
           "Association1908Rup",
           "AssociationMilitaire",
           "AssociationProprietaire",
-          "Collectivités",
+          "Collectivit\u00e9s",
           "ComiteEntreprise",
           "CSE",
           "FabriqueEglise",
@@ -3727,16 +3556,6 @@
           "Other"
         ],
         "type": "string"
-      },
-      "HelloAsso.Api.V5.Common.Models.Enums.PaymentProviderType": {
-        "enum": [
-          "Lemonway",
-          "Stripe",
-          "StripeV2",
-          "HaPay"
-        ],
-        "type": "string",
-        "description": "The payment provider type."
       },
       "HelloAsso.Api.V5.Common.Models.Enums.PaymentState": {
         "enum": [
@@ -3905,28 +3724,6 @@
         "additionalProperties": false,
         "description": "ExtraOptionFullModel"
       },
-      "HelloAsso.Api.V5.Common.Models.Forms.FormActivityModel": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "description": "Gets the activity identifier",
-            "format": "int32"
-          },
-          "label": {
-            "type": "string",
-            "description": "Gets the activity label",
-            "nullable": true
-          },
-          "shortLabel": {
-            "type": "string",
-            "description": "Gets the activity short label",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false,
-        "description": "Form activity model"
-      },
       "HelloAsso.Api.V5.Common.Models.Forms.FormBasicModel": {
         "type": "object",
         "properties": {
@@ -4045,169 +3842,6 @@
         },
         "additionalProperties": false,
         "description": "FormLightModel class"
-      },
-      "HelloAsso.Api.V5.Common.Models.Forms.FormPublicModel": {
-        "type": "object",
-        "properties": {
-          "organizationLogo": {
-            "type": "string",
-            "description": "Organization Logo",
-            "nullable": true
-          },
-          "organizationName": {
-            "type": "string",
-            "description": "Organization Name",
-            "nullable": true
-          },
-          "tiers": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Forms.TierPublicModel"
-            },
-            "description": "Tiers",
-            "nullable": true
-          },
-          "activityType": {
-            "type": "string",
-            "description": "Activity type of the event eg. \"Atelier(s) / Stage(s)\" matching one of the provided type values <a href=\"index#!/Values/Values_Get\"> provided here</a> or a custom value is allowed.",
-            "nullable": true
-          },
-          "activityTypeId": {
-            "type": "integer",
-            "description": "Activity type identifier",
-            "format": "int32"
-          },
-          "place": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Common.PlaceModel"
-          },
-          "saleEndDate": {
-            "type": "string",
-            "description": "The datetime (Inclusive) at which the sales end.\r\nIf null the orders will be available until the end of the campaign.",
-            "format": "date-time",
-            "nullable": true
-          },
-          "saleStartDate": {
-            "type": "string",
-            "description": "The datetime (Inclusive) at which the users can start placing orders.\r\nIf null the orders will be available as soon as the campaign is published.",
-            "format": "date-time",
-            "nullable": true
-          },
-          "validityType": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Enums.MembershipValidityType"
-          },
-          "personalizedMessage": {
-            "type": "string",
-            "description": "A message customized by the organization administrator.",
-            "nullable": true
-          },
-          "banner": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Common.DocumentModel"
-          },
-          "currency": {
-            "type": "string",
-            "description": "Currency",
-            "nullable": true
-          },
-          "description": {
-            "type": "string",
-            "description": "Short description (one line)",
-            "nullable": true
-          },
-          "startDate": {
-            "type": "string",
-            "description": "The datetime of the activity start",
-            "format": "date-time",
-            "nullable": true
-          },
-          "endDate": {
-            "type": "string",
-            "description": "The datetime of the activity end",
-            "format": "date-time",
-            "nullable": true
-          },
-          "logo": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Common.DocumentModel"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Common.MetaModel"
-          },
-          "state": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Enums.FormState"
-          },
-          "title": {
-            "type": "string",
-            "description": "Title",
-            "nullable": true
-          },
-          "privateTitle": {
-            "type": "string",
-            "description": "Private Title",
-            "nullable": true
-          },
-          "widgetButtonUrl": {
-            "type": "string",
-            "description": "Url of the widget button",
-            "nullable": true
-          },
-          "widgetFullUrl": {
-            "type": "string",
-            "description": "Url of the form widget",
-            "nullable": true
-          },
-          "widgetVignetteHorizontalUrl": {
-            "type": "string",
-            "description": "Url of the horizontal vignette widget",
-            "nullable": true
-          },
-          "widgetVignetteVerticalUrl": {
-            "type": "string",
-            "description": "Url of the vertical vignette widget",
-            "nullable": true
-          },
-          "widgetCounterUrl": {
-            "type": "string",
-            "description": "Url of the counter widget",
-            "nullable": true
-          },
-          "formSlug": {
-            "type": "string",
-            "description": "The form slug",
-            "nullable": true
-          },
-          "formType": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Enums.FormType"
-          },
-          "url": {
-            "type": "string",
-            "description": "The form url",
-            "nullable": true
-          },
-          "organizationSlug": {
-            "type": "string",
-            "description": "The organization slug",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false,
-        "description": "FormPublicModel class"
-      },
-      "HelloAsso.Api.V5.Common.Models.Forms.FormQuickCreateModel": {
-        "type": "object",
-        "properties": {
-          "formSlug": {
-            "type": "string",
-            "nullable": true
-          },
-          "organizationSlug": {
-            "type": "string",
-            "nullable": true
-          },
-          "publicUrl": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
       },
       "HelloAsso.Api.V5.Common.Models.Forms.FormQuickCreateRequest": {
         "required": [
@@ -4582,246 +4216,6 @@
         "additionalProperties": false,
         "description": "A basic organization model"
       },
-      "HelloAsso.Api.V5.Common.Models.Organizations.OrganizationLightModel": {
-        "type": "object",
-        "properties": {
-          "logo": {
-            "type": "string",
-            "description": "Logo of organization",
-            "nullable": true
-          },
-          "name": {
-            "type": "string",
-            "description": "Name of organization",
-            "nullable": true
-          },
-          "role": {
-            "$ref": "#/components/schemas/HelloAsso.Models.Enums.GlobalRole"
-          },
-          "city": {
-            "type": "string",
-            "description": "Organization city",
-            "nullable": true
-          },
-          "zipCode": {
-            "type": "string",
-            "description": "Organization zip code",
-            "nullable": true
-          },
-          "description": {
-            "type": "string",
-            "description": "Organization description",
-            "nullable": true
-          },
-          "updateDate": {
-            "type": "string",
-            "description": "Last update date of the organization",
-            "format": "date-time"
-          },
-          "categoryJoId": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
-          },
-          "url": {
-            "type": "string",
-            "description": "The organization url",
-            "nullable": true
-          },
-          "organizationSlug": {
-            "type": "string",
-            "description": "The organization slug",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false,
-        "description": "OrganizationLightModel class"
-      },
-      "HelloAsso.Api.V5.Common.Models.Organizations.OrganizationPublicModel": {
-        "type": "object",
-        "properties": {
-          "facebookPage": {
-            "type": "string",
-            "nullable": true
-          },
-          "galleryImages": {
-            "title": "List<ImageModel>",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Common.ImageModel"
-            },
-            "nullable": true
-          },
-          "longDescription": {
-            "type": "string",
-            "nullable": true
-          },
-          "twitterPage": {
-            "type": "string",
-            "nullable": true
-          },
-          "videos": {
-            "title": "List<VideoModel>",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Common.VideoModel"
-            },
-            "nullable": true
-          },
-          "webSite": {
-            "type": "string",
-            "nullable": true
-          },
-          "isAuthenticated": {
-            "type": "boolean",
-            "description": "The organization is authenticated. Property returned only when asked by an organization admin.",
-            "nullable": true
-          },
-          "displayCoordinates": {
-            "type": "boolean",
-            "description": "If the organization chose to display its coordinates. Property returned only when asked by an organization admin.",
-            "nullable": true
-          },
-          "isCashInCompliant": {
-            "type": "boolean",
-            "description": "If transaction can be init on the organization or not. Property returned only when asked by an organization admin.",
-            "nullable": true
-          },
-          "banner": {
-            "type": "string",
-            "description": "The organization banner",
-            "nullable": true
-          },
-          "fiscalReceiptEligibility": {
-            "type": "boolean",
-            "description": "The organism can issue fiscal receipts (type ok and has not deactivated it)\r\nMust configure it and be authenticated to become enabled"
-          },
-          "fiscalReceiptIssuanceEnabled": {
-            "type": "boolean",
-            "description": "The organism is eligible, has set up his options, and is authenticated."
-          },
-          "type": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Enums.OrganizationType"
-          },
-          "category": {
-            "type": "string",
-            "description": "Organization category label",
-            "nullable": true
-          },
-          "address": {
-            "type": "string",
-            "description": "Organization Address (for authorized applications or if authorized by the organization)",
-            "nullable": true
-          },
-          "geolocation": {
-            "$ref": "#/components/schemas/HelloAsso.Models.Shared.GeoLocation"
-          },
-          "rnaNumber": {
-            "type": "string",
-            "description": "Unique identifier assigned when creating the association",
-            "nullable": true
-          },
-          "logo": {
-            "type": "string",
-            "description": "Logo of organization",
-            "nullable": true
-          },
-          "name": {
-            "type": "string",
-            "description": "Name of organization",
-            "nullable": true
-          },
-          "role": {
-            "$ref": "#/components/schemas/HelloAsso.Models.Enums.GlobalRole"
-          },
-          "city": {
-            "type": "string",
-            "description": "Organization city",
-            "nullable": true
-          },
-          "zipCode": {
-            "type": "string",
-            "description": "Organization zip code",
-            "nullable": true
-          },
-          "description": {
-            "type": "string",
-            "description": "Organization description",
-            "nullable": true
-          },
-          "updateDate": {
-            "type": "string",
-            "description": "Last update date of the organization",
-            "format": "date-time"
-          },
-          "categoryJoId": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
-          },
-          "url": {
-            "type": "string",
-            "description": "The organization url",
-            "nullable": true
-          },
-          "organizationSlug": {
-            "type": "string",
-            "description": "The organization slug",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "HelloAsso.Api.V5.Common.Models.Partners.PartnerPublicModel": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Name of the partner",
-            "nullable": true
-          },
-          "displayName": {
-            "type": "string",
-            "description": "Display Name of the partner",
-            "nullable": true
-          },
-          "description": {
-            "type": "string",
-            "description": "Description of the partner",
-            "nullable": true
-          },
-          "url": {
-            "type": "string",
-            "description": "Website of the partner",
-            "nullable": true
-          },
-          "logo": {
-            "type": "string",
-            "description": "Logo of the partner : square format",
-            "nullable": true
-          },
-          "logoRectangle": {
-            "type": "string",
-            "description": "Logo of the partner : rectangle format",
-            "nullable": true
-          },
-          "apiClient": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Accounts.Clients.ApiClientModel"
-          },
-          "urlNotificationList": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.ApiNotifications.ApiUrlNotificationModel"
-            },
-            "description": "Url Notification of the partner",
-            "nullable": true
-          },
-          "partnerStatistics": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Models.PartnerStatisticsModel"
-          }
-        },
-        "additionalProperties": false
-      },
       "HelloAsso.Api.V5.Common.Models.Payment.CashoutExport.CashoutExportPaymentOperation": {
         "enum": [
           "MonthlyDonation",
@@ -4845,123 +4239,6 @@
           "Contested"
         ],
         "type": "string"
-      },
-      "HelloAsso.Api.V5.Common.Models.Payment.CashoutExport.CashoutExportRowModel": {
-        "type": "object",
-        "properties": {
-          "campaignType": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Enums.FormType"
-          },
-          "campaignName": {
-            "type": "string",
-            "nullable": true
-          },
-          "operationType": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Payment.CashoutExport.CashoutExportPaymentOperation"
-          },
-          "credit": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "debit": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "orderId": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
-          },
-          "paymentId": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
-          },
-          "paymentDate": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "paymentMethod": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Enums.PaymentMeans"
-          },
-          "paymentStatus": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Payment.CashoutExport.CashoutExportPaymentStatus"
-          },
-          "cashOutDate": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "cashOutId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "designation": {
-            "type": "string",
-            "nullable": true
-          },
-          "payerCompany": {
-            "type": "string",
-            "nullable": true
-          },
-          "payerLastName": {
-            "type": "string",
-            "nullable": true
-          },
-          "payerFirstName": {
-            "type": "string",
-            "nullable": true
-          },
-          "payerEmail": {
-            "type": "string",
-            "nullable": true
-          },
-          "payerSiren": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "HelloAsso.Api.V5.Common.Models.Payment.RefundOperationModel": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "description": "The refund operation id",
-            "format": "int32"
-          },
-          "amount": {
-            "type": "integer",
-            "description": "The amount to refund",
-            "format": "int32"
-          },
-          "cancelOrder": {
-            "type": "boolean",
-            "description": "Whether the future payments and linked items of this order must be canceled (possible only if the payment is fully refunded)"
-          },
-          "creationDate": {
-            "type": "string",
-            "description": "The refund operation creation date",
-            "format": "date-time"
-          },
-          "state": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Enums.OperationState"
-          },
-          "sendRefundMail": {
-            "type": "boolean",
-            "description": "Whether a refund mail must be send or not."
-          },
-          "paymentId": {
-            "type": "integer",
-            "description": "The payment id",
-            "format": "int32"
-          }
-        },
-        "additionalProperties": false,
-        "description": "RefundOperationModel class"
       },
       "HelloAsso.Api.V5.Common.Models.Statistics.Item": {
         "type": "object",
@@ -5098,118 +4375,6 @@
         },
         "additionalProperties": false,
         "description": "Custom field associated with the item or option"
-      },
-      "HelloAsso.Api.V5.Common.Models.Statistics.ItemDetail": {
-        "type": "object",
-        "properties": {
-          "order": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Statistics.OrderLight"
-          },
-          "payer": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Statistics.Payer"
-          },
-          "payments": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Statistics.ItemPayment"
-            },
-            "description": "Payments linked to this item",
-            "nullable": true
-          },
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "user": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Statistics.User"
-          },
-          "priceCategory": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Enums.PriceCategory"
-          },
-          "minAmount": {
-            "type": "integer",
-            "description": "Minimum amount that was specified on the tier (in cents)",
-            "format": "int32",
-            "nullable": true
-          },
-          "discount": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Statistics.ItemDiscount"
-          },
-          "customFields": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Statistics.ItemCustomField"
-            },
-            "description": "Custom fields related to this item",
-            "nullable": true
-          },
-          "options": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Statistics.ItemOption"
-            },
-            "description": "Extra options taken with this item",
-            "nullable": true
-          },
-          "ticketUrl": {
-            "type": "string",
-            "description": "The Ticket Url",
-            "nullable": true
-          },
-          "qrCode": {
-            "type": "string",
-            "description": "The item QrCode (for ticket scanning only)",
-            "nullable": true
-          },
-          "membershipCardUrl": {
-            "type": "string",
-            "description": "The Membership Card Url",
-            "nullable": true
-          },
-          "dayOfLevy": {
-            "type": "integer",
-            "description": "The day of levy for monthly donation only",
-            "format": "int32",
-            "nullable": true
-          },
-          "tierDescription": {
-            "type": "string",
-            "description": "Tier description",
-            "nullable": true
-          },
-          "tierId": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
-          },
-          "comment": {
-            "type": "string",
-            "nullable": true
-          },
-          "id": {
-            "type": "integer",
-            "description": "ID of the Item",
-            "format": "int32"
-          },
-          "amount": {
-            "type": "integer",
-            "description": "Total item Price in cents (after discount without extra options)",
-            "format": "int32"
-          },
-          "type": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Enums.TierType"
-          },
-          "initialAmount": {
-            "type": "integer",
-            "description": "The raw amount (without reduction)",
-            "format": "int32",
-            "nullable": true
-          },
-          "state": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Enums.ItemState"
-          }
-        },
-        "additionalProperties": false
       },
       "HelloAsso.Api.V5.Common.Models.Statistics.ItemDiscount": {
         "type": "object",
@@ -5887,108 +5052,6 @@
         },
         "additionalProperties": false
       },
-      "HelloAsso.Api.V5.Common.Models.Statistics.PaymentDetail": {
-        "type": "object",
-        "properties": {
-          "cardExpirationDate": {
-            "type": "string",
-            "description": "Card expiration date (only for card payments)",
-            "format": "date-time",
-            "nullable": true
-          },
-          "order": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Statistics.OrderLight"
-          },
-          "payer": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Statistics.Payer"
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Statistics.PaymentItem"
-            },
-            "description": "Items linked to this payment",
-            "nullable": true
-          },
-          "cashOutDate": {
-            "type": "string",
-            "description": "The date of the cash out",
-            "format": "date-time",
-            "nullable": true
-          },
-          "idCashOut": {
-            "type": "integer",
-            "description": "The id of the cash out",
-            "format": "int32",
-            "nullable": true
-          },
-          "cashOutState": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Enums.PaymentCashOutState"
-          },
-          "paymentReceiptUrl": {
-            "type": "string",
-            "description": "The Payment Receipt Url",
-            "nullable": true
-          },
-          "fiscalReceiptUrl": {
-            "type": "string",
-            "description": "The Fiscal Receipt Url",
-            "nullable": true
-          },
-          "id": {
-            "type": "integer",
-            "description": "The ID of the payment",
-            "format": "int32"
-          },
-          "amount": {
-            "type": "integer",
-            "description": "Total Amount of the payment (in cents)",
-            "format": "int32"
-          },
-          "amountTip": {
-            "type": "integer",
-            "description": "Tip Amount of the payment (in cents)",
-            "format": "int32",
-            "nullable": true
-          },
-          "date": {
-            "type": "string",
-            "description": "Date of the payment",
-            "format": "date-time"
-          },
-          "paymentMeans": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Enums.PaymentMeans"
-          },
-          "installmentNumber": {
-            "type": "integer",
-            "description": "Indicates the payment number (useful in the case of an order comprising payments with installments)",
-            "format": "int32",
-            "nullable": true
-          },
-          "state": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Enums.PaymentState"
-          },
-          "type": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Enums.PaymentType"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Common.MetaModel"
-          },
-          "paymentOffLineMean": {
-            "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Enums.PaymentMeans"
-          },
-          "refundOperations": {
-            "title": "List<RefundOperationLightModel>",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HelloAsso.Api.V5.Common.Models.Statistics.RefundOperationLightModel"
-            },
-            "description": "The refund operations information for the specific payment.",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
       "HelloAsso.Api.V5.Common.Models.Statistics.PaymentItem": {
         "type": "object",
         "properties": {
@@ -6165,23 +5228,6 @@
         "additionalProperties": false,
         "description": "InternalTagModel class"
       },
-      "HelloAsso.Api.V5.Common.Models.Tags.PublicTagModel": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Name tag",
-            "nullable": true
-          },
-          "score": {
-            "type": "number",
-            "description": "Tag score : measure tag relevance",
-            "format": "double"
-          }
-        },
-        "additionalProperties": false,
-        "description": "PublicNameTagModel class"
-      },
       "HelloAsso.Api.V5.Models.PartnerStatisticsModel": {
         "type": "object",
         "properties": {
@@ -6234,33 +5280,41 @@
         },
         "additionalProperties": false
       }
-    },
-    "securitySchemes": {
-      "Client": {
-        "type": "oauth2",
-        "flows": {
-          "clientCredentials": {
-            "tokenUrl": "https://api.helloasso.com/oauth2/token",
-            "scopes": {}
-          }
-        }
-      },
-      "User": {
-        "type": "oauth2",
-        "description": "Use this authentication to browse the API as a connected user.",
-        "flows": {
-          "password": {
-            "tokenUrl": "https://api.helloasso.com/oauth2/token",
-            "scopes": {}
-          }
-        }
-      },
-      "bearer": {
-        "type": "http",
-        "description": "You can override the JWT used for authorization here. (Paste your JWT_TOKEN)",
-        "scheme": "bearer",
-        "bearerFormat": "JWT"
-      }
     }
-  }
+  },
+  "tags": [
+    {
+      "name": "Checkout intents management"
+    },
+    {
+      "name": "Directory"
+    },
+    {
+      "name": "Forms"
+    },
+    {
+      "name": "Orders - Items"
+    },
+    {
+      "name": "Organization cash-out management"
+    },
+    {
+      "name": "Organization visualisation"
+    },
+    {
+      "name": "Partner management"
+    },
+    {
+      "name": "Payments management"
+    },
+    {
+      "name": "Tags"
+    },
+    {
+      "name": "Users"
+    },
+    {
+      "name": "Values definitions"
+    }
+  ]
 }
