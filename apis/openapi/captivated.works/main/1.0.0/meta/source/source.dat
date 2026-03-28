@@ -1,0 +1,397 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Captivated Messaging API",
+    "version": "1.0.0",
+    "description": "Captivated Messaging API provides RESTful endpoints for sending SMS/MMS messages, both individually and in bulk, with support for scheduling, attachments, and webhooks.",
+    "contact": {
+      "url": "https://api.captivated.works/docs"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.captivated.works",
+      "description": "Production server"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/command/v1/messages": {
+      "post": {
+        "summary": "Send a single message",
+        "description": "Send a single SMS or MMS message to a recipient",
+        "operationId": "sendMessage",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing bearer token"
+          },
+          "403": {
+            "description": "Forbidden - Access denied"
+          }
+        },
+        "tags": [
+          "api"
+        ]
+      }
+    },
+    "/api/command/v1/messages/bulk_create": {
+      "post": {
+        "summary": "Send bulk messages",
+        "description": "Create up to 100 messages in a single request for asynchronous processing",
+        "operationId": "sendBulkMessages",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "messages": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "$ref": "#/components/schemas/MessageRequest"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bulk job created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "job_id": {
+                      "type": "string",
+                      "description": "Job identifier for tracking bulk processing"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "api"
+        ]
+      }
+    },
+    "/api/command/v1/messages/{message_id}": {
+      "get": {
+        "summary": "Retrieve message details",
+        "description": "Get the status and details of a specific message",
+        "operationId": "getMessage",
+        "parameters": [
+          {
+            "name": "message_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Message identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message details retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Message not found"
+          }
+        },
+        "tags": [
+          "api"
+        ]
+      }
+    },
+    "/api/command/v1/jobs/{job_id}": {
+      "get": {
+        "summary": "Get job status",
+        "description": "Monitor the status and results of a bulk message creation job",
+        "operationId": "getJobStatus",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Job identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job status retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "job_id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "processing",
+                        "completed",
+                        "failed"
+                      ]
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "api"
+        ]
+      }
+    },
+    "/api/command/v1/phone_number_lookups/{phone_number}": {
+      "get": {
+        "summary": "Validate phone number",
+        "description": "Look up carrier information and SMS availability for a phone number",
+        "operationId": "lookupPhoneNumber",
+        "parameters": [
+          {
+            "name": "phone_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Phone number in international format (e.g., +15552345678)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Phone number lookup successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "phone_number": {
+                      "type": "string"
+                    },
+                    "carrier": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "mobile",
+                        "landline",
+                        "voip"
+                      ]
+                    },
+                    "sms_available": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "api"
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer token authentication. Obtain tokens from your profile settings under 'Password and Credentials'."
+      }
+    },
+    "schemas": {
+      "MessageRequest": {
+        "type": "object",
+        "required": [
+          "from",
+          "to",
+          "text"
+        ],
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "Sender URI (e.g., tel:+15551234567)",
+            "example": "tel:+15551234567"
+          },
+          "to": {
+            "type": "string",
+            "description": "Recipient URI in international format (e.g., tel:+15552345678)",
+            "example": "tel:+15552345678"
+          },
+          "text": {
+            "type": "string",
+            "description": "Message content"
+          },
+          "type": {
+            "type": "string",
+            "description": "Message type",
+            "nullable": true
+          },
+          "contact_first_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "contact_last_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "send_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Schedule message for future delivery (ISO-8601 format)",
+            "nullable": true
+          },
+          "evaluate_fields": {
+            "type": "boolean",
+            "description": "Process template variables like {{salutation}}",
+            "nullable": true
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "low",
+              "high"
+            ],
+            "description": "Message priority for delivery queue",
+            "nullable": true
+          },
+          "join_sender": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "activate_conversation": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "mime_type": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Media attachments for MMS",
+            "nullable": true
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "nullable": true
+          },
+          "consent": {
+            "type": "object",
+            "nullable": true
+          },
+          "callback_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Webhook URL for message state changes",
+            "nullable": true
+          }
+        }
+      },
+      "MessageResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Message identifier"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "description": "Current message state"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "api"
+    }
+  ]
+}
