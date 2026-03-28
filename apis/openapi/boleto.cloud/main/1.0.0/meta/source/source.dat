@@ -1,0 +1,449 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Boleto Cloud API",
+    "description": "Emita boletos bancários com Pix via API REST. Integração simples, registro automático e suporte aos principais bancos do Brasil.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Boleto Cloud Support",
+      "url": "https://boleto.cloud"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://app.boletocloud.com/api/v1",
+      "description": "Production server"
+    },
+    {
+      "url": "https://sandbox.boletocloud.com/api/v1",
+      "description": "Sandbox server"
+    }
+  ],
+  "security": [
+    {
+      "basicAuth": []
+    }
+  ],
+  "paths": {
+    "/boletos": {
+      "post": {
+        "summary": "Create Boleto",
+        "description": "Creates a boleto and returns the PDF ready in the response. Ideal for on-demand issuance.",
+        "operationId": "createBoleto",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoletoRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Boleto created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoletoResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/boletos/{token}": {
+      "get": {
+        "summary": "Get Original Copy",
+        "description": "Gets the original PDF of the boleto",
+        "operationId": "getBoleto",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Boleto PDF",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/boletos/{token}/atualizado": {
+      "get": {
+        "summary": "Get Updated Copy",
+        "description": "Gets PDF with recalculated interest and penalties",
+        "operationId": "getUpdatedBoleto",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated boleto PDF",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/boletos/{token}/vencimento": {
+      "put": {
+        "summary": "Modify Due Date",
+        "description": "Extends the boleto due date",
+        "operationId": "updateDueDate",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "vencimento": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Due date updated successfully"
+          }
+        }
+      }
+    },
+    "/boletos/{token}/registro": {
+      "get": {
+        "summary": "Check Registration Status",
+        "description": "Verifies if the boleto was registered",
+        "operationId": "getRegistrationStatus",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Registration status"
+          }
+        }
+      },
+      "put": {
+        "summary": "Modify Registration",
+        "description": "Changes registered boleto data",
+        "operationId": "updateRegistration",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Registration updated successfully"
+          }
+        }
+      }
+    },
+    "/boletos/{token}/abatimento": {
+      "put": {
+        "summary": "Grant Discount",
+        "description": "Applies discount to the boleto amount",
+        "operationId": "grantDiscount",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "abatimento": {
+                    "type": "number",
+                    "format": "double"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Discount applied successfully"
+          }
+        }
+      }
+    },
+    "/boletos/{token}/baixa": {
+      "put": {
+        "summary": "Cancel/Lower Boleto",
+        "description": "Cancels the boleto at the bank",
+        "operationId": "cancelBoleto",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Boleto cancelled successfully"
+          }
+        }
+      }
+    },
+    "/carnes": {
+      "post": {
+        "summary": "Create Carnê",
+        "description": "Creates multiple boletos with 3 per page layout. Perfect for installments and monthly payments.",
+        "operationId": "createCarne",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarneRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Carnê created successfully"
+          }
+        }
+      }
+    },
+    "/batch/boletos": {
+      "post": {
+        "summary": "Batch Create",
+        "description": "Issues up to 300 boletos in a single request with 1 per page layout",
+        "operationId": "batchCreateBoletos",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "boletos": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/BoletoRequest"
+                    },
+                    "maxItems": 300
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Batch created successfully"
+          }
+        }
+      }
+    },
+    "/arquivos/cnab/remessas": {
+      "post": {
+        "summary": "CNAB Remittance",
+        "description": "Generate remittance files in CNAB 240 and 400 format",
+        "operationId": "createCNABRemittance",
+        "responses": {
+          "200": {
+            "description": "Remittance file created"
+          }
+        }
+      }
+    },
+    "/arquivos/cnab/retornos": {
+      "post": {
+        "summary": "CNAB Returns",
+        "description": "Process return files in CNAB 240 and 400 format",
+        "operationId": "processCNABReturns",
+        "responses": {
+          "200": {
+            "description": "Return file processed"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "HTTP Basic Auth with your API Key"
+      }
+    },
+    "schemas": {
+      "BoletoRequest": {
+        "type": "object",
+        "required": ["banco", "pagador", "valor", "vencimento"],
+        "properties": {
+          "banco": {
+            "type": "object",
+            "description": "Bank account information",
+            "properties": {
+              "codigo": {
+                "type": "string"
+              },
+              "agencia": {
+                "type": "string"
+              },
+              "conta": {
+                "type": "string"
+              }
+            }
+          },
+          "pagador": {
+            "type": "object",
+            "description": "Payer information",
+            "properties": {
+              "nome": {
+                "type": "string"
+              },
+              "cpf_cnpj": {
+                "type": "string"
+              },
+              "endereco": {
+                "type": "string"
+              },
+              "cidade": {
+                "type": "string"
+              },
+              "uf": {
+                "type": "string"
+              },
+              "cep": {
+                "type": "string"
+              }
+            }
+          },
+          "valor": {
+            "type": "number",
+            "format": "double",
+            "description": "Boleto amount"
+          },
+          "vencimento": {
+            "type": "string",
+            "format": "date",
+            "description": "Due date"
+          },
+          "nosso_numero": {
+            "type": "string",
+            "description": "Our number (optional)"
+          },
+          "numero_documento": {
+            "type": "string",
+            "description": "Document number"
+          },
+          "instrucoes": {
+            "type": "string",
+            "description": "Payment instructions"
+          },
+          "pix": {
+            "type": "boolean",
+            "description": "Enable Pix QR code"
+          }
+        }
+      },
+      "BoletoResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "linha_digitavel": {
+            "type": "string"
+          },
+          "codigo_barras": {
+            "type": "string"
+          },
+          "nosso_numero": {
+            "type": "string"
+          },
+          "pdf": {
+            "type": "string",
+            "description": "Base64 encoded PDF"
+          }
+        }
+      },
+      "CarneRequest": {
+        "type": "object",
+        "properties": {
+          "parcelas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoletoRequest"
+            }
+          }
+        }
+      }
+    }
+  }
+}
