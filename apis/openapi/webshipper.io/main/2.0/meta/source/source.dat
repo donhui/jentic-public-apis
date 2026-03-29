@@ -1,0 +1,469 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Webshipper API",
+    "version": "2.0",
+    "description": "Webshipper API 2.0 - A RESTful JSON API following the JSON API standard for shipping and logistics management. Includes order management, shipment booking, carrier integration, rate quotes, and webhook support.",
+    "contact": {
+      "url": "https://docs.webshipper.io/"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://{account_name}.api.webshipper.io/v2",
+      "description": "Production server (account-scoped)",
+      "variables": {
+        "account_name": {
+          "description": "Your Webshipper account name",
+          "default": "example"
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "OAuth2": []
+    }
+  ],
+  "paths": {
+    "/oauth/token": {
+      "post": {
+        "summary": "Obtain OAuth2 access token",
+        "description": "Get an OAuth2 access token using various grant types",
+        "operationId": "getToken",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "grant_type": {
+                    "type": "string",
+                    "enum": [
+                      "password",
+                      "authorization_code",
+                      "refresh_token"
+                    ]
+                  },
+                  "username": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "password": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "code": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "refresh_token": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "grant_type"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token issued successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": {
+                      "type": "string"
+                    },
+                    "token_type": {
+                      "type": "string",
+                      "example": "Bearer"
+                    },
+                    "expires_in": {
+                      "type": "integer"
+                    },
+                    "refresh_token": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "oauth"
+        ]
+      }
+    },
+    "/orders": {
+      "get": {
+        "summary": "List orders",
+        "description": "Retrieve a paginated list of orders",
+        "operationId": "listOrders",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number (30 records per page)"
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Filter parameters",
+            "style": "deepObject",
+            "explode": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Orders retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderCollection"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "orders"
+        ]
+      },
+      "post": {
+        "summary": "Create order",
+        "description": "Create a new order for shipment",
+        "operationId": "createOrder",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Order created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/shipments": {
+      "get": {
+        "summary": "List shipments",
+        "description": "Retrieve a paginated list of shipments",
+        "operationId": "listShipments",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shipments retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShipmentCollection"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "shipments"
+        ]
+      },
+      "post": {
+        "summary": "Create shipment",
+        "description": "Create a new shipment with carrier booking",
+        "operationId": "createShipment",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShipmentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Shipment created successfully"
+          }
+        },
+        "tags": [
+          "shipments"
+        ]
+      }
+    },
+    "/rate_quotes": {
+      "get": {
+        "summary": "Get rate quotes",
+        "description": "Get carrier pricing for orders",
+        "operationId": "getRateQuotes",
+        "responses": {
+          "200": {
+            "description": "Rate quotes retrieved successfully"
+          }
+        },
+        "tags": [
+          "rate_quotes"
+        ]
+      }
+    },
+    "/service_quotes": {
+      "get": {
+        "summary": "Get service quotes",
+        "description": "Query direct carrier service availability and pricing",
+        "operationId": "getServiceQuotes",
+        "responses": {
+          "200": {
+            "description": "Service quotes retrieved successfully"
+          }
+        },
+        "tags": [
+          "service_quotes"
+        ]
+      }
+    },
+    "/drop_point_locators": {
+      "get": {
+        "summary": "Find drop points",
+        "description": "Locate pickup points based on geolocation",
+        "operationId": "findDropPoints",
+        "responses": {
+          "200": {
+            "description": "Drop points retrieved successfully"
+          }
+        },
+        "tags": [
+          "drop_point_locators"
+        ]
+      }
+    },
+    "/webhooks": {
+      "get": {
+        "summary": "List webhooks",
+        "description": "Retrieve configured webhooks",
+        "operationId": "listWebhooks",
+        "responses": {
+          "200": {
+            "description": "Webhooks retrieved successfully"
+          }
+        },
+        "tags": [
+          "webhooks"
+        ]
+      },
+      "post": {
+        "summary": "Create webhook",
+        "description": "Subscribe to events via webhook",
+        "operationId": "createWebhook",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "event": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Webhook created successfully"
+          }
+        },
+        "tags": [
+          "webhooks"
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "OAuth2": {
+        "type": "oauth2",
+        "description": "OAuth2 authentication with multiple grant types",
+        "flows": {
+          "password": {
+            "tokenUrl": "/oauth/token",
+            "scopes": {
+              "read_orders": "Read orders",
+              "write_orders": "Write orders",
+              "read_shipments": "Read shipments",
+              "write_shipments": "Write shipments",
+              "read_rates": "Read rates",
+              "write_rates": "Write rates"
+            }
+          },
+          "authorizationCode": {
+            "authorizationUrl": "/oauth/authorize",
+            "tokenUrl": "/oauth/token",
+            "scopes": {
+              "read_orders": "Read orders",
+              "write_orders": "Write orders",
+              "read_shipments": "Read shipments",
+              "write_shipments": "Write shipments",
+              "read_rates": "Read rates",
+              "write_rates": "Write rates"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Order": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OrderRequest": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "orders"
+              },
+              "attributes": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "OrderCollection": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Order"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "page": {
+                "type": "integer"
+              },
+              "total_pages": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "ShipmentRequest": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "shipments"
+              },
+              "attributes": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "ShipmentCollection": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-rate-limit": "2 calls/second with 40 request burst capacity (leaky bucket algorithm)",
+  "tags": [
+    {
+      "name": "drop_point_locators"
+    },
+    {
+      "name": "oauth"
+    },
+    {
+      "name": "orders"
+    },
+    {
+      "name": "rate_quotes"
+    },
+    {
+      "name": "service_quotes"
+    },
+    {
+      "name": "shipments"
+    },
+    {
+      "name": "webhooks"
+    }
+  ]
+}
