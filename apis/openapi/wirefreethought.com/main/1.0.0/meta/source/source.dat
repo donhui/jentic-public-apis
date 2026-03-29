@@ -1,0 +1,779 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "GeoDB Cities API",
+    "description": "GeoDB Cities is a comprehensive API for getting global city, region, and country data. It provides geolocation data including city populations, coordinates, currency info, and locale data. Data is sourced from WikiData.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "WireFreethought",
+      "url": "http://geodb-cities-api.wirefreethought.com/"
+    },
+    "x-jentic-source-url": "http://geodb-cities-api.wirefreethought.com/"
+  },
+  "servers": [
+    {
+      "url": "https://wft-geo-db.p.rapidapi.com/v1",
+      "description": "RapidAPI Production Server"
+    },
+    {
+      "url": "https://geodb-free-service.wirefreethought.com/v1",
+      "description": "Free Tier Server"
+    }
+  ],
+  "security": [
+    {
+      "RapidAPIKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Geo",
+      "description": "Geographic data endpoints for cities, countries, and regions"
+    },
+    {
+      "name": "Locale",
+      "description": "Locale-related data including currencies and locales"
+    }
+  ],
+  "paths": {
+    "/geo/cities": {
+      "get": {
+        "tags": ["Geo"],
+        "summary": "Find cities",
+        "description": "Find cities using various filter criteria. Results are paginated.",
+        "operationId": "findCities",
+        "parameters": [
+          {
+            "name": "namePrefix",
+            "in": "query",
+            "description": "Filter by city name prefix",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "namePrefixDefaultLangResults",
+            "in": "query",
+            "description": "When true, include results in default language if no match for requested language",
+            "schema": { "type": "boolean", "default": true }
+          },
+          {
+            "name": "countryIds",
+            "in": "query",
+            "description": "Filter by comma-separated ISO country codes",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "excludedCountryIds",
+            "in": "query",
+            "description": "Exclude cities from these comma-separated country codes",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "minPopulation",
+            "in": "query",
+            "description": "Filter by minimum population",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "maxPopulation",
+            "in": "query",
+            "description": "Filter by maximum population",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "description": "Filter by location in format +/-DD.DDDD+/-DDD.DDDD",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "distanceUnit",
+            "in": "query",
+            "description": "Unit of distance (MI or KM)",
+            "schema": { "type": "string", "enum": ["MI", "KM"], "default": "MI" }
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "description": "Maximum distance from location in distance units",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort field and direction (e.g., -population, +name)",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "description": "Filter by city types (comma-separated): CITY, ADM2",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "languageCode",
+            "in": "query",
+            "description": "Language code for localized results",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results per page",
+            "schema": { "type": "integer", "default": 10, "maximum": 10 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Pagination offset",
+            "schema": { "type": "integer", "default": 0 }
+          },
+          {
+            "name": "hateoasMode",
+            "in": "query",
+            "description": "Include HATEOAS links in response",
+            "schema": { "type": "boolean", "default": true }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with list of cities",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CitiesResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing API key"
+          },
+          "403": {
+            "description": "Forbidden - subscription required"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/geo/cities/{cityId}": {
+      "get": {
+        "tags": ["Geo"],
+        "summary": "Get city details",
+        "description": "Get details for a specific city by its ID.",
+        "operationId": "getCityDetails",
+        "parameters": [
+          {
+            "name": "cityId",
+            "in": "path",
+            "required": true,
+            "description": "The city ID (GeoDB native or WikiData QID)",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "languageCode",
+            "in": "query",
+            "description": "Language code for localized results",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with city details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CityDetailResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "City not found"
+          }
+        }
+      }
+    },
+    "/geo/cities/{cityId}/nearbyCities": {
+      "get": {
+        "tags": ["Geo"],
+        "summary": "Find nearby cities",
+        "description": "Find cities near the given city.",
+        "operationId": "findNearbyCities",
+        "parameters": [
+          {
+            "name": "cityId",
+            "in": "path",
+            "required": true,
+            "description": "The city ID",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "description": "Maximum radius in distance units",
+            "schema": { "type": "integer", "default": 100 }
+          },
+          {
+            "name": "distanceUnit",
+            "in": "query",
+            "description": "Unit of distance",
+            "schema": { "type": "string", "enum": ["MI", "KM"], "default": "MI" }
+          },
+          {
+            "name": "minPopulation",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": { "type": "integer", "default": 0 }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "languageCode",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CitiesResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "City not found"
+          }
+        }
+      }
+    },
+    "/geo/cities/{cityId}/distance": {
+      "get": {
+        "tags": ["Geo"],
+        "summary": "Get city distance",
+        "description": "Get the distance between two cities.",
+        "operationId": "getCityDistance",
+        "parameters": [
+          {
+            "name": "cityId",
+            "in": "path",
+            "required": true,
+            "description": "The origin city ID",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "toCityId",
+            "in": "query",
+            "required": true,
+            "description": "The target city ID",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "distanceUnit",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["MI", "KM"], "default": "MI" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with distance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "type": "number", "description": "Distance value" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/geo/countries": {
+      "get": {
+        "tags": ["Geo"],
+        "summary": "Find countries",
+        "description": "Find countries using various filter criteria.",
+        "operationId": "findCountries",
+        "parameters": [
+          {
+            "name": "namePrefix",
+            "in": "query",
+            "description": "Filter by country name prefix",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "currencyCode",
+            "in": "query",
+            "description": "Filter by currency code",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": { "type": "integer", "default": 0 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with list of countries",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CountriesResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/geo/countries/{countryId}": {
+      "get": {
+        "tags": ["Geo"],
+        "summary": "Get country details",
+        "description": "Get details for a specific country.",
+        "operationId": "getCountryDetails",
+        "parameters": [
+          {
+            "name": "countryId",
+            "in": "path",
+            "required": true,
+            "description": "ISO country code",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with country details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CountryDetailResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Country not found"
+          }
+        }
+      }
+    },
+    "/geo/countries/{countryId}/regions": {
+      "get": {
+        "tags": ["Geo"],
+        "summary": "Find country regions",
+        "description": "Get all regions/states within a country.",
+        "operationId": "findCountryRegions",
+        "parameters": [
+          {
+            "name": "countryId",
+            "in": "path",
+            "required": true,
+            "description": "ISO country code",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "namePrefix",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": { "type": "integer", "default": 0 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with list of regions",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RegionsResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/geo/adminDivisions": {
+      "get": {
+        "tags": ["Geo"],
+        "summary": "Find administrative divisions",
+        "description": "Find administrative divisions (regions, states, provinces) using various filter criteria.",
+        "operationId": "findAdminDivisions",
+        "parameters": [
+          {
+            "name": "namePrefix",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "countryIds",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "minPopulation",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "distanceUnit",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["MI", "KM"] }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": { "type": "integer", "default": 0 }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "languageCode",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with admin divisions",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminDivisionsResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/locale/currencies": {
+      "get": {
+        "tags": ["Locale"],
+        "summary": "Find currencies",
+        "description": "Get a list of currencies with their associated country codes.",
+        "operationId": "findCurrencies",
+        "parameters": [
+          {
+            "name": "countryId",
+            "in": "query",
+            "description": "Filter by country code",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": { "type": "integer", "default": 0 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with list of currencies",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CurrenciesResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/locale/locales": {
+      "get": {
+        "tags": ["Locale"],
+        "summary": "Find locales",
+        "description": "Get a list of known locales.",
+        "operationId": "findLocales",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": { "type": "integer", "default": 0 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with list of locales",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LocalesResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/locale/timezones": {
+      "get": {
+        "tags": ["Locale"],
+        "summary": "Find timezones",
+        "description": "Get a list of known timezones.",
+        "operationId": "findTimezones",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": { "type": "integer", "default": 0 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with list of timezones",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TimezonesResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "RapidAPIKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-RapidAPI-Key",
+        "description": "RapidAPI key for authentication"
+      }
+    },
+    "schemas": {
+      "Link": {
+        "type": "object",
+        "properties": {
+          "rel": { "type": "string", "description": "Link relation type" },
+          "href": { "type": "string", "description": "Link URL" }
+        }
+      },
+      "Metadata": {
+        "type": "object",
+        "properties": {
+          "currentOffset": { "type": "integer", "description": "Current pagination offset" },
+          "totalCount": { "type": "integer", "description": "Total number of results" }
+        }
+      },
+      "CitySummary": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "GeoDB native ID" },
+          "wikiDataId": { "type": "string", "description": "WikiData QID" },
+          "type": { "type": "string", "description": "Place type (CITY, ADM2)", "enum": ["CITY", "ADM2"] },
+          "city": { "type": "string", "description": "City name" },
+          "country": { "type": "string", "description": "Country name" },
+          "countryCode": { "type": "string", "description": "ISO country code" },
+          "region": { "type": "string", "description": "Region/state name" },
+          "regionCode": { "type": "string", "description": "Region code" },
+          "latitude": { "type": "number", "format": "double", "description": "Latitude coordinate" },
+          "longitude": { "type": "number", "format": "double", "description": "Longitude coordinate" },
+          "population": { "type": "integer", "description": "City population" }
+        }
+      },
+      "CitiesResponse": {
+        "type": "object",
+        "properties": {
+          "links": { "type": "array", "items": { "$ref": "#/components/schemas/Link" } },
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/CitySummary" } },
+          "metadata": { "$ref": "#/components/schemas/Metadata" }
+        }
+      },
+      "CityDetailResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CitySummary" }
+        }
+      },
+      "CountrySummary": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string", "description": "ISO country code" },
+          "name": { "type": "string", "description": "Country name" },
+          "currencyCodes": { "type": "array", "items": { "type": "string" }, "description": "Currency codes used" },
+          "wikiDataId": { "type": "string", "description": "WikiData QID" }
+        }
+      },
+      "CountriesResponse": {
+        "type": "object",
+        "properties": {
+          "links": { "type": "array", "items": { "$ref": "#/components/schemas/Link" } },
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/CountrySummary" } },
+          "metadata": { "$ref": "#/components/schemas/Metadata" }
+        }
+      },
+      "CountryDetailResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CountrySummary" }
+        }
+      },
+      "RegionSummary": {
+        "type": "object",
+        "properties": {
+          "isoCode": { "type": "string" },
+          "name": { "type": "string" },
+          "countryCode": { "type": "string" },
+          "wikiDataId": { "type": "string" },
+          "fipsCode": { "type": "string" }
+        }
+      },
+      "RegionsResponse": {
+        "type": "object",
+        "properties": {
+          "links": { "type": "array", "items": { "$ref": "#/components/schemas/Link" } },
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/RegionSummary" } },
+          "metadata": { "$ref": "#/components/schemas/Metadata" }
+        }
+      },
+      "AdminDivisionSummary": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "wikiDataId": { "type": "string" },
+          "name": { "type": "string" },
+          "country": { "type": "string" },
+          "countryCode": { "type": "string" },
+          "region": { "type": "string" },
+          "regionCode": { "type": "string" },
+          "regionWdId": { "type": "string" },
+          "latitude": { "type": "number", "format": "double" },
+          "longitude": { "type": "number", "format": "double" },
+          "population": { "type": "integer" }
+        }
+      },
+      "AdminDivisionsResponse": {
+        "type": "object",
+        "properties": {
+          "links": { "type": "array", "items": { "$ref": "#/components/schemas/Link" } },
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/AdminDivisionSummary" } },
+          "metadata": { "$ref": "#/components/schemas/Metadata" }
+        }
+      },
+      "Currency": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string", "description": "Currency code" },
+          "countryCodes": { "type": "array", "items": { "type": "string" }, "description": "Country codes using this currency" },
+          "symbol": { "type": "string", "description": "Currency symbol" }
+        }
+      },
+      "CurrenciesResponse": {
+        "type": "object",
+        "properties": {
+          "links": { "type": "array", "items": { "$ref": "#/components/schemas/Link" } },
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/Currency" } },
+          "metadata": { "$ref": "#/components/schemas/Metadata" }
+        }
+      },
+      "Locale": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string", "description": "Locale code" },
+          "name": { "type": "string", "description": "Locale display name" }
+        }
+      },
+      "LocalesResponse": {
+        "type": "object",
+        "properties": {
+          "links": { "type": "array", "items": { "$ref": "#/components/schemas/Link" } },
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/Locale" } },
+          "metadata": { "$ref": "#/components/schemas/Metadata" }
+        }
+      },
+      "TimezonesResponse": {
+        "type": "object",
+        "properties": {
+          "links": { "type": "array", "items": { "$ref": "#/components/schemas/Link" } },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "name": { "type": "string" },
+                "rawUtcOffsetHours": { "type": "integer" }
+              }
+            }
+          },
+          "metadata": { "$ref": "#/components/schemas/Metadata" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
