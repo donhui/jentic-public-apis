@@ -1,0 +1,213 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "PrexView API",
+    "description": "Transform XML or JSON data into high-quality documents in PDF, HTML, PNG, or JPG format using customizable templates. Supports dynamic value substitution via JSON path syntax.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "PrexView",
+      "email": "friends@prexview.com",
+      "url": "https://prexview.com"
+    },
+    "x-jentic-source-url": "https://prexview.com/docs/api"
+  },
+  "servers": [
+    {
+      "url": "https://api.prexview.com/v1",
+      "description": "Production server"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Transform",
+      "description": "Document transformation operations"
+    }
+  ],
+  "paths": {
+    "/transform": {
+      "post": {
+        "tags": ["Transform"],
+        "summary": "Transform data to document",
+        "description": "Converts XML or JSON data into PDF, HTML, PNG, or JPG documents using specified templates. Templates and notes support dynamic values using JSON path syntax like {{Data.field}}.",
+        "operationId": "transformDocument",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/TransformRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful transformation - returns the generated document",
+            "headers": {
+              "Content-Type": {
+                "description": "MIME type based on output format",
+                "schema": {
+                  "type": "string",
+                  "enum": ["text/html", "application/pdf", "image/png", "image/jpeg"]
+                }
+              },
+              "Content-Length": {
+                "description": "Size of the response body in bytes",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Limit": {
+                "description": "Total transaction quota",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "description": "Remaining available transactions",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Reset": {
+                "description": "Unix timestamp for quota reset",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "x-transaction-id": {
+                "description": "Unique transaction identifier",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Client error with details in response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Template or resource unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "API key obtained from PrexView account dashboard"
+      }
+    },
+    "schemas": {
+      "TransformRequest": {
+        "type": "object",
+        "required": ["output", "template"],
+        "properties": {
+          "json": {
+            "type": "string",
+            "description": "Data in JSON format. Either 'json' or 'xml' must be provided, not both."
+          },
+          "xml": {
+            "type": "string",
+            "description": "Data in XML format. Either 'json' or 'xml' must be provided, not both."
+          },
+          "output": {
+            "type": "string",
+            "enum": ["html", "pdf", "png", "jpg"],
+            "description": "Desired output document format"
+          },
+          "template": {
+            "type": "string",
+            "description": "Template name for document generation. Supports dynamic values using JSON path syntax like {{Data.customer}}."
+          },
+          "templateBackup": {
+            "type": "string",
+            "description": "Fallback template if the primary template does not exist"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Custom metadata note (max 500 characters). Supports dynamic values using JSON path syntax."
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message describing what went wrong"
+          }
+        }
+      }
+    }
+  }
+}
