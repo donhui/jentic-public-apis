@@ -1,0 +1,1810 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Tebex Plugin API",
+    "description": "The Tebex Plugin API enables game server plugins to interact with a Tebex webstore. It provides endpoints for managing command queues, payments, packages, checkout, gift cards, coupons, bans, sales, community goals, and player data. This API is used to implement command execution on game servers for purchased items.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Tebex Support",
+      "email": "support@tebex.io",
+      "url": "https://docs.tebex.io"
+    },
+    "x-jentic-source-url": "https://docs.tebex.io/plugin/"
+  },
+  "servers": [
+    {
+      "url": "https://plugin.tebex.io",
+      "description": "Tebex Plugin API Server"
+    }
+  ],
+  "security": [
+    {
+      "TebexSecret": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Information",
+      "description": "General account and server information"
+    },
+    {
+      "name": "Command Queue",
+      "description": "Manage command queues for due players"
+    },
+    {
+      "name": "Packages",
+      "description": "Manage webstore packages"
+    },
+    {
+      "name": "Payments",
+      "description": "Manage and retrieve payment information"
+    },
+    {
+      "name": "Checkout",
+      "description": "Create checkout URLs for purchases"
+    },
+    {
+      "name": "Gift Cards",
+      "description": "Manage gift cards"
+    },
+    {
+      "name": "Coupons",
+      "description": "Manage discount coupons"
+    },
+    {
+      "name": "Bans",
+      "description": "Manage player bans"
+    },
+    {
+      "name": "Sales",
+      "description": "Retrieve active sales"
+    },
+    {
+      "name": "Community Goals",
+      "description": "Manage community goals"
+    },
+    {
+      "name": "Player Lookup",
+      "description": "Look up player information and purchases"
+    }
+  ],
+  "paths": {
+    "/information": {
+      "get": {
+        "operationId": "getInformation",
+        "summary": "Get server information",
+        "description": "Returns general information about the authenticated account and server.",
+        "tags": ["Information"],
+        "responses": {
+          "200": {
+            "description": "Successful response with account and server information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "account": {
+                      "$ref": "#/components/schemas/Account"
+                    },
+                    "server": {
+                      "$ref": "#/components/schemas/Server"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Invalid or missing secret key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queue": {
+      "get": {
+        "operationId": "getDuePlayers",
+        "summary": "Get due players",
+        "description": "Retrieves a list of players who have commands due to be executed.",
+        "tags": ["Command Queue"],
+        "responses": {
+          "200": {
+            "description": "List of due players",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "execute_offline": {
+                          "type": "boolean"
+                        },
+                        "next_check": {
+                          "type": "integer",
+                          "description": "Seconds until next check"
+                        },
+                        "more": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "players": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/QueuePlayer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCommands",
+        "summary": "Delete commands",
+        "description": "Deletes commands that have been executed from the command queue.",
+        "tags": ["Command Queue"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["ids"],
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "Array of command IDs to delete"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Commands deleted successfully"
+          }
+        }
+      }
+    },
+    "/queue/offline-commands": {
+      "get": {
+        "operationId": "getOfflineCommands",
+        "summary": "Get offline commands",
+        "description": "Retrieves commands that can be executed for offline players.",
+        "tags": ["Command Queue"],
+        "responses": {
+          "200": {
+            "description": "List of offline commands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "limited": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "commands": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Command"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queue/online-commands/{playerId}": {
+      "get": {
+        "operationId": "getOnlineCommands",
+        "summary": "Get online commands for a player",
+        "description": "Retrieves commands that should be executed for a specific online player.",
+        "tags": ["Command Queue"],
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "path",
+            "required": true,
+            "description": "The internal plugin player ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of online commands for the player",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "commands": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/OnlineCommand"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/listing": {
+      "get": {
+        "operationId": "getListing",
+        "summary": "Get listing (deprecated)",
+        "description": "Retrieves the store listing. This endpoint is deprecated; use the Headless API for displaying categories or products in game.",
+        "tags": ["Packages"],
+        "deprecated": true,
+        "responses": {
+          "200": {
+            "description": "Store listing data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/packages": {
+      "get": {
+        "operationId": "getPackages",
+        "summary": "Get all packages (deprecated)",
+        "description": "Retrieves all packages on the webstore. This endpoint is deprecated; use the Headless API for displaying categories or products in game.",
+        "tags": ["Packages"],
+        "deprecated": true,
+        "responses": {
+          "200": {
+            "description": "List of packages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Package"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/package/{packageId}": {
+      "get": {
+        "operationId": "getPackage",
+        "summary": "Get a package (deprecated)",
+        "description": "Retrieves a specific package by ID. This endpoint is deprecated; use the Headless API.",
+        "tags": ["Packages"],
+        "deprecated": true,
+        "parameters": [
+          {
+            "name": "packageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Package details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Package"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updatePackage",
+        "summary": "Update a package",
+        "description": "Updates the settings for a package on your webstore.",
+        "tags": ["Packages"],
+        "parameters": [
+          {
+            "name": "packageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "disabled": {
+                    "type": "boolean",
+                    "description": "Enable or disable the package"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Package title"
+                  },
+                  "price": {
+                    "type": "integer",
+                    "description": "Package price"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Package updated successfully"
+          }
+        }
+      }
+    },
+    "/payments": {
+      "get": {
+        "operationId": "getPayments",
+        "summary": "Get all payments",
+        "description": "Retrieves a list of payments. Supports pagination and limiting.",
+        "tags": ["Payments"],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of payments to return (max 100)",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "paged",
+            "in": "query",
+            "description": "Set to 1 to enable pagination (25 items per page)",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of payments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Payment"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPayment",
+        "summary": "Create a payment",
+        "description": "Creates a manual payment.",
+        "tags": ["Payments"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["ign", "price", "packages"],
+                "properties": {
+                  "ign": {
+                    "type": "string",
+                    "description": "Player in-game name"
+                  },
+                  "price": {
+                    "type": "number",
+                    "description": "Payment price"
+                  },
+                  "note": {
+                    "type": "string",
+                    "description": "Optional note for the payment"
+                  },
+                  "packages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "options": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Payment created successfully"
+          }
+        }
+      }
+    },
+    "/payments/{transaction}": {
+      "get": {
+        "operationId": "getPayment",
+        "summary": "Get a payment",
+        "description": "Retrieves a specific payment by transaction ID.",
+        "tags": ["Payments"],
+        "parameters": [
+          {
+            "name": "transaction",
+            "in": "path",
+            "required": true,
+            "description": "Transaction ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updatePayment",
+        "summary": "Update a payment",
+        "description": "Updates a payment status (complete, chargeback, or refund).",
+        "tags": ["Payments"],
+        "parameters": [
+          {
+            "name": "transaction",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["complete", "chargeback", "refund"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Payment updated successfully"
+          }
+        }
+      }
+    },
+    "/payments/{transaction}/note": {
+      "post": {
+        "operationId": "createPaymentNote",
+        "summary": "Create a payment note",
+        "description": "Adds a note to a specific payment.",
+        "tags": ["Payments"],
+        "parameters": [
+          {
+            "name": "transaction",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["note"],
+                "properties": {
+                  "note": {
+                    "type": "string",
+                    "description": "Note content"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Note created successfully"
+          }
+        }
+      }
+    },
+    "/payments/fields/{packageId}": {
+      "get": {
+        "operationId": "getPaymentFields",
+        "summary": "Get payment fields for a package",
+        "description": "Retrieves the required payment fields for a specific package.",
+        "tags": ["Payments"],
+        "parameters": [
+          {
+            "name": "packageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PaymentField"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/checkout": {
+      "post": {
+        "operationId": "createCheckout",
+        "summary": "Create checkout URL",
+        "description": "Creates a URL which will redirect the player to the webstore and add the package to their basket.",
+        "tags": ["Checkout"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["package_id", "username"],
+                "properties": {
+                  "package_id": {
+                    "type": "string",
+                    "description": "The package to add to the basket"
+                  },
+                  "username": {
+                    "type": "string",
+                    "description": "The player's account name"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Checkout URL created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "format": "uri",
+                      "description": "Checkout redirect URL"
+                    },
+                    "expires": {
+                      "type": "string",
+                      "description": "Expiration timestamp"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gift-cards": {
+      "get": {
+        "operationId": "getGiftCards",
+        "summary": "Get all gift cards",
+        "description": "Retrieves all gift cards on the account.",
+        "tags": ["Gift Cards"],
+        "responses": {
+          "200": {
+            "description": "List of gift cards",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/GiftCard"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createGiftCard",
+        "summary": "Create a gift card",
+        "description": "Creates a new gift card with an initial balance.",
+        "tags": ["Gift Cards"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["amount"],
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "description": "Initial card value"
+                  },
+                  "note": {
+                    "type": "string",
+                    "description": "Optional note"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "description": "Expiration date (yyyy-mm-dd hh:mm:ss)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Gift card created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GiftCard"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gift-cards/{id}": {
+      "get": {
+        "operationId": "getGiftCard",
+        "summary": "Get a gift card",
+        "description": "Retrieves a specific gift card by ID.",
+        "tags": ["Gift Cards"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Gift card details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GiftCard"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "topUpGiftCard",
+        "summary": "Top up a gift card",
+        "description": "Adds funds to an existing gift card.",
+        "tags": ["Gift Cards"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["amount"],
+                "properties": {
+                  "amount": {
+                    "type": "string",
+                    "description": "Amount of credit to add"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Gift card topped up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GiftCard"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "voidGiftCard",
+        "summary": "Void a gift card",
+        "description": "Voids/disables a gift card.",
+        "tags": ["Gift Cards"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Gift card voided successfully"
+          }
+        }
+      }
+    },
+    "/gift-cards/lookup/{code}": {
+      "get": {
+        "operationId": "lookupGiftCard",
+        "summary": "Look up a gift card by code",
+        "description": "Retrieves a gift card by its code.",
+        "tags": ["Gift Cards"],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Gift card details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GiftCard"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coupons": {
+      "get": {
+        "operationId": "getCoupons",
+        "summary": "Get all coupons",
+        "description": "Retrieves a paginated list of all coupons on the account.",
+        "tags": ["Coupons"],
+        "responses": {
+          "200": {
+            "description": "Paginated list of coupons",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pagination": {
+                      "$ref": "#/components/schemas/Pagination"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Coupon"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createCoupon",
+        "summary": "Create a coupon",
+        "description": "Creates a new coupon with specified discount settings.",
+        "tags": ["Coupons"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCouponRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Coupon created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Coupon"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coupons/{id}": {
+      "get": {
+        "operationId": "getCoupon",
+        "summary": "Get a coupon",
+        "description": "Retrieves a specific coupon by ID.",
+        "tags": ["Coupons"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Coupon details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Coupon"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCoupon",
+        "summary": "Delete a coupon",
+        "description": "Deletes a coupon by ID.",
+        "tags": ["Coupons"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Coupon deleted successfully"
+          }
+        }
+      }
+    },
+    "/bans": {
+      "get": {
+        "operationId": "getBans",
+        "summary": "Get all bans",
+        "description": "Retrieves all bans on the account.",
+        "tags": ["Bans"],
+        "responses": {
+          "200": {
+            "description": "List of bans",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Ban"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createBan",
+        "summary": "Create a ban",
+        "description": "Bans a player from the webstore.",
+        "tags": ["Bans"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["reason", "user"],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "The reason for the ban"
+                  },
+                  "ip": {
+                    "type": "string",
+                    "description": "The IP address to also ban"
+                  },
+                  "user": {
+                    "type": "string",
+                    "description": "The username or UUID of the player to ban"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ban created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ban"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sales": {
+      "get": {
+        "operationId": "getSales",
+        "summary": "Get all active sales",
+        "description": "Retrieves all currently active sales on the account.",
+        "tags": ["Sales"],
+        "responses": {
+          "200": {
+            "description": "List of active sales",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Sale"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/community_goals": {
+      "get": {
+        "operationId": "getCommunityGoals",
+        "summary": "Get all community goals",
+        "description": "Retrieves all community goals created on the account.",
+        "tags": ["Community Goals"],
+        "responses": {
+          "200": {
+            "description": "List of community goals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CommunityGoal"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/community_goals/{communityGoalId}": {
+      "get": {
+        "operationId": "getCommunityGoal",
+        "summary": "Get a community goal",
+        "description": "Retrieves a specific community goal by ID.",
+        "tags": ["Community Goals"],
+        "parameters": [
+          {
+            "name": "communityGoalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Community goal details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommunityGoal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/{user}": {
+      "get": {
+        "operationId": "lookupPlayer",
+        "summary": "Look up a player",
+        "description": "Retrieves player information including payment history and ban count. Requires Ultimate or higher plan tier.",
+        "tags": ["Player Lookup"],
+        "parameters": [
+          {
+            "name": "user",
+            "in": "path",
+            "required": true,
+            "description": "Player UUID or username",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Player details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerLookup"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/player/{playerId}/packages": {
+      "get": {
+        "operationId": "getPlayerPackages",
+        "summary": "Get player's active packages",
+        "description": "Lists active packages for a customer. Can filter by specific package ID.",
+        "tags": ["Player Lookup"],
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "path",
+            "required": true,
+            "description": "ID of the player",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "package",
+            "in": "query",
+            "description": "Filter to a specific package ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of player's purchased packages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "txn_id": {
+                        "type": "string"
+                      },
+                      "date": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "quantity": {
+                        "type": "integer"
+                      },
+                      "package": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "TebexSecret": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Tebex-Secret",
+        "description": "Secret key for server authentication. Found in your Tebex server settings."
+      }
+    },
+    "schemas": {
+      "Account": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Account identifier"
+          },
+          "domain": {
+            "type": "string",
+            "description": "Store domain URL"
+          },
+          "name": {
+            "type": "string",
+            "description": "Store name"
+          },
+          "currency": {
+            "type": "object",
+            "properties": {
+              "iso_4217": {
+                "type": "string"
+              },
+              "symbol": {
+                "type": "string"
+              }
+            }
+          },
+          "online_mode": {
+            "type": "boolean"
+          },
+          "game_type": {
+            "type": "string",
+            "description": "Associated game platform"
+          },
+          "log_events": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Server": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "QueuePlayer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Internal plugin player ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Player name"
+          },
+          "uuid": {
+            "type": "string",
+            "description": "Player UUID (Steam64, XUID, etc.)"
+          }
+        }
+      },
+      "Command": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "command": {
+            "type": "string",
+            "description": "Command string with {name} placeholder"
+          },
+          "payment": {
+            "type": "integer"
+          },
+          "package": {
+            "type": "integer"
+          },
+          "conditions": {
+            "type": "object",
+            "properties": {
+              "delay": {
+                "type": "integer",
+                "description": "Delay in seconds"
+              }
+            }
+          },
+          "player": {
+            "$ref": "#/components/schemas/QueuePlayer"
+          }
+        }
+      },
+      "OnlineCommand": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "command": {
+            "type": "string"
+          },
+          "payment": {
+            "type": "integer"
+          },
+          "package": {
+            "type": "integer"
+          },
+          "conditions": {
+            "type": "object",
+            "properties": {
+              "delay": {
+                "type": "integer"
+              },
+              "slots": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "Package": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "disabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Payment": {
+        "type": "object",
+        "properties": {
+          "txn_id": {
+            "type": "string"
+          },
+          "time": {
+            "type": "integer",
+            "description": "Unix timestamp"
+          },
+          "price": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "PaymentField": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          }
+        }
+      },
+      "GiftCard": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string"
+          },
+          "balance": {
+            "type": "object",
+            "properties": {
+              "starting": {
+                "type": "string"
+              },
+              "remaining": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string"
+              }
+            }
+          },
+          "note": {
+            "type": "string"
+          },
+          "void": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Coupon": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string"
+          },
+          "effective": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "packages": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "categories": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "discount": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "percentage": {
+                "type": "integer"
+              },
+              "value": {
+                "type": "number"
+              }
+            }
+          },
+          "expire_never": {
+            "type": "boolean"
+          },
+          "expire_limit": {
+            "type": "integer"
+          },
+          "expire_date": {
+            "type": "string"
+          },
+          "start_date": {
+            "type": "string"
+          },
+          "basket_type": {
+            "type": "string"
+          },
+          "minimum": {
+            "type": "number"
+          },
+          "username": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateCouponRequest": {
+        "type": "object",
+        "required": ["code", "effective_on", "discount_type", "discount_amount"],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "effective_on": {
+            "type": "string",
+            "enum": ["package", "category", "cart"]
+          },
+          "packages": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "discount_type": {
+            "type": "string",
+            "enum": ["percentage", "value"]
+          },
+          "discount_amount": {
+            "type": "integer"
+          },
+          "discount_percentage": {
+            "type": "integer"
+          },
+          "redeem_unlimited": {
+            "type": "boolean"
+          },
+          "expire_never": {
+            "type": "boolean"
+          },
+          "expire_limit": {
+            "type": "integer"
+          },
+          "expire_date": {
+            "type": "string",
+            "description": "Format: yyyy-mm-dd"
+          },
+          "start_date": {
+            "type": "string",
+            "description": "Format: yyyy-mm-dd"
+          },
+          "basket_type": {
+            "type": "string",
+            "enum": ["single", "subscription", "both"]
+          },
+          "minimum": {
+            "type": "number"
+          },
+          "discount_application_method": {
+            "type": "integer",
+            "enum": [0, 1, 2]
+          },
+          "username": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "Ban": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "time": {
+            "type": "string"
+          },
+          "ip": {
+            "type": "string"
+          },
+          "payment_email": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "ign": {
+                "type": "string"
+              },
+              "uuid": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Sale": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "effective": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "packages": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "categories": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "discount": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "percentage": {
+                "type": "integer"
+              },
+              "value": {
+                "type": "number"
+              }
+            }
+          },
+          "start": {
+            "type": "integer",
+            "description": "Unix timestamp"
+          },
+          "expire": {
+            "type": "integer",
+            "description": "Unix timestamp"
+          },
+          "order": {
+            "type": "integer"
+          }
+        }
+      },
+      "CommunityGoal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "account": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "current": {
+            "type": "string"
+          },
+          "repeatable": {
+            "type": "integer"
+          },
+          "last_achieved": {
+            "type": "string",
+            "nullable": true
+          },
+          "times_achieved": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "sale": {
+            "type": "integer"
+          }
+        }
+      },
+      "PlayerLookup": {
+        "type": "object",
+        "properties": {
+          "player": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "username": {
+                "type": "string"
+              },
+              "meta": {
+                "type": "object"
+              },
+              "plugin_username_id": {
+                "type": "integer"
+              }
+            }
+          },
+          "banCount": {
+            "type": "integer"
+          },
+          "chargebackRate": {
+            "type": "integer"
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Payment"
+            }
+          },
+          "purchaseTotals": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "current_page": {
+            "type": "integer"
+          },
+          "last_page": {
+            "type": "integer"
+          },
+          "per_page": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error_code": {
+            "type": "integer"
+          },
+          "error_message": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
