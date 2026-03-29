@@ -1,0 +1,1014 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Detrack API",
+    "description": "Detrack is a delivery management and electronic proof of delivery (ePOD) platform. The Detrack API enables programmatic management of deliveries, collections, vehicles, and real-time tracking for last-mile logistics operations.",
+    "version": "2.0",
+    "contact": {
+      "name": "Detrack",
+      "url": "https://www.detrack.com"
+    },
+    "x-jentic-source-url": "https://www.detrack.com/api-documentation/"
+  },
+  "servers": [
+    {
+      "url": "https://app.detrack.com/api/v2",
+      "description": "Detrack API v2"
+    }
+  ],
+  "security": [
+    {
+      "apiKeyHeader": []
+    }
+  ],
+  "paths": {
+    "/dn/deliveries": {
+      "get": {
+        "summary": "List deliveries",
+        "description": "Retrieve a list of delivery jobs.",
+        "operationId": "listDeliveries",
+        "tags": ["Deliveries"],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination.",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of results per page.",
+            "schema": { "type": "integer", "default": 50 }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "description": "Filter by delivery date (YYYY-MM-DD).",
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by delivery status.",
+            "schema": { "type": "string", "enum": ["info_recv", "dispatched", "completed", "completed_partial", "failed"] }
+          },
+          {
+            "name": "do_number",
+            "in": "query",
+            "description": "Filter by delivery order number.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "assign_to",
+            "in": "query",
+            "description": "Filter by assigned driver.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort field.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of deliveries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Delivery" }
+                    },
+                    "pagination": { "$ref": "#/components/schemas/Pagination" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "summary": "Create deliveries",
+        "description": "Create one or more delivery jobs.",
+        "operationId": "createDeliveries",
+        "tags": ["Deliveries"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                  "data": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/DeliveryCreate" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deliveries created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Delivery" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/dn/deliveries/{do_number}": {
+      "get": {
+        "summary": "Get a delivery",
+        "description": "Retrieve a specific delivery by delivery order number.",
+        "operationId": "getDelivery",
+        "tags": ["Deliveries"],
+        "parameters": [
+          {
+            "name": "do_number",
+            "in": "path",
+            "required": true,
+            "description": "Delivery order number.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "description": "Delivery date (YYYY-MM-DD). Required if duplicate DO numbers exist.",
+            "schema": { "type": "string", "format": "date" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delivery details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Delivery" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Delivery not found" }
+        }
+      },
+      "put": {
+        "summary": "Update a delivery",
+        "description": "Update an existing delivery.",
+        "operationId": "updateDelivery",
+        "tags": ["Deliveries"],
+        "parameters": [
+          {
+            "name": "do_number",
+            "in": "path",
+            "required": true,
+            "description": "Delivery order number.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": { "$ref": "#/components/schemas/DeliveryUpdate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Delivery updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Delivery" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "404": { "description": "Delivery not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a delivery",
+        "description": "Delete a delivery by order number.",
+        "operationId": "deleteDelivery",
+        "tags": ["Deliveries"],
+        "parameters": [
+          {
+            "name": "do_number",
+            "in": "path",
+            "required": true,
+            "description": "Delivery order number.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "description": "Delivery date (YYYY-MM-DD).",
+            "schema": { "type": "string", "format": "date" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Delivery deleted." },
+          "404": { "description": "Delivery not found" }
+        }
+      }
+    },
+    "/dn/deliveries/bulk": {
+      "post": {
+        "summary": "Bulk create deliveries",
+        "description": "Create multiple delivery jobs in bulk.",
+        "operationId": "bulkCreateDeliveries",
+        "tags": ["Deliveries"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                  "data": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/DeliveryCreate" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Bulk deliveries created." },
+          "400": { "description": "Bad request" }
+        }
+      },
+      "delete": {
+        "summary": "Bulk delete deliveries",
+        "description": "Delete multiple deliveries in bulk.",
+        "operationId": "bulkDeleteDeliveries",
+        "tags": ["Deliveries"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                  "data": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["do_number", "date"],
+                      "properties": {
+                        "do_number": { "type": "string" },
+                        "date": { "type": "string", "format": "date" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Deliveries deleted." },
+          "400": { "description": "Bad request" }
+        }
+      }
+    },
+    "/dn/deliveries/reattempt": {
+      "post": {
+        "summary": "Reattempt deliveries",
+        "description": "Reattempt failed delivery jobs.",
+        "operationId": "reattemptDeliveries",
+        "tags": ["Deliveries"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                  "data": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["do_number", "date"],
+                      "properties": {
+                        "do_number": { "type": "string" },
+                        "date": { "type": "string", "format": "date" },
+                        "new_date": { "type": "string", "format": "date" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Reattempt created." },
+          "400": { "description": "Bad request" }
+        }
+      }
+    },
+    "/dn/collections": {
+      "get": {
+        "summary": "List collections",
+        "description": "Retrieve a list of collection (pickup) jobs.",
+        "operationId": "listCollections",
+        "tags": ["Collections"],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 50 }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "description": "Filter by collection date (YYYY-MM-DD).",
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by collection status.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of collections.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Collection" }
+                    },
+                    "pagination": { "$ref": "#/components/schemas/Pagination" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create collections",
+        "description": "Create one or more collection (pickup) jobs.",
+        "operationId": "createCollections",
+        "tags": ["Collections"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                  "data": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/CollectionCreate" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Collections created." },
+          "400": { "description": "Bad request" }
+        }
+      }
+    },
+    "/dn/collections/{do_number}": {
+      "get": {
+        "summary": "Get a collection",
+        "description": "Retrieve a specific collection by order number.",
+        "operationId": "getCollection",
+        "tags": ["Collections"],
+        "parameters": [
+          {
+            "name": "do_number",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collection details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Collection" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Collection not found" }
+        }
+      },
+      "put": {
+        "summary": "Update a collection",
+        "description": "Update an existing collection.",
+        "operationId": "updateCollection",
+        "tags": ["Collections"],
+        "parameters": [
+          {
+            "name": "do_number",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": { "$ref": "#/components/schemas/CollectionCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Collection updated." },
+          "400": { "description": "Bad request" },
+          "404": { "description": "Collection not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a collection",
+        "description": "Delete a collection by order number.",
+        "operationId": "deleteCollection",
+        "tags": ["Collections"],
+        "parameters": [
+          {
+            "name": "do_number",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Collection deleted." },
+          "404": { "description": "Collection not found" }
+        }
+      }
+    },
+    "/dn/vehicles": {
+      "get": {
+        "summary": "List vehicles",
+        "description": "Retrieve a list of vehicles.",
+        "operationId": "listVehicles",
+        "tags": ["Vehicles"],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 50 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of vehicles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Vehicle" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a vehicle",
+        "description": "Create a new vehicle.",
+        "operationId": "createVehicle",
+        "tags": ["Vehicles"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": { "$ref": "#/components/schemas/VehicleCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Vehicle created." },
+          "400": { "description": "Bad request" }
+        }
+      }
+    },
+    "/dn/vehicles/{vehicle_id}": {
+      "get": {
+        "summary": "Get a vehicle",
+        "description": "Retrieve a specific vehicle.",
+        "operationId": "getVehicle",
+        "tags": ["Vehicles"],
+        "parameters": [
+          {
+            "name": "vehicle_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vehicle details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Vehicle" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Vehicle not found" }
+        }
+      },
+      "put": {
+        "summary": "Update a vehicle",
+        "description": "Update an existing vehicle.",
+        "operationId": "updateVehicle",
+        "tags": ["Vehicles"],
+        "parameters": [
+          {
+            "name": "vehicle_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": { "$ref": "#/components/schemas/VehicleCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Vehicle updated." },
+          "400": { "description": "Bad request" },
+          "404": { "description": "Vehicle not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a vehicle",
+        "description": "Delete a vehicle.",
+        "operationId": "deleteVehicle",
+        "tags": ["Vehicles"],
+        "parameters": [
+          {
+            "name": "vehicle_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Vehicle deleted." },
+          "404": { "description": "Vehicle not found" }
+        }
+      }
+    },
+    "/dn/items": {
+      "get": {
+        "summary": "List items",
+        "description": "Retrieve a list of item templates.",
+        "operationId": "listItems",
+        "tags": ["Items"],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 50 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of items.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Item" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create an item",
+        "description": "Create a new item template.",
+        "operationId": "createItem",
+        "tags": ["Items"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": { "$ref": "#/components/schemas/ItemCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Item created." },
+          "400": { "description": "Bad request" }
+        }
+      }
+    },
+    "/dn/items/{sku}": {
+      "get": {
+        "summary": "Get an item",
+        "description": "Retrieve a specific item by SKU.",
+        "operationId": "getItem",
+        "tags": ["Items"],
+        "parameters": [
+          {
+            "name": "sku",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Item" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Item not found" }
+        }
+      },
+      "put": {
+        "summary": "Update an item",
+        "description": "Update an existing item.",
+        "operationId": "updateItem",
+        "tags": ["Items"],
+        "parameters": [
+          {
+            "name": "sku",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": { "$ref": "#/components/schemas/ItemCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Item updated." },
+          "400": { "description": "Bad request" },
+          "404": { "description": "Item not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete an item",
+        "description": "Delete an item by SKU.",
+        "operationId": "deleteItem",
+        "tags": ["Items"],
+        "parameters": [
+          {
+            "name": "sku",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Item deleted." },
+          "404": { "description": "Item not found" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-KEY",
+        "description": "API key for authenticating requests. Obtain from the Detrack dashboard."
+      }
+    },
+    "schemas": {
+      "Delivery": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "do_number": { "type": "string", "description": "Delivery order number." },
+          "date": { "type": "string", "format": "date" },
+          "status": { "type": "string", "description": "Delivery status." },
+          "address": { "type": "string" },
+          "postal_code": { "type": "string" },
+          "city": { "type": "string" },
+          "state": { "type": "string" },
+          "country": { "type": "string" },
+          "deliver_to": { "type": "string", "description": "Recipient name." },
+          "phone": { "type": "string" },
+          "notify_email": { "type": "string", "format": "email" },
+          "assign_to": { "type": "string", "description": "Assigned driver name." },
+          "instructions": { "type": "string" },
+          "zone": { "type": "string" },
+          "lat": { "type": "number" },
+          "lng": { "type": "number" },
+          "start_date": { "type": "string", "format": "date-time" },
+          "eta": { "type": "string", "format": "date-time" },
+          "time_window": { "type": "string" },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/DeliveryItem" }
+          },
+          "pod_time": { "type": "string", "format": "date-time" },
+          "pod_signature_url": { "type": "string", "format": "uri" },
+          "pod_photo_url": { "type": "string", "format": "uri" },
+          "reason": { "type": "string", "description": "Failure reason if applicable." },
+          "tracking_url": { "type": "string", "format": "uri" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "DeliveryCreate": {
+        "type": "object",
+        "required": ["do_number", "date", "address"],
+        "properties": {
+          "do_number": { "type": "string", "description": "Unique delivery order number." },
+          "date": { "type": "string", "format": "date", "description": "Delivery date." },
+          "address": { "type": "string" },
+          "postal_code": { "type": "string" },
+          "city": { "type": "string" },
+          "state": { "type": "string" },
+          "country": { "type": "string" },
+          "deliver_to": { "type": "string" },
+          "phone": { "type": "string" },
+          "notify_email": { "type": "string", "format": "email" },
+          "assign_to": { "type": "string", "description": "Driver name to assign." },
+          "instructions": { "type": "string" },
+          "zone": { "type": "string" },
+          "time_window": { "type": "string" },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/DeliveryItem" }
+          }
+        }
+      },
+      "DeliveryUpdate": {
+        "type": "object",
+        "properties": {
+          "date": { "type": "string", "format": "date" },
+          "address": { "type": "string" },
+          "postal_code": { "type": "string" },
+          "city": { "type": "string" },
+          "state": { "type": "string" },
+          "country": { "type": "string" },
+          "deliver_to": { "type": "string" },
+          "phone": { "type": "string" },
+          "notify_email": { "type": "string", "format": "email" },
+          "assign_to": { "type": "string" },
+          "instructions": { "type": "string" },
+          "zone": { "type": "string" },
+          "time_window": { "type": "string" },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/DeliveryItem" }
+          }
+        }
+      },
+      "DeliveryItem": {
+        "type": "object",
+        "properties": {
+          "sku": { "type": "string" },
+          "description": { "type": "string" },
+          "quantity": { "type": "integer" },
+          "weight": { "type": "number" },
+          "comments": { "type": "string" }
+        }
+      },
+      "Collection": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "do_number": { "type": "string", "description": "Collection order number." },
+          "date": { "type": "string", "format": "date" },
+          "status": { "type": "string" },
+          "address": { "type": "string" },
+          "postal_code": { "type": "string" },
+          "city": { "type": "string" },
+          "state": { "type": "string" },
+          "country": { "type": "string" },
+          "collect_from": { "type": "string", "description": "Sender name." },
+          "phone": { "type": "string" },
+          "notify_email": { "type": "string", "format": "email" },
+          "assign_to": { "type": "string" },
+          "instructions": { "type": "string" },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/DeliveryItem" }
+          },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CollectionCreate": {
+        "type": "object",
+        "required": ["do_number", "date", "address"],
+        "properties": {
+          "do_number": { "type": "string" },
+          "date": { "type": "string", "format": "date" },
+          "address": { "type": "string" },
+          "postal_code": { "type": "string" },
+          "city": { "type": "string" },
+          "state": { "type": "string" },
+          "country": { "type": "string" },
+          "collect_from": { "type": "string" },
+          "phone": { "type": "string" },
+          "notify_email": { "type": "string", "format": "email" },
+          "assign_to": { "type": "string" },
+          "instructions": { "type": "string" },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/DeliveryItem" }
+          }
+        }
+      },
+      "Vehicle": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "plate_number": { "type": "string" },
+          "driver": { "type": "string" },
+          "weight_capacity": { "type": "number" },
+          "volume_capacity": { "type": "number" },
+          "status": { "type": "string" }
+        }
+      },
+      "VehicleCreate": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "plate_number": { "type": "string" },
+          "driver": { "type": "string" },
+          "weight_capacity": { "type": "number" },
+          "volume_capacity": { "type": "number" }
+        }
+      },
+      "Item": {
+        "type": "object",
+        "properties": {
+          "sku": { "type": "string" },
+          "description": { "type": "string" },
+          "weight": { "type": "number" },
+          "comments": { "type": "string" }
+        }
+      },
+      "ItemCreate": {
+        "type": "object",
+        "required": ["sku", "description"],
+        "properties": {
+          "sku": { "type": "string" },
+          "description": { "type": "string" },
+          "weight": { "type": "number" },
+          "comments": { "type": "string" }
+        }
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "current_page": { "type": "integer" },
+          "total_pages": { "type": "integer" },
+          "total_count": { "type": "integer" },
+          "per_page": { "type": "integer" }
+        }
+      }
+    }
+  },
+  "tags": [
+    { "name": "Deliveries", "description": "Manage delivery jobs including creation, tracking, and proof of delivery." },
+    { "name": "Collections", "description": "Manage collection (pickup) jobs." },
+    { "name": "Vehicles", "description": "Manage delivery vehicles." },
+    { "name": "Items", "description": "Manage item templates." }
+  ]
+}
