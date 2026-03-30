@@ -1,0 +1,523 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "LSArespond Zapier API",
+    "description": "Public API for Zapier integrations with LSArespond. Authenticate with bearer token, manage webhooks for new leads and messages, and retrieve recent leads and conversations.",
+    "version": "1.0.0",
+    "contact": {
+      "url": "https://app.glshero.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://app.glshero.com",
+      "description": "Production server"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/zapier/login": {
+      "post": {
+        "summary": "Login and receive bearer token",
+        "description": "Authenticate with email and password to receive a bearer token for API access",
+        "operationId": "login",
+        "tags": [
+          "Auth"
+        ],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "your_email@test.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "example": "your_password"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": {
+                      "type": "string",
+                      "example": "6786|0Mz3OzCN0b2zMreGwLLdYXlBUkHV4yHMbER9rIk5"
+                    },
+                    "token_type": {
+                      "type": "string",
+                      "example": "Bearer"
+                    },
+                    "user_id": {
+                      "type": "integer",
+                      "example": 6475
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/auth-test": {
+      "get": {
+        "summary": "Validate bearer token",
+        "description": "Test if the current bearer token is valid",
+        "operationId": "authTest",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Token is valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token is invalid or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/webhooks/subscribe": {
+      "post": {
+        "summary": "Subscribe a webhook",
+        "description": "Create a new webhook subscription for new_lead or new_message events",
+        "operationId": "subscribeWebhook",
+        "tags": [
+          "Webhooks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "event",
+                  "target_url"
+                ],
+                "properties": {
+                  "event": {
+                    "type": "string",
+                    "enum": [
+                      "new_lead",
+                      "new_message"
+                    ],
+                    "example": "new_lead"
+                  },
+                  "target_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "example": "http://webhook.example.com"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/webhooks": {
+      "get": {
+        "summary": "Get all webhooks (current user)",
+        "description": "List all webhook subscriptions for the authenticated user",
+        "operationId": "listWebhooks",
+        "tags": [
+          "Webhooks"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of webhooks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Webhook"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/webhooks/unsubscribe/{id}": {
+      "delete": {
+        "summary": "Unsubscribe a webhook",
+        "description": "Remove a webhook subscription by ID",
+        "operationId": "unsubscribeWebhook",
+        "tags": [
+          "Webhooks"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Webhook ID to unsubscribe",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook removed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Webhook not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/leads": {
+      "get": {
+        "summary": "Poll recent 10 new/updated leads",
+        "description": "Retrieve the last 10 leads. AI-enriched data for Answered Calls only appears when ready.",
+        "operationId": "getLeads",
+        "tags": [
+          "Leads"
+        ],
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "description": "ISO8601 timestamp; default last 7 days",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "example": "1970-06-28T21:17:19.723Z"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of recent leads",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Lead"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/messages": {
+      "get": {
+        "summary": "Poll recent 10 conversations",
+        "description": "Retrieve the last 10 conversations with lead IDs",
+        "operationId": "getMessages",
+        "tags": [
+          "Messages"
+        ],
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "description": "ISO8601 timestamp for filtering messages",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "example": "1970-06-28T21:17:19.723Z"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of recent conversations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Conversation"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Webhook": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 123
+          },
+          "event": {
+            "type": "string",
+            "enum": [
+              "new_lead",
+              "new_message"
+            ],
+            "example": "new_lead"
+          },
+          "target_url": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://hooks.zapier.com/..."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "1947-07-24T05:06:51.002Z"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "1977-07-21T02:32:24.418Z"
+          }
+        }
+      },
+      "Lead": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "Answered Call"
+          },
+          "name": {
+            "type": "string",
+            "example": "John Doe"
+          },
+          "phone": {
+            "type": "string",
+            "example": "555-123-4567"
+          },
+          "service": {
+            "type": "string",
+            "example": "Plumbing"
+          },
+          "location": {
+            "type": "string",
+            "example": "Portland"
+          },
+          "conversation": {
+            "type": "string",
+            "example": "[John]: \"Hi\" \n[Company]: \"Hello\""
+          },
+          "ai": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  },
+                  "bucket": {
+                    "type": "string",
+                    "example": "Lead Booked"
+                  },
+                  "summary": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "Conversation": {
+        "type": "object",
+        "properties": {
+          "lead_id": {
+            "type": "integer",
+            "example": 9876
+          },
+          "conversation": {
+            "type": "string",
+            "example": "[ABC Company]: \"Hi - thanks for reaching out\""
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "Leads"
+    },
+    {
+      "name": "Messages"
+    },
+    {
+      "name": "Webhooks"
+    }
+  ]
+}
