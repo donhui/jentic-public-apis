@@ -1,0 +1,1118 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Kroger API",
+    "description": "The Kroger Public API provides access to Kroger's supermarket data including product search, store locations, authorization, and cart management. Kroger operates over 2,700 stores across the United States under various banners.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Kroger Developer Support",
+      "url": "https://developer.kroger.com"
+    },
+    "x-jentic-source-url": "https://developer.kroger.com/reference"
+  },
+  "servers": [
+    {
+      "url": "https://api.kroger.com/v1",
+      "description": "Kroger Public API"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authorization",
+      "description": "OAuth2 token endpoints for client credentials and authorization code flows"
+    },
+    {
+      "name": "Products",
+      "description": "Search and retrieve product information including pricing and availability"
+    },
+    {
+      "name": "Locations",
+      "description": "Search and retrieve store location information"
+    },
+    {
+      "name": "Cart",
+      "description": "Add items to a customer's cart"
+    },
+    {
+      "name": "Identity",
+      "description": "Retrieve customer profile information"
+    }
+  ],
+  "paths": {
+    "/connect/oauth2/token": {
+      "post": {
+        "tags": ["Authorization"],
+        "summary": "Get access token",
+        "description": "Obtain an OAuth2 access token using client credentials or authorization code grant.",
+        "operationId": "getToken",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["grant_type"],
+                "properties": {
+                  "grant_type": {
+                    "type": "string",
+                    "enum": ["client_credentials", "authorization_code", "refresh_token"],
+                    "description": "OAuth2 grant type"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "Authorization code (required for authorization_code grant)"
+                  },
+                  "redirect_uri": {
+                    "type": "string",
+                    "description": "Redirect URI (required for authorization_code grant)"
+                  },
+                  "refresh_token": {
+                    "type": "string",
+                    "description": "Refresh token (required for refresh_token grant)"
+                  },
+                  "scope": {
+                    "type": "string",
+                    "description": "Space-separated list of scopes"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token issued successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid grant type or parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid client credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ]
+      }
+    },
+    "/connect/oauth2/authorize": {
+      "get": {
+        "tags": ["Authorization"],
+        "summary": "Authorize customer",
+        "description": "Redirect customers to this endpoint to authorize your application and obtain an authorization code.",
+        "operationId": "authorize",
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": true,
+            "description": "Space-separated list of requested scopes",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": true,
+            "description": "Your application's client ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "required": true,
+            "description": "URI to redirect to after authorization",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "response_type",
+            "in": "query",
+            "required": true,
+            "description": "Must be 'code'",
+            "schema": {
+              "type": "string",
+              "enum": ["code"]
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "description": "Opaque value to maintain state between request and callback",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to Kroger sign-in page"
+          }
+        }
+      }
+    },
+    "/products": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Search products",
+        "description": "Search for products by term, brand, or fulfillment type. Results can be scoped to a specific store location for pricing and availability.",
+        "operationId": "searchProducts",
+        "parameters": [
+          {
+            "name": "filter.term",
+            "in": "query",
+            "description": "Search term for products",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter.locationId",
+            "in": "query",
+            "description": "Location ID to filter products by availability and get local pricing",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter.productId",
+            "in": "query",
+            "description": "Comma-separated list of product IDs (up to 50)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter.brand",
+            "in": "query",
+            "description": "Filter by brand name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter.fulfillment",
+            "in": "query",
+            "description": "Filter by fulfillment type",
+            "schema": {
+              "type": "string",
+              "enum": ["ais", "csp", "dth", "shp"]
+            }
+          },
+          {
+            "name": "filter.start",
+            "in": "query",
+            "description": "Starting index for pagination",
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "filter.limit",
+            "in": "query",
+            "description": "Maximum number of results to return",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful product search",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Product"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oauth2": ["product.compact"]
+          }
+        ]
+      }
+    },
+    "/products/{productId}": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Get product by ID",
+        "description": "Retrieve detailed information for a specific product by its ID.",
+        "operationId": "getProduct",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "description": "The unique product identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter.locationId",
+            "in": "query",
+            "description": "Location ID to get local pricing and availability",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Product"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Product not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oauth2": ["product.compact"]
+          }
+        ]
+      }
+    },
+    "/locations": {
+      "get": {
+        "tags": ["Locations"],
+        "summary": "Search store locations",
+        "description": "Search for Kroger family store locations by ZIP code, coordinates, or other filters.",
+        "operationId": "searchLocations",
+        "parameters": [
+          {
+            "name": "filter.zipCode.near",
+            "in": "query",
+            "description": "ZIP code to search near",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter.lat.near",
+            "in": "query",
+            "description": "Latitude for geographic search",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "filter.lon.near",
+            "in": "query",
+            "description": "Longitude for geographic search",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "filter.radiusInMiles",
+            "in": "query",
+            "description": "Search radius in miles from the specified location",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "filter.chain",
+            "in": "query",
+            "description": "Filter by store chain/banner name (e.g., Kroger, Ralphs, Fred Meyer)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter.department",
+            "in": "query",
+            "description": "Filter by department availability",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter.limit",
+            "in": "query",
+            "description": "Maximum number of results to return",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful location search",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Location"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oauth2": ["product.compact"]
+          }
+        ]
+      }
+    },
+    "/locations/{locationId}": {
+      "get": {
+        "tags": ["Locations"],
+        "summary": "Get location by ID",
+        "description": "Retrieve detailed information for a specific store location.",
+        "operationId": "getLocation",
+        "parameters": [
+          {
+            "name": "locationId",
+            "in": "path",
+            "required": true,
+            "description": "The unique location identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Location"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Location not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oauth2": ["product.compact"]
+          }
+        ]
+      }
+    },
+    "/cart/add": {
+      "put": {
+        "tags": ["Cart"],
+        "summary": "Add items to cart",
+        "description": "Add one or more items to the authenticated customer's cart.",
+        "operationId": "addToCart",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["items"],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["upc", "quantity"],
+                      "properties": {
+                        "upc": {
+                          "type": "string",
+                          "description": "Universal Product Code"
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "description": "Quantity to add",
+                          "minimum": 1
+                        },
+                        "modality": {
+                          "type": "string",
+                          "description": "Fulfillment modality",
+                          "enum": ["PICKUP", "DELIVERY", "SHIP"]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Items added to cart successfully"
+          },
+          "400": {
+            "description": "Bad request - invalid items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - customer token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oauth2": ["cart.basic:write"]
+          }
+        ]
+      }
+    },
+    "/identity/profile": {
+      "get": {
+        "tags": ["Identity"],
+        "summary": "Get customer profile",
+        "description": "Retrieve the authenticated customer's profile information.",
+        "operationId": "getProfile",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CustomerProfile"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - customer token required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oauth2": ["profile.compact"]
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "description": "Kroger OAuth2 authentication",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://api.kroger.com/v1/connect/oauth2/token",
+            "scopes": {
+              "product.compact": "Access product information",
+              "cart.basic:write": "Add items to customer cart",
+              "profile.compact": "Access customer profile"
+            }
+          },
+          "authorizationCode": {
+            "authorizationUrl": "https://api.kroger.com/v1/connect/oauth2/authorize",
+            "tokenUrl": "https://api.kroger.com/v1/connect/oauth2/token",
+            "scopes": {
+              "product.compact": "Access product information",
+              "cart.basic:write": "Add items to customer cart",
+              "profile.compact": "Access customer profile"
+            }
+          }
+        }
+      },
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Base64-encoded client_id:client_secret for token requests"
+      }
+    },
+    "schemas": {
+      "Product": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "description": "Unique product identifier"
+          },
+          "upc": {
+            "type": "string",
+            "description": "Universal Product Code"
+          },
+          "aisleLocations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "bayNumber": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "number": {
+                  "type": "string"
+                },
+                "numberOfFacings": {
+                  "type": "string"
+                },
+                "side": {
+                  "type": "string"
+                },
+                "shelfNumber": {
+                  "type": "string"
+                },
+                "shelfPositionInBay": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "brand": {
+            "type": "string",
+            "description": "Product brand name"
+          },
+          "categories": {
+            "type": "array",
+            "description": "Product categories",
+            "items": {
+              "type": "string"
+            }
+          },
+          "countryOrigin": {
+            "type": "string",
+            "description": "Country of origin"
+          },
+          "description": {
+            "type": "string",
+            "description": "Product description"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductImage"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductItem"
+            }
+          },
+          "itemInformation": {
+            "type": "object",
+            "properties": {
+              "depth": {
+                "type": "string"
+              },
+              "height": {
+                "type": "string"
+              },
+              "width": {
+                "type": "string"
+              }
+            }
+          },
+          "temperature": {
+            "type": "object",
+            "properties": {
+              "indicator": {
+                "type": "string"
+              },
+              "heatSensitive": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "ProductImage": {
+        "type": "object",
+        "properties": {
+          "perspective": {
+            "type": "string",
+            "description": "Image perspective (e.g., front, back, left, right)"
+          },
+          "featured": {
+            "type": "boolean"
+          },
+          "sizes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "size": {
+                  "type": "string",
+                  "enum": ["thumbnail", "small", "medium", "large", "xlarge"]
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ProductItem": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string"
+          },
+          "inventory": {
+            "type": "object",
+            "properties": {
+              "stockLevel": {
+                "type": "string",
+                "enum": ["HIGH", "LOW", "TEMPORARILY_OUT_OF_STOCK"]
+              }
+            }
+          },
+          "favorite": {
+            "type": "boolean"
+          },
+          "fulfillment": {
+            "type": "object",
+            "properties": {
+              "curbside": {
+                "type": "boolean"
+              },
+              "delivery": {
+                "type": "boolean"
+              },
+              "inStore": {
+                "type": "boolean"
+              },
+              "shipToHome": {
+                "type": "boolean"
+              }
+            }
+          },
+          "price": {
+            "type": "object",
+            "properties": {
+              "regular": {
+                "type": "number",
+                "format": "double",
+                "description": "Regular price"
+              },
+              "promo": {
+                "type": "number",
+                "format": "double",
+                "description": "Promotional price"
+              },
+              "regularPerUnitEstimate": {
+                "type": "number",
+                "format": "double"
+              },
+              "promoPerUnitEstimate": {
+                "type": "number",
+                "format": "double"
+              }
+            }
+          },
+          "nationalPrice": {
+            "type": "object",
+            "properties": {
+              "regular": {
+                "type": "number",
+                "format": "double"
+              },
+              "promo": {
+                "type": "number",
+                "format": "double"
+              }
+            }
+          },
+          "size": {
+            "type": "string",
+            "description": "Item size"
+          },
+          "soldBy": {
+            "type": "string"
+          }
+        }
+      },
+      "Location": {
+        "type": "object",
+        "properties": {
+          "locationId": {
+            "type": "string",
+            "description": "Unique location identifier"
+          },
+          "chain": {
+            "type": "string",
+            "description": "Store chain/banner name"
+          },
+          "name": {
+            "type": "string",
+            "description": "Store name"
+          },
+          "address": {
+            "type": "object",
+            "properties": {
+              "addressLine1": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "zipCode": {
+                "type": "string"
+              },
+              "county": {
+                "type": "string"
+              }
+            }
+          },
+          "geolocation": {
+            "type": "object",
+            "properties": {
+              "latitude": {
+                "type": "number",
+                "format": "double"
+              },
+              "longitude": {
+                "type": "number",
+                "format": "double"
+              },
+              "latLng": {
+                "type": "string"
+              }
+            }
+          },
+          "phone": {
+            "type": "string"
+          },
+          "departments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "departmentId": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "phone": {
+                  "type": "string"
+                },
+                "hours": {
+                  "$ref": "#/components/schemas/OperatingHours"
+                }
+              }
+            }
+          },
+          "hours": {
+            "$ref": "#/components/schemas/OperatingHours"
+          }
+        }
+      },
+      "OperatingHours": {
+        "type": "object",
+        "properties": {
+          "timezone": {
+            "type": "string"
+          },
+          "open24": {
+            "type": "boolean"
+          },
+          "monday": {
+            "$ref": "#/components/schemas/DayHours"
+          },
+          "tuesday": {
+            "$ref": "#/components/schemas/DayHours"
+          },
+          "wednesday": {
+            "$ref": "#/components/schemas/DayHours"
+          },
+          "thursday": {
+            "$ref": "#/components/schemas/DayHours"
+          },
+          "friday": {
+            "$ref": "#/components/schemas/DayHours"
+          },
+          "saturday": {
+            "$ref": "#/components/schemas/DayHours"
+          },
+          "sunday": {
+            "$ref": "#/components/schemas/DayHours"
+          }
+        }
+      },
+      "DayHours": {
+        "type": "object",
+        "properties": {
+          "open": {
+            "type": "string",
+            "description": "Opening time in HH:MM format"
+          },
+          "close": {
+            "type": "string",
+            "description": "Closing time in HH:MM format"
+          },
+          "open24": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CustomerProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "expires_in": {
+            "type": "integer",
+            "description": "Token lifetime in seconds"
+          },
+          "access_token": {
+            "type": "string",
+            "description": "Bearer access token"
+          },
+          "token_type": {
+            "type": "string",
+            "enum": ["bearer"]
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "Refresh token (only for authorization_code grant)"
+          }
+        }
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "pagination": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "integer"
+              },
+              "limit": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2": ["product.compact"]
+    }
+  ]
+}
