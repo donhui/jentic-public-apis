@@ -1,0 +1,1902 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Transfers API",
+    "description": "# General\nBookaway B2B API give you access to all Bookaway inventory. You can use it to search, book and get the status of a specific booking.\n# Authentication\nTo authenticate to Bookaway B2B API you need first to get credentials a `client_id` and a `client_secret`.\nBookaway B2B API uses Oauth2 Client Credentials to perform the authentication. The Bookaway Oauth2 flow documentation is available [here](https://app.swaggerhub.com/apis-docs/Bookaway/Oauth/1.0.0).\n# Environments\n### Sandbox\nThe sandbox environment is used for test and development purposes. It works the same as the production environment but return slightly different data and requires to use sandbox credentials.\n  The base URL for each API call is:\n  \n  `https://stage.bookaway.com/api/b2b/v1`\n  \n### Production\nOnce you’re finished developing your integration with Bookaway B2B API in the sandbox environment, and after reviewing your integration with Bookaway, you’ll be given production credentials.\n  The base URL for each API call in production is:\n  \n`https://www.bookaway.com/api/b2b/v1`\n\n\n# Workflow\n### 1. Static API\nYou need first to retrieve the different destinations and transfers information that Bookaway offers. The destinations are available as JSON file. We recommand run an update on a weekly basis.\n\n  They’re composed of 5 types of entities:\n\n  * **Stations**: Pickup/Dropoff point with specific coordinate\n  * **Cities**: List of available destinations\n  * **Routes**: \n    \n    * A route is a way to go from a station A to a station B. Example: Bangkok to Pattaya\n  \n    * A route is defined by a direction, Cusco to Machu Picchu is a route and Machu Picchu to Cusco is another route.\n    \n    * On a specific route there can be different types of transfers: train, bus, ferry, private car, etc…\n  * **Transfers**: A transfer is a bus/train/ferry operated on a specific route. Each transfer has a operator\n  * **Operators**: List of available operators.\n  \nStatic API returns thousands of results, you should never send live requests but instead download `stations.json`, `cities.json`, `routes.json` , `transfers.json` and `operators.json` files on a daily basis and cache them in your system.\n\n### 2. Trips API\n\n  Let you search through all trips available in Bookaway B2B API.\n  \n  You can also look at a specific Trip.\n  \n  Trips might require additional information, some information is static which can be retreived from the transfers static endpoint.\n  Some information is dynamic like seatMap - trips which might require seatMap input will have a flag on them `hasExtraUserInputRequired` as `true`.\n  For those trips a call to `tripDetails` should be made. If an aditional info returned, its should be used on the booking process (selected seats for example).\n  \n  \n  \n### 3. Bookings API\n\n  Let you book a specific Trip.\n  \n  Let you see the status of a specific booking. \n  \n  Let you cancel a specific booking.\n  \n### 4. Post Bookings WebHooks\n\n  Booking updates can be retrieved by getting booking status - from Booking API, or by a webhook notification which will notify about booking updated.\n  \n  All webhooks will be delivered to the same endpoint which should response with a HTTP 200 status.\n  \n  The webhooks can be differentiated by `type` field\n  \n  All webhooks will use HTTP **POST**\n\n  **Please note:**\n  \n  The paths stated below are only used to make the documentation clearer to read and navigate. Nothing should follow the '/' in the path.\n  \n  for example `https://webhook-endpoint/approved` will be sent to your webhook url without the `/approved` safix\n    contact:\nname: omer chehmer\n    contact:\nemail: omer@bookaway.com\n  \n  ",
+    "x-jentic-source-url": "https://api.swaggerhub.com/apis/Bookaway/B2B/1.0.0/swagger.json"
+  },
+  "servers": [
+    {
+      "description": "SwaggerHub API Auto Mocking",
+      "url": "https://virtserver.swaggerhub.com/Bookaway/B2B/1.0.0"
+    },
+    {
+      "description": "Bookaway Sandbox",
+      "url": "https://stage.bookaway.com/api/b2b/v1"
+    },
+    {
+      "description": "Bookaway Production",
+      "url": "https://www.bookaway.com/api/b2b/v1"
+    }
+  ],
+  "paths": {
+    "/cities": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/bearerToken"
+        },
+        {
+          "in": "query",
+          "name": "limit",
+          "description": "limit the number of results. maximum allowed is 1000",
+          "required": false,
+          "schema": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 1000
+          }
+        },
+        {
+          "in": "query",
+          "name": "offset",
+          "description": "result offset. default is zero.",
+          "required": false,
+          "schema": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Static API"
+        ],
+        "description": "Returns a json file containing all available cities",
+        "responses": {
+          "200": {
+            "description": "Array of stations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/City"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          }
+        }
+      }
+    },
+    "/stations": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/bearerToken"
+        },
+        {
+          "in": "query",
+          "name": "limit",
+          "description": "limit the number of results. maximum allowed is 2000",
+          "required": true,
+          "schema": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 2000
+          }
+        },
+        {
+          "in": "query",
+          "name": "offset",
+          "description": "result offset. default is zero.",
+          "required": false,
+          "schema": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Static API"
+        ],
+        "description": "Returns a json file containing all available stations, including their address and geo coordinates",
+        "responses": {
+          "200": {
+            "description": "Array of stations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Station"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          }
+        }
+      }
+    },
+    "/operators": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/bearerToken"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Static API"
+        ],
+        "description": "Returns a json file containing all available operators",
+        "responses": {
+          "200": {
+            "description": "Array of operators",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Operator"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          }
+        }
+      }
+    },
+    "/routes": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/bearerToken"
+        },
+        {
+          "in": "query",
+          "name": "limit",
+          "description": "limit the number of results. default is 100, maximum allowed is 10000",
+          "required": true,
+          "schema": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 10000
+          }
+        },
+        {
+          "in": "query",
+          "name": "offset",
+          "description": "result offset. default is zero.",
+          "required": false,
+          "schema": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Static API"
+        ],
+        "description": "Returns a json file containing all available routes between stations.",
+        "responses": {
+          "200": {
+            "description": "Array of routes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Route"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          }
+        }
+      }
+    },
+    "/transfers": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/bearerToken"
+        },
+        {
+          "in": "query",
+          "name": "departureStation",
+          "description": "list of departure station ids, seperete by comma (,)",
+          "example": "58ade161b626ad00060bd174,58ade161b626ad00060bd174",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "in": "query",
+          "name": "arrivalStation",
+          "description": "list of arrival station ids, seperete by comma (,)",
+          "example": "58ade161b626ad00060bd174,58ade161b626ad00060bd174",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "in": "query",
+          "name": "limit",
+          "description": "limit the number of results. default is 100, maximum allowed is 1000",
+          "required": false,
+          "schema": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 1000
+          }
+        },
+        {
+          "in": "query",
+          "name": "offset",
+          "description": "result offset. default is zero.",
+          "required": false,
+          "schema": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Static API"
+        ],
+        "description": "Return a json file containing all the available transfers with all their static information - images, description, amenities, ect.\n\nPlease note that some transfers also has extras and additional passenger information  which  require to provide in the booking request.",
+        "responses": {
+          "200": {
+            "description": "Array of transfers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Transfer"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          }
+        }
+      }
+    },
+    "/trips": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/bearerToken"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Trips API"
+        ],
+        "description": "Search available trips between stations for a specific date. Supports search by city to city as well.",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "description": "an authorization header as \"Bearer xxxxxxxxxxxxxx\"",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "departureStation",
+            "description": "list of departure station ids, seperete by comma (,)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "arrivalStation",
+            "description": "list of arrival station ids, seperete by comma (,)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "fromCity",
+            "description": "Search for trips departing from a specific city",
+            "example": "58ade161b626ad00060bd174",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "toCity",
+            "description": "Search for trips arriving to a specific city",
+            "example": "58ade15cd8638d00070c04b2",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "departure",
+            "description": "the required date in format: \"YYYY-MM-DD\"",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "passengers",
+            "description": "amount of passengers [1..15], if not supplied, calculated attributes will assume single passenger",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 15
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "description": "limit the number of results. default is 100, maximum allowed is 5000",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 5000
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "description": "result offset. default is zero.",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of Trips",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Trip"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          }
+        }
+      }
+    },
+    "/trips/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/bearerToken"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Trips API"
+        ],
+        "description": "Look at a specific trip",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "description": "an authorization header as \"Bearer xxxxxxxxxxxxxx\"",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id of the Trip",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "5ac337d1e575a8b638046a0f"
+            }
+          },
+          {
+            "in": "query",
+            "name": "passengers",
+            "description": "amount of passengers [1..15], if not supplied, calculated attributes will assume single passenger",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 15
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Trip"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": 404
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "The trip with id \"{id}\" does not exist."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/trips/{id}/details": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/bearerToken"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Trips API"
+        ],
+        "description": "Look at a specific trip extra details - like seatmap",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "description": "an authorization header as \"Bearer xxxxxxxxxxxxxx\"",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id of the Trip",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "5ac337d1e575a8b638046a0f"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": 404
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "The trip does ont have extra dynamic details."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/bearerToken"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Bookings API"
+        ],
+        "description": "Book a specific Trip, booking consist of selected trip, and passengers info. Note that some trips requires extra information per passenger, this extra info is described in the transfers API.",
+        "requestBody": {
+          "$ref": "#/components/requestBodies/requestBodies-BookingRequest"
+        },
+        "responses": {
+          "200": {
+            "description": "Booking",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          }
+        }
+      }
+    },
+    "/bookings/{id}/pay": {
+      "post": {
+        "tags": [
+          "Bookings API"
+        ],
+        "description": "Call this API after creating a booking. A booking can be approved only after this API is called.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Id of the booking as was returned by the create booking API",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "5e775cdc21551cbd7b01432b"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": 404
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "The booking with id \"{id}\" does not exist."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/{id}": {
+      "get": {
+        "tags": [
+          "Bookings API"
+        ],
+        "description": "View a booking by id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Id of the Booking",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "5e775cdc21551cbd7b01432b"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": 404
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "The booking with id \"{id}\" does not exist."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Bookings API"
+        ],
+        "description": "Cancel a booking by id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Id of the booking, please verify cancellation policy for this transfer before. ",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "5e775cdc21551cbd7b01432b"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "cancellationReason": {
+                    "description": "Cancellation reason free text",
+                    "type": "string",
+                    "example": "Health reasons"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": 404
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "The booking with id \"{id}\" does not exist."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/approved": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "description": "Webhook to notify a booking has been approved",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "approved"
+                  },
+                  "booking": {
+                    "$ref": "#/components/schemas/Booking"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/cancelled": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "description": "Webhook to notify a booking has been cancelled",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "cancelled"
+                  },
+                  "booking": {
+                    "$ref": "#/components/schemas/Booking"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/updated": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "description": "Webhook to notify a booking has been updated",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "updated"
+                  },
+                  "oldBooking": {
+                    "$ref": "#/components/schemas/Booking"
+                  },
+                  "booking": {
+                    "$ref": "#/components/schemas/Booking"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/credits": {
+      "post": {
+        "tags": [
+          "Credits API"
+        ],
+        "description": "Get credits balance",
+        "responses": {
+          "200": {
+            "description": "Object containing remining credits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "balance": {
+                      "type": "string",
+                      "example": 100
+                    },
+                    "currency": {
+                      "type": "string",
+                      "example": "USD"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "City": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier of the city",
+            "example": "5be990a268d47f60bdd1df75"
+          },
+          "name": {
+            "type": "string",
+            "description": "English name of the city",
+            "example": "Cusco"
+          },
+          "country": {
+            "type": "string",
+            "description": "English name of the country",
+            "example": "Peru"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "Timezone of the city",
+            "example": "America/Lima"
+          }
+        }
+      },
+      "Route": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "Unique id that identifies the departure station of the route",
+            "example": "5db6c92995b20aaa8da0a7c1"
+          },
+          "to": {
+            "type": "string",
+            "description": "Unique id that identifies the departure station of the route",
+            "example": "5c2a0ca140218043624592c3"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the route in english",
+            "example": "Cusco to Machu Picchu"
+          }
+        }
+      },
+      "Station": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique id that identifies the station",
+            "example": "5db6c92995b20aaa8da0a7c1"
+          },
+          "name": {
+            "type": "string",
+            "description": "Generic name",
+            "example": "Academia Raimondi, Plaza San Franscisco"
+          },
+          "address": {
+            "type": "string",
+            "description": "Address of the station",
+            "example": "Academia Raimondi, 138,, Granada 113, Cusco 08002, Peru"
+          },
+          "latitude": {
+            "type": "number",
+            "description": "Latitude of the station",
+            "example": -13.5186233
+          },
+          "longitude": {
+            "type": "number",
+            "description": "Longitude of the station",
+            "example": -71.9808783
+          },
+          "city": {
+            "$ref": "#/components/schemas/City"
+          }
+        }
+      },
+      "Operator": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique id that identifies the operator",
+            "example": "5db6c92995b20aaa8da0a7c1"
+          },
+          "name": {
+            "type": "string",
+            "description": "Operator name",
+            "example": "Thai Sriram"
+          },
+          "logo": {
+            "type": "string",
+            "description": "Address of the station",
+            "example": "https://cdn.bookaway.com/media/files/5bc8613465e0d45328b2d64e.png?width=240"
+          },
+          "country": {
+            "type": "string",
+            "description": "Country of the operator",
+            "example": "Thailand"
+          },
+          "isPrintedVoucherRequire": {
+            "type": "boolean",
+            "description": "When true, a printed voucher is needed, otherwise, e-ticket is accepted",
+            "example": false
+          }
+        }
+      },
+      "Transfer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique id that identifies the transfer",
+            "example": "5db6c92995b20aaa8da0a7c1"
+          },
+          "name": {
+            "type": "string",
+            "description": "Marketing name of the transfer",
+            "example": "Luxury Train by Inca Rail"
+          },
+          "operator": {
+            "type": "string",
+            "description": "Name of the service operator",
+            "example": "Inca Rail"
+          },
+          "operatorId": {
+            "type": "string",
+            "description": "Operator Id",
+            "example": "5c7d51316c4358000149ce4d"
+          },
+          "departureStation": {
+            "type": "string",
+            "description": "Unique id that identifies the departure station of the transfer",
+            "example": "5db6c92995b20aaa8da0a7c1"
+          },
+          "arrivalStation": {
+            "type": "string",
+            "description": "Unique id that identifies the arrival station of the transfer"
+          },
+          "vehicleClass": {
+            "$ref": "#/components/schemas/VehicleClass"
+          },
+          "vehicleType": {
+            "$ref": "#/components/schemas/VehicleType"
+          },
+          "description": {
+            "type": "string",
+            "description": "Marketing description in English of the Transfer"
+          },
+          "pictures": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Absolute URL of the picture",
+              "example": "https://cdn.bookaway.com/media/files/5c45bf8cd53518262b7869ec.jpeg?width=620"
+            }
+          },
+          "isAmendable": {
+            "type": "boolean",
+            "description": "Is a booking made on this transfer amendable"
+          },
+          "amendments": {
+            "description": "List of amendments fees by time before departure. Will be populated if `isAmendable` is `true`",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "timeBefore": {
+                  "type": "number",
+                  "description": "Number of time units prior to departure that a booking is amendable",
+                  "example": 24
+                },
+                "unit": {
+                  "type": "string",
+                  "description": "Name of the time unit",
+                  "example": "hours"
+                },
+                "fee": {
+                  "type": "number",
+                  "description": "The fee that will be charged when amending a booking at this time",
+                  "example": 12
+                }
+              }
+            }
+          },
+          "isRefundable": {
+            "type": "boolean",
+            "description": "`true` if refund is offered in case of booking cancellation"
+          },
+          "cancellations": {
+            "description": "List of cancellation fees by time before departure. Will be populated if `isRefundable` is `true`",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "timeBefore": {
+                  "type": "number",
+                  "description": "Number of time units prior to departure that a booking is cancellable",
+                  "example": 24
+                },
+                "unit": {
+                  "type": "string",
+                  "description": "Name of the time unit",
+                  "example": "hours"
+                },
+                "fee": {
+                  "type": "number",
+                  "description": "The fee that will be charged when cancelling a booking at this time",
+                  "example": 12
+                }
+              }
+            }
+          },
+          "amenities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Amenity"
+            }
+          },
+          "extras": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Extra"
+            }
+          },
+          "passengerExtraInfos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PassengerExtraInfo"
+            }
+          },
+          "isPrivate": {
+            "type": "boolean",
+            "description": "Private transport is a vehicle that serves the passenger only and is limited in seat number.",
+            "example": false
+          },
+          "isLateApproval": {
+            "type": "boolean",
+            "description": "Booking will be approved more than 24h after payment",
+            "example": false
+          },
+          "maxPassengers": {
+            "type": "number",
+            "description": "Valid only for private transport, maximum number of seats a the vehicle."
+          },
+          "passengerAlert": {
+            "type": "string",
+            "description": "Alert while booking",
+            "example": "Don't forget to add your passport number, nationality, age and gender. Bookings without this information will NOT be approved."
+          },
+          "voucherRemark": {
+            "type": "string",
+            "description": "Supplier's remark to the passenger on the voucher",
+            "example": "Please be at the departure point 30 minutes before departure time to show your passport or valid ID during check in."
+          }
+        }
+      },
+      "Trip": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "5ac337d1e575a8b638046a0f"
+          },
+          "transferId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "5cdbe928c40aed23b5c0d6b4"
+          },
+          "arrival": {
+            "type": "object",
+            "example": {
+              "date": "2019-11-30T06:00:00+07:00",
+              "timezone": "Asia/Pontianak"
+            }
+          },
+          "departure": {
+            "type": "object",
+            "example": {
+              "date": "2019-11-30T06:00:00+07:00",
+              "timezone": "Asia/Pontianak"
+            }
+          },
+          "departureStation": {
+            "type": "string",
+            "format": "uuid",
+            "example": "5c4dcf7249b5323becaf5fb5"
+          },
+          "arrivalStation": {
+            "type": "string",
+            "format": "uuid",
+            "example": "5c4dcc446145c4be85adc967"
+          },
+          "isAvailable": {
+            "type": "boolean",
+            "example": true
+          },
+          "isInstantConfirmation": {
+            "type": "boolean",
+            "example": false
+          },
+          "price": {
+            "$ref": "#/components/schemas/TripPrice"
+          }
+        }
+      },
+      "TripDetails": {
+        "type": "object",
+        "description": "Return additional trip details regarding a specific trip, all fields are optional, might return empty object",
+        "properties": {
+          "price": {
+            "$ref": "#/components/schemas/PriceSlim"
+          },
+          "pricePerPassenger": {
+            "$ref": "#/components/schemas/PriceSlim"
+          },
+          "seatMap": {
+            "$ref": "#/components/schemas/SeatMap"
+          },
+          "passengerExtraInfos": {
+            "$ref": "#/components/schemas/PassengerExtraInfo"
+          }
+        }
+      },
+      "Booking": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "5defaf7fcd97c3c75ad4c404"
+          },
+          "reference": {
+            "type": "string",
+            "example": "BW144381"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "cancelled"
+            ]
+          },
+          "payment": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "description": "Possible values are: `unpaid`, `paid`, `failed`, `refund`",
+                "type": "string",
+                "example": "paid"
+              },
+              "reason": {
+                "description": "In case of `failed` status, describes the failure reason",
+                "type": "string"
+              }
+            }
+          },
+          "price": {
+            "$ref": "#/components/schemas/Price"
+          },
+          "voucherPdf": {
+            "type": "string",
+            "description": "link to a pdf voucher once the booking is approved"
+          },
+          "voucherRemark": {
+            "type": "string",
+            "description": "remarks for the voucher"
+          },
+          "noteFromSupplier": {
+            "type": "string",
+            "description": "extra info provided by the supplier once approved"
+          },
+          "items": {
+            "type": "array",
+            "description": "array of items which represent trips that were booked",
+            "items": {
+              "type": "object",
+              "properties": {
+                "tripId": {
+                  "type": "string",
+                  "example": "61aca4ad3dac88771100eeda@PT8H"
+                },
+                "contact": {
+                  "type": "object",
+                  "properties": {
+                    "email": {
+                      "type": "string",
+                      "example": "johndoe@bookaway1.com"
+                    },
+                    "phone": {
+                      "type": "string",
+                      "example": "+1 111 111111"
+                    }
+                  }
+                },
+                "passengers": {
+                  "description": "List of passengers",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "firstName": {
+                        "type": "string",
+                        "example": "John"
+                      },
+                      "lastName": {
+                        "type": "string",
+                        "example": "Doe1"
+                      }
+                    }
+                  }
+                },
+                "bookingCode": {
+                  "type": "string",
+                  "description": "opeartor booking code which sometimes is required by the operator upon boarding",
+                  "example": "AX123Z"
+                },
+                "departure": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2019-12-19T06:15:00.000Z"
+                },
+                "arrival": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2019-12-19T12:15:00.000Z"
+                },
+                "seats": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "an array of the seats for the ride",
+                    "example": [
+                      24,
+                      23
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "UnauthorizedError": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "example": 401
+          },
+          "message": {
+            "type": "string",
+            "example": "Unauthorized"
+          }
+        }
+      },
+      "ForbiddenError": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "example": 403
+          },
+          "message": {
+            "type": "string",
+            "example": "Forbidden"
+          }
+        }
+      },
+      "VehicleClass": {
+        "type": "string",
+        "description": "The class level of the vehicle",
+        "enum": [
+          "Standard",
+          "Tourist",
+          "Economy",
+          "SUV",
+          "Van",
+          "Business",
+          "VIP",
+          "Luxury",
+          "Limo",
+          "Open Air",
+          "Sleeping",
+          "Express",
+          "High Speed",
+          "Speedboat",
+          "Shuttle",
+          "Deluxe",
+          "Semi-Sleeper",
+          "Panoramic",
+          "Comfort",
+          "130 Reclining Seats",
+          "140 Reclining Seats",
+          "160 Reclining Seats",
+          "180 Reclining Seats",
+          "Sleeper",
+          "Seater",
+          "First Class",
+          "Second Class",
+          "Third Class",
+          "Open",
+          "VIP Sleeping",
+          "Tourist Sleeping",
+          "VIP 24 Seats",
+          "VIP 32 Seats",
+          "VIP 36 Seats",
+          "Local sleeping",
+          "VIP Sleeping",
+          "VIP Cabin",
+          "Day Tour"
+        ],
+        "example": "Standard"
+      },
+      "VehicleType": {
+        "type": "string",
+        "description": "The type of the vehicle",
+        "enum": [
+          "bus",
+          "train",
+          "ferry",
+          "minivan",
+          "car",
+          "bus-ferry",
+          "flight"
+        ],
+        "example": "bus"
+      },
+      "Amenity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier of the amenity",
+            "example": "58a8bbcde7c00c0006b947e1"
+          }
+        }
+      },
+      "Price": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "example": 15.9
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency",
+            "default": "USD",
+            "example": "USD"
+          }
+        }
+      },
+      "Extra": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier of the extra option",
+            "example": "5c1b627a50df8883b358e984"
+          },
+          "extraType": {
+            "type": "string",
+            "description": "The type of the extra option",
+            "example": "dropoff_hotel"
+          },
+          "priceLevel": {
+            "type": "string",
+            "description": "the price level of the extra (if display_once or display_once_muiltiply_per_direction the extra is applied for the booking itself (and for booth items when multileg booking), if display_A_to_B it should be the item)",
+            "example": "dropoff_hotel"
+          },
+          "upgrade": {
+            "type": "string",
+            "description": "If `extraType`=`upgrade` then the extra is described here. (Example \"Buffet Lunch\")"
+          },
+          "mandatory": {
+            "type": "boolean",
+            "description": "If true, then this extra option is mandatory",
+            "example": false
+          },
+          "needInput": {
+            "type": "boolean",
+            "description": "If true, then a user input is needed (example for user input \"Hilton hotel, main plaza\")",
+            "example": true
+          },
+          "perPassenger": {
+            "type": "boolean",
+            "description": "If true, the price is for a single passenger and will be multipy by number of passengers.",
+            "example": false
+          },
+          "note": {
+            "type": "string",
+            "description": "Additional instructions regarding this extra option",
+            "example": "Pickup is limited to city center area"
+          },
+          "price": {
+            "$ref": "#/components/schemas/Price"
+          }
+        }
+      },
+      "PassengerExtraInfo": {
+        "type": "object",
+        "description": "Value may be a string, or an enum if data attribute is defined",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier of the passenger extra info",
+            "example": "5c1b627a50df8883b358e984"
+          },
+          "label": {
+            "type": "string",
+            "description": "The name of the extra info to provide",
+            "example": "Nationality"
+          },
+          "type": {
+            "type": "string",
+            "description": "The type of the passenger extra info value",
+            "example": "text"
+          },
+          "data": {
+            "type": "array",
+            "description": "A list of possible values (eg. Gender, Nationality, etc... )",
+            "items": {
+              "type": "string",
+              "example": [
+                "Male",
+                "Female"
+              ]
+            }
+          }
+        }
+      },
+      "TripPrice": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Price amount per passenger",
+            "example": 15
+          },
+          "totalAmount": {
+            "type": "number",
+            "description": "Price amount multiple passengers number",
+            "example": 30
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency",
+            "default": "USD",
+            "example": "USD"
+          }
+        }
+      },
+      "PriceSlim": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "example": 15.6
+          },
+          "currency": {
+            "type": "string",
+            "example": "USD"
+          }
+        }
+      },
+      "SeatMap": {
+        "type": "object",
+        "properties": {
+          "numOfFloors": {
+            "type": "integer",
+            "format": "int32",
+            "example": 2
+          },
+          "availableSeatsAmount": {
+            "type": "integer",
+            "format": "int32",
+            "example": 13
+          },
+          "floors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "floorNumber": {
+                  "type": "integer",
+                  "example": 1
+                },
+                "numOfRows": {
+                  "type": "integer",
+                  "example": 6
+                },
+                "numOfColumns": {
+                  "type": "integer",
+                  "example": 2
+                },
+                "seats": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "seatType": {
+                        "type": "string",
+                        "example": "regular"
+                      },
+                      "seatNumber": {
+                        "type": "string",
+                        "example": "0"
+                      },
+                      "seatCode": {
+                        "type": "string",
+                        "example": "A1"
+                      },
+                      "seatFloor": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "seatRow": {
+                        "type": "integer",
+                        "example": 2
+                      },
+                      "seatColumn": {
+                        "type": "integer",
+                        "example": 4
+                      },
+                      "isAvailable": {
+                        "type": "boolean",
+                        "example": true
+                      },
+                      "seatPriceLevel": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "price": {
+                        "$ref": "#/components/schemas/PriceSlim"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "priceSet": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriceSlim"
+            }
+          }
+        }
+      },
+      "Passenger": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "example": "John"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Doe"
+          },
+          "extraInfos": {
+            "type": "array",
+            "description": "If the transfer requires passenger extra info, if should be supplied for each pasenger",
+            "items": {
+              "type": "object",
+              "properties": {
+                "definition": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "Unique identifier of the passenger extra info, taken from the transfers api",
+                  "example": "5c1b627a50df8883b358e984"
+                },
+                "value": {
+                  "type": "string",
+                  "description": "The value of the passenger extra info, type is string/enum as described on transfers api",
+                  "example": "Female"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Contact": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "johndoe@gmail.com"
+          },
+          "phone": {
+            "type": "string",
+            "format": "phone",
+            "example": "+1 (234) 556-6677"
+          }
+        }
+      },
+      "ExtraOption": {
+        "type": "object",
+        "properties": {
+          "definition": {
+            "type": "string",
+            "format": "uuid",
+            "example": "5c1b627a50df88245f58e985",
+            "description": "The id of an extra option to book"
+          },
+          "value": {
+            "type": "string",
+            "example": "Hilton Hotel, main plaza",
+            "description": "Some extra options needs input from the passenger"
+          }
+        }
+      },
+      "BasicBooking": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "each item in the items array describes a trip to be booked.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "tripId": {
+                  "description": "The id of the trip to book",
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "5ac337d1e575a8b638046a0f"
+                },
+                "passengers": {
+                  "description": "List of passengers",
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Passenger"
+                  }
+                },
+                "contact": {
+                  "$ref": "#/components/schemas/Contact"
+                },
+                "extraOptions": {
+                  "type": "array",
+                  "description": "List of requested extra options suggested in the Transfer, with price level of display_once or display_once_muiltiply_per_direction",
+                  "items": {
+                    "$ref": "#/components/schemas/ExtraOption"
+                  }
+                },
+                "seats": {
+                  "type": "array",
+                  "description": "List of selected seats (this is only required on trip which has additional details with seatMap)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "seatCode": {
+                        "type": "string",
+                        "example": "0"
+                      },
+                      "seatFloor": {
+                        "type": "string",
+                        "example": "1"
+                      },
+                      "seatRow": {
+                        "type": "string",
+                        "example": "4"
+                      },
+                      "seatColumn": {
+                        "type": "string",
+                        "example": "2"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "extraOptions": {
+            "type": "array",
+            "description": "(optional) List of requested extra options suggested in the Transfer, with price level of display_once or display_once_muiltiply_per_direction",
+            "items": {
+              "$ref": "#/components/schemas/ExtraOption"
+            }
+          }
+        }
+      },
+      "BookingRequest": {
+        "description": "Book a specific trip",
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/BasicBooking"
+            }
+          }
+        }
+      }
+    },
+    "requestBodies": {
+      "BookingRequest": {
+        "description": "Book a specific trip",
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/BookingRequest"
+            }
+          }
+        }
+      },
+      "requestBodies-BookingRequest": {
+        "description": "Book a specific trip",
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/BasicBooking"
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "bearerToken": {
+        "in": "header",
+        "name": "Authorization",
+        "schema": {
+          "type": "string",
+          "example": "Bearer XXXXX"
+        },
+        "description": "Bearer Token"
+      }
+    },
+    "responses": {
+      "UnauthorizedError": {
+        "description": "Unauthorized",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/UnauthorizedError"
+            }
+          }
+        }
+      },
+      "ForbiddenError": {
+        "description": "Forbidden",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ForbiddenError"
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}
