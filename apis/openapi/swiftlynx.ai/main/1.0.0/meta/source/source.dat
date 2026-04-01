@@ -1,0 +1,491 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "SwiftLynx API",
+    "version": "1.0.0",
+    "description": "Resume analysis and matching API with OAuth2 PKCE authentication",
+    "x-jentic-source-url": "https://swiftlynx.ai/docs/api",
+    "contact": {}
+  },
+  "servers": [
+    {
+      "url": "https://swiftlynx.ai",
+      "description": "Production server"
+    }
+  ],
+  "security": [
+    {
+      "oauth2": [
+        "read",
+        "write"
+      ]
+    }
+  ],
+  "tags": [
+    {
+      "name": "OAuth",
+      "description": "OAuth2 authentication operations"
+    },
+    {
+      "name": "Account",
+      "description": "Account management"
+    },
+    {
+      "name": "Analysis",
+      "description": "Resume analysis operations"
+    }
+  ],
+  "paths": {
+    "/api/oauth/authorize": {
+      "get": {
+        "tags": [
+          "OAuth"
+        ],
+        "summary": "Initiate OAuth flow",
+        "description": "Start OAuth2 authorization with PKCE support",
+        "operationId": "authorizeOAuth",
+        "security": [],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "OAuth client ID"
+          },
+          {
+            "name": "response_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "code"
+              ]
+            },
+            "description": "Response type (must be 'code')"
+          },
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Redirect URI after authorization"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "State parameter for CSRF protection (recommended)"
+          },
+          {
+            "name": "code_challenge",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "PKCE code challenge (recommended)"
+          },
+          {
+            "name": "code_challenge_method",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "S256"
+              ]
+            },
+            "description": "PKCE challenge method (recommended)"
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to authorization page or callback"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/api/oauth/token": {
+      "post": {
+        "tags": [
+          "OAuth"
+        ],
+        "summary": "Exchange authorization code or refresh token",
+        "description": "Get access token using authorization code or refresh existing token",
+        "operationId": "getToken",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AuthorizationCodeRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/RefreshTokenRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/api/me": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Get account information",
+        "description": "Returns the authenticated account and remaining credits",
+        "operationId": "getAccountInfo",
+        "responses": {
+          "200": {
+            "description": "Account information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountInfo"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/api/analyze": {
+      "post": {
+        "tags": [
+          "Analysis"
+        ],
+        "summary": "Analyze resume",
+        "description": "Analyze a resume against a job description. Costs 1 credit per analysis.",
+        "operationId": "analyzeResume",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Analysis result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyzeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "402": {
+            "description": "Insufficient credits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://swiftlynx.ai/api/oauth/authorize",
+            "tokenUrl": "https://swiftlynx.ai/api/oauth/token",
+            "scopes": {
+              "read": "Read access",
+              "write": "Write access"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "AuthorizationCodeRequest": {
+        "type": "object",
+        "required": [
+          "grant_type",
+          "code",
+          "client_id",
+          "redirect_uri"
+        ],
+        "properties": {
+          "grant_type": {
+            "type": "string",
+            "enum": [
+              "authorization_code"
+            ]
+          },
+          "code": {
+            "type": "string",
+            "description": "Authorization code"
+          },
+          "code_verifier": {
+            "type": "string",
+            "description": "PKCE code verifier"
+          },
+          "client_id": {
+            "type": "string",
+            "description": "Client ID (typically 'zapier')"
+          },
+          "redirect_uri": {
+            "type": "string",
+            "format": "uri",
+            "description": "Redirect URI"
+          }
+        }
+      },
+      "RefreshTokenRequest": {
+        "type": "object",
+        "required": [
+          "grant_type",
+          "refresh_token",
+          "client_id"
+        ],
+        "properties": {
+          "grant_type": {
+            "type": "string",
+            "enum": [
+              "refresh_token"
+            ]
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "Refresh token"
+          },
+          "client_id": {
+            "type": "string",
+            "description": "Client ID (typically 'zapier')"
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "description": "Access token"
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "Refresh token"
+          },
+          "token_type": {
+            "type": "string",
+            "example": "Bearer"
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Token expiry in seconds"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "User email"
+          }
+        }
+      },
+      "AccountInfo": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Account email"
+          },
+          "plan": {
+            "type": "string",
+            "description": "Plan tier"
+          },
+          "credits_remaining": {
+            "type": "integer",
+            "description": "Remaining analysis credits"
+          }
+        }
+      },
+      "AnalyzeRequest": {
+        "type": "object",
+        "required": [
+          "jobTitle",
+          "jobDescription"
+        ],
+        "properties": {
+          "jobTitle": {
+            "type": "string",
+            "description": "Job title"
+          },
+          "jobDescription": {
+            "type": "string",
+            "minLength": 200,
+            "maxLength": 8000,
+            "description": "Job description (200-8,000 characters)"
+          },
+          "resumeUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Resume URL (required if resumeText not provided)"
+          },
+          "resumeText": {
+            "type": "string",
+            "maxLength": 8000,
+            "description": "Resume text content (up to 8,000 characters, required if resumeUrl not provided)"
+          },
+          "candidateName": {
+            "type": "string",
+            "description": "Candidate name (optional)"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "File name (optional)"
+          }
+        }
+      },
+      "AnalyzeResponse": {
+        "type": "object",
+        "properties": {
+          "matchScore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Match score (0-100)"
+          },
+          "strengths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Candidate strengths"
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Potential risks or concerns"
+          },
+          "summary": {
+            "type": "string",
+            "description": "Analysis summary"
+          },
+          "recommendation": {
+            "type": "string",
+            "description": "Hiring recommendation"
+          },
+          "scoreExplanation": {
+            "type": "string",
+            "description": "Explanation of the match score"
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request identifier"
+          },
+          "shareUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Shareable URL for the analysis"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "responses": {
+      "UnauthorizedError": {
+        "description": "Invalid or missing authentication token",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "BadRequest": {
+        "description": "Invalid request parameters",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "RateLimitError": {
+        "description": "Rate limit exceeded (60 requests/minute per account)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+}
