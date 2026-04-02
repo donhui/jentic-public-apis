@@ -1,0 +1,571 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "1FIT Zapier Webhook API",
+    "version": "1.0.0",
+    "description": "API used by the 1FIT and Zapier integration. Includes connection setup and test endpoints, plus user-scoped webhook endpoints for actions/events.",
+    "x-jentic-source-url": "https://docs.1fit.com/zapier/openapi.yml"
+  },
+  "servers": [
+    {
+      "url": "https://api.1fit.com"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Zapier Connections"
+    },
+    {
+      "name": "Zapier Webhooks"
+    }
+  ],
+  "paths": {
+    "/api/integrations/connections/zapier/setup": {
+      "post": {
+        "tags": ["Zapier Connections"],
+        "summary": "Register Zapier connection",
+        "operationId": "setupZapierConnection",
+        "description": "Registers a new Zapier connection and returns/associates a unique webhook endpoint for the user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectionSetupRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Connection registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionSetupResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/integrations/connections/zapier/test": {
+      "post": {
+        "tags": ["Zapier Connections"],
+        "summary": "Test Zapier connection",
+        "operationId": "testZapierConnection",
+        "description": "Validates that the Zapier connection and credentials are working.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectionTestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Connection is valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionTestResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/integrations/webhooks/zapier/{endpoint}": {
+      "post": {
+        "tags": ["Zapier Webhooks"],
+        "summary": "Receive Zapier webhook",
+        "operationId": "receiveZapierWebhook",
+        "description": "Receives webhook calls from Zapier for events such as client.created, prospect.created, activity.logged, workout.completed, etc.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "endpoint",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User-specific webhook endpoint identifier."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookEnvelope"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSuccessResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - invalid payload"
+          },
+          "401": {
+            "description": "Unauthorized - invalid or expired token"
+          },
+          "404": {
+            "description": "Not Found - endpoint not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "ConnectionSetupRequest": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": ["key_id", "secret", "endpoint_id"],
+            "properties": {
+              "key_id": {
+                "type": "string",
+                "description": "Unique identifier for the user/account."
+              },
+              "secret": {
+                "type": "string",
+                "description": "Secret/token used during setup."
+              },
+              "endpoint_id": {
+                "type": "string",
+                "description": "Internal endpoint identifier."
+              }
+            }
+          }
+        }
+      },
+      "ConnectionSetupResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "success"
+          },
+          "endpoint": {
+            "type": "string",
+            "example": "wh_3fa85f64"
+          },
+          "message": {
+            "type": "string",
+            "example": "Zapier connection registered."
+          }
+        }
+      },
+      "ConnectionTestRequest": {
+        "type": "object",
+        "description": "Currently an empty object. Reserved for future fields."
+      },
+      "ConnectionTestResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "success"
+          },
+          "message": {
+            "type": "string",
+            "example": "Connection is valid."
+          }
+        }
+      },
+      "WebhookEnvelope": {
+        "type": "object",
+        "description": "Generic envelope used for all Zapier webhook calls.",
+        "required": ["id", "event", "version", "created", "source", "endpoint_id", "data"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique event ID.",
+            "example": "evt_123456"
+          },
+          "event": {
+            "type": "string",
+            "description": "Event type identifier.",
+            "enum": [
+              "activity.logged",
+              "checkin.submitted",
+              "client.activated",
+              "client.created",
+              "client.deleted",
+              "prospect.created",
+              "workout.completed"
+            ]
+          },
+          "version": {
+            "type": "string",
+            "example": "v1"
+          },
+          "created": {
+            "type": "string",
+            "description": "Creation timestamp (epoch seconds as string).",
+            "example": "1762263854"
+          },
+          "source": {
+            "type": "string",
+            "example": "zapier"
+          },
+          "endpoint_id": {
+            "type": "string",
+            "example": "wh_3fa85f64"
+          },
+          "is_testing": {
+            "type": "boolean",
+            "example": false
+          },
+          "data": {
+            "description": "Event-specific payload.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CreateClientData"
+              },
+              {
+                "$ref": "#/components/schemas/CreateProspectData"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityLoggedData"
+              },
+              {
+                "$ref": "#/components/schemas/CheckinSubmittedData"
+              },
+              {
+                "$ref": "#/components/schemas/ClientLifecycleData"
+              },
+              {
+                "$ref": "#/components/schemas/WorkoutCompletedData"
+              }
+            ]
+          }
+        }
+      },
+      "WebhookSuccessResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "success"
+          },
+          "message": {
+            "type": "string",
+            "example": "Webhook processed."
+          }
+        }
+      },
+      "CreateClientData": {
+        "type": "object",
+        "description": "Payload for creating a client in 1FIT.",
+        "required": ["first_name", "last_name", "email", "mobile", "checkin_frequency"],
+        "properties": {
+          "team_member_id": {
+            "type": "string"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "mobile": {
+            "type": "string"
+          },
+          "payment_amount": {
+            "type": "number"
+          },
+          "payment_schedule": {
+            "type": "string",
+            "enum": ["monthly", "annual"]
+          },
+          "checkin_template_id": {
+            "type": "string"
+          },
+          "checkin_frequency": {
+            "type": "string",
+            "enum": ["weekly", "biweekly", "none"]
+          },
+          "checkin_days": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "enum": [1, 2, 3, 4, 5, 6, 7]
+            }
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateProspectData": {
+        "type": "object",
+        "description": "Payload for creating a prospect in 1FIT.",
+        "required": ["first_name", "last_name", "email"],
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "mobile": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number"
+          },
+          "stage": {
+            "type": "string",
+            "enum": ["added", "call_scheduled", "call_not_scheduled", "call_completed", "follow_up", "other"]
+          },
+          "close_percentage": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "ActivityLoggedData": {
+        "type": "object",
+        "description": "Payload when an activity is logged.",
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "mobile": {
+            "type": "string"
+          },
+          "activity": {
+            "type": "string",
+            "example": "Treadmill"
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Duration in seconds.",
+            "example": 1800
+          },
+          "distance": {
+            "type": "integer",
+            "description": "Distance in meters.",
+            "example": 1200
+          },
+          "hr": {
+            "type": "integer",
+            "description": "Average heart rate.",
+            "example": 140
+          },
+          "calories": {
+            "type": "integer",
+            "example": 250
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "logged_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CheckinSubmittedData": {
+        "type": "object",
+        "description": "Payload when a check-in is submitted.",
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "mobile": {
+            "type": "string"
+          },
+          "requested_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "submitted_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ClientLifecycleData": {
+        "type": "object",
+        "description": "Payload for client lifecycle events (activated, created, deleted).",
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "mobile": {
+            "type": "string"
+          },
+          "payment_amount": {
+            "type": "number"
+          },
+          "payment_schedule": {
+            "type": "string",
+            "enum": ["monthly", "annual"]
+          },
+          "checkin_frequency": {
+            "type": "string",
+            "enum": ["weekly", "biweekly", "none"]
+          },
+          "checkin_days": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "enum": [1, 2, 3, 4, 5, 6, 7]
+            }
+          },
+          "notes": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "example": "active"
+          }
+        }
+      },
+      "WorkoutCompletedData": {
+        "type": "object",
+        "description": "Payload when a workout is marked completed.",
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "mobile": {
+            "type": "string"
+          },
+          "workout": {
+            "type": "string",
+            "example": "Push"
+          },
+          "rating": {
+            "type": "integer",
+            "example": 5
+          },
+          "notes": {
+            "type": "string"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Duration in seconds.",
+            "example": 3600
+          },
+          "exercises": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Exercise objects (structure may vary)."
+            }
+          }
+        }
+      }
+    }
+  }
+}
