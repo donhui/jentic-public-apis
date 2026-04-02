@@ -1,0 +1,656 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Enrow API",
+    "description": "Enrow provides email finding, email verification, and phone number discovery services. Find and verify professional contact information with high accuracy.",
+    "version": "1.0.0",
+    "contact": {}
+  },
+  "servers": [
+    {
+      "url": "https://api.enrow.io"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "paths": {
+    "/email/find/single": {
+      "post": {
+        "summary": "Find Single Email",
+        "description": "Find a single email address for a person. Requires fullname and either company_domain or company_name. Costs 1 credit.",
+        "tags": [
+          "Email Finder"
+        ],
+        "operationId": "findSingleEmail",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "fullname"
+                ],
+                "properties": {
+                  "fullname": {
+                    "type": "string",
+                    "description": "Full name of the person"
+                  },
+                  "company_domain": {
+                    "type": "string",
+                    "description": "Company domain (e.g., example.com)"
+                  },
+                  "company_name": {
+                    "type": "string",
+                    "description": "Company name"
+                  },
+                  "custom": {
+                    "type": "object",
+                    "description": "Custom metadata to attach to the search"
+                  },
+                  "settings": {
+                    "type": "object",
+                    "properties": {
+                      "webhook": {
+                        "type": "string",
+                        "description": "Webhook URL for async notifications"
+                      },
+                      "country_code": {
+                        "type": "string",
+                        "description": "Country code for more accurate results"
+                      },
+                      "retrieve_gender": {
+                        "type": "boolean",
+                        "description": "Whether to retrieve gender information"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Search initiated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "search_id": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "credits_used": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON or missing required fields"
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "422": {
+            "description": "Insufficient balance"
+          }
+        }
+      },
+      "get": {
+        "summary": "Get Single Email Result",
+        "description": "Retrieve the result of a single email search.",
+        "tags": [
+          "Email Finder"
+        ],
+        "operationId": "getSingleEmailResult",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The search ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "email": {
+                      "type": "string"
+                    },
+                    "qualification": {
+                      "type": "string",
+                      "enum": [
+                        "valid",
+                        "invalid",
+                        "ongoing"
+                      ]
+                    },
+                    "person": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/email/find/bulk": {
+      "post": {
+        "summary": "Find Multiple Emails",
+        "description": "Find multiple email addresses in a single request.",
+        "tags": [
+          "Email Finder"
+        ],
+        "operationId": "findBulkEmails",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "searches"
+                ],
+                "properties": {
+                  "searches": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "fullname"
+                      ],
+                      "properties": {
+                        "fullname": {
+                          "type": "string"
+                        },
+                        "company_domain": {
+                          "type": "string"
+                        },
+                        "company_name": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "custom": {
+                    "type": "object"
+                  },
+                  "settings": {
+                    "type": "object",
+                    "properties": {
+                      "webhook": {
+                        "type": "string"
+                      },
+                      "country_code": {
+                        "type": "string"
+                      },
+                      "retrieve_gender": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bulk search initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "bulk_id": {
+                      "type": "string"
+                    },
+                    "credits_used": {
+                      "type": "number"
+                    },
+                    "estimated_duration": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get Multiple Emails Results",
+        "description": "Retrieve the results of a bulk email search.",
+        "tags": [
+          "Email Finder"
+        ],
+        "operationId": "getBulkEmailsResults",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The bulk search ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bulk search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "stats": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/email/verify/single": {
+      "post": {
+        "summary": "Verify Single Email",
+        "description": "Verify a single email address. Costs 0.25 credits per verification.",
+        "tags": [
+          "Email Verifier"
+        ],
+        "operationId": "verifySingleEmail",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Email address to verify"
+                  },
+                  "custom": {
+                    "type": "object"
+                  },
+                  "settings": {
+                    "type": "object",
+                    "properties": {
+                      "webhook": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "verification_id": {
+                      "type": "string"
+                    },
+                    "credits_used": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get Single Verification Result",
+        "description": "Retrieve the result of a single email verification.",
+        "tags": [
+          "Email Verifier"
+        ],
+        "operationId": "getSingleVerificationResult",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The verification ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verification result"
+          }
+        }
+      }
+    },
+    "/email/verify/bulk": {
+      "post": {
+        "summary": "Verify Multiple Emails",
+        "description": "Verify multiple email addresses in a single request.",
+        "tags": [
+          "Email Verifier"
+        ],
+        "operationId": "verifyBulkEmails",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "verifications"
+                ],
+                "properties": {
+                  "verifications": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "email"
+                      ],
+                      "properties": {
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bulk verification initiated"
+          }
+        }
+      },
+      "get": {
+        "summary": "Get Multiple Verifications Results",
+        "description": "Retrieve the results of a bulk email verification.",
+        "tags": [
+          "Email Verifier"
+        ],
+        "operationId": "getBulkVerificationsResults",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The bulk verification ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bulk verification results"
+          }
+        }
+      }
+    },
+    "/phone/single": {
+      "post": {
+        "summary": "Find Single Phone Number",
+        "description": "Find a phone number for a person. Costs 50 credits per search.",
+        "tags": [
+          "Phone Finder"
+        ],
+        "operationId": "findSinglePhone",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "linkedin_url": {
+                    "type": "string",
+                    "description": "LinkedIn profile URL"
+                  },
+                  "firstname": {
+                    "type": "string"
+                  },
+                  "lastname": {
+                    "type": "string"
+                  },
+                  "company_name": {
+                    "type": "string"
+                  },
+                  "company_domain": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Phone search initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "search_id": {
+                      "type": "string"
+                    },
+                    "credits_used": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get Phone Search Result",
+        "description": "Retrieve the result of a phone number search.",
+        "tags": [
+          "Phone Finder"
+        ],
+        "operationId": "getPhoneSearchResult",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The search ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Phone search result"
+          }
+        }
+      }
+    },
+    "/phone/bulk": {
+      "post": {
+        "summary": "Find Multiple Phone Numbers",
+        "description": "Find multiple phone numbers in a single request.",
+        "tags": [
+          "Phone Finder"
+        ],
+        "operationId": "findBulkPhones",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "searches"
+                ],
+                "properties": {
+                  "searches": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "linkedin_url": {
+                          "type": "string"
+                        },
+                        "firstname": {
+                          "type": "string"
+                        },
+                        "lastname": {
+                          "type": "string"
+                        },
+                        "company_name": {
+                          "type": "string"
+                        },
+                        "company_domain": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bulk phone search initiated"
+          }
+        }
+      },
+      "get": {
+        "summary": "Get Bulk Phone Results",
+        "description": "Retrieve the results of a bulk phone number search.",
+        "tags": [
+          "Phone Finder"
+        ],
+        "operationId": "getBulkPhoneResults",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The bulk search ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bulk phone search results"
+          }
+        }
+      }
+    },
+    "/account/info": {
+      "get": {
+        "summary": "Get Account Info",
+        "description": "Retrieve account information including credits balance and webhooks.",
+        "tags": [
+          "Account"
+        ],
+        "operationId": "getAccountInfo",
+        "responses": {
+          "200": {
+            "description": "Account information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "credits": {
+                      "type": "number",
+                      "description": "Current credits balance"
+                    },
+                    "webhooks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "API key for authentication"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Account"
+    },
+    {
+      "name": "Email Finder"
+    },
+    {
+      "name": "Email Verifier"
+    },
+    {
+      "name": "Phone Finder"
+    }
+  ]
+}
