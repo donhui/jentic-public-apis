@@ -1,0 +1,1460 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Neurio Energy API",
+    "description": "Neurio Public API for accessing energy monitoring data including sensor samples, appliance analytics, and user information.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://api-docs.neur.io"
+  },
+  "servers": [
+    {
+      "url": "https://api.neur.io/v1",
+      "description": "Neurio API Production Server"
+    }
+  ],
+  "security": [
+    {
+      "oauth2": []
+    }
+  ],
+  "paths": {
+    "/status": {
+      "get": {
+        "operationId": "getapistatus",
+        "summary": "Get API status",
+        "description": "Check the API status. No authentication required.",
+        "tags": [
+          "Status"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "API status version string",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "1.16.6+build.1539"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/oauth2/authorize": {
+      "get": {
+        "operationId": "authorizeoauth2",
+        "summary": "OAuth 2.0 authorization redirect",
+        "description": "Redirect the user to authorize your application.",
+        "tags": [
+          "Authentication"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": true,
+            "description": "Issued application ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "required": true,
+            "description": "Callback URI for redirect",
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          {
+            "name": "response_type",
+            "in": "query",
+            "required": true,
+            "description": "Must be 'code'",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "code"
+              ]
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "description": "CSRF protection token",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirects to callback URI with code and state parameters"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/oauth2/token": {
+      "post": {
+        "operationId": "getoauth2token",
+        "summary": "Obtain OAuth 2.0 access token",
+        "description": "Exchange authorization code or client credentials for an access token.",
+        "tags": [
+          "Authentication"
+        ],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "grant_type",
+                  "client_id",
+                  "client_secret"
+                ],
+                "properties": {
+                  "grant_type": {
+                    "type": "string",
+                    "enum": [
+                      "authorization_code",
+                      "client_credentials"
+                    ],
+                    "description": "OAuth 2.0 grant type"
+                  },
+                  "client_id": {
+                    "type": "string",
+                    "description": "Application client ID"
+                  },
+                  "client_secret": {
+                    "type": "string",
+                    "description": "Application client secret"
+                  },
+                  "redirect_uri": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Callback URI (required for authorization_code grant)"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "Authorization code (required for authorization_code grant)"
+                  },
+                  "state": {
+                    "type": "string",
+                    "description": "CSRF state token (required for authorization_code grant)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Access token response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/appliances": {
+      "get": {
+        "operationId": "listappliances",
+        "summary": "List appliances by location",
+        "description": "Query appliances for a given location.",
+        "tags": [
+          "Appliances"
+        ],
+        "parameters": [
+          {
+            "name": "locationId",
+            "in": "query",
+            "required": true,
+            "description": "Location identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of appliances",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Appliance"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/appliances/{id}": {
+      "get": {
+        "operationId": "getappliance",
+        "summary": "Get a single appliance",
+        "description": "Retrieve details of a specific appliance by ID.",
+        "tags": [
+          "Appliances"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Appliance identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Appliance details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Appliance"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/appliances/stats": {
+      "get": {
+        "operationId": "getappliancestats",
+        "summary": "Get appliance statistics",
+        "description": "Query aggregated statistics for appliances by location or by appliance ID.",
+        "tags": [
+          "Appliances"
+        ],
+        "parameters": [
+          {
+            "name": "locationId",
+            "in": "query",
+            "required": false,
+            "description": "Location identifier (required if applianceId not provided)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "applianceId",
+            "in": "query",
+            "required": false,
+            "description": "Appliance identifier (required if locationId not provided)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "description": "Start timestamp in ISO 8601 format",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "description": "End timestamp in ISO 8601 format (max 1 month after start)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "granularity",
+            "in": "query",
+            "required": false,
+            "description": "Aggregation granularity",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "days",
+                "weeks",
+                "months",
+                "unknown"
+              ],
+              "default": "unknown"
+            }
+          },
+          {
+            "name": "minPower",
+            "in": "query",
+            "required": false,
+            "description": "Minimum power threshold in watts",
+            "schema": {
+              "type": "number",
+              "default": 400
+            }
+          },
+          {
+            "name": "perPage",
+            "in": "query",
+            "required": false,
+            "description": "Results per page (1-500)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 10
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-100000)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000,
+              "default": 1
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "required": false,
+            "description": "IANA timezone",
+            "schema": {
+              "type": "string",
+              "default": "UTC"
+            }
+          },
+          {
+            "name": "excludedType",
+            "in": "query",
+            "required": false,
+            "description": "Appliance type to exclude",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Appliance statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApplianceStats"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/appliances/events": {
+      "get": {
+        "operationId": "getapplianceevents",
+        "summary": "Get appliance events",
+        "description": "Query appliance events by location or appliance ID. Supports date range or 'since' queries.",
+        "tags": [
+          "Appliances"
+        ],
+        "parameters": [
+          {
+            "name": "locationId",
+            "in": "query",
+            "required": false,
+            "description": "Location identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "applianceId",
+            "in": "query",
+            "required": false,
+            "description": "Appliance identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "description": "Start timestamp in ISO 8601 format",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "description": "End timestamp in ISO 8601 format (max 1 day after start)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO 8601 timestamp for recent events (max 1 day old)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "minPower",
+            "in": "query",
+            "required": false,
+            "description": "Minimum power threshold in watts",
+            "schema": {
+              "type": "number",
+              "default": 400
+            }
+          },
+          {
+            "name": "perPage",
+            "in": "query",
+            "required": false,
+            "description": "Results per page",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of appliance events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApplianceEvent"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/samples/live": {
+      "get": {
+        "operationId": "getlivesamples",
+        "summary": "Get recent live samples",
+        "description": "Retrieve recent energy samples from the last 2 minutes.",
+        "tags": [
+          "Samples"
+        ],
+        "parameters": [
+          {
+            "name": "sensorId",
+            "in": "query",
+            "required": true,
+            "description": "Sensor identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "last",
+            "in": "query",
+            "required": false,
+            "description": "ISO 8601 timestamp (defaults to 2 minutes ago)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of live samples",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Sample"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/samples/live/last": {
+      "get": {
+        "operationId": "getlastlivesample",
+        "summary": "Get last recorded sample",
+        "description": "Retrieve the most recent energy sample.",
+        "tags": [
+          "Samples"
+        ],
+        "parameters": [
+          {
+            "name": "sensorId",
+            "in": "query",
+            "required": true,
+            "description": "Sensor identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Last recorded sample",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Sample"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/samples": {
+      "get": {
+        "operationId": "gethistoricalsamples",
+        "summary": "Get historical samples",
+        "description": "Query historical energy samples with configurable granularity.",
+        "tags": [
+          "Samples"
+        ],
+        "parameters": [
+          {
+            "name": "sensorId",
+            "in": "query",
+            "required": true,
+            "description": "Sensor identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "description": "Start timestamp in ISO 8601 format",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "description": "End timestamp in ISO 8601 format (defaults to current time)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "granularity",
+            "in": "query",
+            "required": true,
+            "description": "Time granularity for aggregation",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "minutes",
+                "hours",
+                "days",
+                "weeks",
+                "months",
+                "years"
+              ]
+            }
+          },
+          {
+            "name": "frequency",
+            "in": "query",
+            "required": false,
+            "description": "Frequency multiplier (must be multiple of 5 for minutes)",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "perPage",
+            "in": "query",
+            "required": false,
+            "description": "Results per page (1-500)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 10
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-100000)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000,
+              "default": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historical samples",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Sample"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/samples/stats": {
+      "get": {
+        "operationId": "getsamplestats",
+        "summary": "Get energy statistics",
+        "description": "Query aggregated energy statistics for a sensor.",
+        "tags": [
+          "Samples"
+        ],
+        "parameters": [
+          {
+            "name": "sensorId",
+            "in": "query",
+            "required": true,
+            "description": "Sensor identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "description": "Start timestamp in ISO 8601 format",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "description": "End timestamp in ISO 8601 format (defaults to current time)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "granularity",
+            "in": "query",
+            "required": true,
+            "description": "Time granularity for aggregation",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "minutes",
+                "hours",
+                "days",
+                "weeks",
+                "months",
+                "years",
+                "unknown",
+                "time-of-use"
+              ]
+            }
+          },
+          {
+            "name": "frequency",
+            "in": "query",
+            "required": false,
+            "description": "Frequency multiplier (must be multiple of 5 for minutes)",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "required": false,
+            "description": "IANA timezone",
+            "schema": {
+              "type": "string",
+              "default": "UTC"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Energy statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EnergyStats"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/current": {
+      "get": {
+        "operationId": "getcurrentuser",
+        "summary": "Get current user",
+        "description": "Retrieve the current user's profile, locations, and sensor information.",
+        "tags": [
+          "Users"
+        ],
+        "responses": {
+          "200": {
+            "description": "Current user profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://api.neur.io/v1/oauth2/authorize",
+            "tokenUrl": "https://api.neur.io/v1/oauth2/token",
+            "scopes": {}
+          },
+          "clientCredentials": {
+            "tokenUrl": "https://api.neur.io/v1/oauth2/token",
+            "scopes": {}
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "description": "HTTP status code"
+          },
+          "error": {
+            "type": "string",
+            "description": "Error type"
+          },
+          "message": {
+            "type": "string",
+            "description": "Error message"
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "token_type": {
+            "type": "string",
+            "example": "Bearer"
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Token lifetime in seconds"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Appliance": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "enum": [
+              "air_conditioner",
+              "dryer",
+              "electric_kettle",
+              "heater",
+              "microwave",
+              "other",
+              "oven",
+              "refrigerator",
+              "stove",
+              "toaster",
+              "unidentified"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "autoDisagg": {
+                "type": "boolean"
+              }
+            }
+          },
+          "locationId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ApplianceStats": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "appliance": {
+            "$ref": "#/components/schemas/Appliance"
+          },
+          "averagePower": {
+            "type": "number"
+          },
+          "eventCount": {
+            "type": "integer"
+          },
+          "lastEvent": {
+            "$ref": "#/components/schemas/ApplianceEvent"
+          },
+          "timeOn": {
+            "type": "number",
+            "description": "Time on in seconds"
+          },
+          "energy": {
+            "type": "number",
+            "description": "Energy in watt-hours"
+          },
+          "usagePercentage": {
+            "type": "number"
+          },
+          "guesses": {
+            "type": "object"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "groupIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ApplianceEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "appliance": {
+            "$ref": "#/components/schemas/Appliance"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "guesses": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "energy": {
+            "type": "number"
+          },
+          "averagePower": {
+            "type": "number"
+          },
+          "groupIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cycleCount": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "in_progress",
+              "cycled",
+              "complete"
+            ]
+          },
+          "isConfirmed": {
+            "type": "boolean"
+          },
+          "precedingEventId": {
+            "type": "string"
+          }
+        }
+      },
+      "Sample": {
+        "type": "object",
+        "properties": {
+          "consumptionPower": {
+            "type": "number",
+            "description": "Consumption power in watts"
+          },
+          "consumptionEnergy": {
+            "type": "number",
+            "description": "Consumption energy in watt-hours"
+          },
+          "generationPower": {
+            "type": "number",
+            "description": "Generation power in watts"
+          },
+          "generationEnergy": {
+            "type": "number",
+            "description": "Generation energy in watt-hours"
+          },
+          "netPower": {
+            "type": "number",
+            "description": "Net power in watts"
+          },
+          "netEnergy": {
+            "type": "number",
+            "description": "Net energy in watt-hours"
+          },
+          "submeters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Submeter"
+            }
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Submeter": {
+        "type": "object",
+        "properties": {
+          "power": {
+            "type": "number"
+          },
+          "energy": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "channelNumber": {
+            "type": "integer"
+          }
+        }
+      },
+      "EnergyStats": {
+        "type": "object",
+        "properties": {
+          "consumptionEnergy": {
+            "type": "number"
+          },
+          "generationEnergy": {
+            "type": "number"
+          },
+          "importedEnergy": {
+            "type": "number"
+          },
+          "exportedEnergy": {
+            "type": "number"
+          },
+          "submeters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Submeter"
+            }
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "status": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "locations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Location"
+            }
+          }
+        }
+      },
+      "Location": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "sensors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Sensor"
+            }
+          },
+          "billingType": {
+            "type": "string"
+          },
+          "energyRate": {
+            "type": "number"
+          },
+          "billingCycleDay": {
+            "type": "integer"
+          },
+          "budget": {
+            "type": "number"
+          },
+          "fixedCharge": {
+            "type": "number"
+          },
+          "taxRate": {
+            "type": "number"
+          },
+          "postalCode": {
+            "type": "string"
+          },
+          "homeType": {
+            "type": "string"
+          },
+          "homeSize": {
+            "type": "number"
+          },
+          "residents": {
+            "type": "integer"
+          }
+        }
+      },
+      "Sensor": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "sensorId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sensorType": {
+            "type": "string"
+          },
+          "platformType": {
+            "type": "string"
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "channel": {
+                  "type": "integer"
+                },
+                "channelType": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Appliances",
+      "description": "Operations related to Appliances"
+    },
+    {
+      "name": "Authentication",
+      "description": "Operations related to Authentication"
+    },
+    {
+      "name": "Samples",
+      "description": "Operations related to Samples"
+    },
+    {
+      "name": "Status",
+      "description": "Operations related to Status"
+    },
+    {
+      "name": "Users",
+      "description": "Operations related to Users"
+    }
+  ]
+}
