@@ -1,0 +1,1119 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Admanage AI Ad Management API",
+    "version": "1.0.0",
+    "description": "Admanage AI API for launching, managing, and reporting on ads across Facebook, TikTok, Snapchat, Pinterest, Google Ads, Axon/AppLovin, and Taboola. Includes media management, library, drafts, automation rules, and performance reporting.",
+    "x-jentic-source-url": "https://admanage.ai/api-docs"
+  },
+  "servers": [
+    {
+      "url": "https://api.admanage.ai/v1",
+      "description": "Admanage AI API v1"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/launch": {
+      "post": {
+        "operationId": "launchAds",
+        "summary": "Launch ads across platforms",
+        "description": "Create an ad batch and dispatch to launcher service. Supports single, multi, carousel, and flexible ad types across Facebook, TikTok, Snapchat, Pinterest, Axon, and Taboola.",
+        "tags": ["Launch"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/LaunchRequest"}
+            }
+          }
+        },
+        "responses": {
+          "202": {"description": "Ad batch created and dispatched", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/LaunchResponse"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/launch/from-draft": {
+      "post": {
+        "operationId": "launchFromDraft",
+        "summary": "Launch ads from existing draft",
+        "description": "Re-launch an existing batch by ID.",
+        "tags": ["Launch"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["batchId"], "properties": {"batchId": {"type": "string"}}}}}
+        },
+        "responses": {
+          "202": {"description": "Batch re-launched", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/LaunchResponse"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/batch-status/{id}": {
+      "get": {
+        "operationId": "getBatchStatus",
+        "summary": "Check batch launch status",
+        "description": "Poll launch progress. Returns summary status, progress percentage, and ad counts.",
+        "tags": ["Launch"],
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "200": {"description": "Batch status", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BatchStatus"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/google-ads/campaigns": {
+      "get": {
+        "operationId": "listGoogleAdsCampaigns",
+        "summary": "List Google Ads campaigns",
+        "tags": ["Google Ads"],
+        "parameters": [
+          {"name": "accountId", "in": "query", "required": true, "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "200": {"description": "Campaign list with spend, impressions, clicks", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/GoogleCampaign"}}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/google-ads/campaigns/toggle-status": {
+      "post": {
+        "operationId": "toggleGoogleCampaignStatus",
+        "summary": "Toggle Google Ads campaign status",
+        "tags": ["Google Ads"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["accountId", "campaignId", "status"], "properties": {"accountId": {"type": "string"}, "campaignId": {"type": "string"}, "status": {"type": "string", "enum": ["ENABLED", "PAUSED"]}}}}}
+        },
+        "responses": {
+          "200": {"description": "Status toggled", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/google-ads/campaigns/rename": {
+      "post": {
+        "operationId": "renameGoogleCampaign",
+        "summary": "Rename a Google Ads campaign",
+        "tags": ["Google Ads"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["accountId", "campaignId", "newName"], "properties": {"accountId": {"type": "string"}, "campaignId": {"type": "string"}, "newName": {"type": "string"}}}}}
+        },
+        "responses": {
+          "200": {"description": "Campaign renamed", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/google-ads/duplicate-campaign": {
+      "post": {
+        "operationId": "duplicateGoogleCampaign",
+        "summary": "Duplicate a Google Ads campaign",
+        "description": "Copy campaign with all ad groups, ads, and keywords.",
+        "tags": ["Google Ads"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["campaignId", "accountId", "newName"], "properties": {"campaignId": {"type": "string"}, "accountId": {"type": "string"}, "newName": {"type": "string"}, "status": {"type": "string", "enum": ["ENABLED", "PAUSED"]}}}}}
+        },
+        "responses": {
+          "200": {"description": "Campaign duplicated", "content": {"application/json": {"schema": {"type": "object", "properties": {"newCampaignId": {"type": "string"}, "adGroupsCopied": {"type": "integer"}, "totalAdsCopied": {"type": "integer"}, "totalKeywordsCopied": {"type": "integer"}}}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/google-ads/duplicate-ad-group": {
+      "post": {
+        "operationId": "duplicateGoogleAdGroup",
+        "summary": "Duplicate a Google Ads ad group",
+        "tags": ["Google Ads"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["campaignId", "adGroupId", "accountId", "newName"], "properties": {"campaignId": {"type": "string"}, "adGroupId": {"type": "string"}, "accountId": {"type": "string"}, "newName": {"type": "string"}}}}}
+        },
+        "responses": {
+          "200": {"description": "Ad group duplicated", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/google-ads/duplicate-ad": {
+      "post": {
+        "operationId": "duplicateGoogleAd",
+        "summary": "Duplicate a Google Ads ad",
+        "tags": ["Google Ads"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["adGroupId", "adId", "accountId"], "properties": {"adGroupId": {"type": "string"}, "adId": {"type": "string"}, "accountId": {"type": "string"}, "status": {"type": "string", "enum": ["ENABLED", "PAUSED"]}}}}}
+        },
+        "responses": {
+          "200": {"description": "Ad duplicated", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/google-ads/ad-details": {
+      "post": {
+        "operationId": "getGoogleAdDetails",
+        "summary": "Get Google Ads ad details",
+        "tags": ["Google Ads"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["accountId", "adGroupId", "adId"], "properties": {"accountId": {"type": "string"}, "adGroupId": {"type": "string"}, "adId": {"type": "string"}}}}}
+        },
+        "responses": {
+          "200": {"description": "Ad details", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/google-ads/add-text-assets": {
+      "post": {
+        "operationId": "addGoogleTextAssets",
+        "summary": "Add text assets to Google Ads asset groups",
+        "tags": ["Google Ads"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["accountId", "assetGroupIds"], "properties": {"accountId": {"type": "string"}, "assetGroupIds": {"type": "array", "items": {"type": "string"}}, "headlines": {"type": "array", "items": {"type": "string"}}, "longHeadlines": {"type": "array", "items": {"type": "string"}}, "descriptions": {"type": "array", "items": {"type": "string"}}}}}}
+        },
+        "responses": {
+          "200": {"description": "Text assets added", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/google-ads/add-assets": {
+      "post": {
+        "operationId": "addGoogleMediaAssets",
+        "summary": "Add media assets to Google Ads asset groups",
+        "tags": ["Google Ads"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["accountId", "assetGroupIds"], "properties": {"accountId": {"type": "string"}, "assetGroupIds": {"type": "array", "items": {"type": "string"}}, "videos": {"type": "array", "items": {"type": "object"}}, "images": {"type": "array", "items": {"type": "object"}}}}}}
+        },
+        "responses": {
+          "200": {"description": "Media assets added", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/google-ads/remove-assets": {
+      "post": {
+        "operationId": "removeGoogleAssets",
+        "summary": "Remove assets from Google Ads asset group",
+        "tags": ["Google Ads"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["accountId", "assetId", "assetGroupId"], "properties": {"accountId": {"type": "string"}, "assetId": {"type": "string"}, "assetGroupId": {"type": "string"}}}}}
+        },
+        "responses": {
+          "200": {"description": "Assets removed", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/google-ads/update-assets": {
+      "post": {
+        "operationId": "updateGoogleAssets",
+        "summary": "Update Google Ads assets",
+        "tags": ["Google Ads"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["accountId", "editedAssets"], "properties": {"accountId": {"type": "string"}, "editedAssets": {"type": "array", "items": {"type": "object"}}}}}}
+        },
+        "responses": {
+          "200": {"description": "Assets updated", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/google-ads/launch": {
+      "post": {
+        "operationId": "launchGoogleAds",
+        "summary": "Launch Google Ads batch",
+        "description": "Orchestrated batch with asset operations. Rate limit: 3 requests/minute.",
+        "tags": ["Google Ads"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object"}}}
+        },
+        "responses": {
+          "202": {"description": "Batch launched", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/LaunchResponse"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/youtube/upload-from-url": {
+      "post": {
+        "operationId": "uploadVideoToYouTube",
+        "summary": "Upload video to YouTube from URL",
+        "tags": ["YouTube"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["videoUrl", "title"], "properties": {"videoUrl": {"type": "string", "format": "uri"}, "title": {"type": "string"}, "description": {"type": "string"}, "privacy": {"type": "string", "enum": ["private", "public", "unlisted"]}}}}}
+        },
+        "responses": {
+          "200": {"description": "Video uploaded", "content": {"application/json": {"schema": {"type": "object", "properties": {"videoId": {"type": "string"}, "url": {"type": "string"}}}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/media/upload": {
+      "post": {
+        "operationId": "uploadMedia",
+        "summary": "Upload media file",
+        "tags": ["Media"],
+        "requestBody": {
+          "required": true,
+          "content": {"multipart/form-data": {"schema": {"type": "object", "properties": {"file": {"type": "string", "format": "binary"}}}}}
+        },
+        "responses": {
+          "200": {"description": "Media uploaded", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/MediaFile"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/media/upload/url": {
+      "post": {
+        "operationId": "uploadMediaFromUrl",
+        "summary": "Upload media from URL",
+        "tags": ["Media"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["url"], "properties": {"url": {"type": "string", "format": "uri"}}}}}
+        },
+        "responses": {
+          "200": {"description": "Media uploaded", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/MediaFile"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/media/upload/check": {
+      "post": {
+        "operationId": "checkMediaUpload",
+        "summary": "Check if media file exists",
+        "tags": ["Media"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["fileName"], "properties": {"fileName": {"type": "string"}}}}}
+        },
+        "responses": {
+          "200": {"description": "Check result", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/media/get-upload-url": {
+      "post": {
+        "operationId": "getMediaUploadUrl",
+        "summary": "Get a presigned upload URL",
+        "tags": ["Media"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["fileName"], "properties": {"fileName": {"type": "string"}}}}}
+        },
+        "responses": {
+          "200": {"description": "Presigned URL for upload", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/media/confirm-upload": {
+      "post": {
+        "operationId": "confirmMediaUpload",
+        "summary": "Confirm a completed upload",
+        "tags": ["Media"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["url", "fileName"], "properties": {"url": {"type": "string", "format": "uri"}, "fileName": {"type": "string"}}}}}
+        },
+        "responses": {
+          "200": {"description": "Upload confirmed", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/MediaFile"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/media/generate-thumbnail": {
+      "post": {
+        "operationId": "generateThumbnail",
+        "summary": "Generate a media thumbnail",
+        "tags": ["Media"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["url"], "properties": {"url": {"type": "string", "format": "uri"}}}}}
+        },
+        "responses": {
+          "200": {"description": "Thumbnail generated", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/media/search": {
+      "get": {
+        "operationId": "searchMedia",
+        "summary": "Search stored media",
+        "tags": ["Media"],
+        "parameters": [
+          {"name": "q", "in": "query", "schema": {"type": "string"}},
+          {"name": "tags", "in": "query", "schema": {"type": "string"}},
+          {"name": "status", "in": "query", "schema": {"type": "string"}},
+          {"name": "type", "in": "query", "schema": {"type": "string", "enum": ["image", "video"]}},
+          {"name": "dimension", "in": "query", "schema": {"type": "string"}},
+          {"name": "page", "in": "query", "schema": {"type": "integer"}},
+          {"name": "limit", "in": "query", "schema": {"type": "integer"}}
+        ],
+        "responses": {
+          "200": {"description": "Paginated media list", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/media/{id}": {
+      "get": {
+        "operationId": "getMediaById",
+        "summary": "Get stored media by ID",
+        "tags": ["Media"],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "responses": {
+          "200": {"description": "Media details", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/MediaFile"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/drive/browse": {
+      "get": {
+        "operationId": "browseGoogleDrive",
+        "summary": "Browse Google Drive files",
+        "tags": ["Media"],
+        "parameters": [
+          {"name": "folderId", "in": "query", "schema": {"type": "string"}},
+          {"name": "scope", "in": "query", "schema": {"type": "string"}},
+          {"name": "search", "in": "query", "schema": {"type": "string"}},
+          {"name": "pageSize", "in": "query", "schema": {"type": "integer"}}
+        ],
+        "responses": {
+          "200": {"description": "Drive file listing", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/dropbox/browse": {
+      "get": {
+        "operationId": "browseDropbox",
+        "summary": "Browse Dropbox files",
+        "tags": ["Media"],
+        "parameters": [
+          {"name": "path", "in": "query", "schema": {"type": "string"}},
+          {"name": "sharedLink", "in": "query", "schema": {"type": "string"}},
+          {"name": "search", "in": "query", "schema": {"type": "string"}},
+          {"name": "limit", "in": "query", "schema": {"type": "integer"}}
+        ],
+        "responses": {
+          "200": {"description": "Dropbox file listing", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/adbatches/{id}/ad-delivery-statuses": {
+      "get": {
+        "operationId": "getAdDeliveryStatuses",
+        "summary": "Get Meta ad delivery statuses for a batch",
+        "tags": ["Batches"],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "responses": {
+          "200": {"description": "Ad delivery status details", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/comments": {
+      "get": {
+        "operationId": "listComments",
+        "summary": "Retrieve ad comments",
+        "tags": ["Comments"],
+        "responses": {
+          "200": {"description": "List of comments", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/comments/{id}/reply": {
+      "post": {
+        "operationId": "replyToComment",
+        "summary": "Reply to an ad comment",
+        "tags": ["Comments"],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["message"], "properties": {"message": {"type": "string"}}}}}
+        },
+        "responses": {
+          "200": {"description": "Reply posted", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/adaccounts": {
+      "get": {
+        "operationId": "listAdAccounts",
+        "summary": "List ad accounts",
+        "tags": ["Accounts"],
+        "parameters": [
+          {"name": "page", "in": "query", "schema": {"type": "integer"}},
+          {"name": "limit", "in": "query", "schema": {"type": "integer"}}
+        ],
+        "responses": {
+          "200": {"description": "Ad account list", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/AdAccount"}}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/profiles": {
+      "get": {
+        "operationId": "getProfiles",
+        "summary": "Get pages and Instagram profiles",
+        "tags": ["Accounts"],
+        "parameters": [
+          {"name": "businessId", "in": "query", "schema": {"type": "string"}},
+          {"name": "type", "in": "query", "schema": {"type": "string", "enum": ["facebook", "instagram", "threads"]}},
+          {"name": "refresh", "in": "query", "schema": {"type": "boolean"}}
+        ],
+        "responses": {
+          "200": {"description": "Profiles grouped by type", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/user/extended2": {
+      "get": {
+        "operationId": "getUserInfo",
+        "summary": "Get user info with workspaces",
+        "tags": ["Accounts"],
+        "responses": {
+          "200": {"description": "User profile, workspaces, organizations, settings", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/workspaces": {
+      "get": {
+        "operationId": "listWorkspaces",
+        "summary": "List workspaces",
+        "tags": ["Accounts"],
+        "parameters": [
+          {"name": "page", "in": "query", "schema": {"type": "integer"}},
+          {"name": "limit", "in": "query", "schema": {"type": "integer"}}
+        ],
+        "responses": {
+          "200": {"description": "Workspace list", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/campaigns": {
+      "get": {
+        "operationId": "listCampaigns",
+        "summary": "List campaigns with performance data",
+        "tags": ["Performance"],
+        "parameters": [
+          {"name": "page", "in": "query", "schema": {"type": "integer"}},
+          {"name": "limit", "in": "query", "schema": {"type": "integer"}},
+          {"name": "platform", "in": "query", "schema": {"type": "string"}},
+          {"name": "adAccountId", "in": "query", "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "200": {"description": "Campaign list with performance", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/adsets": {
+      "get": {
+        "operationId": "listAdSets",
+        "summary": "List ad sets",
+        "tags": ["Performance"],
+        "parameters": [
+          {"name": "page", "in": "query", "schema": {"type": "integer"}},
+          {"name": "limit", "in": "query", "schema": {"type": "integer"}},
+          {"name": "campaignId", "in": "query", "schema": {"type": "string"}},
+          {"name": "platform", "in": "query", "schema": {"type": "string"}},
+          {"name": "adAccountId", "in": "query", "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "200": {"description": "Ad set list", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/adbatches": {
+      "get": {
+        "operationId": "listAdBatches",
+        "summary": "List ad batches",
+        "tags": ["Batches"],
+        "parameters": [
+          {"name": "page", "in": "query", "schema": {"type": "integer"}},
+          {"name": "limit", "in": "query", "schema": {"type": "integer"}},
+          {"name": "search", "in": "query", "schema": {"type": "string"}},
+          {"name": "workspaceId", "in": "query", "schema": {"type": "string"}},
+          {"name": "privateHistory", "in": "query", "schema": {"type": "boolean"}}
+        ],
+        "responses": {
+          "200": {"description": "Batch list", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/adbatches/{id}": {
+      "get": {
+        "operationId": "getAdBatch",
+        "summary": "Get ad batch by ID",
+        "tags": ["Batches"],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "responses": {
+          "200": {"description": "Batch details", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/reports/query": {
+      "get": {
+        "operationId": "queryReports",
+        "summary": "Query performance reports",
+        "description": "BigQuery first for Facebook, fallback to platform APIs.",
+        "tags": ["Reports"],
+        "parameters": [
+          {"name": "accountIds", "in": "query", "schema": {"type": "string"}},
+          {"name": "startDate", "in": "query", "schema": {"type": "string", "format": "date"}},
+          {"name": "endDate", "in": "query", "schema": {"type": "string", "format": "date"}},
+          {"name": "metrics", "in": "query", "schema": {"type": "string"}},
+          {"name": "groupBy", "in": "query", "schema": {"type": "string"}},
+          {"name": "sortBy", "in": "query", "schema": {"type": "string"}},
+          {"name": "sortDirection", "in": "query", "schema": {"type": "string"}},
+          {"name": "adSetIds", "in": "query", "schema": {"type": "string"}},
+          {"name": "campaignIds", "in": "query", "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "200": {"description": "Report data", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/reports/fields": {
+      "get": {
+        "operationId": "getReportFields",
+        "summary": "Get available report fields",
+        "tags": ["Reports"],
+        "responses": {
+          "200": {"description": "Dimensions and metrics", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/drafts": {
+      "get": {
+        "operationId": "listDrafts",
+        "summary": "List launch drafts",
+        "tags": ["Drafts"],
+        "parameters": [
+          {"name": "page", "in": "query", "schema": {"type": "integer"}},
+          {"name": "limit", "in": "query", "schema": {"type": "integer"}},
+          {"name": "businessId", "in": "query", "schema": {"type": "string"}},
+          {"name": "workspaceId", "in": "query", "schema": {"type": "string"}},
+          {"name": "search", "in": "query", "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "200": {"description": "Draft list", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      },
+      "post": {
+        "operationId": "createDraft",
+        "summary": "Create a launch draft",
+        "tags": ["Drafts"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CreateDraftRequest"}}}
+        },
+        "responses": {
+          "201": {"description": "Draft created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Draft"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/drafts/{id}": {
+      "get": {
+        "operationId": "getDraft",
+        "summary": "Get draft by ID",
+        "tags": ["Drafts"],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "responses": {
+          "200": {"description": "Draft with full state", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Draft"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      },
+      "patch": {
+        "operationId": "updateDraft",
+        "summary": "Update a draft",
+        "tags": ["Drafts"],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UpdateDraftRequest"}}}
+        },
+        "responses": {
+          "200": {"description": "Draft updated", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Draft"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      },
+      "delete": {
+        "operationId": "deleteDraft",
+        "summary": "Delete a draft",
+        "tags": ["Drafts"],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "responses": {
+          "204": {"description": "Draft deleted"},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/drafts/{id}/launch": {
+      "post": {
+        "operationId": "launchDraft",
+        "summary": "Launch a draft",
+        "tags": ["Drafts"],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "responses": {
+          "202": {"description": "Draft launched", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/LaunchResponse"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/spend": {
+      "get": {
+        "operationId": "getDailySpend",
+        "summary": "Get daily ad spend across platforms",
+        "description": "Aggregate spend across Facebook, TikTok, Pinterest, and Snapchat.",
+        "tags": ["Reports"],
+        "parameters": [
+          {"name": "accountIds", "in": "query", "schema": {"type": "string"}},
+          {"name": "dateFrom", "in": "query", "schema": {"type": "string", "format": "date"}},
+          {"name": "dateTo", "in": "query", "schema": {"type": "string", "format": "date"}}
+        ],
+        "responses": {
+          "200": {"description": "Daily spend data", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/automations/rules": {
+      "get": {
+        "operationId": "listAutomationRules",
+        "summary": "List automation rules",
+        "tags": ["Automations"],
+        "responses": {
+          "200": {"description": "Automation rules list", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/AutomationRule"}}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      },
+      "post": {
+        "operationId": "createAutomationRule",
+        "summary": "Create an automation rule",
+        "tags": ["Automations"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CreateAutomationRuleRequest"}}}
+        },
+        "responses": {
+          "201": {"description": "Rule created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AutomationRule"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/automations/rules/{id}": {
+      "get": {
+        "operationId": "getAutomationRule",
+        "summary": "Get an automation rule",
+        "tags": ["Automations"],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "responses": {
+          "200": {"description": "Rule details", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AutomationRule"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      },
+      "patch": {
+        "operationId": "updateAutomationRule",
+        "summary": "Update an automation rule",
+        "tags": ["Automations"],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CreateAutomationRuleRequest"}}}
+        },
+        "responses": {
+          "200": {"description": "Rule updated", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AutomationRule"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      },
+      "delete": {
+        "operationId": "deleteAutomationRule",
+        "summary": "Delete an automation rule",
+        "tags": ["Automations"],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "responses": {
+          "204": {"description": "Rule deleted"},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/launch-defaults": {
+      "patch": {
+        "operationId": "updateLaunchDefaults",
+        "summary": "Update launch defaults",
+        "tags": ["Accounts"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "properties": {"accountId": {"type": "string"}, "title": {"type": "string"}, "cta": {"type": "string"}, "link": {"type": "string"}, "urlTags": {"type": "string"}, "launchPaused": {"type": "boolean"}, "enhancedCreative": {"type": "boolean"}}}}}
+        },
+        "responses": {
+          "200": {"description": "Defaults updated", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/library/tags": {
+      "get": {
+        "operationId": "listLibraryTags",
+        "summary": "List library tags",
+        "tags": ["Library"],
+        "responses": {
+          "200": {"description": "Tag list", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/library/assets": {
+      "get": {
+        "operationId": "listLibraryAssets",
+        "summary": "List library assets",
+        "tags": ["Library"],
+        "parameters": [
+          {"name": "limit", "in": "query", "schema": {"type": "integer"}},
+          {"name": "filterType", "in": "query", "schema": {"type": "string", "enum": ["all", "image", "video", "gif"]}},
+          {"name": "sortBy", "in": "query", "schema": {"type": "string"}},
+          {"name": "launchChannels", "in": "query", "schema": {"type": "string"}},
+          {"name": "dimension", "in": "query", "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "200": {"description": "Paginated asset list", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/library/assets/{id}": {
+      "get": {
+        "operationId": "getLibraryAsset",
+        "summary": "Get a library asset by ID",
+        "tags": ["Library"],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "responses": {
+          "200": {"description": "Asset details", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/library/assets/{id}/update": {
+      "post": {
+        "operationId": "updateLibraryAsset",
+        "summary": "Update a library asset",
+        "tags": ["Library"],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "properties": {"name": {"type": "string"}, "uploaderStatus": {"type": "string"}, "rating": {"type": "integer"}, "smartTags": {"type": "array", "items": {"type": "string"}}}}}}
+        },
+        "responses": {
+          "200": {"description": "Asset updated", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/library/boards": {
+      "get": {
+        "operationId": "listLibraryBoards",
+        "summary": "List library boards",
+        "tags": ["Library"],
+        "responses": {
+          "200": {"description": "Board tree with asset counts", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      },
+      "post": {
+        "operationId": "createLibraryBoard",
+        "summary": "Create a library board",
+        "tags": ["Library"],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["name"], "properties": {"name": {"type": "string"}, "parentId": {"type": "string"}, "visibility": {"type": "string", "enum": ["team", "private"]}}}}}
+        },
+        "responses": {
+          "201": {"description": "Board created", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/library/boards/{id}/assets": {
+      "get": {
+        "operationId": "listBoardAssets",
+        "summary": "List assets in a board",
+        "tags": ["Library"],
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "schema": {"type": "string"}},
+          {"name": "limit", "in": "query", "schema": {"type": "integer"}},
+          {"name": "sortBy", "in": "query", "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "200": {"description": "Board asset list", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      },
+      "post": {
+        "operationId": "addAssetToBoard",
+        "summary": "Add an asset to a board",
+        "tags": ["Library"],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"type": "object", "required": ["adId"], "properties": {"adId": {"type": "string"}}}}}
+        },
+        "responses": {
+          "200": {"description": "Asset added to board", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      },
+      "delete": {
+        "operationId": "removeAssetFromBoard",
+        "summary": "Remove an asset from a board",
+        "tags": ["Library"],
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "schema": {"type": "string"}},
+          {"name": "adId", "in": "query", "required": true, "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "204": {"description": "Asset removed from board"},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer token authentication"
+      }
+    },
+    "schemas": {
+      "LaunchRequest": {
+        "type": "object",
+        "required": ["type", "adAccountType", "ads"],
+        "properties": {
+          "type": {"type": "string", "enum": ["single", "multi", "carousel", "flexible"]},
+          "adAccountType": {"type": "string", "enum": ["facebook", "tiktok", "snapchat", "pinterest", "axon", "taboola"]},
+          "ads": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "adName": {"type": "string"},
+                "adAccountId": {"type": "string"},
+                "title": {"type": "string"},
+                "description": {"type": "string"},
+                "cta": {"type": "string"},
+                "link": {"type": "string"},
+                "page": {"type": "string"},
+                "insta": {"type": "string"},
+                "adSets": {"type": "array", "items": {"type": "string"}},
+                "media": {"type": "array", "items": {"type": "object"}}
+              }
+            }
+          }
+        }
+      },
+      "LaunchResponse": {
+        "type": "object",
+        "properties": {
+          "adBatchId": {"type": "string"},
+          "slug": {"type": "string"},
+          "isAsync": {"type": "boolean"}
+        }
+      },
+      "BatchStatus": {
+        "type": "object",
+        "properties": {
+          "status": {"type": "string", "enum": ["in_progress", "success", "error"]},
+          "progress": {"type": "number"},
+          "totalAds": {"type": "integer"},
+          "successfulAds": {"type": "integer"}
+        }
+      },
+      "GoogleCampaign": {
+        "type": "object",
+        "properties": {
+          "campaignId": {"type": "string"},
+          "name": {"type": "string"},
+          "status": {"type": "string"},
+          "spend": {"type": "number"},
+          "impressions": {"type": "integer"},
+          "clicks": {"type": "integer"},
+          "adGroups": {"type": "array", "items": {"type": "object"}}
+        }
+      },
+      "MediaFile": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "url": {"type": "string"},
+          "filename": {"type": "string"},
+          "adid": {"type": "string"},
+          "dimensions": {"type": "string"},
+          "thumbnail": {"type": "string"},
+          "mimeType": {"type": "string"},
+          "duration": {"type": "number"}
+        }
+      },
+      "AdAccount": {
+        "type": "object",
+        "properties": {
+          "accountId": {"type": "string"},
+          "accountName": {"type": "string"},
+          "businessId": {"type": "string"},
+          "workspaceId": {"type": "string"},
+          "type": {"type": "string"}
+        }
+      },
+      "Draft": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "title": {"type": "string"},
+          "status": {"type": "string"},
+          "state": {"type": "object"},
+          "businessId": {"type": "string"},
+          "workspaceId": {"type": "string"},
+          "createdAt": {"type": "string", "format": "date-time"}
+        }
+      },
+      "CreateDraftRequest": {
+        "type": "object",
+        "required": ["title"],
+        "properties": {
+          "title": {"type": "string"},
+          "businessId": {"type": "string"},
+          "workspaceId": {"type": "string"},
+          "state": {"type": "object"}
+        }
+      },
+      "UpdateDraftRequest": {
+        "type": "object",
+        "properties": {
+          "title": {"type": "string"},
+          "state": {"type": "object"},
+          "status": {"type": "string"},
+          "businessId": {"type": "string"},
+          "workspaceId": {"type": "string"}
+        }
+      },
+      "AutomationRule": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "trigger": {"type": "object"},
+          "condition": {"type": "object"},
+          "action": {"type": "object"}
+        }
+      },
+      "CreateAutomationRuleRequest": {
+        "type": "object",
+        "required": ["name", "trigger", "condition", "action"],
+        "properties": {
+          "name": {"type": "string"},
+          "trigger": {"type": "object"},
+          "condition": {"type": "object"},
+          "action": {"type": "object"}
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {"type": "string"},
+          "message": {"type": "string"},
+          "statusCode": {"type": "integer"}
+        }
+      }
+    }
+  }
+}
