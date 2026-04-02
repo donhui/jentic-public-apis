@@ -15,6 +15,11 @@ on:
         description: 'API name (optional)'
         required: false
         default: 'main' # Default to 'main' if not provided
+      reject_invalid_server_urls:
+        description: 'Reject specs with invalid/relative server URLs (optional, default: true)'
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   generate-repo-structure:
@@ -61,10 +66,15 @@ jobs:
           APITOOLS_LABEL="${VENDOR_NAME}/${API_NAME}"
           echo "Using provided Vendor Name as Apitools label: $APITOOLS_LABEL"
 
+          # Extract reject_invalid_server_urls (optional, defaults to true)
+          REJECT_INVALID_SERVER_URLS="${{ inputs.reject_invalid_server_urls }}"
+          echo "Reject Invalid Server URLs: $REJECT_INVALID_SERVER_URLS"
+
           echo "Extracted URL: $URL"
           echo "Apitools Label: $APITOOLS_LABEL"
           echo "import_oas_url=$URL" >> $GITHUB_OUTPUT
           echo "apitools_label=$APITOOLS_LABEL" >> $GITHUB_OUTPUT
+          echo "reject_invalid_server_urls=$REJECT_INVALID_SERVER_URLS" >> $GITHUB_OUTPUT
 
       - name: Extract Info from Issue
         # Only run if the issue body contains the trigger string
@@ -76,9 +86,11 @@ jobs:
           echo "Parsing REQUIRED OpenAPI URL and Vendor Name from issue..."
           BODY="${{ github.event.issue.body }}"
           BODY=$(echo "$BODY" | tr -d '\r')
+          # Strip leading whitespace from each line to allow indented fields
+          BODY_STRIPPED=$(echo "$BODY" | sed 's/^[[:space:]]*//')
 
           # Extract URL (Required)
-          URL=$(echo "$BODY" | grep -oP '(?<=import_oas_url:).*' | head -n 1 | xargs)
+          URL=$(echo "$BODY_STRIPPED" | grep -oP '(?<=^import_oas_url:).*' | head -n 1 | xargs)
           echo "URL after grep/xargs: $URL"
           if [ -z "$URL" ]; then
             echo "::error::Could not extract required 'import_oas_url:' field from issue body."
@@ -88,7 +100,7 @@ jobs:
           fi
 
           # Extract Vendor Name (Required)
-          VENDOR_NAME=$(echo "$BODY" | grep -oP '(?<=vendor_name:).*' | head -n 1 | xargs)
+          VENDOR_NAME=$(echo "$BODY_STRIPPED" | grep -oP '(?<=^vendor_name:).*' | head -n 1 | xargs)
           echo "Vendor Name after grep/xargs: $VENDOR_NAME"
           if [ -z "$VENDOR_NAME" ]; then
             echo "::error::Could not extract required 'vendor_name:' field from issue body."
@@ -96,6 +108,13 @@ jobs:
             echo "error_message=Could not extract required 'vendor_name:' field from issue body. Please ensure your issue contains a line with 'vendor_name: <your-vendor-name>'." >> $GITHUB_OUTPUT
             exit 1
           fi
+
+          # Extract reject_invalid_server_urls (optional, defaults to true)
+          REJECT_INVALID_SERVER_URLS=$(echo "$BODY_STRIPPED" | grep -oP '(?<=^reject_invalid_server_urls:).*' | head -n 1 | xargs || true)
+          if [ -z "$REJECT_INVALID_SERVER_URLS" ]; then
+            REJECT_INVALID_SERVER_URLS="true"
+          fi
+          echo "Reject Invalid Server URLs: $REJECT_INVALID_SERVER_URLS"
 
           # Set the Apitools Label (always the vendor name now)
           APITOOLS_LABEL="$VENDOR_NAME"
@@ -105,6 +124,7 @@ jobs:
           echo "Apitools Label: $APITOOLS_LABEL"
           echo "import_oas_url=$URL" >> $GITHUB_OUTPUT
           echo "apitools_label=$APITOOLS_LABEL" >> $GITHUB_OUTPUT
+          echo "reject_invalid_server_urls=$REJECT_INVALID_SERVER_URLS" >> $GITHUB_OUTPUT
 
       - name: Consolidate extracted info
         if: always()
@@ -113,6 +133,7 @@ jobs:
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "import_oas_url=${{ steps.extract_info_from_inputs.outputs.import_oas_url }}" >> $GITHUB_OUTPUT
             echo "apitools_label=${{ steps.extract_info_from_inputs.outputs.apitools_label }}" >> $GITHUB_OUTPUT
+            echo "reject_invalid_server_urls=${{ steps.extract_info_from_inputs.outputs.reject_invalid_server_urls }}" >> $GITHUB_OUTPUT
             echo "extract_failed=${{ steps.extract_info_from_inputs.outputs.extract_failed }}" >> $GITHUB_OUTPUT
             echo "error_message=${{ steps.extract_info_from_inputs.outputs.error_message }}" >> $GITHUB_OUTPUT
 
@@ -125,6 +146,7 @@ jobs:
           else
             echo "import_oas_url=${{ steps.extract_info_from_issue.outputs.import_oas_url }}" >> $GITHUB_OUTPUT
             echo "apitools_label=${{ steps.extract_info_from_issue.outputs.apitools_label }}" >> $GITHUB_OUTPUT
+            echo "reject_invalid_server_urls=${{ steps.extract_info_from_issue.outputs.reject_invalid_server_urls }}" >> $GITHUB_OUTPUT
             echo "extract_failed=${{ steps.extract_info_from_issue.outputs.extract_failed }}" >> $GITHUB_OUTPUT
             echo "error_message=${{ steps.extract_info_from_issue.outputs.error_message }}" >> $GITHUB_OUTPUT
 
@@ -145,9 +167,11 @@ jobs:
 
           LABEL="${{ steps.extract_info.outputs.apitools_label }}"
           IMPORT_URL="${{ steps.extract_info.outputs.import_oas_url }}"
+          REJECT_INVALID="${{ steps.extract_info.outputs.reject_invalid_server_urls }}"
           REQUEST_BODY=$(jq -n \
             --arg label "$LABEL" \
             --arg url "$IMPORT_URL" \
+            --argjson reject_invalid "$REJECT_INVALID" \
             ' {
               meta: {
                 label: $label,
@@ -157,7 +181,8 @@ jobs:
                 canonical_artifacts_base_url_ui: "https://github.com/${{ github.repository }}/tree/main/apis/openapi",
                 oas_process_configuration: {
                   enable_spec_repair: false,
-                  enable_llm_analysis: true
+                  enable_llm_analysis: true,
+                  reject_invalid_server_urls: $reject_invalid
                 }
               },
               spec: {
