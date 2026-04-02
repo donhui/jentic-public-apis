@@ -1,0 +1,798 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Enigma Business API",
+    "description": "Enigma's Business API provides business matching, identity lookup, KYB (Know Your Business) verification, and sanctions screening capabilities against Enigma's comprehensive business data platform.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://developers.enigma.com/"
+  },
+  "servers": [
+    {
+      "url": "https://api.enigma.com",
+      "description": "Production server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Match",
+      "description": "Business matching endpoints"
+    },
+    {
+      "name": "Identity",
+      "description": "Business identity lookup"
+    },
+    {
+      "name": "KYB",
+      "description": "Know Your Business verification"
+    },
+    {
+      "name": "Screening",
+      "description": "Sanctions and watchlist screening"
+    }
+  ],
+  "paths": {
+    "/businesses/match": {
+      "post": {
+        "operationId": "matchbusiness",
+        "summary": "Match a business",
+        "description": "Identifies which Enigma profiles correspond to a business of interest by matching against provided business information.",
+        "tags": [
+          "Match"
+        ],
+        "parameters": [
+          {
+            "name": "business_entity_type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "business",
+                "business_location"
+              ],
+              "default": "business_location"
+            },
+            "description": "Type of business entity to match against."
+          },
+          {
+            "name": "match_threshold",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.5
+            },
+            "description": "Minimum match confidence score."
+          },
+          {
+            "name": "top_n",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Number of matches to return."
+          },
+          {
+            "name": "show_non_matches",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "description": "Return non-matches up to top_n if no matches exceed threshold."
+          },
+          {
+            "name": "prioritization",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Set to MTX to prioritize profiles with revenue data."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful match response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{id}": {
+      "get": {
+        "operationId": "getbusinessbyid",
+        "summary": "Get business by Enigma ID",
+        "description": "Retrieves specific attributes for a given business profile using an Enigma ID.",
+        "tags": [
+          "Identity"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The Enigma ID obtained from a match response."
+          },
+          {
+            "name": "attrs",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated list of desired attributes."
+          },
+          {
+            "name": "lookback_months",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Integer or * for historical time-series data."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/kyb/": {
+      "post": {
+        "operationId": "verifybusiness",
+        "summary": "KYB verification",
+        "description": "Performs Know Your Business verification checks against Enigma's legal entity dataset including official state registration records.",
+        "tags": [
+          "KYB"
+        ],
+        "parameters": [
+          {
+            "name": "package",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "identify",
+                "verify"
+              ],
+              "default": "verify"
+            },
+            "description": "Specifies returned attributes."
+          },
+          {
+            "name": "attrs",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-delimited add-on attributes (watchlist, tin_verification, ssn_verification, business_bankruptcy)."
+          },
+          {
+            "name": "match_threshold",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.5
+            },
+            "description": "Minimum match confidence."
+          },
+          {
+            "name": "top_n",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Number of matches to return."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KybRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful KYB response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KybResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/evaluation/sanctions/screen": {
+      "post": {
+        "operationId": "screensanctions",
+        "summary": "Screen against sanctions and watchlists",
+        "description": "Screens customers and transactions against sanctions and watchlists for compliance purposes.",
+        "tags": [
+          "Screening"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScreeningRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful screening response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScreeningResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "properties": {
+          "street_address1": {
+            "type": "string"
+          },
+          "street_address2": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "postal_code": {
+            "type": "string"
+          }
+        }
+      },
+      "Person": {
+        "type": "object",
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "ssn": {
+            "type": "string"
+          }
+        }
+      },
+      "MatchRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "person": {
+            "$ref": "#/components/schemas/Person"
+          },
+          "address": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "website": {
+            "type": "string"
+          }
+        }
+      },
+      "MatchResponse": {
+        "type": "object",
+        "properties": {
+          "enigma_id": {
+            "type": "string"
+          },
+          "business_location_enigma_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "matched_fields": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "address": {
+                "type": "object"
+              },
+              "person": {
+                "type": "object"
+              },
+              "website": {
+                "type": "string"
+              }
+            }
+          },
+          "match_confidence": {
+            "type": "number"
+          },
+          "is_matched": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BusinessProfile": {
+        "type": "object",
+        "properties": {
+          "enigma_id": {
+            "type": "string"
+          },
+          "websites": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "names": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Address"
+            }
+          },
+          "business_location_enigma_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "data_sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "industries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "KybRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "website": {
+            "type": "string"
+          },
+          "address": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "tin": {
+            "type": "string",
+            "description": "9-digit Tax Identification Number"
+          },
+          "person": {
+            "$ref": "#/components/schemas/Person"
+          },
+          "persons_to_screen": {
+            "type": "array",
+            "maxItems": 4,
+            "items": {
+              "$ref": "#/components/schemas/Person"
+            }
+          }
+        }
+      },
+      "KybResponse": {
+        "type": "object",
+        "properties": {
+          "response_id": {
+            "type": "string"
+          },
+          "risk_summary": {
+            "type": "object",
+            "properties": {
+              "overall_risk_rating": {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "low"
+                ]
+              },
+              "legal_existence_risk_rating": {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "low"
+                ]
+              },
+              "activity_risk_rating": {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "low"
+                ]
+              },
+              "watchlist_risk_rating": {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "low"
+                ]
+              },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "task_name": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "result": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "best_match": {
+                "type": "object"
+              },
+              "legal_entities": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "brands": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "watchlists": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ScreeningRequest": {
+        "type": "object",
+        "required": [
+          "tag",
+          "query_type",
+          "searches"
+        ],
+        "properties": {
+          "tag": {
+            "type": "string",
+            "description": "Description of the request"
+          },
+          "caller_id": {
+            "type": "string"
+          },
+          "query_type": {
+            "type": "string"
+          },
+          "configuration_overrides": {
+            "type": "object",
+            "properties": {
+              "entity": {
+                "type": "object",
+                "properties": {
+                  "alert_threshold": {
+                    "type": "number"
+                  },
+                  "hit_threshold": {
+                    "type": "number"
+                  },
+                  "max_results": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "general": {
+                "type": "object",
+                "properties": {
+                  "archive_retention_days": {
+                    "type": "integer"
+                  },
+                  "entity_detail_level": {
+                    "type": "string"
+                  },
+                  "overrides_on": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "list_groups": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "searches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "ENTITY",
+                    "TEXT"
+                  ]
+                },
+                "tag": {
+                  "type": "string"
+                },
+                "entity_description": {
+                  "type": "object",
+                  "properties": {
+                    "person_name": {
+                      "type": "string"
+                    },
+                    "dob": {
+                      "type": "string"
+                    },
+                    "address": {
+                      "type": "string"
+                    },
+                    "org_name": {
+                      "type": "string"
+                    },
+                    "country_of_affiliation": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "text": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ScreeningResponse": {
+        "type": "object",
+        "properties": {
+          "alert": {
+            "type": "boolean"
+          },
+          "caller_id": {
+            "type": "string"
+          },
+          "configuration_used": {
+            "type": "object"
+          },
+          "query_type": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "request_timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "search_results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "hits": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "score": {
+                        "type": "number"
+                      },
+                      "alert": {
+                        "type": "boolean"
+                      },
+                      "entity": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "tag": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "API key for authentication"
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKeyAuth": []
+    }
+  ]
+}
