@@ -1,0 +1,135 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Agify API",
+    "version": "1.0.0",
+    "description": "Predicts the age of a person based on their first name. Supports single and batch name predictions with optional country localization.",
+    "x-jentic-source-url": "https://agify.io/documentation"
+  },
+  "servers": [
+    {
+      "url": "https://api.agify.io"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "predictAge",
+        "summary": "Predict age by name",
+        "description": "Estimate the age of a person based on their first name. Supports single name or batch of up to 10 names.",
+        "tags": ["Prediction"],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "First name to predict age for (single request)",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "name[]",
+            "in": "query",
+            "description": "Array of first names for batch prediction (up to 10)",
+            "schema": {
+              "type": "array",
+              "items": { "type": "string" },
+              "maxItems": 10
+            }
+          },
+          {
+            "name": "country_id",
+            "in": "query",
+            "description": "ISO 3166-1 alpha-2 country code for localized prediction",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "apikey",
+            "in": "query",
+            "description": "API key for authenticated requests",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Age prediction result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    { "$ref": "#/components/schemas/AgePrediction" },
+                    {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/AgePrediction" }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing or invalid name parameter",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid API key",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity - invalid input",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AgePrediction": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "The input name" },
+          "age": { "type": "integer", "nullable": true, "description": "Predicted age" },
+          "count": { "type": "integer", "description": "Number of data points used" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string", "description": "Error message" }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "apikey",
+        "description": "API key for authenticated requests (optional for free tier)"
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKey": []
+    }
+  ]
+}
