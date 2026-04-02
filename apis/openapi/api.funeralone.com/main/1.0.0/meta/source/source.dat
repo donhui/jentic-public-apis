@@ -1,0 +1,397 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "funeralOne f1Connect API",
+    "version": "1.0.0",
+    "description": "REST API for managing funeral cases in the funeralOne platform. Supports creating, updating, and retrieving cases with detailed information about the deceased, events, and serving locations.",
+    "x-jentic-source-url": "https://api.funeralone.com/docs/"
+  },
+  "servers": [
+    {
+      "url": "https://api.funeralone.com",
+      "description": "Production API Server"
+    }
+  ],
+  "security": [
+    {
+      "basicAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Cases",
+      "description": "Operations for managing funeral cases"
+    }
+  ],
+  "paths": {
+    "/cases": {
+      "post": {
+        "operationId": "createOrUpdateCase",
+        "summary": "Create or update a case",
+        "description": "Creates a new case or updates an existing one if the CaseExternalId already exists for the account.",
+        "tags": ["Cases"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCaseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Case updated successfully",
+            "headers": {
+              "x-caseid": {
+                "description": "Numeric case identifier",
+                "schema": { "type": "string" }
+              }
+            }
+          },
+          "201": {
+            "description": "Case created successfully",
+            "headers": {
+              "x-caseid": {
+                "description": "Numeric case identifier",
+                "schema": { "type": "string" }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - no authentication provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cases/AccountExternalId/{AccountExternalId}": {
+      "get": {
+        "operationId": "listCasesByAccount",
+        "summary": "Retrieve all cases for an account",
+        "tags": ["Cases"],
+        "parameters": [
+          {
+            "name": "AccountExternalId",
+            "in": "path",
+            "required": true,
+            "description": "The external identifier for the account",
+            "schema": {
+              "type": "string",
+              "maxLength": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with list of cases",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CaseSummary"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid API key or account ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cases/AccountExternalId/{AccountExternalId}/CaseExternalId/{CaseExternalId}": {
+      "get": {
+        "operationId": "getCaseByExternalId",
+        "summary": "Retrieve a specific case",
+        "tags": ["Cases"],
+        "parameters": [
+          {
+            "name": "AccountExternalId",
+            "in": "path",
+            "required": true,
+            "description": "The external identifier for the account",
+            "schema": {
+              "type": "string",
+              "maxLength": 50
+            }
+          },
+          {
+            "name": "CaseExternalId",
+            "in": "path",
+            "required": true,
+            "description": "The external identifier for the case",
+            "schema": {
+              "type": "string",
+              "maxLength": 39
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with full case details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "HTTP Basic authentication with API key as username"
+      }
+    },
+    "schemas": {
+      "CreateCaseRequest": {
+        "type": "object",
+        "required": ["AccountExternalId", "CaseExternalId", "ServingLocation"],
+        "properties": {
+          "AccountExternalId": { "type": "string", "maxLength": 50 },
+          "CaseExternalId": { "type": "string", "maxLength": 39 },
+          "Prefix": { "type": "string" },
+          "FirstName": { "type": "string" },
+          "MiddleName": { "type": "string" },
+          "LastName": { "type": "string" },
+          "Suffix": { "type": "string" },
+          "DisplayName": { "type": "string" },
+          "Gender": { "type": "string", "enum": ["M", "F"] },
+          "BirthDate": { "type": "string", "description": "Format: MM/DD/YYYY" },
+          "DeathDate": { "type": "string", "description": "Format: MM/DD/YYYY" },
+          "Obituary": { "type": "string" },
+          "HMISCaseID": { "type": "string" },
+          "Picture": { "type": "string", "description": "Base64-encoded JPEG" },
+          "ExternalVideoUrls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalVideoUrl"
+            }
+          },
+          "ServingLocation": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "FamilyAddress": {
+            "$ref": "#/components/schemas/FamilyAddress"
+          },
+          "Events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            }
+          },
+          "Cemetery": {
+            "$ref": "#/components/schemas/CemeteryLocation"
+          },
+          "FamilyAdmins": {
+            "type": "array",
+            "items": { "type": "string", "format": "email" },
+            "description": "Email addresses for family admins"
+          }
+        }
+      },
+      "Location": {
+        "type": "object",
+        "required": ["Name"],
+        "properties": {
+          "ExternalId": { "type": "string" },
+          "Name": { "type": "string" },
+          "Address": { "type": "string" },
+          "Address2": { "type": "string" },
+          "City": { "type": "string" },
+          "State": { "type": "string" },
+          "PostalCode": { "type": "string" },
+          "Country": { "type": "string", "description": "2-letter country code", "default": "US" }
+        }
+      },
+      "CemeteryLocation": {
+        "type": "object",
+        "required": ["Name"],
+        "properties": {
+          "ExternalId": { "type": "string" },
+          "Name": { "type": "string" },
+          "Address": { "type": "string" },
+          "Address2": { "type": "string" },
+          "City": { "type": "string" },
+          "State": { "type": "string" },
+          "PostalCode": { "type": "string" },
+          "Country": { "type": "string", "default": "US" },
+          "Latitude": { "type": "string" },
+          "Longitude": { "type": "string" }
+        }
+      },
+      "FamilyAddress": {
+        "type": "object",
+        "properties": {
+          "ExternalId": { "type": "string" },
+          "FirstName": { "type": "string" },
+          "LastName": { "type": "string" },
+          "Phone": { "type": "string" },
+          "Address": { "type": "string" },
+          "Address2": { "type": "string" },
+          "City": { "type": "string" },
+          "State": { "type": "string" },
+          "PostalCode": { "type": "string" },
+          "Country": { "type": "string", "default": "US" }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "required": ["Location"],
+        "properties": {
+          "Type": { "type": "string", "description": "Visitation, Service, Cemetery, Shiva, or custom" },
+          "Date": { "type": "string", "description": "Format: MM/DD/YYYY" },
+          "StartTime": { "type": "string", "description": "Format: HH:MM (24-hour)" },
+          "EndTime": { "type": "string", "description": "Format: HH:MM (24-hour)" },
+          "EndDate": { "type": "string", "description": "For multi-day events. Format: MM/DD/YYYY" },
+          "Location": {
+            "type": "object",
+            "required": ["Name"],
+            "properties": {
+              "ExternalId": { "type": "string" },
+              "Type": { "type": "string", "description": "Set to 'Residence' for private homes" },
+              "Name": { "type": "string" },
+              "Address": { "type": "string" },
+              "Address2": { "type": "string" },
+              "City": { "type": "string" },
+              "State": { "type": "string" },
+              "PostalCode": { "type": "string" },
+              "Country": { "type": "string", "default": "US" },
+              "Latitude": { "type": "string" },
+              "Longitude": { "type": "string" }
+            }
+          },
+          "Private": { "type": "boolean", "default": false },
+          "Information": { "type": "string" }
+        }
+      },
+      "ExternalVideoUrl": {
+        "type": "object",
+        "required": ["Type", "Url"],
+        "properties": {
+          "Type": { "type": "string", "enum": ["Tribute", "Webcast"] },
+          "Url": { "type": "string", "format": "uri" },
+          "Caption": { "type": "string" }
+        }
+      },
+      "CaseSummary": {
+        "type": "object",
+        "properties": {
+          "CaseExternalId": { "type": "string" },
+          "AccountExternalId": { "type": "string" },
+          "Prefix": { "type": "string" },
+          "FirstName": { "type": "string" },
+          "MiddleName": { "type": "string" },
+          "LastName": { "type": "string" },
+          "Suffix": { "type": "string" },
+          "BirthDate": { "type": "string", "format": "date-time" },
+          "DeathDate": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CaseDetail": {
+        "type": "object",
+        "properties": {
+          "AccountExternalId": { "type": "string" },
+          "CaseExternalId": { "type": "string" },
+          "Prefix": { "type": "string" },
+          "FirstName": { "type": "string" },
+          "MiddleName": { "type": "string" },
+          "LastName": { "type": "string" },
+          "Suffix": { "type": "string" },
+          "DisplayName": { "type": "string" },
+          "Gender": { "type": "string" },
+          "BirthDate": { "type": "string", "format": "date-time" },
+          "DeathDate": { "type": "string", "format": "date-time" },
+          "Obituary": { "type": "string" },
+          "HMISCaseID": { "type": "string" },
+          "Picture": { "type": "string" },
+          "ExternalVideoUrls": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ExternalVideoUrl" }
+          },
+          "ServingLocation": { "$ref": "#/components/schemas/Location" },
+          "FamilyAddress": { "$ref": "#/components/schemas/FamilyAddress" },
+          "Events": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Event" }
+          },
+          "Cemetery": { "$ref": "#/components/schemas/CemeteryLocation" },
+          "FamilyAdmins": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer" },
+          "message": { "type": "string" }
+        }
+      }
+    }
+  }
+}
