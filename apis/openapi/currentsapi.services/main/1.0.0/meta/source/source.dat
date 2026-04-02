@@ -1,0 +1,589 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Currents API",
+    "description": "Currents API provides access to the latest news from around the world. It aggregates news articles and allows filtering by country, language, category, keyword, date range, domain, and content type. Response times are typically under 200ms with 99.9% uptime.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Currents API",
+      "url": "https://currentsapi.services"
+    },
+    "x-jentic-source-url": "https://currentsapi.services/"
+  },
+  "servers": [
+    {
+      "url": "https://api.currentsapi.services/v1",
+      "description": "Currents API v1 production server"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyHeader": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "News",
+      "description": "Retrieve latest and search news articles"
+    },
+    {
+      "name": "Reference",
+      "description": "Available filter values for languages, regions, and categories"
+    }
+  ],
+  "paths": {
+    "/latest-news": {
+      "get": {
+        "operationId": "getLatestNews",
+        "summary": "Get latest news",
+        "description": "Fetch the most recent news articles. Supports filtering by language, country, category, domain, and content type.",
+        "tags": ["News"],
+        "parameters": [
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Filter results by language code (e.g., en, fr, de)",
+            "schema": {
+              "type": "string",
+              "default": "en"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Filter by country code of news source (e.g., US, GB). Use codes from /available/regions.",
+            "schema": {
+              "type": "string",
+              "default": "INT"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Filter results by news category (e.g., technology, business, sports)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "domain",
+            "in": "query",
+            "required": false,
+            "description": "Filter results by specific website domain (e.g., bbc.com)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "domain_not",
+            "in": "query",
+            "required": false,
+            "description": "Exclude specific domains from results",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keywords",
+            "in": "query",
+            "required": false,
+            "description": "Search for exact matches in titles or descriptions",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Filter by content type: 1 (news), 2 (articles), 3 (discussion)",
+            "schema": {
+              "type": "integer",
+              "enum": [1, 2, 3],
+              "default": 1
+            }
+          },
+          {
+            "name": "page_number",
+            "in": "query",
+            "required": false,
+            "description": "Page number for pagination",
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "description": "Number of articles per page",
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "minimum": 1,
+              "maximum": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with news articles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - Daily request limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search": {
+      "get": {
+        "operationId": "searchNews",
+        "summary": "Search news articles",
+        "description": "Search for news articles matching specified criteria including keywords, date range, language, country, category, and domain filters.",
+        "tags": ["News"],
+        "parameters": [
+          {
+            "name": "keywords",
+            "in": "query",
+            "required": false,
+            "description": "Search for exact matches of words in titles or descriptions",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Filter results by language code",
+            "schema": {
+              "type": "string",
+              "default": "en"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Filter by country code of news source",
+            "schema": {
+              "type": "string",
+              "default": "INT"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Filter results by news category",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "description": "Search for news published after this date (RFC 3339 format, e.g., 2025-01-01T00:00:00+00:00)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "description": "Search for news published before this date (RFC 3339 format)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Filter by content type: 1 (news), 2 (articles), 3 (discussion)",
+            "schema": {
+              "type": "integer",
+              "enum": [1, 2, 3],
+              "default": 1
+            }
+          },
+          {
+            "name": "domain",
+            "in": "query",
+            "required": false,
+            "description": "Filter results by specific website domain",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "domain_not",
+            "in": "query",
+            "required": false,
+            "description": "Exclude specific domains from results",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page_number",
+            "in": "query",
+            "required": false,
+            "description": "Page number for pagination",
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "description": "Number of articles per page",
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Total number of articles to return",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - Daily request limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/available/languages": {
+      "get": {
+        "operationId": "getAvailableLanguages",
+        "summary": "Get available languages",
+        "description": "Retrieve the list of supported language codes that can be used for filtering news results.",
+        "tags": ["Reference"],
+        "responses": {
+          "200": {
+            "description": "Successful response with available languages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailableLanguagesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/available/regions": {
+      "get": {
+        "operationId": "getAvailableRegions",
+        "summary": "Get available regions",
+        "description": "Retrieve the list of supported country/region codes that can be used for filtering news results.",
+        "tags": ["Reference"],
+        "responses": {
+          "200": {
+            "description": "Successful response with available regions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailableRegionsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/available/categories": {
+      "get": {
+        "operationId": "getAvailableCategories",
+        "summary": "Get available categories",
+        "description": "Retrieve the list of supported news categories that can be used for filtering results.",
+        "tags": ["Reference"],
+        "responses": {
+          "200": {
+            "description": "Successful response with available categories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailableCategoriesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "API key obtained from your Currents API dashboard. Pass the key directly as the Authorization header value."
+      }
+    },
+    "schemas": {
+      "NewsArticle": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique article identifier"
+          },
+          "title": {
+            "type": "string",
+            "description": "Article headline"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Short article description"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to the original article"
+          },
+          "image": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "description": "URL of the article's featured image"
+          },
+          "published": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Publication date in ISO 8601 format"
+          },
+          "language": {
+            "type": "string",
+            "description": "Language code of the article"
+          },
+          "category": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Categories the article belongs to"
+          },
+          "author": {
+            "type": "string",
+            "nullable": true,
+            "description": "Article author"
+          }
+        }
+      },
+      "NewsResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Response status (e.g., 'ok')"
+          },
+          "news": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NewsArticle"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "description": "Current page number"
+          }
+        }
+      },
+      "AvailableLanguagesResponse": {
+        "type": "object",
+        "properties": {
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "description": "Language code"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Language name"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AvailableRegionsResponse": {
+        "type": "object",
+        "properties": {
+          "regions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "description": "Region/country code"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Region/country name"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AvailableCategoriesResponse": {
+        "type": "object",
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of available category names"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Error status"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message"
+          }
+        }
+      }
+    }
+  }
+}
