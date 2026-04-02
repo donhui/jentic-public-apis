@@ -1,0 +1,611 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Agora Channel Management API",
+    "description": "Agora Channel Management RESTful API for querying channel information, user status, and managing user banning rules. Supports querying online channels, users in channels, user status, and creating/managing kicking rules to ban users from channels.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://docs.agora.io/en/voice-calling/channel-management-api/overview"
+  },
+  "servers": [
+    {
+      "url": "https://api.agora.io",
+      "description": "Agora primary production server"
+    },
+    {
+      "url": "https://api.sd-rtn.com",
+      "description": "Agora SD-RTN production server"
+    }
+  ],
+  "security": [
+    {
+      "basicAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Channel Information",
+      "description": "Query channel and user information"
+    },
+    {
+      "name": "Banning Rules",
+      "description": "Manage user banning (kicking) rules"
+    }
+  ],
+  "paths": {
+    "/dev/v1/channel/{appid}": {
+      "get": {
+        "operationId": "queryChannelList",
+        "summary": "Query channel list",
+        "description": "Retrieves a paginated list of active channels for the specified project, including user counts per channel.",
+        "tags": ["Channel Information"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AppId"
+          },
+          {
+            "name": "page_no",
+            "in": "query",
+            "required": false,
+            "description": "Page number to query (0-indexed). Defaults to 0.",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "description": "Number of channels per page. Defaults to 100.",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 500
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Channel list retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/v1/channel/user/{appid}/{channelName}": {
+      "get": {
+        "operationId": "queryUserList",
+        "summary": "Query user list in a channel",
+        "description": "Retrieves the list of users in a specified channel. For communication channels, returns all users. For live broadcasting channels, returns hosts and up to 10,000 audience members.",
+        "tags": ["Channel Information"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AppId"
+          },
+          {
+            "name": "channelName",
+            "in": "path",
+            "required": true,
+            "description": "The channel name to query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hosts_only",
+            "in": "query",
+            "required": false,
+            "description": "If set, returns only the host list for live broadcast channels",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User list retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/v1/channel/user/property/{appid}/{uid}/{channelName}": {
+      "get": {
+        "operationId": "queryUserStatus",
+        "summary": "Query user status in a channel",
+        "description": "Retrieves the status and properties of a specific user in a channel, including join time, role, and platform.",
+        "tags": ["Channel Information"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AppId"
+          },
+          {
+            "name": "uid",
+            "in": "path",
+            "required": true,
+            "description": "The integer user ID to query (string UIDs not supported)",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "channelName",
+            "in": "path",
+            "required": true,
+            "description": "The channel name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User status retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/v1/kicking-rule": {
+      "get": {
+        "operationId": "listKickingRules",
+        "summary": "Get banning rule list",
+        "description": "Retrieves all active banning (kicking) rules for the specified project.",
+        "tags": ["Banning Rules"],
+        "parameters": [
+          {
+            "name": "appid",
+            "in": "query",
+            "required": true,
+            "description": "The App ID of the project",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rule list retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KickingRuleListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createKickingRule",
+        "summary": "Create a banning rule",
+        "description": "Creates a new banning rule to remove a user from a channel and/or prevent them from publishing audio or video streams.",
+        "tags": ["Banning Rules"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateKickingRuleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rule created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KickingRuleCreateResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateKickingRule",
+        "summary": "Update a banning rule",
+        "description": "Updates an existing banning rule, such as changing the ban duration or privileges.",
+        "tags": ["Banning Rules"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateKickingRuleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rule updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KickingRuleStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteKickingRule",
+        "summary": "Delete a banning rule",
+        "description": "Deletes an existing banning rule by its ID.",
+        "tags": ["Banning Rules"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteKickingRuleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rule deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KickingRuleStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "HTTP Basic Authentication using Customer ID as username and Customer Secret as password. Obtain credentials from Agora Console."
+      }
+    },
+    "parameters": {
+      "AppId": {
+        "name": "appid",
+        "in": "path",
+        "required": true,
+        "description": "The App ID of the Agora project",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "ChannelListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the request was successful"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "channels": {
+                "type": "array",
+                "description": "List of active channels (empty if page has no channels)",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "channel_name": {
+                      "type": "string",
+                      "description": "Channel name"
+                    },
+                    "user_count": {
+                      "type": "integer",
+                      "description": "Number of users in the channel"
+                    }
+                  }
+                }
+              },
+              "total_size": {
+                "type": "integer",
+                "description": "Total number of active channels in the project"
+              }
+            }
+          }
+        }
+      },
+      "UserListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the request was successful"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "channel_exist": {
+                "type": "boolean",
+                "description": "Whether the channel exists"
+              },
+              "mode": {
+                "type": "integer",
+                "enum": [1, 2],
+                "description": "Channel profile. 1: Communication. 2: Live broadcasting."
+              },
+              "total": {
+                "type": "integer",
+                "description": "Total number of users (Communication profile only)"
+              },
+              "users": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "User IDs in the channel (Communication profile only)"
+              },
+              "broadcasters": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Host user IDs (Live broadcasting profile only)"
+              },
+              "audience": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "First 10,000 audience member IDs (Live broadcasting profile only)"
+              },
+              "audience_total": {
+                "type": "integer",
+                "description": "Total audience count (Live broadcasting profile only)"
+              }
+            }
+          }
+        }
+      },
+      "UserStatusResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the request was successful"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "in_channel": {
+                "type": "boolean",
+                "description": "Whether the user is currently in the channel"
+              },
+              "uid": {
+                "type": "integer",
+                "description": "The user ID"
+              },
+              "join": {
+                "type": "integer",
+                "description": "Unix timestamp (seconds) of when the user joined"
+              },
+              "role": {
+                "type": "integer",
+                "enum": [0, 1, 2, 3],
+                "description": "User role. 0: Unknown. 1: User (communication). 2: Host (live broadcasting). 3: Audience (live broadcasting)."
+              },
+              "platform": {
+                "type": "integer",
+                "enum": [0, 1, 2, 5, 6, 7, 8],
+                "description": "Device platform. 0: Other. 1: Android. 2: iOS. 5: Windows. 6: Linux. 7: Web. 8: macOS."
+              }
+            }
+          }
+        }
+      },
+      "KickingRuleListResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Request status ('success' on success)"
+          },
+          "rules": {
+            "type": "array",
+            "description": "List of active banning rules",
+            "items": {
+              "$ref": "#/components/schemas/KickingRule"
+            }
+          }
+        }
+      },
+      "KickingRule": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Rule ID for updates and deletions"
+          },
+          "appid": {
+            "type": "string",
+            "description": "Project App ID"
+          },
+          "uid": {
+            "type": "integer",
+            "description": "Banned user ID"
+          },
+          "opid": {
+            "type": "integer",
+            "description": "Operation ID for troubleshooting"
+          },
+          "cname": {
+            "type": "string",
+            "description": "Channel name"
+          },
+          "ip": {
+            "type": "string",
+            "description": "Banned user IP address"
+          },
+          "ts": {
+            "type": "string",
+            "description": "Rule expiration time in UTC"
+          },
+          "privileges": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["join_channel", "publish_audio", "publish_video"]
+            },
+            "description": "Banned privileges"
+          },
+          "createAt": {
+            "type": "string",
+            "description": "Rule creation timestamp in UTC"
+          },
+          "updateAt": {
+            "type": "string",
+            "description": "Rule last update timestamp in UTC"
+          }
+        }
+      },
+      "CreateKickingRuleRequest": {
+        "type": "object",
+        "required": ["appid", "privileges"],
+        "properties": {
+          "appid": {
+            "type": "string",
+            "description": "The App ID of the project"
+          },
+          "cname": {
+            "type": "string",
+            "description": "Channel name to apply the rule to"
+          },
+          "uid": {
+            "type": "integer",
+            "description": "User ID to ban (cannot be 0)"
+          },
+          "ip": {
+            "type": "string",
+            "description": "User IP address to ban"
+          },
+          "time": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440,
+            "description": "Ban duration in minutes (1-1440). Either time or time_in_seconds is required."
+          },
+          "time_in_seconds": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 86430,
+            "description": "Ban duration in seconds (10-86430). Takes precedence over time if both provided."
+          },
+          "privileges": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["join_channel", "publish_audio", "publish_video"]
+            },
+            "description": "Privileges to block"
+          }
+        }
+      },
+      "UpdateKickingRuleRequest": {
+        "type": "object",
+        "required": ["appid", "id"],
+        "properties": {
+          "appid": {
+            "type": "string",
+            "description": "The App ID of the project"
+          },
+          "id": {
+            "type": "integer",
+            "description": "The rule ID to update"
+          },
+          "time": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440,
+            "description": "Updated ban duration in minutes"
+          },
+          "time_in_seconds": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 86430,
+            "description": "Updated ban duration in seconds"
+          },
+          "privileges": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["join_channel", "publish_audio", "publish_video"]
+            },
+            "description": "Updated privileges to block"
+          }
+        }
+      },
+      "DeleteKickingRuleRequest": {
+        "type": "object",
+        "required": ["appid", "id"],
+        "properties": {
+          "appid": {
+            "type": "string",
+            "description": "The App ID of the project"
+          },
+          "id": {
+            "type": "integer",
+            "description": "The rule ID to delete"
+          }
+        }
+      },
+      "KickingRuleCreateResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Request status ('success' on success)"
+          },
+          "id": {
+            "type": "integer",
+            "description": "The ID of the created rule"
+          }
+        }
+      },
+      "KickingRuleStatusResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Request status ('success' on success)"
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the affected rule"
+          }
+        }
+      }
+    }
+  }
+}
