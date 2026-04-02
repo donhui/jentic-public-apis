@@ -1,0 +1,1957 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "version": "2.1.0",
+    "title": "Payment Initiation (PSD2)",
+    "x-apiType": "open",
+    "description": "# Overview\n\nThe Payment Initiation (PSD2) API is used by Third Party Payment service providers (TPPs) to initiate payments from ABN AMRO accounts. \nA payment can only be initiated from an account when an ABN AMRO client authorizes the payment through the consent application.\n\nUse this API to initiate:\n\n**Single payments:**\n  - SEPA payments\n  - Cross-border payments\n\nFor Standing Orders or Bulk payments, please see [version 1 of the PSD2 PIS API](https://developer.abnamro.com/api-products/payment-initiation-psd2v1/reference-documentation-v1).\n\nA [sandbox](#section/Sandbox-access) environment is available for development and testing.\n\n## How the Payment Initiation (PSD2) API works\n\n1. Register a payment.\n1. Request single payment consent from the ABN AMRO account holder through the consent application.\n1. Execute the payment.\n\nFor information on how to get authorization and use this API, see [Single payments tutorial](#section/Tutorials/Single-payments-tutorial).\n\n## The consent application\nThe consent application is used to obtain consent from an ABN AMRO account holder, and grant you with third-party access to execute a registered payment, or to access account information on behalf of the account holder by using, for example, an E.dentifier. This is a so-called redirect. In the consent application, the ABN AMRO client can review the payment details that were registered by you and authorize the payment.\n\nThe account holder consent process consists of three steps:\n\n1. Authenticate.\n1. Check the requested access to an account.\n1. Confirm and redirect back to 3rd party.\n\nAll payment initiation consents provide one time access to execute a payment and perform one available balance check. For status calls the token is valid for 30 days. Consent is given using the consent application via Browser or Mobile Banking app.\n\nThe ABN AMRO client can either authorize or cancel the requested authorization. \n\n>**Notes:**\n>- For details on how to access the consent application through the OAuth server, see Step 3 of the [Single payments tutorial](#section/Tutorials/Single-payments-tutorial).\n>- If an account owner is not authorized on the account number in the registered payment, they can select a different account number for which they are authorized.\n>- The ABN AMRO client can select Dutch or English in the consent application.\n>- The consent application uses Strong Customer Authentication (SCA). By clicking the \"Finish\" button the authorization is done. This completes the consent. The process now continues with the technical redirect.\n>- When the debit account is prefilled in the pre-registered payment the user cannot change this later.\n>- Consent for Batch payments and Cross Border payments is not available via the mobile app / QR code. The user can use the eDentifier to provide consent.  \n\n### Authorization Code\nThe consent application is visible to the account owner only. It provides you with an access code for the requested authorization using an OAUTH 2.0 authorization code process.\nThis is described in Step 3 of the [Single payments tutorial](#section/Tutorials/Single-payments-tutorial). \n\nAuthorization is a grant on an account for one or multiple scopes. For more information, see [Authorization Code](https://developer.abnamro.com/api-products/authorization-code).\n\n#### Scopes in the authorization code process\nA scope defines the type of access. For payments there are write, read, and delete scopes. Here are some rules on how scopes can be combined in the authorization code:\n- Write scopes can be combined with read scopes.\n- Scopes for different products cannot be combined.\n- Write scopes cannot be combined with write scopes.\n- Delete scopes cannot be combined with other scopes.\n\nFor more information on required scopes, see the [POST payments](#operation/postSEPAPayment) operation.\n\n### Error messages\nThe following table describes consent application error scenarios. The error message is returned as parameter in the URL.\n\n| Error message | Explanation |\n| --- | --- |\n| error=access_denied# | No current accounts are available to authorize or user declined authorization.\n\nAn account holder may report an incident where they see the following error message in their browser, or application: \"The page you are trying to access is no longer available\". In this scenario, no redirect is occurring, this error message is visible to the user only, and occurs when consent flow is restarted manually. For example, by using the refresh button.\n\n## Generic information\n\n- There is no duplicate check on any of the payment methods.\n- A response is always sent. Ensure that your application does not time-out.\n- If a 5xx or time-out occurs, it cannot be assumed the payment failed:\n    - If a POST operation fails, the payment can be safely posted again.\n    - If a PUT operation fails, check the status of the payment using GET. If the status is still 'PDNG', try the GET endpoint again later. If the status changed to one of the 'Accepted' statuses the operation has succeeded. A 'CANC' or 'RJCT' status occurs when a user cancels the payment or the payment cannot be executed.\n    - If a PUT operation fails, and the status cannot be checked, contact the bank.\n    - If a GET operation fails, retry later.\n- If reposting, avoid using short retry periods to keep out of rate limiting scenarios.\n\n## Character set\n\nThe following character set can be used for SEPA single, batch payments, and cross-border payments.\n\n| Character set |\n| --- |\n| space |\n| ! & ' ( ) +   - . / 0 1 2 3 4 5 6 7 8 9 : ? _ ` , |\n| aAbBcCdDeEfFgGhHiljJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ |\n| àÀáÁâÂãÃäÄåÅæÆçÇèÈéÉêÊëËìÌíÍîÎïÏðÐñÑòÒóÓôÔõÕöÖ×øØùÙúÚûÛüÜýÝþÞßÞÿ |\n\n>**Note:** For cross-border payments, characters may be converted; for example, the \":\" and \"‘\"; and lines can be truncated because of differences in standards between local payment and the clearing system.\n\n\n# Requirements\n\nTo use this API in a production environment, you must have the following:\n\nPSD2 access:\n- A [PSD2 license](#section/Requirements/License) for payment initiation.\n- An [EIDAS certificate](#section/Requirements/EIDAS-certificate).\n- Your QWAC certificate MUST include Client Authentication (1.3.6.1.5.5.7.3.2) value for the certificate usage which can be found in the \"Enhance Key Usage\" tag of your certificate.\n- **Note:** for certificates requested or renewed after the 1st of October 2025 Client Authentication might not by default be added in your certificate by your CA. Please specifically request this to your CA.\n\nOpen Banking UK access:\n- A FCA licence for payment initiation.\n- An OBWAC certificate with the appropriate licence details.\n\n\n## License\nTo use this API in a production environment, or if you require TPP access to ABN AMRO accounts, you must have a PSD2 license from a local competent authority. In the Netherlands, this is De Nederlandsche Bank (DNB). For access to UK accounts, a FCA license is required.\n\n## Licensing requirements\n| API   | AISP License | PISP License | Banking License | Payment Instrument Issuing License |\n| ---| --- | --- | --- | --- |\n| Payment Initiation (PSD2) |   N  |  Y   |   Y  |  N |\n\n## EIDAS certificate\nABN AMRO only accepts Qualified Website Authentication Certificates (QWAC) from Qualified Trusted Service Providers (QSTPs) that are on the [trusted list with CEF Digital](https://webgate.ec.europa.eu/tl-browser/#/search/type/3). This certificate is used for identification, and is also required for OAUTH authorization when accessing APIs.\n>**Note:** Inline with the PSD2 technical standard, wildcards are not permitted in certificates. \n>**Note:** Ensure the certificate usage includes \" Client Authentication (1.3.6.1.5.5.7.3.2) \"\n\n# Sandbox access\n\nThe sandbox and production API are in function the same with the distinction that the Sandbox contains static data. This static data means that you can perform all operations without making any transactions on an account. Transactions posted in the sandbox are cleaned every day.\n\n>**Important:** It is prohibited to use transactions that contain sensitive or private information in the sandbox. Account information in the sandbox is production like and fictive.\n\nTo use the Payment Initiation (PSD2) API in a sandbox environment, complete the following steps:\n\n1. Register and create an account:\n    1. Go to [ABN AMRO Developer Portal](https://developer.abnamro.com/).\n    1. Click **Sign up**.\n    1. Enter your details, and click **Create an account**.\n    1. Developer Support will send you an activation link by email.\n    1. Click the activation link.\n1. Create and register application:\n    1. Log in to your account.\n    1. In the top navigation bar, click **My Apps**.\n    1. Click **Add a new App** or **+**.\n    1. In the **App name** field, enter a name for your application.\n    1. In the **API product** field, select **Payment Initiation (PSD2) API**, and click **Submit**.\n1. Complete the [Single payments tutorial](#section/Tutorials/Single-payments-tutorial).\n\n## Sandbox access details\nThe following account types are available for testing:\n\n| Account type      | International Bank Account Number (IBAN)    |\n| --- | --- |\n| Positive scenario | NL12ABNA9999876523 NL91ABNA9999428707 NL62ABNA9999841479 |\n| Negative scenario | NL58ABNA9999142181 |\n\nSandbox URL: https://<span></span>api-sandbox.abnamro.com   \n\nSandbox token URL: https://<span></span>auth-mtls-sandbox.abnamro.com\n\nSandbox authorization URL: https://<span></span>auth-sandbox.abnamro.com\n\nUse the following credentials for the sandbox:\n\n| Attribute    | Value for Sandbox |\n| --- | --- |\n| client_id    | TPP_test |\n| API-Key      | The API Key for your app from the [Developer Portal](https://developer.abnamro.com/) |\n| redirect_uri | https://<span></span>localhost/auth    |\n\n  >**Note:** Redirect URL's in sandbox cannot be modified. For production environment desired URL's can be specified in the setup process.\n\n|Certificate files:|\n| --- |\n| Download public certificate: <a href=\"/sites/default/files/2020-05/PSD2TPPCertificate.crt\" download> Download </a> |\n| Download private key: <a href=\"/sites/default/files/2020-05/PSD2TPPprivateKey.key\" download> Download </a> |\n\n> **Notes:** The sandbox handles functional error scenarios only.\n\n# Production access\n\n>**Important:** To use this API in a production environment, you must have a license. For more information, see [Requirements](#section/Requirements).\n\nTo get access to production:\n\n1. Log in to <a href=\"https://developer.abnamro.com/\" target=\"_blank\">your account</a>.\n1. In the top navigation bar, click **My Apps**.\n1. Click **Request Production Access**.\n1. Select the API category that you want to request production access on.\n \t>**Note:** It is not possible to request production access for multiple API categories in one request.\n1. Fill in the form, and click **Submit**. \n1. You receive a confirmation email and ticket-ID.\n1. ABN AMRO Developer Support validates the form, and if necessary contacts you.  \n1. When the setup is complete, ABN AMRO Developer Support contacts you and supplies you with a client_id. \n1. A new app is added in **My Apps**. This new app contains your API key.\n\n>**Note:** It is not possible for account holders to get API access on their own accounts.\n\n## Production access details\n\n- **Production URL** for access to the API: https://api.abnamro.com\n- **SCA Production authorization URL**: https://www.abnamro.nl/consent/v2/authorize?\n- **Production Token URL**: https://auth-mtls.abnamro.com/as/token.oauth2\n\n>**Note:** The authorization URL supports accounts in all countries which the user can access through Internet Banking, Access Online or Dutch Mobile app. For other access see the related brands section on the developer portal.\n\nUse the following credentials for production:\n\n| Attribute    | Value for Production |\n| --- | --- |\n| client_id    | As supplied to you by ABN AMRO |\n| API-Key      | The API Key for your production app from the [Developer Portal](https://developer.abnamro.com/) |\n| redirect_uri | The URLs that you specified in your request access form |\n\n|Certificate files:|\n| --- |\n| Certificate file : Your QWAC EIDAS certificate  |\n| Private key : Your private key |\n\n# Tutorials\n\n## Single payments tutorial\nThis tutorial describes how to connect an application to the Payment Initiation API (PSD2) in the sandbox environment, and execute a single payment. For Standing Orders or Bulk payments, please see [version 1 of the PSD2 PIS API](https://developer.abnamro.com/api-products/payment-initiation-psd2v1/reference-documentation-v1).\n\n>**Note:** Before you start this tutorial, you must complete the steps described in [Sandbox access](#section/Sandbox-access).\n\n>**Note:** In the production environment, the PSD2 compliant EIDAS QWAC certificate or OBWAC certificate for UK access, production redirect-uri, and production API-Key are used.\n\n### Step 1 - Request an access token for payment registration\n\nThis step uses OAUTH2.0 client credentials as an authorization method. When requesting a client credentials access token, you must authenticate yourself as a client using an SSL certificate. In the response, an access token is returned. This token is used to register a payment. For security reasons, the validity of this token is temporary.\n\n#### Request attributes\nYou must specify the scope for the operation that is to be authorized. The possible scopes are described in the table below.\n\n| Operation | Request for scope |\n| --- | --- |\n| Post (structured) SEPA payment| psd2:payment:sepa:write |\n| Post Cross Border payment |  psd2:payment:xborder:write |\n\n##### Attributes\n\n| Attribute    | Value for Sandbox |\n| --- | --- |\n| client_id    | TPP_test |\n\n##### Certificates\n\n| Certificate files |\n| --- |\n| Download public certificate: <a href=\"/sites/default/files/2020-05/PSD2TPPCertificate.crt\" download> Download </a> |\n| Download private key: <a href=\"/sites/default/files/2020-05/PSD2TPPprivateKey.key\" download> Download </a> |\n\nSandbox URL: https://<span></span>api-sandbox.abnamro.com\n\n#### Request examples\n\nRequest a client credentials access token to register a payment, using one of the following sample requests:\n\n#### SEPA payment request\n  ```shell\n  curl -X POST https://auth-mtls-sandbox.abnamro.com/as/token.oauth2 \\\n  -v \\\n  --cert TPPCertificate.crt \\\n  --key TPPprivateKey.key \\\n  -H 'Cache-Control: no-cache' \\\n  -H 'Content-Type: application/x-www-form-urlencoded' \\\n  -d 'grant_type=client_credentials&client_id=TPP_test&scope=psd2:payment:sepa:write'\n  ```\n\n#### Cross-border payment request\n  ```shell\n  curl -X POST https://auth-mtls-sandbox.abnamro.com/as/token.oauth2 \\\n  -v \\\n  --cert TPPCertificate.crt \\\n  --key TPPprivateKey.key \\\n  -H 'Cache-Control: no-cache' \\\n  -H 'Content-Type: application/x-www-form-urlencoded' \\\n  -d 'grant_type=client_credentials&client_id=TPP_test&scope=psd2:payment:xborder:write'\n  ```\n\n      \n#### Sample response\n\n  ```json\n  {\n    \"token_type\": \"Bearer\",\n    \"access_token\": \"X1PTWZre0fnW72l263yrhAWB2FDwx3tg\",\n    \"expires_in\": 7199\n  }\n  ```\n\n###  Step 2 - Register a payment\n\nUse the `access_token` that you created in Step 1 of this tutorial to register a payment. This payment must be authorized by the account holder using the consent process described in Step 3 of this tutorial.\n\n#### Sample requests\n\nRegister a payment using one of the following sample POST requests:\n\n#### Standard SEPA payment request\n  This is a EUR payment inside the euro zone.\n\n  ```shell\n  curl -X POST https://api-sandbox.abnamro.com/payment/v2/sepa-credit-transfers  \\\n  -v \\\n  -H 'Accept: application/json'  \\\n  -H 'Authorization: Bearer X1PTWZre0fnW72l263yrhAWB2FDwx3tg' \\\n  -H 'content-type: application/json'  \\\n  -H 'API-Key: X1QTWZre0fnW72l263yrhAWB2FDwx3tg' \\\n  -d '{\n     \"debtorAccount\": {\n        \"iban\": \"NL62ABNA9999841479\"\n     },\n     \"creditorName\": \"John Doe\",\n     \"creditorAccount\": {\n        \"iban\": \"NL12ABNA9999876523\"\n     },\n     \"instructedAmount\": {\n        \"currency\": \"EUR\",\n        \"amount\": \"100.01\"\n     },\n     \"requestedExecutionDate\": \"2025-01-01\",\n     \"remittanceInformationUnstructured\": \"Ref Number 12345/0123.\"\n     }'\n  ```\n\n  For more information, see the [POST payments](#operation/postSEPAPayment) operation.\n\n#### Structured SEPA payment request\n\n  This is a domestic SEPA payment with structured remittance information such as acceptgiro.\n\n  ```shell\n  curl -X POST https://api-sandbox.abnamro.com/payment/v2/sepa-credit-transfers  \\\n  -v \\\n  -H 'Accept: application/json'  \\\n  -H 'Authorization: Bearer UTUZnSKhYEYhX9qWl03epLVC3jyD' \\\n  -H 'content-type: application/json'  \\\n  -H 'API-Key: X1QTWZre0fnW72l263yrhAWB2FDwx3tg' \\\n  -d '{\n     \"debtorAccount\": {\n        \"iban\": \"NL62ABNA9999841479\"\n     },\n     \"creditorName\": \"John Doe\",\n     \"creditorAccount\": {\n        \"iban\": \"NL12ABNA9999876523\"\n     },\n     \"instructedAmount\": {\n        \"currency\": \"EUR\",\n        \"amount\": \"100.01\"\n     },\n     \"requestedExecutionDate\": \"2025-01-01\",\n     \"remittanceInformationStructured\": {\n        \"issuer\": \"CUR\",\n        \"reference\": \"12345\"\n        }\n     }'\n  ```\n  \n  For more information, see the [POST payments](#operation/postSEPAPayment) operation.\n\n#### Cross-border payment request\n\n  This is a non EUR payment or EUR payment outside the euro zone.\n\n  ```shell\n  curl -X POST https://api-sandbox.abnamro.com/payment/v2/cross-border-credit-transfers \\\n  -v \\\n  -H 'Accept: application/json'  \\\n  -H 'Authorization: Bearer X1PTWZre0fnW72l263yrhAWB2FDwx3tg' \\\n  -H 'content-type: application/json'  \\\n  -H 'API-Key: X1QTWZre0fnW72l263yrhAWB2FDwx3tg' \\\n  -d '{\n     \"debtorAccount\": {\n        \"iban\": \"NL62ABNA9999841479\"\n     },\n     \"creditorAccount\": {\n        \"iban\": \"NL12ABNA9999876523\",\n        \"currency\": \"EUR\"\n     },\n     \"creditorAgent\": \"DEUTDEFF\",\n     \"creditorName\": \"John Doe\",\n     \"creditorAddress\": {\n        \"streetName\": \"Hoofdstraat\",\n        \"buildingNumber\": \"123\",\n        \"postCode\": \"1000AA\",\n        \"townName\": \"Amsterdam\",\n        \"countrySubDivision\": \"North Holland\",\n        \"country\": \"NL\"\n     },\n     \"instructedAmount\": {\n     \"amount\": 100.51,\n     \"currency\": \"EUR\"\n     },\n     \"chargeBearer\": \"SHAR\",\n     \"requestedExecutionDate\": \"2026-01-19\",\n     \"remittanceInformationUnstructured\": \"Invoice payment 2026-001\"\n     }'\n  ```\n\n  For more information, see the [POST Cross Border](#operation/postXborderPayment) operation.\n\n\n#### Sample response\n\n```json\n{\n  \"debtorAccount\": {\n     \"iban\": \"NL12ABNA9999876523\"\n  },\n  \"paymentId\": \"8325P3346070108S0PD\",\n  \"paymentStatus\": \"RCVD\"\n}'\n```\n\n>**Note:** You must store the `paymentId`. It is used to check the account holder authorization and to execute the authorized payment.\n\n### Step 3 - Obtain consent\n\nIn this step, the OAuth 2.0 authorization code flow is used to obtain consent from an ABN AMRO account holder, and grant you with third-party access to execute a registered payment. This grant is given using the [Consent application](#section/Overview/The-consent-application).\n\n#### Request attributes\nThe table below defines the usage of attributes in a request.\n\n| Parameter  | Description    |\n| --- | --- |\n| scope   | Indicates for which scope consent is requested. This can be more than one scope. You can find the available scopes in the operation table below. |\n| transactionId | Unique ID that is generated during the registration of a payment. This is the paymentId from Step 2. |\n| redirect_uri  | In sandbox, you must use `https://<span></span>localhost/auth`. In production, this URI must be identical to the URL configured on your request. |\n| state | Value returned in the response that is used for session management. This parameter can, for example, be used to link the access code in the response to the `paymentId` of the payment.  **Note:** this can be approx. max. 150 characters long depending on the length of the other parameters in the URL. |\n\n| Operation | Request for scope |\n| --- | --- |\n| Execute SEPA payment| psd2:payment:sepa:write |\n| Cancel SEPA payment | psd2:payment:sepa:write |\n| Check SEPA payment status | psd2:payment:sepa:read |\n| Execute Cross Border payment |  psd2:payment:xborder:write |\n| Cancel Cross Border payment | psd2:payment:xborder:write |\n| Check Cross Border payment status | psd2:payment:xborder:read |\n\n\n>**Notes:**\n>- In the sandbox, a simplified version of the consent application is used to select the client account. This application does not use authentication such as e-Dentifier or Mobile App, or is it limiting the account choice when an account is pre-supplied, in favor of easier and quicker development. \n>- For more information, see [Consent application](#section/Overview/The-consent-application)\n>- Optionally, a one time call to the Confirmation Availability Funds (CAF) API can be performed, using the same token you retrieve in the PIS flow in Step 4.\n>- When using the attributes please assure the total length of the URL will not exceed 256 characters.\n>- When registering an redirect URL please note app deeplinking requires a browser to be launched on the device. For optimal user experience use a internet URL or a universal links.\n\n#### Sample requests\nAll of the following examples will start the consent application. In the consent application, the ABN AMRO client reviews the payment details and authorizes the payment. Then you will receive an access code, which is used to execute the registered payment.\n\nTo request consent, direct the account holder to one of the following sample URLs:\n\n#### SEPA payment consent request\n  ```\n  https://auth-sandbox.abnamro.com/as/authorization.oauth2?scope=psd2:payment:sepa:write+psd2:payment:sepa:read&client_id=TPP_test&transactionId=123&response_type=code&flow=code&redirect_uri=https://localhost/auth&state=Paymentreference123\n  ```\n\n#### Cross-border payment consent request\n  ```\n  https://auth-sandbox.abnamro.com/as/authorization.oauth2?scope=psd2:payment:xborder:write&client_id=TPP_test&transactionId=123&response_type=code&flow=code&redirect_uri=https://localhost/auth&state=Paymentreference123\n  ```\n\n> **Note:** The transactionId in the URL is the paymentId from the response in step 2. \n\n#### Sample response\n\nIn the response, you will receive an authorization code, which must be exchanged within 60 seconds for an `access_token` and a `refresh_token`. This is described in the next step.\n\n```URL\nhttps://localhost/auth?code=9C6UrsGZ0Z3XJymRAOAgl7hKPLlWKUo9GBfMQQEs&state=Paymentreference123\n```\n\n> **Note:** For more information, see [Consent application](#section/Overview/The-consent-application).\n\n### Step 4 - Exchange access code token\n\nThe authorization code you received in Step 3 must be exchanged within 60 seconds for an `access_token` and a `refresh_token`. The `access_token` is used to access the API and is valid for 2 hours. When the `access_token` has expired, the `refresh_token` can be exchanged for a new `access_token` and  `refresh_token`. For more information, see the Additional operations section of this tutorial.\n\n#### Request attributes\n\n| Attribute    | Description  |\n| --- | --- |\n| grant_type   | Indicates which type of authorization is used. It must contain 'Authorization_code'. |\n| code   | Authorization code from Step 3. |\n| redirect_uri | Field is mandatory when `redirect_uri` is used in Step 3. |\n\n#### Sample request\n\n```shell\ncurl -X POST https://auth-mtls-sandbox.abnamro.com/as/token.oauth2 \\\n-v \\\n--cert TPPCertificate.crt \\\n--key TPPprivateKey.key \\\n-H 'Cache-Control: no-cache' \\\n-H 'Content-Type: application/x-www-form-urlencoded' \\\n-d 'grant_type=authorization_code&client_id=TPP_test&code=9C6UrsGZ0Z3XJymRAOAgl7hKPLlWKUo9GBfMQQEs&redirect_uri=https://localhost/auth'\n```\n\n#### Sample response\n\n```json\n{\n  \"access_token\": \"GPgYglX4sO1WhzfChx4tmjr4y7Qg\",\n  \"refresh_token\": \"UHjIAzBZfLGh4dLm8cvEcH6d8BrOmCZXumOpznQBP1\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 7193\n}\n```\n\n### Step 5 - Check authorization using consent information\n\n>**Note:** A `paymentId` is needed to execute a payment. This is obtained in this step. If you used the `state` parameter to link to the `paymentId` in Step 3, proceed to Step 6 to execute the payment.\n\nTo execute an authorized payment, you must have an `access_token`, which was obtained Step 4, and the `paymentId` of the payment. By requesting consent information, the `paymentId` associated with the `access_token`, received in the previous step, can be retrieved. The scopes and initiating account number are also returned in the response.\n\n### Request attributes\n\n| Attribute | Description |\n| --- | --- |\n| authorization | Use the `access_token` received in Step 4 and send this as a `bearer` token. |\n\n#### Sample request\n\n```shell\ncurl -X GET https://api-sandbox.abnamro.com/v1/consentinfo \\\n-v \\\n-H 'Accept: application/json' \\\n-H 'API-Key: X1QTWZre0fnW72l263yrhAWB2FDwx3tg' \\\n-H 'Authorization: Bearer GPgYglX4sO1WhzfChx4tmjr4y7Qg'\n```\n\nFor more information, see the [GET Consentinfo](#operation/getConsentInformation) operation.\n\n#### Sample response\n```json\n{\n  \"scopes\": \"payment:sepa:write payment:sepa:read\",\n  \"iban\": \"NL62ABNA9999841479\",\n  \"transactionId\": \"8325P3346070108S0PD\",\n  \"valid\": \"1554379039\",\n  \"consentStatus\": \"FULLY_SIGNED\",\n  \"consentExpiresIn\": \"26 days, 23 hours, 57 minutes, and 5 seconds\"\n}\n```\n\nTo execute the payment in the next step and to check status, store the `transactionId`. The 'transactionId' will be used as the 'paymentId' in the next step. \n\n### Step 6 - Execute the payment\nThe registered payment must be executed using the `transactionId` and `access_token` retrieved in previous steps. The 'transactionId' will have to be used as the 'paymentId' in this step. \n\n#### Sample request\nUsing one of the following sample requests, execute the registered payment using the PUT method:\n\n#### SEPA or structured SEPA payment request\n  ```shell\n  curl -X PUT https://api-sandbox.abnamro.com/payment/v2/sepa-credit-transfers/{paymentId} \\\n  -v \\\n  -H 'API-Key: X1QTWZre0fnW72l263yrhAWB2FDwx3tg' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer GPgYglX4sO1WhzfChx4tmjr4y7Qg' \\\n  -H 'Content-Length= 0'\n  ```\n\n  For more information, see the [PUT payment](#operation/putSEPAPayment) operation.\n\n\n#### Cross border payment request\n\n  ```shell\n  curl -X PUT https://api-sandbox.abnamro.com/payment/v2/cross-border-credit-transfers/{paymentId} \\\n  -v \\\n  -H 'API-Key: X1QTWZre0fnW72l263yrhAWB2FDwx3tg' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer GPgYglX4sO1WhzfChx4tmjr4y7Qg'\n  -H 'Content-Length= 0'\n  ```\n\n  For more information, see the [PUT Cross Border](#operation/putXborderPayment) operation.\n\n\n#### Sample response\n\n  ```json\n  {\n    \"debtorAccount\": {\n       \"iban\": \"NL12ABNA9999876523\"\n    },\n    \"paymentId\": \"8325P3346070108S0PD\",\n    \"paymentStatus\": \"PNDG\",\n    \"debtorName\": \"John Doe\"\n  }'\n  ```\n\n>**Notes:** In some scenarios the account holder can change the initiating account number during consent. For more information, see [Consent Application](#section/Overview/The-consent-application). The initiating account number is located in the `debtorAccount` field of the sample response.\n\n### Additional operations\n\n#### Check payment status\nRetrieve the status of the transaction with the following request:\n\n#### SEPA payment request\n\n```shell\ncurl -X GET https://api-sandbox.abnamro.com/payment/v2/sepa-credit-transfers/{paymentId}/status \\\n-v \\\n-H 'API-Key: X1QTWZre0fnW72l263yrhAWB2FDwx3tg' \\\n-H 'Accept: application/json'  \\\n-H 'Authorization: Bearer {your_access_token}'\n```\nFor more information, see the [GET payments](#operation/getSEPAPayment) operation.\n\n#### Sample SEPA response\n\n```json\n{\n  \"debtorAccount\": {\n     \"iban\": \"NL12ABNA9999876523\"\n  },\n  \"debtorName\": \"John Doe\",\n  \"paymentId\": \"KCPXBJU7WK1754485254512\",\n  \"paymentStatus\": \"ACCC\",\n  \"statusDetails\": {\n     \"withRecipient\": \"2025-08-06T15:01\"\n  }\n}\n```\n\n#### Cross Border payment request\n\n```shell\ncurl -X GET https://api-sandbox.abnamro.com/payment/v2/cross-border-credit-transfers/{paymentId}/status \\\n-v \\\n-H 'API-Key: X1QTWZre0fnW72l263yrhAWB2FDwx3tg' \\\n-H 'Accept: application/json'  \\\n-H 'Authorization: Bearer {your_access_token}'\n```\nFor more information, see the [GET payments](#operation/getCrossBorderPayment) operation.\n\n#### Sample response\n\n```json\n{\n  \"debtorAccount\": {\n     \"iban\": \"NL12ABNA9999876523\"\n  },\n  \"debtorName\": \"John Doe\",\n  \"paymentId\": \"KCPXBJU7WK1754485254512\",\n  \"paymentStatus\": \"RJCT\",\n  \"statusDetails\": {\n     \"statusISORsn\": \"FF02\"\n  }\n}\n```\n\n- The status of a successful payment is \"ACCC\" or \"ACSC\". For a rejected payment, the status is \"RJCT\". In exceptional cases, it may take several seconds for the initial intermediate status \"PDNG\" to be updated. For more information, see the [GET payments](#operation/getSEPAPayment) operation.\n\n\n#### Cancel payments\nA future-dated payment can be cancelled using the `transactionId` and `access_token`. \nTo cancel a released payment that has a future execution date, use one of the following samples:\n\n#### Sample SEPA payment request\n\n  ```shell\n  curl -X DELETE https://api-sandbox.abnamro.com/payment/v2/sepa-credit-transfers/{paymentId} \\\n  -v \\\n  -H 'API-Key: X1QTWZre0fnW72l263yrhAWB2FDwx3tg' \\\n  -H 'Accept: application/json'  \\\n  -H 'Authorization: Bearer {your_access_token}'\n  ```\n  For more information, see the [DELETE SEPA payment](#operation/deleteSEPAPayment) operation.\n\n#### Sample Cross Border payment request\n\n  ```shell\n  curl -X DELETE https://api-sandbox.abnamro.com/payment/v2/cross-border-credit-transfers/{paymentId} \\\n  -v \\\n  -H 'API-Key: X1QTWZre0fnW72l263yrhAWB2FDwx3tg' \\\n  -H 'Accept: application/json'  \\\n  -H 'Authorization: Bearer {your_access_token}'\n  ```\n  For more information, see the [DELETE Cross Border payment](#operation/deleteCrossBorderPayment) operation.\n\n  Payments can be also cancelled by the account holder using Internet Banking or Access Online.\n\n#### Refresh an access token\nWhen the short-lived `access_token`, received in Step 4, expires, the long-lived `refresh_token` can be used to get a new `access_token` and a new `refresh_token`. This renders the used refresh token as invalid.\n\n#### Sample request\n\n```shell\ncurl -X POST https://auth-mtls-sandbox.abnamro.com/as/token.oauth2 \\\n-v \\\n--cert TPPCertificate.crt \\\n--key TPPprivateKey.key \\\n-H 'Cache-Control: no-cache' \\\n-H 'Content-Type: application/x-www-form-urlencoded' \\\n-d 'grant_type=refresh_token&client_id=TPP_test&refresh_token=UHjIAzBZfLGh4dLm8cvEcH6d8BrOmCZXumOpznQBP1&scope=psd2:payment:sepa:write+psd2:payment:sepa:read'\n```\n\n#### Sample response\n\n```json\n{\n  \"access_token\": \"{mkwAngBIJtlL9TxxNhECHV4LaBBt}\",\n  \"refresh_token\": \"{nLlBcohGqcAvs2iyQ4SAdenC5moqRh9y3NifBR3j04}\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 7193\n}\n```\nStore the `access_token` to access the payment API, and the `refresh_token` to request a new `access_token` when it expires.",
+    "x-jentic-source-url": "https://developer.abnamro.com/system/files/api-ref-files/2026-01/PaymentAPI_v2_0.yaml"
+  },
+  "servers": [
+    {
+      "url": "https://api-sandbox.abnamro.com/payment/v2",
+      "description": "sandbox environment"
+    },
+    {
+      "url": "https://api.abnamro.com/payment/v2",
+      "description": "production environment"
+    }
+  ],
+  "paths": {
+    "/sepa-credit-transfers": {
+      "post": {
+        "description": "Registers a (structured) SEPA payment at the bank. Before it can be executed, this payment must be authorized by the account holder through the consent application.\n\nUse client credentials to get an `access_token` with scope `psd2:payment:sepa:write` for this operation.",
+        "operationId": "postSEPAPayment",
+        "tags": [
+          "Single payments"
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Client credentials 'access-token' to be passed as a bearer token.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "Bearer GPgYglX4sO1WhzfChx4tmjr4y7Qg"
+            }
+          },
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "description": "Unique trace ID generated by the API consumer application. This is used to correlate\ncalls from the client application to ABN AMRO, and help when troubleshooting technical errors.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "bc69c490-9524-413f-971a-21f1aecd9fe5"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/PostSEPAPaymentRequestBody"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PostSEPAPaymentStructuredRequestBody"
+                  }
+                ]
+              },
+              "examples": {
+                "Unstructured SEPA Payment": {
+                  "$ref": "#/components/examples/PostSEPAPaymentRequestBody_Example"
+                },
+                "Structured SEPA Payment": {
+                  "$ref": "#/components/examples/PostSEPAPaymentStructuredRequestBody_Example"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "**Payment Registered**",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostResponseBody"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/xRequestId"
+              },
+              "Trace-Id": {
+                "$ref": "#/components/headers/traceId"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400_post"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_post"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_post"
+          },
+          "500": {
+            "$ref": "#/components/responses/500_INT_SER_ERROR"
+          }
+        },
+        "security": [
+          {
+            "Oauth_ClientCredentials": [
+              "psd2:payment:sepa:write"
+            ],
+            "Gen_ApiKey": []
+          }
+        ]
+      }
+    },
+    "/sepa-credit-transfers/{paymentId}": {
+      "put": {
+        "description": "Executes a registered SEPA payment at the bank for further processing. To obtain an `access_token` and execute the payment, it must be authorized by the account holder through the consent application.\n\nUse the authorization code process to get an `access_token` with `scope psd2:payment:sepa:write` for this operation. The authorization for executing a SEPA payment can also be used to cancel a SEPA payment.",
+        "operationId": "putSEPAPayment",
+        "tags": [
+          "Single payments"
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Authorization code `access_token`, to be passed as a bearer token",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "Bearer GPgYglX4sO1WhzfChx4tmjr4y7Qg"
+            }
+          },
+          {
+            "name": "paymentId",
+            "in": "path",
+            "description": "Unique Payment ID returned in response to the [POST payments](#operation/postSEPAPayment) operation. This must be released for further processing with the bank.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "8325P3346070108S0PD"
+            }
+          },
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "description": "Unique trace ID generated by the API consumer application. This is used to correlate\ncalls from the client application to ABN AMRO, and help when troubleshooting technical errors.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "bc69c490-9524-413f-971a-21f1aecd9fe5"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PutResponseBody"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/xRequestId"
+              },
+              "Trace-Id": {
+                "$ref": "#/components/headers/traceId"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400_put"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_put"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_put"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_NOT_FOUND"
+          },
+          "500": {
+            "$ref": "#/components/responses/500_INT_SER_ERROR"
+          }
+        },
+        "security": [
+          {
+            "Oauth_AuthorizationCode": [
+              "psd2:payment:sepa:write"
+            ],
+            "Gen_ApiKey": []
+          }
+        ]
+      },
+      "delete": {
+        "description": "Cancels a payment scheduled at a future date and has a status of 'SCHEDULED'. If the future date has passed, the payment can no longer be cancelled.",
+        "operationId": "deleteSEPAPayment",
+        "tags": [
+          "Single payments"
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Authorization code `access_token`, to be passed as a bearer token. The authorization for executing a SEPA payment can also be used to cancel a SEPA payment.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "Bearer GPgYglX4sO1WhzfChx4tmjr4y7Qg"
+            }
+          },
+          {
+            "name": "paymentId",
+            "in": "path",
+            "description": "Unique payment ID of the payment that is to be cancelled at the bank. The payment ID is returned in response to the [POST payments](#operation/postSEPAPayment) operation.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "8325P3346070108S0PD"
+            }
+          },
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "description": "Unique trace ID generated by the API consumer application. This is used to correlate\ncalls from the client application to ABN AMRO, and help when troubleshooting technical errors.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "bc69c490-9524-413f-971a-21f1aecd9fe5"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful operation, no content in response.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/xRequestId"
+              },
+              "Trace-Id": {
+                "$ref": "#/components/headers/traceId"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400_delete"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_delete"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_delete"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_NOT_FOUND"
+          },
+          "500": {
+            "$ref": "#/components/responses/500_INT_SER_ERROR"
+          }
+        },
+        "security": [
+          {
+            "Oauth_AuthorizationCode": [
+              "psd2:payment:sepa:write"
+            ],
+            "Gen_ApiKey": []
+          }
+        ]
+      }
+    },
+    "/sepa-credit-transfers/{paymentId}/status": {
+      "get": {
+        "description": "Retrieves the status of a payment.\n\nThe status of a payment can be retrieved with an `access_token` if the payment has not yet been executed, or else, with an `access_token` obtained via the authorization code exchange. The token needs to have the `psd2:payment:sepa:read` scope.",
+        "operationId": "getSEPAPayment",
+        "tags": [
+          "Single payments"
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Retrieves the status of a payment.\nFor this operation, use the authorization code process to get an `access_token` with `scope psd2:payment:sepa:read`.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "Bearer GPgYglX4sO1WhzfChx4tmjr4y7Qg"
+            }
+          },
+          {
+            "name": "paymentId",
+            "in": "path",
+            "description": "Unique payment ID of the payment for which the status must be checked. The payment ID is returned in response from [POST payments](#operation/postSEPAPayment).",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "8325P3346070108S0PD"
+            }
+          },
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "description": "Unique trace ID generated by the API consumer application. This is used to correlate\ncalls from the client application to ABN AMRO, and help when troubleshooting technical errors.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "bc69c490-9524-413f-971a-21f1aecd9fe5"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "**successful operation**",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetResponseBody"
+                },
+                "examples": {
+                  "Settled": {
+                    "$ref": "#/components/examples/GetSEPAPayment_Example_Settled"
+                  },
+                  "Rejected": {
+                    "$ref": "#/components/examples/GetSEPAPayment_Example_Rejected"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_get"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_get"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_NOT_FOUND"
+          },
+          "500": {
+            "$ref": "#/components/responses/500_INT_SER_ERROR"
+          }
+        },
+        "security": [
+          {
+            "Oauth_AuthorizationCode": [
+              "psd2:payment:sepa:read"
+            ],
+            "Gen_ApiKey": []
+          }
+        ]
+      }
+    },
+    "/cross-border-credit-transfers": {
+      "post": {
+        "description": "Registers a cross-border payment at the bank. This payment must be authorized by the account holder through the consent application before it can be executed. This is a non EUR payment or EUR payment outside the euro zone.\nFor this operation, use client credentials to get an `access_token` with scope `psd2:payment:xborder:write`. For more information on authorization and on how to register a cross-border payment, see [Single payments tutorial](#section/Tutorials/Single-payments-tutorial)        \nThese types of payments are subject to SWIFT characterset limitations and possible truncation of fields. For more information, see Generic information.",
+        "operationId": "postCrossBorderPayment",
+        "tags": [
+          "Single payments"
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Client credentials 'access-token' to be passed as a bearer token.\n\nFor more information, See the Step 1 of the [Single payments tutorial](#section/Tutorials/Single-payments-tutorial)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "Bearer X1PTWZre0fnW72l263yrhAWB2FDwx3tg"
+            }
+          },
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "description": "Unique trace ID generated by the API consumer application. This is used to correlate\ncalls from the client application to ABN AMRO, and help when troubleshooting technical errors.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "bc69c490-9524-413f-971a-21f1aecd9fe5"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostCBPaymentRequestBody"
+              },
+              "examples": {
+                "Using IBAN with bankdetails": {
+                  "$ref": "#/components/examples/PostCBPaymentRequestBody_UsingIBAN"
+                },
+                "Using BBAN with bankdetails": {
+                  "$ref": "#/components/examples/PostCBPaymentRequestBody_UsingBBAN"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "**Payment Registered**",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostResponseBody"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/xRequestId"
+              },
+              "Trace-Id": {
+                "$ref": "#/components/headers/traceId"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400_POST_Single_CB_Payment"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_post_CB"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_post_CB"
+          },
+          "500": {
+            "$ref": "#/components/responses/500_INT_SER_ERROR"
+          }
+        },
+        "security": [
+          {
+            "Oauth_ClientCredentials": [
+              "psd2:payment:xborder:write"
+            ],
+            "Gen_ApiKey": []
+          }
+        ]
+      }
+    },
+    "/cross-border-credit-transfers/{paymentId}": {
+      "put": {
+        "description": "Executes a registered Cross Border payment at the bank for further processing. To obtain an `auth_token` and execute the payment, it must be authorized by the account holder through the consent application.\nUse the authorization code process to get an `auth_token` with `psd2:payment:xborder:write` for this operation. The authorization for executing a Cross Border payment can also be used to cancel a Cross Border payment.\nFor more information, see Step 3 and Step 6 of the [Single payments tutorial](#section/Tutorials/Single-payments-tutorial).",
+        "operationId": "putCrossBorderPayment",
+        "tags": [
+          "Single payments"
+        ],
+        "parameters": [
+          {
+            "name": "paymentId",
+            "in": "path",
+            "description": "Unique Payment ID returned in response to the [POST payments](#operation/postCrossBorderPayment) operation. This must be released for further processing with the bank.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "7325P7746070509S0PD"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Authorization code `auth_token`, to be passed as a bearer token.\nFor more information, see Step 3 and Step 6 of the [Single payments tutorial](#section/Tutorials/Single-payments-tutorial).",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "Bearer GPgYglX4sO1WhzfChx4tmjr4y7Qg"
+            }
+          },
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "description": "Unique trace ID generated by the API consumer application. This is used to correlate\ncalls from the client application to ABN AMRO, and help when troubleshooting technical errors.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "bc69c490-9524-413f-971a-21f1aecd9fe5"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PutResponseBody"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/xRequestId"
+              },
+              "Trace-Id": {
+                "$ref": "#/components/headers/traceId"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400_put"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_put_CB"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_put_CB"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_NOT_FOUND"
+          },
+          "500": {
+            "$ref": "#/components/responses/500_INT_SER_ERROR"
+          }
+        },
+        "security": [
+          {
+            "Oauth_AuthorizationCode": [
+              "psd2:payment:xborder:write"
+            ],
+            "Gen_ApiKey": []
+          }
+        ]
+      },
+      "delete": {
+        "description": "Cancels a payment scheduled at a future date and has a status of 'PNDG'. If the future date has passed, the payment can no longer be cancelled. \nUse the authorization code process to get an `auth_token` with `psd2:payment:xborder:write` for this operation. The authorization for executing a Cross Border payment can also be used to cancel a Cross Border payment.",
+        "operationId": "deleteCrossBorderPayment",
+        "tags": [
+          "Single payments"
+        ],
+        "parameters": [
+          {
+            "name": "paymentId",
+            "in": "path",
+            "description": "Unique payment ID of the payment that is to be cancelled at the bank. The payment ID is returned in response to the [POST payments](#operation/postCrossBorderPayment) operation.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "7325P7746070509S0PD"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Authorization code `auth_token`, to be passed as a bearer token. The authorization for executing a SEPA payment can also be used to cancel a SEPA payment.\n\nFor more information, see Step 3 of the [Single payments tutorial](#section/Tutorials/Single-payments-tutorial).",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "Bearer GPgYglX4sO1WhzfChx4tmjr4y7Qg"
+            }
+          },
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "description": "Unique trace ID generated by the API consumer application. This is used to correlate\ncalls from the client application to ABN AMRO, and help when troubleshooting technical errors.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "bc69c490-9524-413f-971a-21f1aecd9fe5"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful operation, no content in response.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/xRequestId"
+              },
+              "Trace-Id": {
+                "$ref": "#/components/headers/traceId"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400_delete"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_delete_CB"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_delete_CB"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_NOT_FOUND"
+          },
+          "500": {
+            "$ref": "#/components/responses/500_INT_SER_ERROR"
+          }
+        },
+        "security": [
+          {
+            "Oauth_AuthorizationCode": [
+              "psd2:payment:xborder:write"
+            ],
+            "Gen_ApiKey": []
+          }
+        ]
+      }
+    },
+    "/cross-border-credit-transfers/{paymentId}/status": {
+      "get": {
+        "description": "Retrieves the status of a payment.\nFor this operation, use the authorization code process to get an `access_token` with `scope psd2:payment:xborder:read`.\nFor more information, see Step 3 and Step 6 of the [Single payments tutorial](#section/Tutorials/Single-payments-tutorial).",
+        "operationId": "getCrossBorderPayment",
+        "tags": [
+          "Single payments"
+        ],
+        "parameters": [
+          {
+            "name": "paymentId",
+            "in": "path",
+            "description": "Unique payment ID of the payment for which the status must be checked. The payment ID is returned in response from [POST payments](#operation/postCrossBorderPayment).",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "7325P7746070509S0PD"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Authorization code `auth_token`, to be passed as a bearer token. For more information, see [Single payments tutorial ](#section/Tutorials/Single-payments-tutorial).",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "Bearer GPgYglX4sO1WhzfChx4tmjr4y7Qg"
+            }
+          },
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "description": "Unique trace ID generated by the API consumer application. This is used to correlate\ncalls from the client application to ABN AMRO, and help when troubleshooting technical errors.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "bc69c490-9524-413f-971a-21f1aecd9fe5"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "**successful operation**",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetResponseBody"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/xRequestId"
+              },
+              "Trace-Id": {
+                "$ref": "#/components/headers/traceId"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_get_CB"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_get_CB"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_NOT_FOUND"
+          },
+          "500": {
+            "$ref": "#/components/responses/500_INT_SER_ERROR"
+          }
+        },
+        "security": [
+          {
+            "Oauth_AuthorizationCode": [
+              "psd2:payment:xborder:read"
+            ],
+            "Gen_ApiKey": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "Oauth_AuthorizationCode": {
+        "type": "oauth2",
+        "description": "Authorization code `access_token`, to be passed as a bearer token.",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://auth-sandbox.abnamro.com/as/authorization.oauth2",
+            "tokenUrl": "https://auth-mtls-sandbox.abnamro.com/as/token.oauth2",
+            "scopes": {
+              "psd2:payment:sepa:write": "Releases a SEPA payment after authorization by the account holder. Also a scheduled SEPA payment can be cancelled using this scope. You get this scope through consent from the account holder.",
+              "psd2:payment:sepa:read": "Requests the status of a SEPA payment. You get this scope through consent from the account holder."
+            }
+          }
+        }
+      },
+      "Oauth_ClientCredentials": {
+        "type": "oauth2",
+        "description": "Client Credentials `access_token`, to be passed as a bearer token.",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://auth-mtls-sandbox.abnamro.com/as/token.oauth2",
+            "scopes": {
+              "psd2:payment:sepa:write": "Registers a SEPA payment for authorization."
+            }
+          }
+        }
+      },
+      "Gen_ApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "API-Key",
+        "description": "Consumer key obtained after application registration on the developer portal."
+      },
+      "Authorization": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Authorization code `access_token`, to be passed as a bearer token"
+      }
+    },
+    "schemas": {
+      "PostSEPAPaymentRequestBody": {
+        "required": [
+          "creditorAccount",
+          "creditorName",
+          "instructedAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "debtorAccount": {
+            "type": "object",
+            "properties": {
+              "iban": {
+                "maxLength": 34,
+                "type": "string",
+                "description": "The IBAN of the ordering party initiating\nthe transaction. If omitted, the account number will be selected during\nthe authorization of the payment. If the account cannot be authorized,\nthe account holder can select a different account. Cannot be\nthe same as the creditor's IBAN.",
+                "example": "NL62ABNA9999841479",
+                "pattern": "\"^[A-Z]{2}[0-9]{2}[a-zA-Z0-9]{1,30}$\"\n"
+              }
+            }
+          },
+          "creditorAccount": {
+            "type": "object",
+            "required": [
+              "iban"
+            ],
+            "properties": {
+              "iban": {
+                "maxLength": 34,
+                "type": "string",
+                "description": "Account number, in IBAN format, of the counterparty.",
+                "example": "NL12ABNA9999876523",
+                "pattern": "\"^[A-Z]{2}[0-9]{2}[a-zA-Z0-9]{1,30}$\"\n"
+              }
+            }
+          },
+          "creditorName": {
+            "maxLength": 70,
+            "type": "string",
+            "description": "Name of the counterparty.",
+            "example": "John Doe",
+            "pattern": "\"^[0-9A-Za-z !&'()+\\-./:?_`,àÀáÁâÂãÃäÄåÅæÆçÇèÈéÉêÊëËìÌíÍîÎïÏðÐñÑòÒóÓôÔõÕöÖ×øØùÙúÚûÛüÜýÝþÞßÿ]+$\"\n"
+          },
+          "instructedAmount": {
+            "required": [
+              "amount"
+            ],
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number",
+                "description": "Amount of the transaction. This value is always positive with at most two digits after the decimal point. The maximum amount is equal to that set for the online\nbanking channel Access Online or Internet Banking.",
+                "format": "float",
+                "example": 100.01,
+                "minimum": 0.01,
+                "exclusiveMinimum": true
+              },
+              "currency": {
+                "type": "string",
+                "description": "The currency of the transaction, in EUR only. If omitted, EUR is assumed.",
+                "enum": [
+                  "EUR"
+                ]
+              }
+            }
+          },
+          "requestedExecutionDate": {
+            "type": "string",
+            "description": "Optional date on which the payment is to be executed. This date should not be in the past and should be no more than one year\nafter the current date. If the requested execution date is empty\nthen the payment will be executed immediately.  The format of the date is a ISO8601 full-date conforming\nto RFC 3339, (CCYY-MM-DD). If there is no clearing of payments on the execution date, the payment will\nbe processed on the first available bookdate.",
+            "format": "date"
+          },
+          "remittanceInformationUnstructured": {
+            "maxLength": 140,
+            "type": "string",
+            "description": "Information for the beneficiary about the payment. This type of information is 'unstructured'. A maximum of 140 characters is allowed.",
+            "example": "Payment of invoice nr 12345/01.",
+            "pattern": "\"^[0-9A-Za-z !&'()+\\-./:?_`,àÀáÁâÂãÃäÄåÅæÆçÇèÈéÉêÊëËìÌíÍîÎïÏðÐñÑòÒóÓôÔõÕöÖ×øØùÙúÚûÛüÜýÝþÞßÿ]+$\"\n"
+          }
+        }
+      },
+      "PostSEPAPaymentStructuredRequestBody": {
+        "required": [
+          "creditorAccount",
+          "creditorName",
+          "instructedAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "debtorAccount": {
+            "type": "object",
+            "properties": {
+              "iban": {
+                "maxLength": 34,
+                "type": "string",
+                "description": "The IBAN of the ordering party initiating\nthe transaction. If omitted, the account number will be selected during\nthe authorization of the payment. If the account cannot be authorized,\nthe account holder can select a different account. Cannot be\nthe same as the creditor's IBAN.",
+                "example": "NL62ABNA9999841479",
+                "pattern": "\"^[A-Z]{2}[0-9]{2}[a-zA-Z0-9]{1,30}$\"\n"
+              }
+            }
+          },
+          "creditorAccount": {
+            "type": "object",
+            "required": [
+              "iban"
+            ],
+            "properties": {
+              "iban": {
+                "maxLength": 34,
+                "type": "string",
+                "description": "Account number, in IBAN format, of the counterparty.",
+                "example": "NL12ABNA9999876523",
+                "pattern": "\"^[0-9A-Z]+$\"\n"
+              }
+            }
+          },
+          "creditorName": {
+            "maxLength": 70,
+            "type": "string",
+            "description": "Name of the counterparty.",
+            "example": "John Doe",
+            "pattern": "\"^[0-9A-Za-z !&'()+\\-./:?_`,àÀáÁâÂãÃäÄåÅæÆçÇèÈéÉêÊëËìÌíÍîÎïÏðÐñÑòÒóÓôÔõÕöÖ×øØùÙúÚûÛüÜýÝþÞßÿ]+$\"\n"
+          },
+          "instructedAmount": {
+            "required": [
+              "amount"
+            ],
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number",
+                "description": "Amount of the transaction. This value is always positive with at most two digits after the decimal point. The maximum amount is equal to that set for the online\nbanking channel Access Online or Internet Banking.",
+                "format": "float",
+                "example": 100.01,
+                "minimum": 0.01,
+                "exclusiveMinimum": true
+              },
+              "currency": {
+                "type": "string",
+                "description": "The currency of the transaction, in EUR only. If omitted, EUR is assumed.",
+                "enum": [
+                  "EUR"
+                ]
+              }
+            }
+          },
+          "requestedExecutionDate": {
+            "type": "string",
+            "description": "Optional date on which the payment is to be executed. This date should not be in the past and should be no more than one year\nafter the current date. If the requested execution date is empty\nthen the payment will be executed immediately.  The format of the date is a ISO8601 full-date conforming\nto RFC 3339, (CCYY-MM-DD). If there is no clearing of payments on the execution date, the payment will\nbe processed on the first available bookdate.",
+            "format": "date"
+          },
+          "remittanceInformationStructured": {
+            "type": "object",
+            "required": [
+              "reference",
+              "issuer"
+            ],
+            "properties": {
+              "issuer": {
+                "$ref": "#/components/schemas/RemittanceInfoIssuer"
+              },
+              "reference": {
+                "maxLength": 35,
+                "type": "string",
+                "description": "Structured remittance information.",
+                "example": "5000056789012345",
+                "pattern": "\"^[0-9A-Za-z !&'()+\\-./:?_`,àÀáÁâÂãÃäÄåÅæÆçÇèÈéÉêÊëËìÌíÍîÎïÏðÐñÑòÒóÓôÔõÕöÖ×øØùÙúÚûÛüÜýÝþÞßÿ]+$\"\n"
+              }
+            }
+          }
+        }
+      },
+      "RemittanceInfoIssuer": {
+        "type": "string",
+        "description": "Type if issuer: ISO = ISO Payment Reference; BBA = Belgium Payment Reference; CUR = Dutch Payment Reference",
+        "example": "CUR",
+        "enum": [
+          "ISO",
+          "BBA",
+          "CUR"
+        ]
+      },
+      "PostResponseBody": {
+        "required": [
+          "paymentStatus",
+          "paymentId"
+        ],
+        "type": "object",
+        "properties": {
+          "debtorAccount": {
+            "type": "object",
+            "required": [
+              "iban"
+            ],
+            "properties": {
+              "iban": {
+                "maxLength": 34,
+                "type": "string",
+                "description": "The IBAN of the ordering party initiating\nthe transaction. If omitted, the account number will be selected during\nthe authorization of the payment. If the account cannot be authorized,\nthe account holder can select a different account. Cannot be\nthe same as the creditor's IBAN.",
+                "example": "NL12ABNA9999876523"
+              }
+            }
+          },
+          "paymentId": {
+            "type": "string",
+            "description": "Unique payment ID also known as `accountServicerReference`.",
+            "example": "8325P3346070108S0PD"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "example": "RCVD",
+            "description": "Status of the payment.\nThe following is a list of possible response values:\n- `RCVD`: Payment is in Received state",
+            "enum": [
+              "RCVD"
+            ]
+          }
+        }
+      },
+      "PutResponseBody": {
+        "required": [
+          "paymentStatus",
+          "paymentId",
+          "debtorAccount",
+          "debtorName"
+        ],
+        "type": "object",
+        "properties": {
+          "debtorAccount": {
+            "type": "object",
+            "required": [
+              "iban"
+            ],
+            "properties": {
+              "iban": {
+                "maxLength": 34,
+                "type": "string",
+                "description": "The IBAN of the ordering party initiating\nthe transaction. If omitted, the account number will be selected during\nthe authorization of the payment. If the account cannot be authorized,\nthe account holder can select a different account. Cannot be\nthe same as the creditor's IBAN.",
+                "example": "NL12ABNA9999876523"
+              }
+            }
+          },
+          "paymentId": {
+            "type": "string",
+            "description": "Unique transaction ID also known as `accountServicerReference`.",
+            "example": "8325P3346070108S0PD"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "example": "PNDG",
+            "description": "Status of the payment.\nThe following is a list of possible response values:\n- `PNDG`: Payment is in Pending state",
+            "enum": [
+              "PNDG"
+            ]
+          },
+          "debtorName": {
+            "type": "string",
+            "description": "The name of the account number of the ordering party, initiating the payment.",
+            "example": "John Doe"
+          }
+        }
+      },
+      "GetResponseBody": {
+        "type": "object",
+        "required": [
+          "paymentId",
+          "paymentStatus"
+        ],
+        "properties": {
+          "debtorName": {
+            "type": "string",
+            "description": "Name of the debtor.",
+            "example": "John Doe"
+          },
+          "debtorAccount": {
+            "type": "object",
+            "required": [
+              "iban"
+            ],
+            "properties": {
+              "iban": {
+                "maxLength": 34,
+                "type": "string",
+                "description": "The IBAN of the ordering party initiating\nthe transaction. If omitted, the account number will be selected during\nthe authorization of the payment. If the account cannot be authorized,\nthe account holder can select a different account. Cannot be\nthe same as the creditor's IBAN.",
+                "example": "NL62ABNA9999841479"
+              }
+            }
+          },
+          "paymentId": {
+            "type": "string",
+            "description": "Unique payment ID also known as `accountServicerReference`.",
+            "example": "8325P3346070108S0PD"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "example": "ACCC",
+            "description": "Status of the transaction.\nThe following is a list of possible response values:\n- `RCVD` : Payment is in Received state. The payment has not been authorized yet.  \n- `PDNG` : Payment is in Pending state. \n- `RJCT`: Payment is Rejected state. \n- `ACSC`: Payment is in AcceptedSettlementCompleted state. Settlement on the debtor's account has been completed. This status does not confirm the funds reached the beneficiary. \n- `ACWC`: Payment is in AcceptedWithChange state. \n- `ACSP`: Payment is  in AcceptedSettlementInProcess state. \n- `ACCC`: Payment is in AcceptedSettlementCompleted state. The funds reached the beneficiary.\n- `CANC` : Payment is in Cancelled state. \n- `RTRN` : Payment is in Returned state. ",
+            "enum": [
+              "RCVD",
+              "PDNG",
+              "RJCT",
+              "ACSC",
+              "ACWC",
+              "ACSP",
+              "ACCC",
+              "CANC",
+              "RTRN"
+            ]
+          },
+          "statusDetails": {
+            "type": "object",
+            "properties": {
+              "statusISORsn": {
+                "type": "string",
+                "example": "FF02",
+                "description": "Reason of the rejection expressed in a standard ISO20022 error codes. Only applicable for rejected transactions."
+              },
+              "withRecipient": {
+                "type": "string",
+                "example": "2025-02-19T10:14",
+                "description": "The date and time when the funds are credited from the beneficiary. Only applicable for SEPA Credit Transfers that have been processed instantly."
+              }
+            }
+          }
+        }
+      },
+      "PostCBPaymentRequestBody": {
+        "required": [
+          "creditorAccount",
+          "creditorName",
+          "instructedAmount",
+          "creditorAgent"
+        ],
+        "type": "object",
+        "properties": {
+          "debtorAccount": {
+            "type": "object",
+            "properties": {
+              "iban": {
+                "maxLength": 34,
+                "type": "string",
+                "description": "The IBAN of the ordering party initiating\nthe transaction. Cannot be\nthe same as the creditor's IBAN.",
+                "example": "NL62ABNA9999841479",
+                "pattern": "\"^[A-Z]{2}[0-9]{2}[a-zA-Z0-9]{1,30}$\"\n"
+              }
+            }
+          },
+          "creditorAccount": {
+            "type": "object",
+            "oneOf": [
+              {
+                "required": [
+                  "iban"
+                ],
+                "properties": {
+                  "iban": {
+                    "maxLength": 34,
+                    "type": "string",
+                    "description": "The IBAN formatted account number of the creditor.",
+                    "example": "NL12ABNA9999876523",
+                    "pattern": "\"^[A-Z]{2}[0-9]{2}[A-Z0-9]{1,30}$\"\n"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "description": "Currency of the amount using a ISO 4217 Alpha 3 currency code such as EUR or USD.",
+                    "pattern": "\"^[A-Z]{3}$\"\n"
+                  }
+                }
+              },
+              {
+                "required": [
+                  "bban"
+                ],
+                "properties": {
+                  "bban": {
+                    "maxLength": 30,
+                    "type": "string",
+                    "description": "The BBAN formatted account number of the creditor.",
+                    "example": "ABNA9999876523",
+                    "pattern": "\"^[A-Z0-9]{1,30}$\"\n"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "description": "Currency of the amount using a ISO 4217 Alpha 3 currency code such as EUR or USD.",
+                    "pattern": "\"^[A-Z]{3}$\"\n"
+                  }
+                }
+              }
+            ]
+          },
+          "creditorAgent": {
+            "type": "string",
+            "description": "Financial institution servicing an account for the creditor",
+            "pattern": "\"^[a-zA-Z0-9]*$\"\n",
+            "maxLength": 70,
+            "example": "BOFAUS3N"
+          },
+          "creditorName": {
+            "maxLength": 70,
+            "type": "string",
+            "description": "Name of the counterparty.",
+            "example": "John Doe",
+            "pattern": "\"^[0-9A-Za-z !&'()+\\-./:?_`,àÀáÁâÂãÃäÄåÅæÆçÇèÈéÉêÊëËìÌíÍîÎïÏðÐñÑòÒóÓôÔõÕöÖ×øØùÙúÚûÛüÜýÝþÞßÿ]+$\"\n"
+          },
+          "creditorAddress": {
+            "type": "object",
+            "properties": {
+              "streetName": {
+                "maxLength": 70,
+                "type": "string",
+                "description": "Indicates the street name of the creditor address.",
+                "pattern": "\"^[0-9A-Za-z !&'()+\\-./:?_`,àÀáÁâÂãÃäÄåÅæÆçÇèÈéÉêÊëËìÌíÍîÎïÏðÐñÑòÒóÓôÔõÕöÖ×øØùÙúÚûÛüÜýÝþÞßÿ]+$\"\n"
+              },
+              "buildingNumber": {
+                "maxLength": 16,
+                "type": "string",
+                "description": "Indicates the building number of the creditor address"
+              },
+              "postCode": {
+                "maxLength": 16,
+                "type": "string",
+                "description": "Specifies the postal code of the creditor address."
+              },
+              "townName": {
+                "maxLength": 35,
+                "type": "string",
+                "description": "Indicates the name of the town of the creditor address. Attribute is mandatory, if the initiating party bank country, the counter party bank country or the country of the currency are not within the European Economic Area (EEA).",
+                "pattern": "\"^[0-9A-Za-z !&'()+\\-./:?_`,àÀáÁâÂãÃäÄåÅæÆçÇèÈéÉêÊëËìÌíÍîÎïÏðÐñÑòÒóÓôÔõÕöÖ×øØùÙúÚûÛüÜýÝþÞßÿ]+$\"\n"
+              },
+              "countrySubDivision": {
+                "maxLength": 35,
+                "type": "string",
+                "description": "Province, state, or other administrative subdivision of the country."
+              },
+              "country": {
+                "type": "string",
+                "description": "ISO 3166 Alpha-2 Country code of the creditor address. Attribute is mandatory, if the initiating party bank country, the counter party bank country or the country of the currency are not within the European Economic Area (EEA).",
+                "pattern": "\"[A-Z]{2}\"\n"
+              }
+            }
+          },
+          "instructedAmount": {
+            "required": [
+              "amount",
+              "currency"
+            ],
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number",
+                "description": "Amount of the transaction. This value is always positive with at most three digits after the decimal point, and 15 before. The maximum amount is equal to that set for the online banking channel Access Online or Internet Banking.",
+                "format": "float",
+                "example": 100.001,
+                "minimum": 0.001
+              },
+              "currency": {
+                "type": "string",
+                "description": "Currency of the amount using a ISO 4217 Alpha 3 currency code such as EUR or USD.",
+                "pattern": "\"^[A-Z]{3}$\"\n"
+              }
+            }
+          },
+          "chargeBearer": {
+            "type": "string",
+            "description": "Indicates who pays the charges related to the payment: CRED = beneficiary, DEBT = initiating party, SHAR = both parties share the charges. If not specified, SHAR is assumed. Always use SHAR in EEA.",
+            "enum": [
+              "DEBT",
+              "CRED",
+              "SHAR"
+            ]
+          },
+          "requestedExecutionDate": {
+            "type": "string",
+            "description": "Optional date on which the payment is to be executed. This date should not be in the past and should be no more than one year\nafter the current date. If the requested execution date is empty\nthen the payment will be executed immediately.  The format of the date is a ISO8601 full-date conforming\nto RFC 3339, (CCYY-MM-DD). If there is no clearing of payments on the execution date, the payment will\nbe processed on the first available bookdate.",
+            "format": "date"
+          },
+          "remittanceInformationUnstructured": {
+            "maxLength": 140,
+            "type": "string",
+            "description": "Specifies the remittance information.",
+            "pattern": "\"^[0-9A-Za-z !&'()+\\-./:?_`,àÀáÁâÂãÃäÄåÅæÆçÇèÈéÉêÊëËìÌíÍîÎïÏðÐñÑòÒóÓôÔõÕöÖ×øØùÙúÚûÛüÜýÝþÞßÿ]+$\"\n",
+            "example": "Ref Number 12345/0123."
+          }
+        }
+      },
+      "Errors": {
+        "title": "errors",
+        "type": "object",
+        "required": [
+          "errors"
+        ],
+        "properties": {
+          "errors": {
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "items": {
+              "required": [
+                "code",
+                "message",
+                "status",
+                "traceId",
+                "params"
+              ],
+              "type": "object",
+              "properties": {
+                "traceId": {
+                  "type": "string",
+                  "description": "Unique trace ID sent for this request."
+                },
+                "code": {
+                  "type": "string",
+                  "description": "Unique error code key."
+                },
+                "message": {
+                  "type": "string",
+                  "description": "Understandable description for the error code key."
+                },
+                "status": {
+                  "type": "integer",
+                  "description": "HTTP code of the error.",
+                  "format": "int32"
+                },
+                "params": {
+                  "maxItems": 100,
+                  "minItems": 0,
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Response object of an error."
+      }
+    },
+    "responses": {
+      "400_post": {
+        "description": "Bad request or parameter error. Detailed error list:\n---\n    - REQUEST_BODY_UNREADABLE\n        > Request body must be valid JSON and conform to the documentation.\n    - DEBTOR_IBAN_INVALID\n        > Debtor IBAN must be valid.\n    - CREDITOR_IBAN_NOT_PROVIDED\n        > Creditor IBAN must be provided.\n    - CREDITOR_IBAN_INVALID\n        > Creditor IBAN must be valid.\n    - CREDITOR_AND_DEBTOR_IBAN_IDENTICAL\n        > Creditor and debtor IBAN cannot be identical.\n    - CREDITOR_NAME_NOT_PROVIDED\n        > Creditor name must be provided.\n    - CREDITOR_NAME_INVALID_LENGTH\n        > Creditor name must be 70 characters or less.\n    - CREDITOR_NAME_INVALID_CHARACTERS\n        > Creditor name contains invalid characters.\n    - AMOUNT_NOT_PROVIDED\n        > Amount must be provided.\n    - AMOUNT_INVALID_FORMAT\n        > Amount cannot have more than 2 digits after the decimal and 15 digits before the decimal.\n    - AMOUNT_NOT_POSITIVE\n        > Amount cannot be less than or equal to zero.\n    - CURRENCY_INVALID_VALUE\n        > Currency must be EUR.\n    - EXECUTION_DATE_INVALID_FORMAT\n        > Execution date must be of the form CCYY-MM-DD.\n    - EXECUTION_DATE_IN_PAST\n        > Execution date cannot be in the past.\n    - EXECUTION_DATE_EXCEEDS_ONE_YEAR\n        > Execution date cannot be more than one year in the future.\n    - REMITTANCE_INFO_INVALID_LENGTH\n        > Remittance info must be 140 characters or less.\n    - REMITTANCE_INFO_INVALID_CHARACTERS\n        > Remittance info contains invalid characters.\n    - ISSUER_NOT_PROVIDED\n        > Issuer must be provided.\n    - ISSUER_INVALID_VALUE\n        > Issuer must be one of ISO, BBA and CUR.\n    - REFERENCE_NOT_PROVIDED\n        > Reference must be provided.\n    - REFERENCE_INVALID_LENGTH\n        > Reference must be 35 characters or less.\n    - REFERENCE_INVALID_CHARACTERS\n        > Reference contains invalid characters.\n    - UNSTRUCTURED_AND_STRUCTURED_REMITTANCE_PROVIDED\n        > Structured and unstructured remittance info cannot both be provided.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "UNSTRUCTURED_AND_STRUCTURED_REMITTANCE_PROVIDED",
+                  "message": "Structured and unstructured remittance info cannot both be provided.",
+                  "traceId": "5d47e7b5-55b8-4b9f-b438-51ed01f92f3a",
+                  "status": 400
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/xRequestId"
+          },
+          "Trace-Id": {
+            "$ref": "#/components/headers/traceId"
+          }
+        }
+      },
+      "400_POST_Single_CB_Payment": {
+        "description": "Bad request/parameter error.\nDetailed error list:\n  ---\n    - REQUEST_BODY_UNREADABLE\n        > Request body must be valid JSON and conform to the documentation.\n    - DEBTOR_IBAN_INVALID\n        > Debtor IBAN must be valid.\n    - CREDITOR_IBAN_INVALID\n        > Creditor IBAN must be valid.\n    - CREDITOR_BBAN_INVALID\n        > Creditor BBAN must be valid.\n    - CREDITOR_AND_DEBTOR_IBAN_IDENTICAL\n        > Creditor and debtor IBAN cannot be identical.\n    - CREDITOR_INVALID_ACCOUNT_NUMBERS\n        > Creditor must specify exactly one IBAN or BBAN.\n    - CREDITOR_CURRENCY_INVALID_VALUE\n        > Creditor currency must be a 3-character ISO 4217 currency code.\n    - CREDITOR_AGENT_NOT_PROVIDED\n        > Creditor agent must be provided.\n    - CREDITOR_AGENT_INVALID_LENGTH\n        > Creditor agent must be up to 70 characers long.\n    - CREDITOR_AGENT_INVALID_CHARACTERS\n        > Creditor agent must be uppercase alphanumeric.\n    - CREDITOR_NAME_NOT_PROVIDED\n        > Creditor name must be provided.\n    - CREDITOR_NAME_INVALID_LENGTH\n        > Creditor name must be 70 characters or less.\n    - CREDITOR_NAME_INVALID_CHARACTERS\n        > Creditor name contains invalid characters.\n    - STREET_NAME_INVALID_LENGTH\n        > Street name must be 70 characters or less.\n    - STREET_NAME_INVALID_CHARACTERS\n        > Street name contains invalid characters.\n    - BUILDING_NUMBER_INVALID_LENGTH\n        > Building number must be 16 characters or less.\n    - POSTAL_CODE_INVALID_LENGTH\n        > Postal code must be 16 characters or less.\n    - CREDITOR_TOWN_NAME_INVALID_LENGTH\n        > Creditor town name must be 35 characters or less.\n    - CREDITOR_TOWN_NAME_INVALID_CHARACTERS\n        > Creditor town name contains invalid characters.\n    - COUNTRY_SUBDIVISION_INVALID_LENGTH\n        > Country subdivision must be 35 characters or less.\n    - CREDITOR_COUNTRY_INVALID_VALUE\n        > Creditor country must be an uppercase 2-character ISO 3166 country code.\n    - INSTRUCTED_AMOUNT_NOT_PROVIDED\n        > Instructed amount must be provided.\n    - AMOUNT_NOT_PROVIDED\n        > Amount must be provided.\n    - AMOUNT_NOT_POSITIVE\n        > Amount cannot be less than or equal to zero.\n    - CURRENCY_NOT_PROVIDED\n        > Currency must be provided.\n    - CURRENCY_CB_INVALID_VALUE\n        > Currency must be a 3-character ISO 4217 currency code.\n    - CHARGE_BEARER_INVALID_VALUE\n        > Charge bearer must be one of SHAR, DEBT, CRED.\n    - EXECUTION_DATE_INVALID_FORMAT\n        > Execution date must be of the form CCYY-MM-DD.\n    - EXECUTION_DATE_IN_PAST\n        > Execution date cannot be in the past.\n    - EXECUTION_DATE_EXCEEDS_ONE_YEAR\n        > Execution date cannot be more than one year in the future.\n    - REMITTANCE_INFO_INVALID_LENGTH\n        > Remittance info must be 140 characters or less.\n    - REMITTANCE_INFO_INVALID_CHARACTERS\n        > Remittance info contains invalid characters.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "REMITTANCE_INFO_INVALID_CHARACTERS",
+                  "message": "Remittance info contains invalid characters.",
+                  "traceId": "5d47e7b5-55b8-4b9f-b438-51ed01f92f3a",
+                  "status": 400
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/xRequestId"
+          },
+          "Trace-Id": {
+            "$ref": "#/components/headers/traceId"
+          }
+        }
+      },
+      "401_post": {
+        "description": "Access Forbidden. You need a valid access token with scope `psd2:payment:sepa:write`.\nDetailed error list:\n  ---\n    - SUBJECT_UNAUTHENTICATED\n        > The Subject (End User) is not authenticated",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "SUBJECT_UNAUTHENTICATED",
+                  "message": "The Subject (End User) is not authenticated",
+                  "traceId": "36fa4309-fd51-4e6c-b8bc-9e1843b47cf8",
+                  "status": 401
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/xRequestId"
+          },
+          "Trace-Id": {
+            "$ref": "#/components/headers/traceId"
+          }
+        }
+      },
+      "403_post": {
+        "description": "Access Forbidden. You need a valid access token with scope `psd2:payment:sepa:write`.\nDetailed error list:\n  ---\n    - SUBJECT_NOT_ALLOWED\n        > The Subject (End User) is not 'AUTHORIZED'",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "SUBJECT_NOT_ALLOWED",
+                  "message": "The Subject (End User) is not 'AUTHORIZED'",
+                  "traceId": "c8e372a2-5968-446c-8562-d432cf5722b1",
+                  "status": 403
+                }
+              ]
+            }
+          }
+        }
+      },
+      "401_post_CB": {
+        "description": "Access Forbidden. You need a valid access token with scope `psd2:payment:xborder:write`.\nDetailed error list:\n  ---\n    - SUBJECT_UNAUTHENTICATED\n        > The Subject (End User) is not authenticated",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "SUBJECT_UNAUTHENTICATED",
+                  "message": "The Subject (End User) is not authenticated",
+                  "traceId": "36fa4309-fd51-4e6c-b8bc-9e1843b47cf8",
+                  "status": 401
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/xRequestId"
+          },
+          "Trace-Id": {
+            "$ref": "#/components/headers/traceId"
+          }
+        }
+      },
+      "403_post_CB": {
+        "description": "Access Forbidden. You need a valid access token with scope `psd2:payment:xborder:write`.\nDetailed error list:\n  ---\n    - SUBJECT_NOT_ALLOWED\n        > The Subject (End User) is not 'AUTHORIZED'",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "SUBJECT_NOT_ALLOWED",
+                  "message": "The Subject (End User) is not 'AUTHORIZED'",
+                  "traceId": "c8e372a2-5968-446c-8562-d432cf5722b1",
+                  "status": 403
+                }
+              ]
+            }
+          }
+        }
+      },
+      "400_put": {
+        "description": "Bad request/parameter error.\nDetailed error list:\n  ---\n    - PAYMENT_INVALID_STATE\n        > The requested payment is not in the right state: %\n    - PAYMENT_ALREADY_EXECUTED\n        > The requested payment is already executed",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "PAYMENT_INVALID_STATE",
+                  "message": "The requested payment is not in the right state: %",
+                  "traceId": "c8e372a2-5968-446c-8562-d432cf5722b1",
+                  "status": 400,
+                  "params": [
+                    "RCVD"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/xRequestId"
+          },
+          "Trace-Id": {
+            "$ref": "#/components/headers/traceId"
+          }
+        }
+      },
+      "401_put": {
+        "description": "Access Forbidden. You need a valid access token with scope `psd2:payment:sepa:write` via auth code exchange.\nDetailed error list:\n  ---\n    - SUBJECT_UNAUTHENTICATED\n        > The Subject (End User) is not authenticated",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "SUBJECT_UNAUTHENTICATED",
+                  "message": "The Subject (End User) is not authenticated",
+                  "traceId": "36fa4309-fd51-4e6c-b8bc-9e1843b47cf8",
+                  "status": 401
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/xRequestId"
+          },
+          "Trace-Id": {
+            "$ref": "#/components/headers/traceId"
+          }
+        }
+      },
+      "401_put_CB": {
+        "description": "Access Forbidden. You need a valid access token with scope `psd2:payment:xborder:write` via auth code exchange.\nDetailed error list:\n  ---\n    - SUBJECT_UNAUTHENTICATED\n        > The Subject (End User) is not authenticated",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "SUBJECT_UNAUTHENTICATED",
+                  "message": "The Subject (End User) is not authenticated",
+                  "traceId": "36fa4309-fd51-4e6c-b8bc-9e1843b47cf8",
+                  "status": 401
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/xRequestId"
+          },
+          "Trace-Id": {
+            "$ref": "#/components/headers/traceId"
+          }
+        }
+      },
+      "403_put": {
+        "description": "Access Forbidden. You need a valid access token with scope `psd2:payment:sepa:write` via auth code exchange.\nDetailed error list:\n  ---\n    - SUBJECT_NOT_ALLOWED\n        > The Subject (End User) is not 'AUTHORIZED'",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "SUBJECT_NOT_ALLOWED",
+                  "message": "The Subject (End User) is not 'AUTHORIZED'",
+                  "traceId": "c8e372a2-5968-446c-8562-d432cf5722b1",
+                  "status": 403
+                }
+              ]
+            }
+          }
+        }
+      },
+      "403_put_CB": {
+        "description": "Access Forbidden. You need a valid access token with scope `psd2:payment:xborder:write` via auth code exchange.\nDetailed error list:\n  ---\n    - SUBJECT_NOT_ALLOWED\n        > The Subject (End User) is not 'AUTHORIZED'",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "SUBJECT_NOT_ALLOWED",
+                  "message": "The Subject (End User) is not 'AUTHORIZED'",
+                  "traceId": "c8e372a2-5968-446c-8562-d432cf5722b1",
+                  "status": 403
+                }
+              ]
+            }
+          }
+        }
+      },
+      "400_delete": {
+        "description": "Bad request/parameter error.\nDetailed error list:\n  ---\n    - PAYMENT_INVALID_STATE\n        > The requested payment is not in the right state: %\n    - PAYMENT_ALREADY_EXECUTED\n        > The requested payment is already executed",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "PAYMENT_INVALID_STATE",
+                  "message": "The requested payment is not in the right state: %",
+                  "traceId": "c8e372a2-5968-446c-8562-d432cf5722b1",
+                  "status": 400,
+                  "params": [
+                    "RCVD"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/xRequestId"
+          },
+          "Trace-Id": {
+            "$ref": "#/components/headers/traceId"
+          }
+        }
+      },
+      "401_delete": {
+        "description": "Access Forbidden. You need a valid access token with scope `psd2:payment:sepa:write` via auth code exchange.\nDetailed error list:\n  ---\n    - SUBJECT_UNAUTHENTICATED\n        > The Subject (End User) is not authenticated",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "SUBJECT_UNAUTHENTICATED",
+                  "message": "The Subject (End User) is not authenticated",
+                  "traceId": "36fa4309-fd51-4e6c-b8bc-9e1843b47cf8",
+                  "status": 401
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/xRequestId"
+          },
+          "Trace-Id": {
+            "$ref": "#/components/headers/traceId"
+          }
+        }
+      },
+      "403_delete": {
+        "description": "Access Forbidden. You need a valid access token with scope `psd2:payment:sepa:write` via auth code exchange.\nDetailed error list:\n  ---\n    - SUBJECT_NOT_ALLOWED\n        > The Subject (End User) is not 'AUTHORIZED'",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "SUBJECT_NOT_ALLOWED",
+                  "message": "The Subject (End User) is not 'AUTHORIZED'",
+                  "traceId": "c8e372a2-5968-446c-8562-d432cf5722b1",
+                  "status": 403
+                }
+              ]
+            }
+          }
+        }
+      },
+      "401_delete_CB": {
+        "description": "Access Forbidden. You need a valid access token with scope `psd2:payment:xborder:write` via auth code exchange.\nDetailed error list:\n  ---\n    - SUBJECT_UNAUTHENTICATED\n        > The Subject (End User) is not authenticated",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "SUBJECT_UNAUTHENTICATED",
+                  "message": "The Subject (End User) is not authenticated",
+                  "traceId": "36fa4309-fd51-4e6c-b8bc-9e1843b47cf8",
+                  "status": 401
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/xRequestId"
+          },
+          "Trace-Id": {
+            "$ref": "#/components/headers/traceId"
+          }
+        }
+      },
+      "403_delete_CB": {
+        "description": "Access Forbidden. You need a valid access token with scope `psd2:payment:xborder:write` via auth code exchange.\nDetailed error list:\n  ---\n    - SUBJECT_NOT_ALLOWED\n        > The Subject (End User) is not 'AUTHORIZED'",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "SUBJECT_NOT_ALLOWED",
+                  "message": "The Subject (End User) is not 'AUTHORIZED'",
+                  "traceId": "c8e372a2-5968-446c-8562-d432cf5722b1",
+                  "status": 403
+                }
+              ]
+            }
+          }
+        }
+      },
+      "401_get": {
+        "description": "Access Forbidden. You need a valid access token with scope `psd2:payment:sepa:read`.\nDetailed error list:\n  ---\n    - SUBJECT_UNAUTHENTICATED\n        > The Subject (End User) is not authenticated",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "SUBJECT_UNAUTHENTICATED",
+                  "message": "The Subject (End User) is not authenticated",
+                  "traceId": "36fa4309-fd51-4e6c-b8bc-9e1843b47cf8",
+                  "status": 401
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/xRequestId"
+          },
+          "Trace-Id": {
+            "$ref": "#/components/headers/traceId"
+          }
+        }
+      },
+      "403_get": {
+        "description": "Access Forbidden. You need a valid access token with scope `psd2:payment:sepa:read`.\nDetailed error list:\n  ---\n    - SUBJECT_NOT_ALLOWED\n        > The Subject (End User) is not 'AUTHORIZED'",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "SUBJECT_NOT_ALLOWED",
+                  "message": "The Subject (End User) is not 'AUTHORIZED'",
+                  "traceId": "c8e372a2-5968-446c-8562-d432cf5722b1",
+                  "status": 403
+                }
+              ]
+            }
+          }
+        }
+      },
+      "401_get_CB": {
+        "description": "Access Forbidden. You need a valid access token with scope `psd2:payment:xborder:read`.\nDetailed error list:\n  ---\n    - SUBJECT_UNAUTHENTICATED\n        > The Subject (End User) is not authenticated",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "SUBJECT_UNAUTHENTICATED",
+                  "message": "The Subject (End User) is not authenticated",
+                  "traceId": "36fa4309-fd51-4e6c-b8bc-9e1843b47cf8",
+                  "status": 401
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/xRequestId"
+          },
+          "Trace-Id": {
+            "$ref": "#/components/headers/traceId"
+          }
+        }
+      },
+      "403_get_CB": {
+        "description": "Access Forbidden. You need a valid access token with scope `psd2:payment:xborder:read`.\nDetailed error list:\n  ---\n    - SUBJECT_NOT_ALLOWED\n        > The Subject (End User) is not 'AUTHORIZED'",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "SUBJECT_NOT_ALLOWED",
+                  "message": "The Subject (End User) is not 'AUTHORIZED'",
+                  "traceId": "c8e372a2-5968-446c-8562-d432cf5722b1",
+                  "status": 403
+                }
+              ]
+            }
+          }
+        }
+      },
+      "404_NOT_FOUND": {
+        "description": "Payment Not Found. Ensure you have a valid payment id.\nDetailed error list:\n  ---\n    - PAYMENT_NOT_FOUND\n        > No payment found with the given id",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "PAYMENT_NOT_FOUND",
+                  "message": "No payment found with the given id",
+                  "traceId": "c8e372a2-5968-446c-8562-d432cf5722b1",
+                  "status": 404
+                }
+              ]
+            }
+          }
+        }
+      },
+      "500_INT_SER_ERROR": {
+        "description": "Internal Server Error.A technical error has occurred. Please try again later.\nDetailed error list:\n  ---\n    - INTERNAL_SERVER_ERROR\n        > A technical error has occurred. Please try again later. Please report the trace id when contacting us",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "example": {
+              "errors": [
+                {
+                  "code": "INTERNAL_SERVER_ERROR",
+                  "message": "A technical error has occurred. Please try again later. Please report the trace id when contacting us",
+                  "traceId": "114b1652-e499-45b4-8328-0dc41fb266f5",
+                  "status": 500
+                }
+              ]
+            }
+          }
+        },
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/xRequestId"
+          },
+          "Trace-Id": {
+            "$ref": "#/components/headers/traceId"
+          }
+        }
+      }
+    },
+    "headers": {
+      "xRequestId": {
+        "description": "Identification of the response as specified by the API consumer in the request.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "traceId": {
+        "description": "Unique trace ID sent for this request.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "examples": {
+      "PostSEPAPaymentRequestBody_Example": {
+        "value": {
+          "debtorAccount": {
+            "iban": "NL62ABNA9999841479"
+          },
+          "creditorName": "John Doe",
+          "creditorAccount": {
+            "iban": "NL12ABNA9999876523"
+          },
+          "instructedAmount": {
+            "currency": "EUR",
+            "amount": "100.01"
+          },
+          "requestedExecutionDate": "2025-01-01",
+          "remittanceInformationUnstructured": "Ref Number 12345/0123."
+        }
+      },
+      "PostSEPAPaymentStructuredRequestBody_Example": {
+        "value": {
+          "debtorAccount": {
+            "iban": "NL62ABNA9999841479"
+          },
+          "creditorName": "John Doe",
+          "creditorAccount": {
+            "iban": "NL12ABNA9999876523"
+          },
+          "instructedAmount": {
+            "currency": "EUR",
+            "amount": "100.01"
+          },
+          "requestedExecutionDate": "2025-01-01",
+          "remittanceInformationStructured": {
+            "issuer": "ISO",
+            "reference": "Ref Nr 12345"
+          }
+        }
+      },
+      "GetSEPAPayment_Example_Settled": {
+        "value": {
+          "debtorAccount": {
+            "iban": "NL12ABNA9999876523"
+          },
+          "debtorName": "John Doe",
+          "paymentId": "KCPXBJU7WK1754485254512",
+          "paymentStatus": "ACCC",
+          "statusDetails": {
+            "withRecipient": "2025-08-06T15:01"
+          }
+        }
+      },
+      "GetSEPAPayment_Example_Rejected": {
+        "value": {
+          "debtorAccount": {
+            "iban": "NL58ABNA9999142181"
+          },
+          "debtorName": "John Doe",
+          "paymentId": "JFBLXACNDA1754485338210",
+          "paymentStatus": "RJCT",
+          "statusDetails": {
+            "statusISORsn": "AM03"
+          }
+        }
+      },
+      "PostCBPaymentRequestBody_UsingIBAN": {
+        "value": {
+          "debtorAccount": {
+            "iban": "NL62ABNA9999841479"
+          },
+          "creditorAccount": {
+            "iban": "NL12ABNA9999876523",
+            "currency": "EUR"
+          },
+          "creditorAgent": "DEUTDEFF",
+          "creditorName": "John Doe",
+          "creditorAddress": {
+            "streetName": "Hoofdstraat",
+            "buildingNumber": "123",
+            "postCode": "1000AA",
+            "townName": "Amsterdam",
+            "countrySubDivision": "North Holland",
+            "country": "NL"
+          },
+          "instructedAmount": {
+            "amount": 100.51,
+            "currency": "EUR"
+          },
+          "chargeBearer": "SHAR",
+          "requestedExecutionDate": "2024-12-20",
+          "remittanceInformationUnstructured": "Invoice payment 2024-001"
+        }
+      },
+      "PostCBPaymentRequestBody_UsingBBAN": {
+        "value": {
+          "debtorAccount": {
+            "iban": "GB82WEST12345698765432"
+          },
+          "creditorAccount": {
+            "bban": "12345678901234",
+            "currency": "EUR"
+          },
+          "creditorAgent": "DEUTDEFF",
+          "creditorName": "Jane Smith",
+          "creditorAddress": {
+            "streetName": "Baker Street",
+            "buildingNumber": "221B",
+            "postCode": "NW1 6XE",
+            "townName": "London",
+            "countrySubDivision": "Greater London",
+            "country": "GB"
+          },
+          "instructedAmount": {
+            "amount": 250.75,
+            "currency": "GBP"
+          },
+          "chargeBearer": "DEBT",
+          "requestedExecutionDate": "2024-12-25",
+          "remittanceInformationUnstructured": "Monthly rent payment December 2024"
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "Authorization": [],
+      "Gen_ApiKey": []
+    }
+  ]
+}
