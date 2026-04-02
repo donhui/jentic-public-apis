@@ -1,0 +1,139 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "abuse.ch URLhaus API",
+    "description": "URLhaus API for submitting malware URLs and downloading database exports. URLhaus is a project for sharing malicious URLs used for malware distribution.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://urlhaus.abuse.ch/api/"
+  },
+  "servers": [
+    {
+      "url": "https://urlhaus.abuse.ch",
+      "description": "URLhaus API server"
+    }
+  ],
+  "paths": {
+    "/api/": {
+      "post": {
+        "operationId": "submitMalwareUrls",
+        "summary": "Submit malware URLs to URLhaus",
+        "description": "Submit one or more malware URLs for inclusion in the URLhaus database.",
+        "tags": ["Submissions"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SubmissionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Submission accepted",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SubmissionResponse" }
+              }
+            }
+          },
+          "400": { "description": "Invalid submission data" },
+          "401": { "description": "Invalid Auth-Key" }
+        }
+      }
+    },
+    "/api/v2/files/exports/{authKey}/recent.csv": {
+      "get": {
+        "operationId": "downloadRecentUrls",
+        "summary": "Download recent malware URL database dump",
+        "description": "Download a CSV dump of URLs actively distributing malware or added within the past 90 days. Generated every 5 minutes.",
+        "tags": ["Exports"],
+        "parameters": [
+          {
+            "name": "authKey",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "API authentication key"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV database dump",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid Auth-Key" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SubmissionRequest": {
+        "type": "object",
+        "required": ["submission"],
+        "properties": {
+          "anonymous": {
+            "type": "integer",
+            "enum": [0, 1],
+            "description": "Submit anonymously (1) or with account attribution (0)"
+          },
+          "submission": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/UrlSubmission" },
+            "description": "List of URLs to submit"
+          }
+        }
+      },
+      "UrlSubmission": {
+        "type": "object",
+        "required": ["url", "threat"],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The malware distribution URL"
+          },
+          "threat": {
+            "type": "string",
+            "enum": ["malware_download"],
+            "description": "Threat type"
+          },
+          "tags": {
+            "type": "string",
+            "description": "Tags for the URL (allowed: A-Z, a-z, 0-9, ., -, space)"
+          }
+        }
+      },
+      "SubmissionResponse": {
+        "type": "object",
+        "properties": {
+          "query_status": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "authKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Auth-Key",
+        "description": "URLhaus API authentication key"
+      }
+    }
+  },
+  "security": [
+    {
+      "authKey": []
+    }
+  ]
+}
