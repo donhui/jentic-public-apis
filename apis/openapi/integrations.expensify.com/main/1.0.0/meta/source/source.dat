@@ -1,0 +1,224 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Expensify Integration Server API",
+    "version": "1.0.0",
+    "description": "The Expensify Integration Server API enables programmatic export of expense report data, card reconciliation, employee provisioning (advanced employee updater), and report downloading. All requests are form-encoded POSTs to a single endpoint. Rate limits: 5 requests per 10 seconds, 20 per 60 seconds.",
+    "x-jentic-source-url": "https://integrations.expensify.com/Integration-Server/doc/",
+    "contact": {}
+  },
+  "servers": [
+    {
+      "url": "https://integrations.expensify.com",
+      "description": "Expensify Integration Server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Export",
+      "description": "Export expense report data"
+    },
+    {
+      "name": "Reconciliation",
+      "description": "Export card transaction reconciliation data"
+    },
+    {
+      "name": "Employee Updater",
+      "description": "Provision and update employees"
+    },
+    {
+      "name": "Download",
+      "description": "Download generated files"
+    }
+  ],
+  "paths": {
+    "/Integration-Server/ExpensifyIntegrations": {
+      "post": {
+        "operationId": "executeJob",
+        "summary": "Execute an Expensify integration job",
+        "description": "All Expensify API calls go through this single endpoint. The type of job is determined by the requestJobDescription JSON payload. Types include: file (report export), reconciliation, update (employee updater), download.",
+        "tags": [
+          "Export",
+          "Reconciliation",
+          "Employee Updater",
+          "Download"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "requestJobDescription"
+                ],
+                "properties": {
+                  "requestJobDescription": {
+                    "type": "string",
+                    "description": "JSON string containing the job description. Must include type, credentials (partnerUserID, partnerUserSecret), and job-specific inputSettings."
+                  },
+                  "template": {
+                    "type": "string",
+                    "description": "Freemarker template for formatting export output. Used with type=file and type=reconciliation."
+                  },
+                  "data": {
+                    "type": "string",
+                    "description": "JSON data payload. Used with type=update and dataSource=request for employee data."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response. Format varies by job type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ExportResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ReconciliationResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/EmployeeUpdateResponse"
+                    }
+                  ]
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "description": "File download content for type=download"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Invalid input data (e.g. missing employee data)"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "integer"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "ExportResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "integer"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "ReconciliationResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "integer"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "responseMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "EmployeeUpdateResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": {
+            "type": "integer"
+          },
+          "dry-run": {
+            "type": "boolean"
+          },
+          "updatedEmployeesCount": {
+            "type": "integer"
+          },
+          "diff": {
+            "type": "object",
+            "properties": {
+              "diffToAdd": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "diffToRemove": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "securityGroupEmployeesMap": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "skippedEmployees": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
