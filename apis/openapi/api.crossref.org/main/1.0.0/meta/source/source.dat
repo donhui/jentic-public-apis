@@ -1,0 +1,1131 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Crossref REST API",
+    "description": "The Crossref REST API provides access to scholarly metadata including works (journal articles, books, etc.), funders, members, journals, types, and licenses. The API is free to use and does not require authentication, though providing a mailto parameter (Polite Pool) improves rate limits.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Crossref",
+      "url": "https://www.crossref.org/documentation/retrieve-metadata/rest-api/",
+      "email": "support@crossref.org"
+    },
+    "license": {
+      "name": "Public Domain",
+      "url": "https://www.crossref.org/documentation/retrieve-metadata/rest-api/rest-api-metadata-license-information/"
+    },
+    "x-jentic-source-url": "https://api.crossref.org/"
+  },
+  "servers": [
+    {
+      "url": "https://api.crossref.org",
+      "description": "Crossref REST API"
+    }
+  ],
+  "tags": [
+    {"name": "Works", "description": "Scholarly works (articles, books, datasets, etc.)"},
+    {"name": "Funders", "description": "Funding organizations registered with Crossref"},
+    {"name": "Members", "description": "Crossref member organizations (publishers)"},
+    {"name": "Journals", "description": "Journals registered with Crossref"},
+    {"name": "Types", "description": "Work types (journal-article, book, dataset, etc.)"},
+    {"name": "Licenses", "description": "License information for works"},
+    {"name": "Prefixes", "description": "DOI prefix information"}
+  ],
+  "paths": {
+    "/works": {
+      "get": {
+        "operationId": "listWorks",
+        "summary": "Search and list works",
+        "description": "Returns a list of scholarly works. Supports full-text search, filtering by various criteria, faceting, sorting, and pagination.",
+        "tags": ["Works"],
+        "parameters": [
+          {"$ref": "#/components/parameters/Query"},
+          {"$ref": "#/components/parameters/Rows"},
+          {"$ref": "#/components/parameters/Offset"},
+          {"$ref": "#/components/parameters/Cursor"},
+          {"$ref": "#/components/parameters/Sort"},
+          {"$ref": "#/components/parameters/Order"},
+          {"$ref": "#/components/parameters/Mailto"},
+          {"$ref": "#/components/parameters/Select"},
+          {
+            "name": "filter",
+            "in": "query",
+            "description": "Filter results using field:value pairs. Multiple filters can be comma-separated. Available filters include: has-funder, funder, location, prefix, member, from-index-date, until-index-date, from-deposit-date, until-deposit-date, from-update-date, until-update-date, from-created-date, until-created-date, from-pub-date, until-pub-date, from-online-pub-date, until-online-pub-date, from-print-pub-date, until-print-pub-date, from-posted-date, until-posted-date, from-accepted-date, until-accepted-date, has-license, license.url, license.version, license.delay, has-full-text, full-text.version, full-text.type, full-text.application, has-references, reference-visibility, has-archive, archive, has-orcid, has-authenticated-orcid, orcid, issn, isbn, type, directory, doi, updates, is-update, has-update-policy, container-title, category-name, type-name, award.number, award.funder, has-assertion, assertion-group, assertion, has-affiliation, alternative-id, article-number, has-abstract, has-clinical-trial-number, content-domain, has-content-domain, has-domain-restriction, has-relation, relation.type, relation.object, relation.object-type.",
+            "schema": {"type": "string"},
+            "example": "from-pub-date:2024-01-01,type:journal-article"
+          },
+          {
+            "name": "facet",
+            "in": "query",
+            "description": "Enable faceting on specified fields. Use field:count format. Available facets: affiliation, funder-name, funder-doi, orcid, container-title, assertion, archive, update-type, issn, published, source, type-name, publisher-name, license, category-name, assertion-group.",
+            "schema": {"type": "string"},
+            "example": "type-name:*"
+          },
+          {
+            "name": "query.title",
+            "in": "query",
+            "description": "Search specifically in work titles.",
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "query.author",
+            "in": "query",
+            "description": "Search specifically in author names.",
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "query.container-title",
+            "in": "query",
+            "description": "Search in container (journal/book) titles.",
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "query.bibliographic",
+            "in": "query",
+            "description": "Search in bibliographic metadata (title, author, container-title).",
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "query.affiliation",
+            "in": "query",
+            "description": "Search in author affiliation data.",
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with list of works",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkListResponse"
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request - invalid query or filter parameters"},
+          "404": {"description": "Not found"}
+        }
+      }
+    },
+    "/works/{doi}": {
+      "get": {
+        "operationId": "getWork",
+        "summary": "Get a single work by DOI",
+        "description": "Retrieves metadata for a single work identified by its DOI.",
+        "tags": ["Works"],
+        "parameters": [
+          {
+            "name": "doi",
+            "in": "path",
+            "required": true,
+            "description": "The DOI of the work (e.g., 10.1038/nature12373). May contain slashes.",
+            "schema": {"type": "string"},
+            "example": "10.1038/nature12373"
+          },
+          {"$ref": "#/components/parameters/Mailto"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with work metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkResponse"
+                }
+              }
+            }
+          },
+          "404": {"description": "Work not found"},
+          "406": {"description": "Not acceptable - requested content type not supported"}
+        }
+      }
+    },
+    "/funders": {
+      "get": {
+        "operationId": "listFunders",
+        "summary": "Search and list funders",
+        "description": "Returns a list of funding organizations registered with Crossref.",
+        "tags": ["Funders"],
+        "parameters": [
+          {"$ref": "#/components/parameters/Query"},
+          {"$ref": "#/components/parameters/Rows"},
+          {"$ref": "#/components/parameters/Offset"},
+          {"$ref": "#/components/parameters/Mailto"},
+          {
+            "name": "filter",
+            "in": "query",
+            "description": "Filter funders. Available filter: location.",
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with list of funders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FunderListResponse"
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"}
+        }
+      }
+    },
+    "/funders/{id}": {
+      "get": {
+        "operationId": "getFunder",
+        "summary": "Get a single funder",
+        "description": "Retrieves details for a funder by its Funder Registry ID.",
+        "tags": ["Funders"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Funder Registry ID",
+            "schema": {"type": "string"},
+            "example": "10.13039/100000001"
+          },
+          {"$ref": "#/components/parameters/Mailto"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with funder details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FunderResponse"
+                }
+              }
+            }
+          },
+          "404": {"description": "Funder not found"}
+        }
+      }
+    },
+    "/funders/{id}/works": {
+      "get": {
+        "operationId": "listFunderWorks",
+        "summary": "List works funded by a funder",
+        "description": "Returns works associated with a specific funder.",
+        "tags": ["Funders"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Funder Registry ID",
+            "schema": {"type": "string"}
+          },
+          {"$ref": "#/components/parameters/Query"},
+          {"$ref": "#/components/parameters/Rows"},
+          {"$ref": "#/components/parameters/Offset"},
+          {"$ref": "#/components/parameters/Mailto"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Works funded by this funder",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkListResponse"
+                }
+              }
+            }
+          },
+          "404": {"description": "Funder not found"}
+        }
+      }
+    },
+    "/members": {
+      "get": {
+        "operationId": "listMembers",
+        "summary": "Search and list members",
+        "description": "Returns a list of Crossref member organizations (publishers).",
+        "tags": ["Members"],
+        "parameters": [
+          {"$ref": "#/components/parameters/Query"},
+          {"$ref": "#/components/parameters/Rows"},
+          {"$ref": "#/components/parameters/Offset"},
+          {"$ref": "#/components/parameters/Mailto"},
+          {
+            "name": "filter",
+            "in": "query",
+            "description": "Filter members. Available filters: has-public-references, reference-visibility, backfile-doi-count, current-doi-count.",
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with list of members",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberListResponse"
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"}
+        }
+      }
+    },
+    "/members/{id}": {
+      "get": {
+        "operationId": "getMember",
+        "summary": "Get a single member",
+        "description": "Retrieves details for a Crossref member by its member ID.",
+        "tags": ["Members"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Crossref member ID",
+            "schema": {"type": "integer"},
+            "example": 311
+          },
+          {"$ref": "#/components/parameters/Mailto"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Member details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberResponse"
+                }
+              }
+            }
+          },
+          "404": {"description": "Member not found"}
+        }
+      }
+    },
+    "/members/{id}/works": {
+      "get": {
+        "operationId": "listMemberWorks",
+        "summary": "List works by a member",
+        "description": "Returns works published by a specific Crossref member.",
+        "tags": ["Members"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Crossref member ID",
+            "schema": {"type": "integer"}
+          },
+          {"$ref": "#/components/parameters/Query"},
+          {"$ref": "#/components/parameters/Rows"},
+          {"$ref": "#/components/parameters/Offset"},
+          {"$ref": "#/components/parameters/Mailto"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Works by this member",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkListResponse"
+                }
+              }
+            }
+          },
+          "404": {"description": "Member not found"}
+        }
+      }
+    },
+    "/journals": {
+      "get": {
+        "operationId": "listJournals",
+        "summary": "Search and list journals",
+        "description": "Returns a list of journals registered with Crossref.",
+        "tags": ["Journals"],
+        "parameters": [
+          {"$ref": "#/components/parameters/Query"},
+          {"$ref": "#/components/parameters/Rows"},
+          {"$ref": "#/components/parameters/Offset"},
+          {"$ref": "#/components/parameters/Mailto"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with list of journals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalListResponse"
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"}
+        }
+      }
+    },
+    "/journals/{issn}": {
+      "get": {
+        "operationId": "getJournal",
+        "summary": "Get a single journal by ISSN",
+        "description": "Retrieves details for a journal by its ISSN.",
+        "tags": ["Journals"],
+        "parameters": [
+          {
+            "name": "issn",
+            "in": "path",
+            "required": true,
+            "description": "Journal ISSN (print or electronic)",
+            "schema": {"type": "string"},
+            "example": "0028-0836"
+          },
+          {"$ref": "#/components/parameters/Mailto"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Journal details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalResponse"
+                }
+              }
+            }
+          },
+          "404": {"description": "Journal not found"}
+        }
+      }
+    },
+    "/journals/{issn}/works": {
+      "get": {
+        "operationId": "listJournalWorks",
+        "summary": "List works in a journal",
+        "description": "Returns works published in a specific journal.",
+        "tags": ["Journals"],
+        "parameters": [
+          {
+            "name": "issn",
+            "in": "path",
+            "required": true,
+            "description": "Journal ISSN",
+            "schema": {"type": "string"}
+          },
+          {"$ref": "#/components/parameters/Query"},
+          {"$ref": "#/components/parameters/Rows"},
+          {"$ref": "#/components/parameters/Offset"},
+          {"$ref": "#/components/parameters/Mailto"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Works in this journal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkListResponse"
+                }
+              }
+            }
+          },
+          "404": {"description": "Journal not found"}
+        }
+      }
+    },
+    "/types": {
+      "get": {
+        "operationId": "listTypes",
+        "summary": "List all work types",
+        "description": "Returns a list of all work types (e.g., journal-article, book, dataset).",
+        "tags": ["Types"],
+        "parameters": [
+          {"$ref": "#/components/parameters/Mailto"}
+        ],
+        "responses": {
+          "200": {
+            "description": "List of work types",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypeListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/types/{id}": {
+      "get": {
+        "operationId": "getType",
+        "summary": "Get a single work type",
+        "description": "Retrieves details for a specific work type.",
+        "tags": ["Types"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Work type identifier (e.g., journal-article, book-chapter)",
+            "schema": {"type": "string"},
+            "example": "journal-article"
+          },
+          {"$ref": "#/components/parameters/Mailto"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Work type details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypeResponse"
+                }
+              }
+            }
+          },
+          "404": {"description": "Type not found"}
+        }
+      }
+    },
+    "/types/{id}/works": {
+      "get": {
+        "operationId": "listTypeWorks",
+        "summary": "List works of a specific type",
+        "description": "Returns works of a specific type.",
+        "tags": ["Types"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Work type identifier",
+            "schema": {"type": "string"}
+          },
+          {"$ref": "#/components/parameters/Query"},
+          {"$ref": "#/components/parameters/Rows"},
+          {"$ref": "#/components/parameters/Offset"},
+          {"$ref": "#/components/parameters/Mailto"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Works of this type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkListResponse"
+                }
+              }
+            }
+          },
+          "404": {"description": "Type not found"}
+        }
+      }
+    },
+    "/licenses": {
+      "get": {
+        "operationId": "listLicenses",
+        "summary": "List all licenses",
+        "description": "Returns a list of all licenses used by works in Crossref.",
+        "tags": ["Licenses"],
+        "parameters": [
+          {"$ref": "#/components/parameters/Query"},
+          {"$ref": "#/components/parameters/Rows"},
+          {"$ref": "#/components/parameters/Offset"},
+          {"$ref": "#/components/parameters/Mailto"}
+        ],
+        "responses": {
+          "200": {
+            "description": "List of licenses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LicenseListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prefixes/{prefix}": {
+      "get": {
+        "operationId": "getPrefix",
+        "summary": "Get prefix details",
+        "description": "Retrieves details for a DOI prefix, including the member it is assigned to.",
+        "tags": ["Prefixes"],
+        "parameters": [
+          {
+            "name": "prefix",
+            "in": "path",
+            "required": true,
+            "description": "DOI prefix (e.g., 10.1038)",
+            "schema": {"type": "string"},
+            "example": "10.1038"
+          },
+          {"$ref": "#/components/parameters/Mailto"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Prefix details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrefixResponse"
+                }
+              }
+            }
+          },
+          "404": {"description": "Prefix not found"}
+        }
+      }
+    },
+    "/prefixes/{prefix}/works": {
+      "get": {
+        "operationId": "listPrefixWorks",
+        "summary": "List works under a DOI prefix",
+        "description": "Returns works that have DOIs under a specific prefix.",
+        "tags": ["Prefixes"],
+        "parameters": [
+          {
+            "name": "prefix",
+            "in": "path",
+            "required": true,
+            "description": "DOI prefix",
+            "schema": {"type": "string"}
+          },
+          {"$ref": "#/components/parameters/Query"},
+          {"$ref": "#/components/parameters/Rows"},
+          {"$ref": "#/components/parameters/Offset"},
+          {"$ref": "#/components/parameters/Mailto"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Works under this prefix",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkListResponse"
+                }
+              }
+            }
+          },
+          "404": {"description": "Prefix not found"}
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "Query": {
+        "name": "query",
+        "in": "query",
+        "description": "Free-text search query.",
+        "schema": {"type": "string"}
+      },
+      "Rows": {
+        "name": "rows",
+        "in": "query",
+        "description": "Number of results per page (max 1000).",
+        "schema": {"type": "integer", "default": 20, "minimum": 0, "maximum": 1000}
+      },
+      "Offset": {
+        "name": "offset",
+        "in": "query",
+        "description": "Result offset for pagination (max 10000). Use cursor for deep paging.",
+        "schema": {"type": "integer", "default": 0, "minimum": 0, "maximum": 10000}
+      },
+      "Cursor": {
+        "name": "cursor",
+        "in": "query",
+        "description": "Cursor for deep paging. Use '*' for the initial request, then use the next-cursor value from the response.",
+        "schema": {"type": "string"},
+        "example": "*"
+      },
+      "Sort": {
+        "name": "sort",
+        "in": "query",
+        "description": "Sort field. Options: score, relevance, updated, deposited, indexed, published, published-print, published-online, issued, is-referenced-by-count, references-count.",
+        "schema": {"type": "string", "enum": ["score", "relevance", "updated", "deposited", "indexed", "published", "published-print", "published-online", "issued", "is-referenced-by-count", "references-count"]}
+      },
+      "Order": {
+        "name": "order",
+        "in": "query",
+        "description": "Sort order.",
+        "schema": {"type": "string", "enum": ["asc", "desc"], "default": "desc"}
+      },
+      "Mailto": {
+        "name": "mailto",
+        "in": "query",
+        "description": "Email address to enter the Polite Pool for improved rate limits. Requests with a valid mailto get faster, more reliable service.",
+        "schema": {"type": "string", "format": "email"}
+      },
+      "Select": {
+        "name": "select",
+        "in": "query",
+        "description": "Comma-separated list of fields to include in the response for partial responses.",
+        "schema": {"type": "string"},
+        "example": "DOI,title,author"
+      }
+    },
+    "schemas": {
+      "WorkListResponse": {
+        "type": "object",
+        "properties": {
+          "status": {"type": "string", "example": "ok"},
+          "message-type": {"type": "string", "example": "work-list"},
+          "message-version": {"type": "string", "example": "1.0.0"},
+          "message": {
+            "$ref": "#/components/schemas/WorkListMessage"
+          }
+        }
+      },
+      "WorkListMessage": {
+        "type": "object",
+        "properties": {
+          "facets": {"type": "object", "additionalProperties": true},
+          "total-results": {"type": "integer", "description": "Total number of matching results"},
+          "items": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/Work"}
+          },
+          "items-per-page": {"type": "integer"},
+          "query": {
+            "type": "object",
+            "properties": {
+              "start-index": {"type": "integer"},
+              "search-terms": {"type": "string", "nullable": true}
+            }
+          },
+          "next-cursor": {"type": "string", "description": "Cursor value for the next page (when using cursor-based pagination)"}
+        }
+      },
+      "WorkResponse": {
+        "type": "object",
+        "properties": {
+          "status": {"type": "string", "example": "ok"},
+          "message-type": {"type": "string", "example": "work"},
+          "message-version": {"type": "string"},
+          "message": {"$ref": "#/components/schemas/Work"}
+        }
+      },
+      "Work": {
+        "type": "object",
+        "description": "A scholarly work (article, book, dataset, etc.)",
+        "properties": {
+          "DOI": {"type": "string", "description": "The DOI of the work"},
+          "URL": {"type": "string", "format": "uri", "description": "URL form of the DOI"},
+          "type": {"type": "string", "description": "Work type (e.g., journal-article, book-chapter)"},
+          "title": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Work title(s)"
+          },
+          "subtitle": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "container-title": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Title of the containing work (journal, book, etc.)"
+          },
+          "author": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/Contributor"},
+            "description": "List of authors"
+          },
+          "editor": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/Contributor"}
+          },
+          "publisher": {"type": "string"},
+          "publisher-location": {"type": "string"},
+          "ISSN": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "ISBN": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "issued": {"$ref": "#/components/schemas/DateParts"},
+          "published": {"$ref": "#/components/schemas/DateParts"},
+          "published-print": {"$ref": "#/components/schemas/DateParts"},
+          "published-online": {"$ref": "#/components/schemas/DateParts"},
+          "deposited": {"$ref": "#/components/schemas/DateParts"},
+          "indexed": {"$ref": "#/components/schemas/DateParts"},
+          "created": {"$ref": "#/components/schemas/DateParts"},
+          "volume": {"type": "string"},
+          "issue": {"type": "string"},
+          "page": {"type": "string"},
+          "article-number": {"type": "string"},
+          "abstract": {"type": "string", "description": "Work abstract in JATS XML format"},
+          "subject": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Subject categories"
+          },
+          "is-referenced-by-count": {"type": "integer", "description": "Number of times this work is referenced"},
+          "references-count": {"type": "integer", "description": "Number of references in this work"},
+          "reference": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/Reference"}
+          },
+          "license": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/License"}
+          },
+          "link": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/Link"}
+          },
+          "funder": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/FunderRef"}
+          },
+          "member": {"type": "string", "description": "Crossref member ID"},
+          "prefix": {"type": "string", "description": "DOI prefix"},
+          "score": {"type": "number", "description": "Relevance score"},
+          "source": {"type": "string", "description": "Metadata source (usually Crossref)"},
+          "language": {"type": "string", "description": "Language code"}
+        }
+      },
+      "Contributor": {
+        "type": "object",
+        "properties": {
+          "given": {"type": "string", "description": "Given/first name"},
+          "family": {"type": "string", "description": "Family/last name"},
+          "name": {"type": "string", "description": "Full name (used for organizations)"},
+          "ORCID": {"type": "string", "description": "ORCID identifier URL"},
+          "authenticated-orcid": {"type": "boolean"},
+          "affiliation": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"}
+              }
+            }
+          },
+          "sequence": {"type": "string", "enum": ["first", "additional"]}
+        }
+      },
+      "DateParts": {
+        "type": "object",
+        "properties": {
+          "date-parts": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {"type": "integer"}
+            },
+            "description": "Array of [year, month, day] arrays"
+          },
+          "timestamp": {"type": "integer", "description": "Unix timestamp in milliseconds"},
+          "date-time": {"type": "string", "format": "date-time"}
+        }
+      },
+      "Reference": {
+        "type": "object",
+        "properties": {
+          "key": {"type": "string"},
+          "DOI": {"type": "string"},
+          "doi-asserted-by": {"type": "string"},
+          "unstructured": {"type": "string"},
+          "author": {"type": "string"},
+          "year": {"type": "string"},
+          "journal-title": {"type": "string"},
+          "volume": {"type": "string"},
+          "first-page": {"type": "string"},
+          "article-title": {"type": "string"}
+        }
+      },
+      "License": {
+        "type": "object",
+        "properties": {
+          "URL": {"type": "string", "format": "uri"},
+          "start": {"$ref": "#/components/schemas/DateParts"},
+          "delay-in-days": {"type": "integer"},
+          "content-version": {"type": "string", "enum": ["vor", "am", "tdm", "unspecified"]}
+        }
+      },
+      "Link": {
+        "type": "object",
+        "properties": {
+          "URL": {"type": "string", "format": "uri"},
+          "content-type": {"type": "string"},
+          "content-version": {"type": "string"},
+          "intended-application": {"type": "string", "enum": ["text-mining", "similarity-checking", "unspecified"]}
+        }
+      },
+      "FunderRef": {
+        "type": "object",
+        "properties": {
+          "DOI": {"type": "string"},
+          "name": {"type": "string"},
+          "doi-asserted-by": {"type": "string"},
+          "award": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      },
+      "FunderListResponse": {
+        "type": "object",
+        "properties": {
+          "status": {"type": "string"},
+          "message-type": {"type": "string", "example": "funder-list"},
+          "message-version": {"type": "string"},
+          "message": {
+            "type": "object",
+            "properties": {
+              "total-results": {"type": "integer"},
+              "items": {
+                "type": "array",
+                "items": {"$ref": "#/components/schemas/Funder"}
+              },
+              "items-per-page": {"type": "integer"},
+              "query": {"type": "object"}
+            }
+          }
+        }
+      },
+      "FunderResponse": {
+        "type": "object",
+        "properties": {
+          "status": {"type": "string"},
+          "message-type": {"type": "string", "example": "funder"},
+          "message": {"$ref": "#/components/schemas/Funder"}
+        }
+      },
+      "Funder": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "description": "Funder Registry DOI"},
+          "name": {"type": "string"},
+          "alt-names": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "uri": {"type": "string", "format": "uri"},
+          "location": {"type": "string"},
+          "work-count": {"type": "integer"},
+          "descendant-work-count": {"type": "integer"},
+          "descendants": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "hierarchy": {"type": "object"},
+          "hierarchy-names": {"type": "object"},
+          "tokens": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      },
+      "MemberListResponse": {
+        "type": "object",
+        "properties": {
+          "status": {"type": "string"},
+          "message-type": {"type": "string", "example": "member-list"},
+          "message": {
+            "type": "object",
+            "properties": {
+              "total-results": {"type": "integer"},
+              "items": {
+                "type": "array",
+                "items": {"$ref": "#/components/schemas/Member"}
+              },
+              "items-per-page": {"type": "integer"},
+              "query": {"type": "object"}
+            }
+          }
+        }
+      },
+      "MemberResponse": {
+        "type": "object",
+        "properties": {
+          "status": {"type": "string"},
+          "message-type": {"type": "string", "example": "member"},
+          "message": {"$ref": "#/components/schemas/Member"}
+        }
+      },
+      "Member": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer", "description": "Crossref member ID"},
+          "primary-name": {"type": "string"},
+          "names": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "prefixes": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "location": {"type": "string"},
+          "counts": {
+            "type": "object",
+            "properties": {
+              "total-dois": {"type": "integer"},
+              "current-dois": {"type": "integer"},
+              "backfile-dois": {"type": "integer"}
+            }
+          },
+          "prefix": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {"type": "string"},
+                "name": {"type": "string"},
+                "public-references": {"type": "boolean"}
+              }
+            }
+          },
+          "tokens": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "last-status-check-time": {"type": "integer"}
+        }
+      },
+      "JournalListResponse": {
+        "type": "object",
+        "properties": {
+          "status": {"type": "string"},
+          "message-type": {"type": "string", "example": "journal-list"},
+          "message": {
+            "type": "object",
+            "properties": {
+              "total-results": {"type": "integer"},
+              "items": {
+                "type": "array",
+                "items": {"$ref": "#/components/schemas/Journal"}
+              },
+              "items-per-page": {"type": "integer"},
+              "query": {"type": "object"}
+            }
+          }
+        }
+      },
+      "JournalResponse": {
+        "type": "object",
+        "properties": {
+          "status": {"type": "string"},
+          "message-type": {"type": "string", "example": "journal"},
+          "message": {"$ref": "#/components/schemas/Journal"}
+        }
+      },
+      "Journal": {
+        "type": "object",
+        "properties": {
+          "ISSN": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "issn-type": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {"type": "string"},
+                "type": {"type": "string", "enum": ["print", "electronic"]}
+              }
+            }
+          },
+          "title": {"type": "string"},
+          "publisher": {"type": "string"},
+          "subjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ASJC": {"type": "integer"},
+                "name": {"type": "string"}
+              }
+            }
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "total-dois": {"type": "integer"},
+              "current-dois": {"type": "integer"},
+              "backfile-dois": {"type": "integer"}
+            }
+          },
+          "last-status-check-time": {"type": "integer"}
+        }
+      },
+      "TypeListResponse": {
+        "type": "object",
+        "properties": {
+          "status": {"type": "string"},
+          "message-type": {"type": "string", "example": "type-list"},
+          "message": {
+            "type": "object",
+            "properties": {
+              "total-results": {"type": "integer"},
+              "items": {
+                "type": "array",
+                "items": {"$ref": "#/components/schemas/Type"}
+              }
+            }
+          }
+        }
+      },
+      "TypeResponse": {
+        "type": "object",
+        "properties": {
+          "status": {"type": "string"},
+          "message-type": {"type": "string", "example": "type"},
+          "message": {"$ref": "#/components/schemas/Type"}
+        }
+      },
+      "Type": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "label": {"type": "string"}
+        }
+      },
+      "LicenseListResponse": {
+        "type": "object",
+        "properties": {
+          "status": {"type": "string"},
+          "message-type": {"type": "string", "example": "license-list"},
+          "message": {
+            "type": "object",
+            "properties": {
+              "total-results": {"type": "integer"},
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "URL": {"type": "string", "format": "uri"},
+                    "work-count": {"type": "integer"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "PrefixResponse": {
+        "type": "object",
+        "properties": {
+          "status": {"type": "string"},
+          "message-type": {"type": "string", "example": "prefix"},
+          "message": {
+            "type": "object",
+            "properties": {
+              "member": {"type": "string", "description": "URL to the member resource"},
+              "name": {"type": "string"},
+              "prefix": {"type": "string"}
+            }
+          }
+        }
+      }
+    }
+  }
+}
