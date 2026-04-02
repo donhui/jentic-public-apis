@@ -1,0 +1,673 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Songkick API",
+    "description": "The Songkick API provides access to the world's largest database of live music events. Search for upcoming and past events, venues, artists, and locations. Retrieve event details, artist calendars, venue calendars, user trackings, and similar artists.",
+    "version": "3.0",
+    "contact": {
+      "name": "Songkick",
+      "url": "https://www.songkick.com/developer/"
+    },
+    "termsOfService": "https://www.songkick.com/developer/api-terms-of-use",
+    "x-jentic-source-url": "https://www.songkick.com/developer/"
+  },
+  "servers": [
+    {
+      "url": "https://api.songkick.com/api/3.0",
+      "description": "Songkick API v3.0 production server"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    { "name": "Events", "description": "Event search and details" },
+    { "name": "Artists", "description": "Artist calendar and similar artists" },
+    { "name": "Venues", "description": "Venue details and calendar" },
+    { "name": "Locations", "description": "Metro area events and location search" },
+    { "name": "Users", "description": "User events and calendar" },
+    { "name": "Search", "description": "Search for artists, venues, and locations" }
+  ],
+  "paths": {
+    "/events.json": {
+      "get": {
+        "operationId": "searchEvents",
+        "summary": "Search events",
+        "description": "Search for upcoming events by artist name or location. At least one of artist_name or location is required.",
+        "tags": ["Events"],
+        "parameters": [
+          { "name": "apikey", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Your Songkick API key" },
+          { "name": "artist_name", "in": "query", "schema": { "type": "string" }, "description": "Artist name to search for" },
+          { "name": "location", "in": "query", "schema": { "type": "string" }, "description": "Location reference (e.g., sk:<metro_area_id>, geo:<lat>,<lng>, ip:<ip>, clientip)" },
+          { "name": "min_date", "in": "query", "schema": { "type": "string", "format": "date" }, "description": "Start date filter (YYYY-MM-DD). Must be used with max_date." },
+          { "name": "max_date", "in": "query", "schema": { "type": "string", "format": "date" }, "description": "End date filter (YYYY-MM-DD). Must be used with min_date." },
+          { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["Concert", "Festival"] }, "description": "Filter by event type" },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 }, "description": "Results page number" },
+          { "name": "per_page", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 50 }, "description": "Results per page (max 50)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of events",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EventResultsPage" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/events/{eventId}.json": {
+      "get": {
+        "operationId": "getEventDetails",
+        "summary": "Get event details",
+        "description": "Retrieve complete details for a specific event including venue, performances, and location.",
+        "tags": ["Events"],
+        "parameters": [
+          { "name": "eventId", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "The event ID" },
+          { "name": "apikey", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Event details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EventResultsPage" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/artists/{artistId}/calendar.json": {
+      "get": {
+        "operationId": "getArtistUpcomingEvents",
+        "summary": "Get artist's upcoming events",
+        "description": "Retrieve upcoming events for a specific artist.",
+        "tags": ["Artists"],
+        "parameters": [
+          { "name": "artistId", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "The artist ID" },
+          { "name": "apikey", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "min_date", "in": "query", "schema": { "type": "string", "format": "date" }, "description": "Start date (YYYY-MM-DD). Must be used with max_date." },
+          { "name": "max_date", "in": "query", "schema": { "type": "string", "format": "date" }, "description": "End date (YYYY-MM-DD). Must be used with min_date." },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "per_page", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 50 } },
+          { "name": "order", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"], "default": "asc" }, "description": "Sort order by date" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of upcoming events",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EventResultsPage" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/artists/mbid:{musicBrainzId}/calendar.json": {
+      "get": {
+        "operationId": "getArtistUpcomingEventsByMbid",
+        "summary": "Get artist's upcoming events by MusicBrainz ID",
+        "description": "Retrieve upcoming events for an artist using their MusicBrainz ID.",
+        "tags": ["Artists"],
+        "parameters": [
+          { "name": "musicBrainzId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "The MusicBrainz ID" },
+          { "name": "apikey", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "min_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "max_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "per_page", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 50 } },
+          { "name": "order", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"], "default": "asc" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of upcoming events",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EventResultsPage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/artists/{artistId}/gigography.json": {
+      "get": {
+        "operationId": "getArtistPastEvents",
+        "summary": "Get artist's past events (gigography)",
+        "description": "Retrieve past events for a specific artist.",
+        "tags": ["Artists"],
+        "parameters": [
+          { "name": "artistId", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "The artist ID" },
+          { "name": "apikey", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "min_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "max_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "per_page", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 50 } },
+          { "name": "order", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"], "default": "asc" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of past events",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EventResultsPage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/artists/{artistId}/similar_artists.json": {
+      "get": {
+        "operationId": "getSimilarArtists",
+        "summary": "Get similar artists",
+        "description": "Retrieve artists similar to the specified artist.",
+        "tags": ["Artists"],
+        "parameters": [
+          { "name": "artistId", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "apikey", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "per_page", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 50 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of similar artists",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ArtistResultsPage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/venues/{venueId}.json": {
+      "get": {
+        "operationId": "getVenueDetails",
+        "summary": "Get venue details",
+        "description": "Retrieve detailed information about a specific venue.",
+        "tags": ["Venues"],
+        "parameters": [
+          { "name": "venueId", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "The venue ID" },
+          { "name": "apikey", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Venue details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/VenueResultsPage" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/venues/{venueId}/calendar.json": {
+      "get": {
+        "operationId": "getVenueUpcomingEvents",
+        "summary": "Get venue's upcoming events",
+        "description": "Retrieve upcoming events at a specific venue.",
+        "tags": ["Venues"],
+        "parameters": [
+          { "name": "venueId", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "apikey", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "min_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "max_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "per_page", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 50 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of upcoming events",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EventResultsPage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metro_areas/{metroAreaId}/calendar.json": {
+      "get": {
+        "operationId": "getMetroAreaUpcomingEvents",
+        "summary": "Get metro area's upcoming events",
+        "description": "Retrieve upcoming events in a specific metro area.",
+        "tags": ["Locations"],
+        "parameters": [
+          { "name": "metroAreaId", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "The metro area ID" },
+          { "name": "apikey", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "min_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "max_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "per_page", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 50 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of upcoming events",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EventResultsPage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{username}/calendar.json": {
+      "get": {
+        "operationId": "getUserCalendar",
+        "summary": "Get user's calendar",
+        "description": "Retrieve upcoming events on a user's calendar, filtered by reason (tracked artist or attendance).",
+        "tags": ["Users"],
+        "parameters": [
+          { "name": "username", "in": "path", "required": true, "schema": { "type": "string" }, "description": "The username" },
+          { "name": "apikey", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "reason", "in": "query", "required": true, "schema": { "type": "string", "enum": ["tracked_artist", "attendance"] }, "description": "Reason for calendar entry" },
+          { "name": "created_after", "in": "query", "schema": { "type": "string", "format": "date-time" }, "description": "Filter by creation date (ISO8601)" },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "per_page", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 50 } },
+          { "name": "order", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"], "default": "asc" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "User's calendar events",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EventResultsPage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{username}/events.json": {
+      "get": {
+        "operationId": "getUserEvents",
+        "summary": "Get user's events",
+        "description": "Retrieve events the user is attending or might attend.",
+        "tags": ["Users"],
+        "parameters": [
+          { "name": "username", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "apikey", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "attendance", "in": "query", "schema": { "type": "string", "enum": ["all", "im_going", "i_might_go"], "default": "im_going" }, "description": "Filter by attendance status" },
+          { "name": "created_after", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "per_page", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 50 } },
+          { "name": "order", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"], "default": "asc" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "User's events",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EventResultsPage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search/artists.json": {
+      "get": {
+        "operationId": "searchArtists",
+        "summary": "Search for artists",
+        "description": "Search for artists by name.",
+        "tags": ["Search"],
+        "parameters": [
+          { "name": "apikey", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "query", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Artist name to search for" },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "per_page", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 50 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Artist search results",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ArtistResultsPage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search/venues.json": {
+      "get": {
+        "operationId": "searchVenues",
+        "summary": "Search for venues",
+        "description": "Search for venues by name.",
+        "tags": ["Search"],
+        "parameters": [
+          { "name": "apikey", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "query", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Venue name to search for" },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "per_page", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 50 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Venue search results",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/VenueResultsPage" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search/locations.json": {
+      "get": {
+        "operationId": "searchLocations",
+        "summary": "Search for locations",
+        "description": "Search for locations by name, coordinates, or IP address.",
+        "tags": ["Search"],
+        "parameters": [
+          { "name": "apikey", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "query", "in": "query", "schema": { "type": "string" }, "description": "Location name to search for (use this OR location param)" },
+          { "name": "location", "in": "query", "schema": { "type": "string" }, "description": "Location reference: geo:<lat>,<lng>, ip:<ip_address>, or clientip" },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "per_page", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 50 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Location search results",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LocationResultsPage" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "apikey",
+        "description": "Songkick API key obtained from https://www.songkick.com/api_key_requests/new"
+      }
+    },
+    "schemas": {
+      "EventResultsPage": {
+        "type": "object",
+        "properties": {
+          "resultsPage": {
+            "type": "object",
+            "properties": {
+              "status": { "type": "string", "enum": ["ok", "error"] },
+              "results": {
+                "type": "object",
+                "properties": {
+                  "event": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/Event" }
+                  }
+                }
+              },
+              "totalEntries": { "type": "integer" },
+              "perPage": { "type": "integer" },
+              "page": { "type": "integer" }
+            }
+          }
+        }
+      },
+      "ArtistResultsPage": {
+        "type": "object",
+        "properties": {
+          "resultsPage": {
+            "type": "object",
+            "properties": {
+              "status": { "type": "string" },
+              "results": {
+                "type": "object",
+                "properties": {
+                  "artist": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/Artist" }
+                  }
+                }
+              },
+              "totalEntries": { "type": "integer" },
+              "perPage": { "type": "integer" },
+              "page": { "type": "integer" }
+            }
+          }
+        }
+      },
+      "VenueResultsPage": {
+        "type": "object",
+        "properties": {
+          "resultsPage": {
+            "type": "object",
+            "properties": {
+              "status": { "type": "string" },
+              "results": {
+                "type": "object",
+                "properties": {
+                  "venue": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/Venue" }
+                  }
+                }
+              },
+              "totalEntries": { "type": "integer" },
+              "perPage": { "type": "integer" },
+              "page": { "type": "integer" }
+            }
+          }
+        }
+      },
+      "LocationResultsPage": {
+        "type": "object",
+        "properties": {
+          "resultsPage": {
+            "type": "object",
+            "properties": {
+              "status": { "type": "string" },
+              "results": {
+                "type": "object",
+                "properties": {
+                  "location": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/Location" }
+                  }
+                }
+              },
+              "totalEntries": { "type": "integer" },
+              "perPage": { "type": "integer" },
+              "page": { "type": "integer" }
+            }
+          }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "type": { "type": "string", "enum": ["Concert", "Festival"] },
+          "uri": { "type": "string", "format": "uri" },
+          "displayName": { "type": "string" },
+          "start": {
+            "type": "object",
+            "properties": {
+              "date": { "type": "string", "format": "date" },
+              "time": { "type": "string" },
+              "datetime": { "type": "string", "format": "date-time" }
+            }
+          },
+          "end": {
+            "type": "object",
+            "properties": {
+              "date": { "type": "string", "format": "date" },
+              "time": { "type": "string" }
+            }
+          },
+          "status": { "type": "string", "enum": ["ok", "cancelled", "postponed"] },
+          "ageRestriction": { "type": "string", "nullable": true },
+          "flaggedAsEnded": { "type": "boolean" },
+          "popularity": { "type": "number" },
+          "performance": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Performance" }
+          },
+          "venue": { "$ref": "#/components/schemas/Venue" },
+          "location": { "$ref": "#/components/schemas/Location" }
+        }
+      },
+      "Performance": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "displayName": { "type": "string" },
+          "billing": { "type": "string", "enum": ["headline", "support"] },
+          "billingIndex": { "type": "integer" },
+          "artist": { "$ref": "#/components/schemas/Artist" }
+        }
+      },
+      "Artist": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "uri": { "type": "string", "format": "uri" },
+          "displayName": { "type": "string" },
+          "identifier": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "mbid": { "type": "string" },
+                "href": { "type": "string", "format": "uri" }
+              }
+            }
+          },
+          "onTourUntil": { "type": "string", "format": "date", "nullable": true }
+        }
+      },
+      "Venue": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "uri": { "type": "string", "format": "uri" },
+          "displayName": { "type": "string" },
+          "description": { "type": "string", "nullable": true },
+          "lat": { "type": "number", "nullable": true },
+          "lng": { "type": "number", "nullable": true },
+          "street": { "type": "string", "nullable": true },
+          "zip": { "type": "string", "nullable": true },
+          "phone": { "type": "string", "nullable": true },
+          "website": { "type": "string", "format": "uri", "nullable": true },
+          "capacity": { "type": "integer", "nullable": true },
+          "city": { "$ref": "#/components/schemas/City" },
+          "metroArea": { "$ref": "#/components/schemas/MetroArea" }
+        }
+      },
+      "Location": {
+        "type": "object",
+        "properties": {
+          "city": { "$ref": "#/components/schemas/City" },
+          "metroArea": { "$ref": "#/components/schemas/MetroArea" },
+          "lat": { "type": "number" },
+          "lng": { "type": "number" }
+        }
+      },
+      "City": {
+        "type": "object",
+        "properties": {
+          "displayName": { "type": "string" },
+          "country": {
+            "type": "object",
+            "properties": {
+              "displayName": { "type": "string" }
+            }
+          },
+          "state": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "displayName": { "type": "string" }
+            }
+          }
+        }
+      },
+      "MetroArea": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "uri": { "type": "string", "format": "uri" },
+          "displayName": { "type": "string" },
+          "country": {
+            "type": "object",
+            "properties": {
+              "displayName": { "type": "string" }
+            }
+          },
+          "state": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "displayName": { "type": "string" }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "resultsPage": {
+            "type": "object",
+            "properties": {
+              "status": { "type": "string", "enum": ["error"] },
+              "error": {
+                "type": "object",
+                "properties": {
+                  "message": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid request parameters",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Invalid API key",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      }
+    }
+  }
+}
