@@ -1,0 +1,319 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Elsevier API",
+    "version": "1.0.0",
+    "description": "Elsevier Developer API providing access to Scopus, ScienceDirect, and abstract retrieval for scholarly content.",
+    "x-jentic-source-url": "https://dev.elsevier.com/"
+  },
+  "servers": [
+    {
+      "url": "https://api.elsevier.com",
+      "description": "Elsevier API production server"
+    }
+  ],
+  "paths": {
+    "/content/search/scopus": {
+      "get": {
+        "operationId": "searchScopus",
+        "summary": "Search the Scopus database",
+        "description": "Search the Scopus database of abstracts and citations using Boolean queries.",
+        "tags": ["Scopus"],
+        "parameters": [
+          { "name": "query", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Boolean search expression" },
+          { "name": "view", "in": "query", "schema": { "type": "string", "enum": ["STANDARD", "COMPLETE"] }, "description": "Response field set" },
+          { "name": "field", "in": "query", "schema": { "type": "string" }, "description": "Comma-delimited specific fields" },
+          { "name": "start", "in": "query", "schema": { "type": "integer", "default": 0 }, "description": "Results offset" },
+          { "name": "count", "in": "query", "schema": { "type": "integer" }, "description": "Max results returned" },
+          { "name": "sort", "in": "query", "schema": { "type": "string" }, "description": "Sort field with +/- prefix" },
+          { "name": "date", "in": "query", "schema": { "type": "string" }, "description": "Date range (e.g., 2002-2007)" },
+          { "name": "facets", "in": "query", "schema": { "type": "string" }, "description": "Faceted navigation parameters" },
+          { "name": "subj", "in": "query", "schema": { "type": "string" }, "description": "Subject area code filter" },
+          { "name": "content", "in": "query", "schema": { "type": "string", "enum": ["all", "core", "dummy"], "default": "all" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ScopusSearchResponse" }
+              }
+            }
+          },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Authentication error" },
+          "403": { "description": "Authorization/entitlements error" },
+          "429": { "description": "Quota exceeded" },
+          "500": { "description": "Generic error" }
+        }
+      }
+    },
+    "/content/search/sciencedirect": {
+      "get": {
+        "operationId": "searchScienceDirectLegacy",
+        "summary": "Search ScienceDirect (legacy GET)",
+        "description": "Legacy search interface for ScienceDirect full-text articles.",
+        "tags": ["ScienceDirect"],
+        "parameters": [
+          { "name": "query", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Boolean search expression" },
+          { "name": "view", "in": "query", "schema": { "type": "string", "default": "STANDARD" } },
+          { "name": "field", "in": "query", "schema": { "type": "string" }, "description": "Comma-delimited field names" },
+          { "name": "date", "in": "query", "schema": { "type": "string" }, "description": "Date range (e.g., 2002-2007)" },
+          { "name": "start", "in": "query", "schema": { "type": "integer", "default": 0, "maximum": 6000 } },
+          { "name": "count", "in": "query", "schema": { "type": "integer", "enum": [10, 25, 50, 100] } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["coverDate", "relevance"] } },
+          { "name": "suppressNavLinks", "in": "query", "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SearchResponse" }
+              }
+            }
+          },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Authentication error" },
+          "403": { "description": "Authorization error" },
+          "429": { "description": "Quota exceeded" },
+          "500": { "description": "Generic error" }
+        }
+      },
+      "put": {
+        "operationId": "searchScienceDirect",
+        "summary": "Search ScienceDirect (v2 PUT)",
+        "description": "Search against the ScienceDirect cluster containing serial/nonserial full-text articles.",
+        "tags": ["ScienceDirect"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "qs": { "type": "string", "description": "Query string" },
+                  "filters": { "type": "object", "description": "Search filters" },
+                  "display": { "type": "object", "description": "Display options" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SearchResponse" }
+              }
+            }
+          },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Authentication error" },
+          "403": { "description": "Authorization error" },
+          "429": { "description": "Quota exceeded" },
+          "500": { "description": "Generic error" }
+        }
+      }
+    },
+    "/content/abstract/scopus_id/{scopus_id}": {
+      "get": {
+        "operationId": "getAbstractByScopusId",
+        "summary": "Retrieve abstract by Scopus ID",
+        "tags": ["Abstract Retrieval"],
+        "parameters": [
+          { "name": "scopus_id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "view", "in": "query", "schema": { "type": "string", "enum": ["META", "META_ABS", "FULL", "REF", "ENTITLED"], "default": "META" } },
+          { "name": "field", "in": "query", "schema": { "type": "string" } },
+          { "name": "startref", "in": "query", "schema": { "type": "integer" } },
+          { "name": "refcount", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Abstract data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AbstractResponse" }
+              }
+            }
+          },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Authentication error" },
+          "403": { "description": "Authorization error" },
+          "404": { "description": "Resource not found" },
+          "429": { "description": "Quota exceeded" },
+          "500": { "description": "Generic error" }
+        }
+      }
+    },
+    "/content/abstract/doi/{doi}": {
+      "get": {
+        "operationId": "getAbstractByDoi",
+        "summary": "Retrieve abstract by DOI",
+        "tags": ["Abstract Retrieval"],
+        "parameters": [
+          { "name": "doi", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "view", "in": "query", "schema": { "type": "string", "enum": ["META", "META_ABS", "FULL", "REF", "ENTITLED"], "default": "META" } },
+          { "name": "field", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Abstract data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AbstractResponse" }
+              }
+            }
+          },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Authentication error" },
+          "404": { "description": "Resource not found" },
+          "429": { "description": "Quota exceeded" }
+        }
+      }
+    },
+    "/content/abstract/eid/{eid}": {
+      "get": {
+        "operationId": "getAbstractByEid",
+        "summary": "Retrieve abstract by EID",
+        "tags": ["Abstract Retrieval"],
+        "parameters": [
+          { "name": "eid", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "view", "in": "query", "schema": { "type": "string", "enum": ["META", "META_ABS", "FULL", "REF", "ENTITLED"], "default": "META" } },
+          { "name": "field", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Abstract data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AbstractResponse" }
+              }
+            }
+          },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Authentication error" },
+          "404": { "description": "Resource not found" },
+          "429": { "description": "Quota exceeded" }
+        }
+      }
+    },
+    "/content/abstract/pii/{pii}": {
+      "get": {
+        "operationId": "getAbstractByPii",
+        "summary": "Retrieve abstract by PII",
+        "tags": ["Abstract Retrieval"],
+        "parameters": [
+          { "name": "pii", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "view", "in": "query", "schema": { "type": "string", "enum": ["META", "META_ABS", "FULL", "REF", "ENTITLED"], "default": "META" } },
+          { "name": "field", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Abstract data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AbstractResponse" }
+              }
+            }
+          },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Authentication error" },
+          "404": { "description": "Resource not found" },
+          "429": { "description": "Quota exceeded" }
+        }
+      }
+    },
+    "/content/abstract/pubmed_id/{pubmed_id}": {
+      "get": {
+        "operationId": "getAbstractByPubmedId",
+        "summary": "Retrieve abstract by PubMed ID",
+        "tags": ["Abstract Retrieval"],
+        "parameters": [
+          { "name": "pubmed_id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "view", "in": "query", "schema": { "type": "string", "enum": ["META", "META_ABS", "FULL", "REF", "ENTITLED"], "default": "META" } },
+          { "name": "field", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Abstract data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AbstractResponse" }
+              }
+            }
+          },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Authentication error" },
+          "404": { "description": "Resource not found" },
+          "429": { "description": "Quota exceeded" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-ELS-APIKey",
+        "description": "Elsevier developer API key"
+      },
+      "instToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-ELS-Insttoken",
+        "description": "Institution token"
+      }
+    },
+    "schemas": {
+      "ScopusSearchResponse": {
+        "type": "object",
+        "properties": {
+          "search-results": {
+            "type": "object",
+            "properties": {
+              "opensearch:totalResults": { "type": "string" },
+              "opensearch:startIndex": { "type": "string" },
+              "opensearch:itemsPerPage": { "type": "string" },
+              "entry": {
+                "type": "array",
+                "items": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "SearchResponse": {
+        "type": "object",
+        "properties": {
+          "search-results": {
+            "type": "object",
+            "properties": {
+              "opensearch:totalResults": { "type": "string" },
+              "entry": {
+                "type": "array",
+                "items": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "AbstractResponse": {
+        "type": "object",
+        "properties": {
+          "abstracts-retrieval-response": {
+            "type": "object",
+            "properties": {
+              "coredata": { "type": "object" },
+              "authors": { "type": "object" },
+              "affiliation": { "type": "object" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [{ "apiKey": [] }]
+}
