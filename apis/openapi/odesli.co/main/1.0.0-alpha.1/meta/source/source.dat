@@ -1,0 +1,304 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Songlink / Odesli API",
+    "description": "The Songlink/Odesli API allows you to look up a song, album, or artist across multiple streaming platforms. Given a URL from any supported platform (Spotify, Apple Music, YouTube, Deezer, Tidal, etc.), it returns links to the same content on all other supported platforms. Useful for creating universal music sharing links.",
+    "version": "1.0.0-alpha.1",
+    "contact": {
+      "name": "Songlink / Odesli",
+      "url": "https://odesli.co"
+    },
+    "termsOfService": "https://odesli.co/terms",
+    "x-jentic-source-url": "https://www.notion.so/API-d0ebe08a5e304a55928405eb682f6741"
+  },
+  "servers": [
+    {
+      "url": "https://api.song.link/v1-alpha.1",
+      "description": "Songlink/Odesli API v1-alpha.1 production server"
+    }
+  ],
+  "tags": [
+    { "name": "Links", "description": "Cross-platform music link resolution" }
+  ],
+  "paths": {
+    "/links": {
+      "get": {
+        "operationId": "getLinks",
+        "summary": "Get links for a song or album across platforms",
+        "description": "Given a streaming platform URL (or platform + entity type + unique ID), returns links to the same content on all supported platforms. Supports Spotify, Apple Music, YouTube, YouTube Music, Deezer, Tidal, Amazon Music, SoundCloud, Pandora, Napster, and more.",
+        "tags": ["Links"],
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "schema": { "type": "string", "format": "uri" },
+            "description": "The URL of the song/album on any supported platform (e.g., a Spotify or Apple Music URL). Either this or the platform/type/id combination is required."
+          },
+          {
+            "name": "platform",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "spotify",
+                "itunes",
+                "appleMusic",
+                "youtube",
+                "youtubeMusic",
+                "google",
+                "googleStore",
+                "pandora",
+                "deezer",
+                "tidal",
+                "amazonStore",
+                "amazonMusic",
+                "soundcloud",
+                "napster",
+                "yandex",
+                "spinrilla",
+                "audius",
+                "audiomack",
+                "anghami",
+                "boomplay"
+              ]
+            },
+            "description": "The platform of the entity (used with type and id instead of url)"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["song", "album"]
+            },
+            "description": "The entity type (used with platform and id instead of url)"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "The platform-specific unique ID (used with platform and type instead of url)"
+          },
+          {
+            "name": "userCountry",
+            "in": "query",
+            "schema": { "type": "string", "pattern": "^[A-Z]{2}$" },
+            "description": "ISO 3166-1 alpha-2 country code. Affects which links are returned based on availability."
+          },
+          {
+            "name": "songIfSingle",
+            "in": "query",
+            "schema": { "type": "boolean" },
+            "description": "If true, when the input is a single-track album, the API returns the song instead of the album."
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "API key for higher rate limits. Optional for basic usage."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with cross-platform links",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LinksResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "key",
+        "description": "Optional API key for higher rate limits. Contact Songlink/Odesli for a key."
+      }
+    },
+    "schemas": {
+      "LinksResponse": {
+        "type": "object",
+        "properties": {
+          "entityUniqueId": {
+            "type": "string",
+            "description": "The unique identifier for the matched entity (format: PLATFORM_ENTITYTYPE::ID)"
+          },
+          "userCountry": {
+            "type": "string",
+            "description": "The country code used for the response"
+          },
+          "pageUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "The Songlink/Odesli page URL that displays all available links"
+          },
+          "linksByPlatform": {
+            "type": "object",
+            "description": "Map of platform names to their link objects",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/PlatformLink"
+            }
+          },
+          "entitiesByUniqueId": {
+            "type": "object",
+            "description": "Map of entity unique IDs to their details",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Entity"
+            }
+          }
+        },
+        "required": ["entityUniqueId", "userCountry", "pageUrl", "linksByPlatform", "entitiesByUniqueId"]
+      },
+      "PlatformLink": {
+        "type": "object",
+        "properties": {
+          "entityUniqueId": {
+            "type": "string",
+            "description": "Reference to an entity in entitiesByUniqueId"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The direct URL to the content on this platform"
+          },
+          "nativeAppUriMobile": {
+            "type": "string",
+            "nullable": true,
+            "description": "URI to open the content in the native mobile app"
+          },
+          "nativeAppUriDesktop": {
+            "type": "string",
+            "nullable": true,
+            "description": "URI to open the content in the native desktop app"
+          }
+        },
+        "required": ["entityUniqueId", "url"]
+      },
+      "Entity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The platform-specific ID"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["song", "album"],
+            "description": "The entity type"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "description": "The title of the song or album"
+          },
+          "artistName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The artist name"
+          },
+          "thumbnailUrl": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "description": "URL to the album/song artwork thumbnail"
+          },
+          "thumbnailWidth": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Width of the thumbnail in pixels"
+          },
+          "thumbnailHeight": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Height of the thumbnail in pixels"
+          },
+          "apiProvider": {
+            "type": "string",
+            "enum": [
+              "spotify",
+              "itunes",
+              "youtube",
+              "google",
+              "pandora",
+              "deezer",
+              "tidal",
+              "amazon",
+              "soundcloud",
+              "napster",
+              "yandex",
+              "spinrilla",
+              "audius",
+              "audiomack",
+              "anghami",
+              "boomplay"
+            ],
+            "description": "The API provider that supplied this entity data"
+          },
+          "platforms": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The platform(s) this entity is available on"
+          }
+        },
+        "required": ["id", "type", "apiProvider", "platforms"]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "integer",
+            "description": "HTTP status code"
+          },
+          "code": {
+            "type": "string",
+            "description": "Machine-readable error code"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message"
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid request. Missing or malformed parameters.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "No matching content found across platforms.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "Rate limit exceeded. Use an API key for higher limits.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": {
+              "statusCode": 429,
+              "code": "TOO_MANY_REQUESTS"
+            }
+          }
+        }
+      }
+    }
+  }
+}
