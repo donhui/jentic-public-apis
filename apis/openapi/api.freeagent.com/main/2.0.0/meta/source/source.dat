@@ -1,0 +1,2177 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "FreeAgent API",
+    "description": "REST API for FreeAgent accounting software. All endpoints are under https://api.freeagent.com/v2/. Authentication is via OAuth 2.0. Supports JSON and XML responses.",
+    "version": "2.0.0",
+    "x-jentic-source-url": "https://dev.freeagent.com/docs/"
+  },
+  "servers": [
+    {
+      "url": "https://api.freeagent.com/v2"
+    }
+  ],
+  "security": [
+    {
+      "oauth2": []
+    }
+  ],
+  "tags": [
+    { "name": "Invoices", "description": "Invoice management" },
+    { "name": "Contacts", "description": "Contact management" },
+    { "name": "Projects", "description": "Project management" },
+    { "name": "Tasks", "description": "Task management" },
+    { "name": "Timeslips", "description": "Time tracking" },
+    { "name": "Expenses", "description": "Expense management" },
+    { "name": "Bills", "description": "Bill management" },
+    { "name": "BankAccounts", "description": "Bank account management" },
+    { "name": "BankTransactions", "description": "Bank transaction management" },
+    { "name": "Users", "description": "User management" },
+    { "name": "Categories", "description": "Category management" }
+  ],
+  "paths": {
+    "/invoices": {
+      "get": {
+        "operationId": "listInvoices",
+        "summary": "List all invoices",
+        "tags": ["Invoices"],
+        "parameters": [
+          {
+            "name": "view",
+            "in": "query",
+            "description": "Filter invoices by view",
+            "schema": { "type": "string", "enum": ["all", "recent_open_or_overdue", "open", "overdue", "draft", "paid", "scheduled_to_email", "thank_you_emails", "reminder_emails", "last_N_months"] }
+          },
+          {
+            "name": "contact",
+            "in": "query",
+            "description": "Filter by contact URL",
+            "schema": { "type": "string", "format": "uri" }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "description": "Filter by project URL",
+            "schema": { "type": "string", "format": "uri" }
+          },
+          {
+            "name": "updated_since",
+            "in": "query",
+            "description": "ISO 8601 timestamp",
+            "schema": { "type": "string", "format": "date-time" }
+          },
+          {
+            "name": "nested_invoice_items",
+            "in": "query",
+            "schema": { "type": "boolean" }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["created_at", "updated_at", "-created_at", "-updated_at"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of invoices",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invoices": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Invoice" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createInvoice",
+        "summary": "Create an invoice",
+        "tags": ["Invoices"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["invoice"],
+                "properties": {
+                  "invoice": { "$ref": "#/components/schemas/InvoiceCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created invoice",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invoice": { "$ref": "#/components/schemas/Invoice" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/invoices/{id}": {
+      "get": {
+        "operationId": "getInvoice",
+        "summary": "Get a single invoice",
+        "tags": ["Invoices"],
+        "parameters": [
+          { "$ref": "#/components/parameters/resourceId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invoice details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invoice": { "$ref": "#/components/schemas/Invoice" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateInvoice",
+        "summary": "Update an invoice",
+        "tags": ["Invoices"],
+        "parameters": [
+          { "$ref": "#/components/parameters/resourceId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["invoice"],
+                "properties": {
+                  "invoice": { "$ref": "#/components/schemas/InvoiceCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Invoice updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteInvoice",
+        "summary": "Delete an invoice",
+        "tags": ["Invoices"],
+        "parameters": [
+          { "$ref": "#/components/parameters/resourceId" }
+        ],
+        "responses": {
+          "200": { "description": "Invoice deleted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/invoices/{id}/pdf": {
+      "get": {
+        "operationId": "getInvoicePdf",
+        "summary": "Get invoice as PDF",
+        "tags": ["Invoices"],
+        "parameters": [
+          { "$ref": "#/components/parameters/resourceId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "PDF file",
+            "content": {
+              "application/pdf": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/invoices/{id}/duplicate": {
+      "post": {
+        "operationId": "duplicateInvoice",
+        "summary": "Duplicate an invoice",
+        "tags": ["Invoices"],
+        "parameters": [
+          { "$ref": "#/components/parameters/resourceId" }
+        ],
+        "responses": {
+          "201": {
+            "description": "Duplicated invoice",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invoice": { "$ref": "#/components/schemas/Invoice" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/invoices/{id}/send_email": {
+      "post": {
+        "operationId": "sendInvoiceEmail",
+        "summary": "Email an invoice",
+        "tags": ["Invoices"],
+        "parameters": [
+          { "$ref": "#/components/parameters/resourceId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "object",
+                    "properties": {
+                      "to": { "type": "string" },
+                      "subject": { "type": "string" },
+                      "body": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Email sent" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/invoices/{id}/transitions/mark_as_sent": {
+      "put": {
+        "operationId": "markInvoiceAsSent",
+        "summary": "Mark invoice as sent",
+        "tags": ["Invoices"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": { "description": "Invoice marked as sent" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/invoices/{id}/transitions/mark_as_draft": {
+      "put": {
+        "operationId": "markInvoiceAsDraft",
+        "summary": "Mark invoice as draft",
+        "tags": ["Invoices"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": { "description": "Invoice marked as draft" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/invoices/{id}/transitions/mark_as_cancelled": {
+      "put": {
+        "operationId": "markInvoiceAsCancelled",
+        "summary": "Mark invoice as cancelled",
+        "tags": ["Invoices"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": { "description": "Invoice marked as cancelled" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/invoices/{id}/transitions/mark_as_scheduled": {
+      "put": {
+        "operationId": "markInvoiceAsScheduled",
+        "summary": "Mark invoice as scheduled",
+        "tags": ["Invoices"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": { "description": "Invoice marked as scheduled" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/invoices/timeline": {
+      "get": {
+        "operationId": "getInvoiceTimeline",
+        "summary": "Get invoice timeline",
+        "tags": ["Invoices"],
+        "responses": {
+          "200": {
+            "description": "Invoice timeline data",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/contacts": {
+      "get": {
+        "operationId": "listContacts",
+        "summary": "List all contacts",
+        "tags": ["Contacts"],
+        "parameters": [
+          {
+            "name": "view",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["all", "active", "clients", "suppliers", "active_projects", "completed_projects", "open_clients", "open_suppliers", "hidden"] }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["name", "created_at", "updated_at", "-name", "-created_at", "-updated_at"] }
+          },
+          {
+            "name": "updated_since",
+            "in": "query",
+            "schema": { "type": "string", "format": "date-time" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of contacts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "contacts": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Contact" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createContact",
+        "summary": "Create a contact",
+        "tags": ["Contacts"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["contact"],
+                "properties": {
+                  "contact": { "$ref": "#/components/schemas/ContactCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created contact",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "contact": { "$ref": "#/components/schemas/Contact" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/contacts/{id}": {
+      "get": {
+        "operationId": "getContact",
+        "summary": "Get a contact",
+        "tags": ["Contacts"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": {
+            "description": "Contact details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "contact": { "$ref": "#/components/schemas/Contact" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateContact",
+        "summary": "Update a contact",
+        "tags": ["Contacts"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["contact"],
+                "properties": {
+                  "contact": { "$ref": "#/components/schemas/ContactCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Contact updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteContact",
+        "summary": "Delete a contact",
+        "tags": ["Contacts"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": { "description": "Contact deleted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/projects": {
+      "get": {
+        "operationId": "listProjects",
+        "summary": "List all projects",
+        "tags": ["Projects"],
+        "parameters": [
+          {
+            "name": "view",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["active", "completed", "cancelled", "hidden"] }
+          },
+          {
+            "name": "contact",
+            "in": "query",
+            "schema": { "type": "string", "format": "uri" }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of projects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "projects": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Project" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createProject",
+        "summary": "Create a project",
+        "tags": ["Projects"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["project"],
+                "properties": {
+                  "project": { "$ref": "#/components/schemas/ProjectCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "project": { "$ref": "#/components/schemas/Project" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/projects/{id}": {
+      "get": {
+        "operationId": "getProject",
+        "summary": "Get a project",
+        "tags": ["Projects"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": {
+            "description": "Project details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "project": { "$ref": "#/components/schemas/Project" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateProject",
+        "summary": "Update a project",
+        "tags": ["Projects"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["project"],
+                "properties": {
+                  "project": { "$ref": "#/components/schemas/ProjectCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Project updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteProject",
+        "summary": "Delete a project",
+        "tags": ["Projects"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": { "description": "Project deleted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/tasks": {
+      "get": {
+        "operationId": "listTasks",
+        "summary": "List all tasks",
+        "tags": ["Tasks"],
+        "parameters": [
+          {
+            "name": "project",
+            "in": "query",
+            "schema": { "type": "string", "format": "uri" }
+          },
+          {
+            "name": "view",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["all", "active", "completed", "hidden"] }
+          },
+          {
+            "name": "updated_since",
+            "in": "query",
+            "schema": { "type": "string", "format": "date-time" }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of tasks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tasks": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Task" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createTask",
+        "summary": "Create a task",
+        "tags": ["Tasks"],
+        "parameters": [
+          {
+            "name": "project",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "uri" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["task"],
+                "properties": {
+                  "task": { "$ref": "#/components/schemas/TaskCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "task": { "$ref": "#/components/schemas/Task" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/tasks/{id}": {
+      "get": {
+        "operationId": "getTask",
+        "summary": "Get a task",
+        "tags": ["Tasks"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": {
+            "description": "Task details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "task": { "$ref": "#/components/schemas/Task" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateTask",
+        "summary": "Update a task",
+        "tags": ["Tasks"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["task"],
+                "properties": {
+                  "task": { "$ref": "#/components/schemas/TaskCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Task updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteTask",
+        "summary": "Delete a task",
+        "tags": ["Tasks"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": { "description": "Task deleted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/timeslips": {
+      "get": {
+        "operationId": "listTimeslips",
+        "summary": "List all timeslips",
+        "tags": ["Timeslips"],
+        "parameters": [
+          {
+            "name": "from_date",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "updated_since",
+            "in": "query",
+            "schema": { "type": "string", "format": "date-time" }
+          },
+          {
+            "name": "user",
+            "in": "query",
+            "schema": { "type": "string", "format": "uri" }
+          },
+          {
+            "name": "task",
+            "in": "query",
+            "schema": { "type": "string", "format": "uri" }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "schema": { "type": "string", "format": "uri" }
+          },
+          {
+            "name": "view",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["all", "unbilled", "running"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of timeslips",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "timeslips": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Timeslip" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createTimeslip",
+        "summary": "Create a timeslip",
+        "tags": ["Timeslips"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "timeslip": { "$ref": "#/components/schemas/TimeslipCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created timeslip",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "timeslip": { "$ref": "#/components/schemas/Timeslip" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/timeslips/{id}": {
+      "get": {
+        "operationId": "getTimeslip",
+        "summary": "Get a timeslip",
+        "tags": ["Timeslips"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": {
+            "description": "Timeslip details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "timeslip": { "$ref": "#/components/schemas/Timeslip" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateTimeslip",
+        "summary": "Update a timeslip",
+        "tags": ["Timeslips"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "timeslip": { "$ref": "#/components/schemas/TimeslipCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Timeslip updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteTimeslip",
+        "summary": "Delete a timeslip",
+        "tags": ["Timeslips"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": { "description": "Timeslip deleted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/timeslips/{id}/timer": {
+      "post": {
+        "operationId": "startTimer",
+        "summary": "Start a timer on a timeslip",
+        "tags": ["Timeslips"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": {
+            "description": "Timer started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "timeslip": { "$ref": "#/components/schemas/Timeslip" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "stopTimer",
+        "summary": "Stop a timer on a timeslip",
+        "tags": ["Timeslips"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": { "description": "Timer stopped" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/expenses": {
+      "get": {
+        "operationId": "listExpenses",
+        "summary": "List all expenses",
+        "tags": ["Expenses"],
+        "parameters": [
+          {
+            "name": "view",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["recent", "recurring"] }
+          },
+          {
+            "name": "from_date",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "updated_since",
+            "in": "query",
+            "schema": { "type": "string", "format": "date-time" }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "schema": { "type": "string", "format": "uri" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of expenses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "expenses": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Expense" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createExpense",
+        "summary": "Create an expense",
+        "tags": ["Expenses"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["expense"],
+                "properties": {
+                  "expense": { "$ref": "#/components/schemas/ExpenseCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created expense",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "expense": { "$ref": "#/components/schemas/Expense" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/expenses/{id}": {
+      "get": {
+        "operationId": "getExpense",
+        "summary": "Get an expense",
+        "tags": ["Expenses"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": {
+            "description": "Expense details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "expense": { "$ref": "#/components/schemas/Expense" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateExpense",
+        "summary": "Update an expense",
+        "tags": ["Expenses"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["expense"],
+                "properties": {
+                  "expense": { "$ref": "#/components/schemas/ExpenseCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Expense updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteExpense",
+        "summary": "Delete an expense",
+        "tags": ["Expenses"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": { "description": "Expense deleted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/bills": {
+      "get": {
+        "operationId": "listBills",
+        "summary": "List all bills",
+        "tags": ["Bills"],
+        "parameters": [
+          {
+            "name": "view",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["all", "open", "overdue", "open_or_overdue", "paid", "recurring"] }
+          },
+          {
+            "name": "from_date",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "contact",
+            "in": "query",
+            "schema": { "type": "string", "format": "uri" }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "schema": { "type": "string", "format": "uri" }
+          },
+          {
+            "name": "updated_since",
+            "in": "query",
+            "schema": { "type": "string", "format": "date-time" }
+          },
+          {
+            "name": "nested_bill_items",
+            "in": "query",
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of bills",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "bills": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Bill" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createBill",
+        "summary": "Create a bill",
+        "tags": ["Bills"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["bill"],
+                "properties": {
+                  "bill": { "$ref": "#/components/schemas/BillCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created bill",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "bill": { "$ref": "#/components/schemas/Bill" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/bills/{id}": {
+      "get": {
+        "operationId": "getBill",
+        "summary": "Get a bill",
+        "tags": ["Bills"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": {
+            "description": "Bill details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "bill": { "$ref": "#/components/schemas/Bill" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateBill",
+        "summary": "Update a bill",
+        "tags": ["Bills"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["bill"],
+                "properties": {
+                  "bill": { "$ref": "#/components/schemas/BillCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Bill updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteBill",
+        "summary": "Delete a bill",
+        "tags": ["Bills"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": { "description": "Bill deleted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/bank_accounts": {
+      "get": {
+        "operationId": "listBankAccounts",
+        "summary": "List bank accounts",
+        "tags": ["BankAccounts"],
+        "parameters": [
+          {
+            "name": "view",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["standard_bank_accounts", "credit_card_accounts", "paypal_accounts"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of bank accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "bank_accounts": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/BankAccount" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createBankAccount",
+        "summary": "Create a bank account",
+        "tags": ["BankAccounts"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["bank_account"],
+                "properties": {
+                  "bank_account": { "$ref": "#/components/schemas/BankAccountCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created bank account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "bank_account": { "$ref": "#/components/schemas/BankAccount" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/bank_accounts/{id}": {
+      "get": {
+        "operationId": "getBankAccount",
+        "summary": "Get a bank account",
+        "tags": ["BankAccounts"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": {
+            "description": "Bank account details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "bank_account": { "$ref": "#/components/schemas/BankAccount" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateBankAccount",
+        "summary": "Update a bank account",
+        "tags": ["BankAccounts"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["bank_account"],
+                "properties": {
+                  "bank_account": { "$ref": "#/components/schemas/BankAccountCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Bank account updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteBankAccount",
+        "summary": "Delete a bank account",
+        "tags": ["BankAccounts"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": { "description": "Bank account deleted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/bank_transactions": {
+      "get": {
+        "operationId": "listBankTransactions",
+        "summary": "List bank transactions",
+        "tags": ["BankTransactions"],
+        "parameters": [
+          {
+            "name": "bank_account",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "uri" }
+          },
+          {
+            "name": "from_date",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "updated_since",
+            "in": "query",
+            "schema": { "type": "string", "format": "date-time" }
+          },
+          {
+            "name": "view",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["all", "unexplained", "explained", "manual", "imported", "marked_for_review"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of bank transactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "bank_transactions": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/BankTransaction" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/bank_transactions/{id}": {
+      "get": {
+        "operationId": "getBankTransaction",
+        "summary": "Get a bank transaction",
+        "tags": ["BankTransactions"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": {
+            "description": "Bank transaction details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "bank_transaction": { "$ref": "#/components/schemas/BankTransaction" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteBankTransaction",
+        "summary": "Delete a bank transaction",
+        "tags": ["BankTransactions"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": { "description": "Bank transaction deleted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/bank_transactions/statement": {
+      "post": {
+        "operationId": "uploadBankStatement",
+        "summary": "Upload a bank statement",
+        "tags": ["BankTransactions"],
+        "parameters": [
+          {
+            "name": "bank_account",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "uri" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "statement": {
+                    "type": "array",
+                    "items": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Statement uploaded" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "operationId": "listUsers",
+        "summary": "List all users",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "view",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["all", "staff", "active_staff", "advisors", "active_advisors"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "users": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/User" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createUser",
+        "summary": "Create a user",
+        "tags": ["Users"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["user"],
+                "properties": {
+                  "user": { "$ref": "#/components/schemas/UserCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": { "$ref": "#/components/schemas/User" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "operationId": "getUser",
+        "summary": "Get a user",
+        "tags": ["Users"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": {
+            "description": "User details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": { "$ref": "#/components/schemas/User" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateUser",
+        "summary": "Update a user",
+        "tags": ["Users"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["user"],
+                "properties": {
+                  "user": { "$ref": "#/components/schemas/UserCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "User updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteUser",
+        "summary": "Delete a user",
+        "tags": ["Users"],
+        "parameters": [ { "$ref": "#/components/parameters/resourceId" } ],
+        "responses": {
+          "200": { "description": "User deleted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "operationId": "getCurrentUser",
+        "summary": "Get current user",
+        "tags": ["Users"],
+        "responses": {
+          "200": {
+            "description": "Current user details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": { "$ref": "#/components/schemas/User" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateCurrentUser",
+        "summary": "Update personal profile",
+        "tags": ["Users"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["user"],
+                "properties": {
+                  "user": { "$ref": "#/components/schemas/UserCreate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Profile updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/categories": {
+      "get": {
+        "operationId": "listCategories",
+        "summary": "List all categories",
+        "tags": ["Categories"],
+        "parameters": [
+          {
+            "name": "sub_accounts",
+            "in": "query",
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of categories",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createCategory",
+        "summary": "Create a category",
+        "tags": ["Categories"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Category created" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/categories/{nominal_code}": {
+      "get": {
+        "operationId": "getCategory",
+        "summary": "Get a category",
+        "tags": ["Categories"],
+        "parameters": [
+          {
+            "name": "nominal_code",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Category details",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateCategory",
+        "summary": "Update a category",
+        "tags": ["Categories"],
+        "parameters": [
+          {
+            "name": "nominal_code",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Category updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCategory",
+        "summary": "Delete a category",
+        "tags": ["Categories"],
+        "parameters": [
+          {
+            "name": "nominal_code",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Category deleted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://api.freeagent.com/v2/approve_app",
+            "tokenUrl": "https://api.freeagent.com/v2/token_endpoint",
+            "scopes": {}
+          }
+        }
+      }
+    },
+    "parameters": {
+      "resourceId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized - invalid or expired OAuth token",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "Invoice": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "contact": { "type": "string", "format": "uri" },
+          "project": { "type": "string", "format": "uri", "nullable": true },
+          "reference": { "type": "string" },
+          "dated_on": { "type": "string", "format": "date" },
+          "due_on": { "type": "string", "format": "date" },
+          "currency": { "type": "string" },
+          "net_value": { "type": "string" },
+          "total_value": { "type": "string" },
+          "paid_value": { "type": "string" },
+          "due_value": { "type": "string" },
+          "status": { "type": "string" },
+          "payment_terms_in_days": { "type": "integer" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "InvoiceCreate": {
+        "type": "object",
+        "required": ["contact", "dated_on", "payment_terms_in_days"],
+        "properties": {
+          "contact": { "type": "string", "format": "uri" },
+          "project": { "type": "string", "format": "uri" },
+          "dated_on": { "type": "string", "format": "date" },
+          "payment_terms_in_days": { "type": "integer" },
+          "currency": { "type": "string" },
+          "comments": { "type": "string" }
+        }
+      },
+      "Contact": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "first_name": { "type": "string" },
+          "last_name": { "type": "string" },
+          "organisation_name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "phone_number": { "type": "string" },
+          "address1": { "type": "string" },
+          "town": { "type": "string" },
+          "region": { "type": "string" },
+          "postcode": { "type": "string" },
+          "country": { "type": "string" },
+          "status": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ContactCreate": {
+        "type": "object",
+        "properties": {
+          "first_name": { "type": "string" },
+          "last_name": { "type": "string" },
+          "organisation_name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "phone_number": { "type": "string" },
+          "address1": { "type": "string" },
+          "town": { "type": "string" },
+          "region": { "type": "string" },
+          "postcode": { "type": "string" },
+          "country": { "type": "string" }
+        }
+      },
+      "Project": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "name": { "type": "string" },
+          "contact": { "type": "string", "format": "uri" },
+          "status": { "type": "string" },
+          "budget": { "type": "string" },
+          "budget_units": { "type": "string" },
+          "currency": { "type": "string" },
+          "billing_period": { "type": "string" },
+          "is_ir35": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ProjectCreate": {
+        "type": "object",
+        "required": ["name", "contact", "status", "budget_units"],
+        "properties": {
+          "name": { "type": "string" },
+          "contact": { "type": "string", "format": "uri" },
+          "status": { "type": "string" },
+          "budget": { "type": "string" },
+          "budget_units": { "type": "string" },
+          "currency": { "type": "string" }
+        }
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "name": { "type": "string" },
+          "project": { "type": "string", "format": "uri" },
+          "is_billable": { "type": "boolean" },
+          "billing_rate": { "type": "string" },
+          "billing_period": { "type": "string" },
+          "status": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TaskCreate": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "is_billable": { "type": "boolean" },
+          "billing_rate": { "type": "string" },
+          "billing_period": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      },
+      "Timeslip": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "user": { "type": "string", "format": "uri" },
+          "project": { "type": "string", "format": "uri" },
+          "task": { "type": "string", "format": "uri" },
+          "dated_on": { "type": "string", "format": "date" },
+          "hours": { "type": "string" },
+          "comment": { "type": "string" },
+          "timer_running": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TimeslipCreate": {
+        "type": "object",
+        "required": ["user", "project", "task", "dated_on", "hours"],
+        "properties": {
+          "user": { "type": "string", "format": "uri" },
+          "project": { "type": "string", "format": "uri" },
+          "task": { "type": "string", "format": "uri" },
+          "dated_on": { "type": "string", "format": "date" },
+          "hours": { "type": "string" },
+          "comment": { "type": "string" }
+        }
+      },
+      "Expense": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "user": { "type": "string", "format": "uri" },
+          "category": { "type": "string", "format": "uri" },
+          "project": { "type": "string", "format": "uri", "nullable": true },
+          "dated_on": { "type": "string", "format": "date" },
+          "description": { "type": "string" },
+          "gross_value": { "type": "string" },
+          "native_gross_value": { "type": "string" },
+          "sales_tax_rate": { "type": "string" },
+          "currency": { "type": "string" },
+          "rebill_type": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ExpenseCreate": {
+        "type": "object",
+        "required": ["user", "category", "dated_on"],
+        "properties": {
+          "user": { "type": "string", "format": "uri" },
+          "category": { "type": "string", "format": "uri" },
+          "project": { "type": "string", "format": "uri" },
+          "dated_on": { "type": "string", "format": "date" },
+          "description": { "type": "string" },
+          "gross_value": { "type": "string" },
+          "currency": { "type": "string" }
+        }
+      },
+      "Bill": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "contact": { "type": "string", "format": "uri" },
+          "reference": { "type": "string" },
+          "dated_on": { "type": "string", "format": "date" },
+          "due_on": { "type": "string", "format": "date" },
+          "currency": { "type": "string" },
+          "total_value": { "type": "string" },
+          "status": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "BillCreate": {
+        "type": "object",
+        "required": ["contact", "reference", "dated_on", "due_on"],
+        "properties": {
+          "contact": { "type": "string", "format": "uri" },
+          "reference": { "type": "string" },
+          "dated_on": { "type": "string", "format": "date" },
+          "due_on": { "type": "string", "format": "date" },
+          "currency": { "type": "string" },
+          "bill_items": {
+            "type": "array",
+            "items": { "type": "object" }
+          }
+        }
+      },
+      "BankAccount": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "currency": { "type": "string" },
+          "current_balance": { "type": "string" },
+          "status": { "type": "string" },
+          "is_personal": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "BankAccountCreate": {
+        "type": "object",
+        "required": ["name", "type", "currency"],
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "currency": { "type": "string" },
+          "opening_balance": { "type": "string" },
+          "is_personal": { "type": "boolean" },
+          "status": { "type": "string" }
+        }
+      },
+      "BankTransaction": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "bank_account": { "type": "string", "format": "uri" },
+          "dated_on": { "type": "string", "format": "date" },
+          "description": { "type": "string" },
+          "amount": { "type": "string" },
+          "unexplained_amount": { "type": "string" },
+          "is_manual": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "first_name": { "type": "string" },
+          "last_name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "role": { "type": "string" },
+          "permission_level": { "type": "integer" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "UserCreate": {
+        "type": "object",
+        "required": ["email", "first_name", "last_name"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "first_name": { "type": "string" },
+          "last_name": { "type": "string" },
+          "role": { "type": "string" },
+          "permission_level": { "type": "integer" }
+        }
+      }
+    }
+  }
+}
