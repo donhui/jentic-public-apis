@@ -1,0 +1,424 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Urlbox API",
+    "description": "Urlbox is a website screenshot and rendering API. It allows you to capture screenshots, generate PDFs, and render web pages in various formats including PNG, JPEG, WebP, AVIF, SVG, PDF, HTML, MP4, WebM, and Markdown.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Urlbox",
+      "url": "https://urlbox.com"
+    },
+    "x-jentic-source-url": "https://urlbox.io/docs"
+  },
+  "servers": [
+    {
+      "url": "https://api.urlbox.com",
+      "description": "Urlbox API Server"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/v1/render/sync": {
+      "post": {
+        "operationId": "createSyncRender",
+        "summary": "Create a synchronous render",
+        "description": "Generates a render and waits for completion. Max wait 95 seconds before redirect.",
+        "tags": [
+          "Render"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Render completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderResponse"
+                }
+              }
+            }
+          },
+          "307": {
+            "description": "Long-running render, follow Location header",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/v1/render/async": {
+      "post": {
+        "operationId": "createAsyncRender",
+        "summary": "Create an asynchronous render",
+        "description": "Accepts a render request and returns immediately with a render ID for polling.",
+        "tags": [
+          "Render"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Render request accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsyncRenderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/v1/render/{renderId}": {
+      "get": {
+        "operationId": "getRenderStatus",
+        "summary": "Check render status",
+        "description": "Poll the current status of an asynchronously created render.",
+        "tags": [
+          "Render"
+        ],
+        "parameters": [
+          {
+            "name": "renderId",
+            "in": "path",
+            "required": true,
+            "description": "Render ID from async endpoint",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Render status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderStatusResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Render ID not found"
+          }
+        }
+      }
+    },
+    "/v1/usage": {
+      "get": {
+        "operationId": "getUsage",
+        "summary": "Get account usage",
+        "description": "Retrieve account usage statistics via response headers.",
+        "tags": [
+          "Account"
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage info in headers",
+            "headers": {
+              "x-renders-used": {
+                "description": "Renders consumed",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "x-renders-allowed": {
+                "description": "Total renders available",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "x-renders-remaining": {
+                "description": "Renders remaining",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "x-renders-reset": {
+                "description": "Billing cycle reset",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "x-ratelimit-limit": {
+                "description": "Requests per minute",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "x-ratelimit-remaining": {
+                "description": "Remaining requests",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "x-ratelimit-reset": {
+                "description": "Rate limit reset",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API secret key as Bearer token"
+      }
+    },
+    "schemas": {
+      "RenderRequest": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Website URL to render"
+          },
+          "html": {
+            "type": "string",
+            "description": "Raw HTML to render"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "png",
+              "jpg",
+              "webp",
+              "avif",
+              "svg",
+              "pdf",
+              "html",
+              "mp4",
+              "webm",
+              "md"
+            ],
+            "default": "png"
+          },
+          "width": {
+            "type": "integer",
+            "default": 1280
+          },
+          "height": {
+            "type": "integer",
+            "default": 1024
+          },
+          "full_page": {
+            "type": "boolean",
+            "default": false
+          },
+          "selector": {
+            "type": "string"
+          },
+          "hide_cookie_banners": {
+            "type": "boolean",
+            "default": false
+          },
+          "click_accept": {
+            "type": "boolean",
+            "default": false
+          },
+          "block_ads": {
+            "type": "boolean",
+            "default": false
+          },
+          "redirect_after": {
+            "type": "integer"
+          },
+          "response_type": {
+            "type": "string",
+            "enum": [
+              "json",
+              "binary"
+            ]
+          }
+        }
+      },
+      "RenderResponse": {
+        "type": "object",
+        "properties": {
+          "renderUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "renderTime": {
+            "type": "integer"
+          },
+          "queueTime": {
+            "type": "integer"
+          },
+          "bandwidth": {
+            "type": "integer"
+          }
+        }
+      },
+      "AsyncRenderResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "renderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "statusUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "RenderStatusResponse": {
+        "type": "object",
+        "properties": {
+          "renderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "created",
+              "retrying",
+              "succeeded",
+              "failed"
+            ]
+          },
+          "statusUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "renderUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "renderTime": {
+            "type": "integer"
+          },
+          "queueTime": {
+            "type": "integer"
+          },
+          "bandwidth": {
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string",
+                "enum": [
+                  "NoApiKeySupplied",
+                  "ApiKeyNotFound",
+                  "InvalidURLError",
+                  "URLDoesNotResolveError",
+                  "RenderTimeoutError",
+                  "NoS3BucketConfigured",
+                  "RateLimitExceededError",
+                  "OptionNotAvailableOnPlan"
+                ]
+              }
+            }
+          },
+          "requestId": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Account"
+    },
+    {
+      "name": "Render"
+    }
+  ]
+}
