@@ -1,0 +1,302 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "7shifts Restaurant Scheduling API",
+    "version": "v2",
+    "description": "7shifts REST API for restaurant workforce management including companies, locations, users, shifts, schedules, time punches, departments, roles, and labor settings.",
+    "x-jentic-source-url": "https://developers.7shifts.com/"
+  },
+  "servers": [
+    {
+      "url": "https://api.7shifts.com",
+      "description": "7shifts API"
+    }
+  ],
+  "paths": {
+    "/oauth2/token": {
+      "post": {
+        "operationId": "createOAuthToken",
+        "summary": "Create OAuth token",
+        "description": "Authenticates and returns an OAuth2 token. Supports client_credentials, password, authorization_code, and refresh_token grant types.",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["grant_type"],
+                "properties": {
+                  "grant_type": {
+                    "type": "string",
+                    "enum": ["client_credentials", "password", "authorization_code", "refresh_token"]
+                  },
+                  "client_id": {"type": "string"},
+                  "client_secret": {"type": "string"},
+                  "code": {"type": "string"},
+                  "refresh_token": {"type": "string"},
+                  "username": {"type": "string"},
+                  "password": {"type": "string"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": {"type": "string"},
+                    "token_type": {"type": "string"},
+                    "expires_in": {"type": "integer"},
+                    "refresh_token": {"type": "string"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        },
+        "security": []
+      }
+    },
+    "/v2/whoami": {
+      "get": {
+        "operationId": "getIdentity",
+        "summary": "Retrieve identity",
+        "description": "Retrieves identity information for the authenticated user.",
+        "tags": ["Identity"],
+        "responses": {
+          "200": {"description": "Identity info", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/v2/companies": {
+      "get": {
+        "operationId": "listCompanies",
+        "summary": "List companies",
+        "description": "Lists companies accessible to the authenticated user.",
+        "tags": ["Companies"],
+        "parameters": [
+          {"name": "modified_since", "in": "query", "schema": {"type": "string", "format": "date-time"}, "description": "Filter by modification date"}
+        ],
+        "responses": {
+          "200": {
+            "description": "List of companies",
+            "content": {"application/json": {"schema": {"type": "object", "properties": {"data": {"type": "array", "items": {"$ref": "#/components/schemas/Company"}}}}}}
+          },
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/v2/companies/{id}": {
+      "get": {
+        "operationId": "getCompany",
+        "summary": "Retrieve a company",
+        "tags": ["Companies"],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "responses": {
+          "200": {"description": "Company details", "content": {"application/json": {"schema": {"type": "object", "properties": {"data": {"$ref": "#/components/schemas/Company"}}}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      },
+      "patch": {
+        "operationId": "updateCompany",
+        "summary": "Update a company",
+        "tags": ["Companies"],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "requestBody": {"content": {"application/json": {"schema": {"type": "object"}}}},
+        "responses": {
+          "200": {"description": "Company updated", "content": {"application/json": {"schema": {"type": "object", "properties": {"data": {"$ref": "#/components/schemas/Company"}}}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/v2/company/{company_id}/locations": {
+      "get": {
+        "operationId": "listLocations",
+        "summary": "List locations",
+        "description": "Lists locations for a company with pagination and filtering.",
+        "tags": ["Locations"],
+        "parameters": [
+          {"name": "company_id", "in": "path", "required": true, "schema": {"type": "integer"}},
+          {"name": "modified_since", "in": "query", "schema": {"type": "string", "format": "date-time"}}
+        ],
+        "responses": {
+          "200": {"description": "List of locations", "content": {"application/json": {"schema": {"type": "object", "properties": {"data": {"type": "array", "items": {"$ref": "#/components/schemas/Location"}}}}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      },
+      "post": {
+        "operationId": "createLocation",
+        "summary": "Create a location",
+        "tags": ["Locations"],
+        "parameters": [{"name": "company_id", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/LocationInput"}}}},
+        "responses": {
+          "201": {"description": "Location created", "content": {"application/json": {"schema": {"type": "object", "properties": {"data": {"$ref": "#/components/schemas/Location"}}}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/v2/company/{company_id}/locations/{location_id}": {
+      "get": {
+        "operationId": "getLocation",
+        "summary": "Retrieve a location",
+        "tags": ["Locations"],
+        "parameters": [
+          {"name": "company_id", "in": "path", "required": true, "schema": {"type": "integer"}},
+          {"name": "location_id", "in": "path", "required": true, "schema": {"type": "integer"}}
+        ],
+        "responses": {
+          "200": {"description": "Location details", "content": {"application/json": {"schema": {"type": "object", "properties": {"data": {"$ref": "#/components/schemas/Location"}}}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      },
+      "put": {
+        "operationId": "updateLocation",
+        "summary": "Update a location",
+        "tags": ["Locations"],
+        "parameters": [
+          {"name": "company_id", "in": "path", "required": true, "schema": {"type": "integer"}},
+          {"name": "location_id", "in": "path", "required": true, "schema": {"type": "integer"}}
+        ],
+        "requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/LocationInput"}}}},
+        "responses": {
+          "200": {"description": "Location updated", "content": {"application/json": {"schema": {"type": "object", "properties": {"data": {"$ref": "#/components/schemas/Location"}}}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/v2/company/{company_id}/labor_settings": {
+      "get": {
+        "operationId": "getLaborSettings",
+        "summary": "Get labor settings",
+        "description": "Retrieves labor configuration including overtime rules.",
+        "tags": ["Settings"],
+        "parameters": [{"name": "company_id", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "responses": {
+          "200": {"description": "Labor settings", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/v2/company/{company_id}/inactive_reasons": {
+      "get": {
+        "operationId": "listInactiveReasons",
+        "summary": "List inactive reasons",
+        "description": "Lists inactive reason enum values.",
+        "tags": ["Settings"],
+        "parameters": [{"name": "company_id", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "responses": {
+          "200": {"description": "Inactive reasons", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/v2/partner_company_creation": {
+      "post": {
+        "operationId": "createTrialAccount",
+        "summary": "Create trial account",
+        "description": "Creates a new trial account for partner companies.",
+        "tags": ["Partners"],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object"}}}},
+        "responses": {
+          "201": {"description": "Trial account created", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://app.7shifts.com/oauth2/authorize",
+            "tokenUrl": "https://api.7shifts.com/oauth2/token",
+            "scopes": {}
+          },
+          "clientCredentials": {
+            "tokenUrl": "https://api.7shifts.com/oauth2/token",
+            "scopes": {}
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Company": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer"},
+          "name": {"type": "string"},
+          "created": {"type": "string", "format": "date-time"},
+          "modified": {"type": "string", "format": "date-time"}
+        }
+      },
+      "Location": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer"},
+          "company_id": {"type": "integer"},
+          "name": {"type": "string"},
+          "address": {"type": "string"},
+          "city": {"type": "string"},
+          "state": {"type": "string"},
+          "country": {"type": "string"},
+          "timezone": {"type": "string"},
+          "created": {"type": "string", "format": "date-time"},
+          "modified": {"type": "string", "format": "date-time"}
+        }
+      },
+      "LocationInput": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {"type": "string"},
+          "address": {"type": "string"},
+          "city": {"type": "string"},
+          "state": {"type": "string"},
+          "country": {"type": "string"},
+          "timezone": {"type": "string"}
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": {"type": "string"},
+          "errors": {"type": "array", "items": {"type": "object"}}
+        }
+      }
+    }
+  },
+  "security": [
+    {"oauth2": []}
+  ],
+  "tags": [
+    {"name": "Authentication", "description": "OAuth2 token management"},
+    {"name": "Identity", "description": "User identity"},
+    {"name": "Companies", "description": "Company management"},
+    {"name": "Locations", "description": "Location management"},
+    {"name": "Settings", "description": "Company settings"},
+    {"name": "Partners", "description": "Partner operations"}
+  ]
+}
