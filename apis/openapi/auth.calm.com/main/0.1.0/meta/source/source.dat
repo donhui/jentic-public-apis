@@ -1,0 +1,282 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Calm Partner API",
+    "description": "The Calm Partner API enables business partners to integrate Calm subscriptions into their platforms. Partners can authenticate users, link accounts, and manage subscriptions through a secure REST API using JWT-based authentication.",
+    "version": "0.1.0",
+    "x-jentic-source-url": "https://partner.calm.com/docs/api"
+  },
+  "servers": [
+    {
+      "url": "https://auth.calm.com",
+      "description": "Production environment"
+    },
+    {
+      "url": "https://auth-ga.aws-dev.useast1.calm.com",
+      "description": "Development environment"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/v0/authorize": {
+      "post": {
+        "summary": "Authenticate partner service",
+        "description": "Authenticates the partner service using client credentials and returns a JWT access token. The token is required for all subsequent API calls.",
+        "operationId": "authorizePartner",
+        "tags": ["Authentication"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthorizationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorizationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters"
+          },
+          "401": {
+            "description": "Invalid client credentials"
+          },
+          "403": {
+            "description": "Invalid authorization or scope"
+          }
+        }
+      }
+    },
+    "/v0/b2b/users/link": {
+      "post": {
+        "summary": "Link partner user to Calm account",
+        "description": "Links a partner user to a Calm account. Returns an HTTP 303 redirect with authentication token in the location header, or JSON response if pseudo_redirect parameter is used.",
+        "operationId": "linkUser",
+        "tags": ["Subscription"],
+        "parameters": [
+          {
+            "name": "pseudo_redirect",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "enum": [1]
+            },
+            "description": "Set to 1 to receive JSON response instead of HTTP redirect"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User linked successfully (when pseudo_redirect=1)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "location": {
+                      "type": "string",
+                      "description": "Authentication URL with token"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "303": {
+            "description": "Redirect to authentication URL",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Authentication URL with token"
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters"
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing token"
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions"
+          }
+        }
+      }
+    },
+    "/v0/b2b/users/{partner_user_id}": {
+      "delete": {
+        "summary": "Cancel user subscription",
+        "description": "Cancels a partner user's subscription, preventing auto-renewal. The subscription remains active until the current period expires.",
+        "operationId": "cancelSubscription",
+        "tags": ["Subscription"],
+        "parameters": [
+          {
+            "name": "partner_user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Partner's unique user identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscription cancelled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelSubscriptionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters"
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing token"
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token obtained from /v0/authorize endpoint"
+      }
+    },
+    "schemas": {
+      "AuthorizationRequest": {
+        "type": "object",
+        "required": ["client_id", "client_secret", "grant_type", "scope"],
+        "properties": {
+          "client_id": {
+            "type": "string",
+            "description": "Partner client ID"
+          },
+          "client_secret": {
+            "type": "string",
+            "description": "Partner client secret"
+          },
+          "grant_type": {
+            "type": "string",
+            "enum": ["client_credentials"],
+            "description": "OAuth2 grant type"
+          },
+          "scope": {
+            "type": "string",
+            "description": "Comma-separated list of scopes (e.g., 'b2b.users.integrate,b2b.subscription.cancel')"
+          }
+        }
+      },
+      "AuthorizationResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "description": "JWT access token"
+          },
+          "token_type": {
+            "type": "string",
+            "enum": ["Bearer"]
+          },
+          "expires_at": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Token expiration timestamp"
+          },
+          "token_id": {
+            "type": "string",
+            "description": "Unique token identifier"
+          }
+        }
+      },
+      "LinkUserRequest": {
+        "type": "object",
+        "required": ["partner_user_id"],
+        "properties": {
+          "partner_user_id": {
+            "type": "string",
+            "description": "Partner's unique user identifier"
+          },
+          "error_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Optional URL to redirect to on error"
+          }
+        }
+      },
+      "CancelSubscriptionResponse": {
+        "type": "object",
+        "properties": {
+          "partner_user_id": {
+            "type": "string",
+            "description": "Partner's unique user identifier"
+          },
+          "calm_user_id": {
+            "type": "string",
+            "description": "Calm's internal user identifier"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Subscription expiration timestamp"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["canceled", "not_found"],
+            "description": "Cancellation status"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Partner authentication and authorization"
+    },
+    {
+      "name": "Subscription",
+      "description": "User subscription management"
+    }
+  ]
+}
