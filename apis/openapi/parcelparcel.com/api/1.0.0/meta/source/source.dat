@@ -1,0 +1,608 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ParcelParcel API",
+    "version": "1.0.0",
+    "description": "Shipping rate comparison and shipment management API for international and domestic parcel delivery",
+    "x-jentic-source-url": "https://parcelparcel.readme.io/reference/start",
+    "contact": {}
+  },
+  "servers": [
+    {
+      "url": "https://services.parcelparcel.com/partners-api/v1",
+      "description": "Production server"
+    }
+  ],
+  "security": [
+    {
+      "apiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Rates",
+      "description": "Shipping rate operations"
+    },
+    {
+      "name": "Shipments",
+      "description": "Shipment management"
+    },
+    {
+      "name": "Tracking",
+      "description": "Shipment tracking"
+    },
+    {
+      "name": "Documents",
+      "description": "Shipping documents and labels"
+    }
+  ],
+  "paths": {
+    "/rates": {
+      "post": {
+        "tags": [
+          "Rates"
+        ],
+        "summary": "Compare shipping options",
+        "description": "Get shipping options with rates and transit times from multiple carriers",
+        "operationId": "compareRates",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RatesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rates successfully processed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/shipments": {
+      "post": {
+        "tags": [
+          "Shipments"
+        ],
+        "summary": "Create shipment",
+        "description": "Create a draft shipment or book directly with carrier",
+        "operationId": "createShipment",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShipmentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Shipment created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShipmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/tracking/{trackingNumber}": {
+      "get": {
+        "tags": [
+          "Tracking"
+        ],
+        "summary": "Track shipment",
+        "description": "Get tracking information for a shipment",
+        "operationId": "trackShipment",
+        "parameters": [
+          {
+            "name": "trackingNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Tracking number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tracking information retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tracking number not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/documents/{shipmentId}": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Get shipping documents",
+        "description": "Retrieve shipping labels and documents for a shipment",
+        "operationId": "getDocuments",
+        "parameters": [
+          {
+            "name": "shipmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Shipment ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Documents retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Shipment not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-PP-API",
+        "description": "API authentication in format: api-key@api-secret"
+      }
+    },
+    "schemas": {
+      "RatesRequest": {
+        "type": "object",
+        "required": [
+          "parcels",
+          "fromCountry",
+          "toCountry"
+        ],
+        "properties": {
+          "parcels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Parcel"
+            },
+            "description": "Parcel information (supports document, parcel, or pallet shipments)"
+          },
+          "fromCountry": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 2,
+            "description": "Origin country in ISO-2 format (e.g. NL or US)"
+          },
+          "fromZipcode": {
+            "type": "string",
+            "description": "Pickup location postal code"
+          },
+          "fromCity": {
+            "type": "string",
+            "description": "Pickup location city"
+          },
+          "toCountry": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 2,
+            "description": "Destination country in ISO-2 format (e.g. NL or US)"
+          },
+          "toZipcode": {
+            "type": "string",
+            "description": "Destination postal code"
+          },
+          "toCity": {
+            "type": "string",
+            "description": "Destination city"
+          },
+          "insured": {
+            "type": "boolean",
+            "description": "Whether shipment should be insured (requires totalValue if true)"
+          },
+          "totalValue": {
+            "type": "number",
+            "description": "Shipment value in euros (\u20ac) for insurance calculation"
+          },
+          "recipientType": {
+            "type": "string",
+            "enum": [
+              "individual",
+              "business"
+            ],
+            "description": "Recipient type (required for PALLET type)"
+          }
+        }
+      },
+      "Parcel": {
+        "type": "object",
+        "required": [
+          "type",
+          "count"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "NONDOC",
+              "DOC",
+              "PALLET"
+            ],
+            "description": "Parcel type: NONDOC (parcel), DOC (document), or PALLET"
+          },
+          "weight": {
+            "type": "number",
+            "description": "Weight in kilograms (required for NONDOC and PALLET)"
+          },
+          "length": {
+            "type": "integer",
+            "description": "Length in centimeters (required for NONDOC and PALLET)"
+          },
+          "width": {
+            "type": "integer",
+            "description": "Width in centimeters (required for NONDOC and PALLET)"
+          },
+          "height": {
+            "type": "integer",
+            "description": "Height in centimeters (required for NONDOC and PALLET)"
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of items"
+          },
+          "stackable": {
+            "type": "boolean",
+            "description": "Whether pallet is stackable (required for PALLET type only)"
+          }
+        }
+      },
+      "RatesResponse": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "boolean",
+            "description": "Error indicator"
+          },
+          "message": {
+            "type": "string",
+            "example": "Rates successfully processed"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShippingOption"
+            },
+            "description": "Array of shipping options with carrier, product, price, and transit time"
+          }
+        }
+      },
+      "ShippingOption": {
+        "type": "object",
+        "properties": {
+          "carrier": {
+            "type": "string",
+            "enum": [
+              "FedEx",
+              "DHL",
+              "TNT",
+              "DPD",
+              "DSV",
+              "Skynet"
+            ],
+            "description": "Carrier name"
+          },
+          "product": {
+            "type": "string",
+            "description": "Service type/name"
+          },
+          "productId": {
+            "type": "string",
+            "description": "Product identifier to reference when creating draft shipments"
+          },
+          "price": {
+            "type": "number",
+            "description": "Price in euros (\u20ac) without VAT, 2 decimals (includes insurance if applicable)"
+          },
+          "estimatedTransitTimeInWorkingDays": {
+            "type": "number",
+            "description": "Estimated transit time in working days"
+          },
+          "priceBreakdown": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "component": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "number"
+                }
+              }
+            },
+            "description": "Price component breakdown"
+          }
+        }
+      },
+      "ShipmentRequest": {
+        "type": "object",
+        "required": [
+          "productId",
+          "from",
+          "to",
+          "parcels"
+        ],
+        "properties": {
+          "productId": {
+            "type": "string",
+            "description": "Product ID from rates endpoint"
+          },
+          "from": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "to": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "parcels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Parcel"
+            }
+          },
+          "reference": {
+            "type": "string",
+            "description": "Your reference number"
+          }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "required": [
+          "country"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string"
+          },
+          "address1": {
+            "type": "string"
+          },
+          "address2": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "zipcode": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 2
+          },
+          "phone": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          }
+        }
+      },
+      "ShipmentResponse": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "shipmentId": {
+                "type": "string"
+              },
+              "trackingNumber": {
+                "type": "string"
+              },
+              "carrier": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "TrackingResponse": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "trackingNumber": {
+                "type": "string"
+              },
+              "carrier": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "events": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "location": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "DocumentsResponse": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "shipmentId": {
+                "type": "string"
+              },
+              "labels": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "PDF",
+                        "PNG",
+                        "ZPL"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "responses": {
+      "UnauthorizedError": {
+        "description": "Invalid or missing API key",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "BadRequest": {
+        "description": "Invalid request parameters",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+}
