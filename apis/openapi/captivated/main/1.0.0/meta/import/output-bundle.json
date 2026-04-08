@@ -1,0 +1,454 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Captivated Messaging API",
+    "version": "1.0.0",
+    "description": "Captivated is an A2P messaging platform focused on SMS messaging. This API allows you to send single and bulk messages, retrieve message status, check bulk job results, and validate phone numbers.",
+    "x-jentic-source-url": "https://api.captivated.works/docs"
+  },
+  "servers": [
+    {
+      "url": "https://api.captivated.works",
+      "description": "Captivated API server"
+    }
+  ],
+  "paths": {
+    "/api/command/v1/messages": {
+      "post": {
+        "operationId": "sendMessage",
+        "summary": "Send a single message",
+        "description": "Sends a single message from a Captivated channel to a recipient.",
+        "tags": [
+          "Messages"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/api/command/v1/messages/bulk_create": {
+      "post": {
+        "operationId": "bulkSendMessages",
+        "summary": "Bulk send messages",
+        "description": "Sends up to 100 messages asynchronously in a single batch request.",
+        "tags": [
+          "Messages"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "messages"
+                ],
+                "properties": {
+                  "messages": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "$ref": "#/components/schemas/SendMessageRequest"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bulk job created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "job_id": {
+                      "type": "string",
+                      "description": "Batch job identifier for status checking"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/command/v1/messages/{messageId}": {
+      "get": {
+        "operationId": "getMessage",
+        "summary": "Retrieve a message",
+        "description": "Retrieves details and current status of a previously created message.",
+        "tags": [
+          "Messages"
+        ],
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The message ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Message not found"
+          }
+        }
+      }
+    },
+    "/api/command/v1/jobs/{jobId}": {
+      "get": {
+        "operationId": "getBulkJobResults",
+        "summary": "Retrieve bulk creation results",
+        "description": "Retrieves the result of each message's attempt to send from a bulk batch.",
+        "tags": [
+          "Jobs"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The bulk job ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bulk job results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkJobResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/api/command/v1/phone_number_lookups/{phoneNumber}": {
+      "get": {
+        "operationId": "validatePhoneNumber",
+        "summary": "Validate a phone number",
+        "description": "Verifies phone number format and retrieves carrier information.",
+        "tags": [
+          "Phone Number Lookups"
+        ],
+        "parameters": [
+          {
+            "name": "phoneNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Phone number in ISO format (e.g., +15552345678)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Phone number validation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhoneNumberLookup"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Phone number not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SendMessageRequest": {
+        "type": "object",
+        "required": [
+          "from",
+          "to",
+          "text"
+        ],
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "Channel URI (e.g., tel:+15558765432)"
+          },
+          "to": {
+            "type": "string",
+            "description": "Recipient URI (e.g., tel:+15552345678)"
+          },
+          "text": {
+            "type": "string",
+            "description": "Message content"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "message",
+              "location",
+              "note"
+            ],
+            "default": "message",
+            "description": "Message type"
+          },
+          "contact_first_name": {
+            "type": "string",
+            "description": "Contact's first name"
+          },
+          "contact_last_name": {
+            "type": "string",
+            "description": "Contact's last name"
+          },
+          "send_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Future send time in ISO datetime format"
+          },
+          "evaluate_fields": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable template evaluation"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "low",
+              "high"
+            ],
+            "default": "normal",
+            "description": "Message priority"
+          },
+          "join_sender": {
+            "type": "boolean",
+            "default": true,
+            "description": "Add sender to conversation"
+          },
+          "activate_conversation": {
+            "type": "boolean",
+            "default": true,
+            "description": "Reopen inactive conversation"
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "content_type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "url",
+                "content_type"
+              ]
+            },
+            "description": "Attachment objects with URL and content type"
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URLs to append and shorten"
+          },
+          "consent": {
+            "type": "object",
+            "properties": {
+              "consent_method": {
+                "type": "string"
+              },
+              "consent_level": {
+                "type": "string"
+              }
+            },
+            "description": "Consent information for compliance"
+          },
+          "callback_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Webhook URL for message status updates"
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "state": {
+            "type": "string"
+          },
+          "state_updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "to": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "content_type": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "priority": {
+            "type": "string"
+          }
+        }
+      },
+      "BulkJobResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "status_updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          },
+          "result": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            }
+          }
+        }
+      },
+      "PhoneNumberLookup": {
+        "type": "object",
+        "properties": {
+          "phone_number": {
+            "type": "string"
+          },
+          "carrier_name": {
+            "type": "string"
+          },
+          "carrier_type": {
+            "type": "string",
+            "enum": [
+              "mobile",
+              "landline",
+              "voip",
+              "unknown"
+            ]
+          },
+          "sms_enabled": {
+            "type": "string",
+            "enum": [
+              "true",
+              "false",
+              "unknown"
+            ]
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "OAuth2 Bearer Token. Tokens are user-created and non-expiring, but can be revoked."
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}
