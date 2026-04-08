@@ -1,0 +1,1172 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "South Pole Climate Compensate API",
+    "description": "South Pole Climate Compensate API for emissions calculations, distance calculations, and location datasets.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://docs.api.southpole.com/"
+  },
+  "servers": [
+    {
+      "url": "https://{stage}.api.southpole.com",
+      "variables": {
+        "stage": {
+          "default": "production",
+          "enum": ["production", "sandbox"]
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/auth/v1/token": {
+      "post": {
+        "operationId": "getAccessToken",
+        "summary": "Get access token",
+        "description": "Exchange a refresh token for an access token to call secured endpoints. Access tokens expire in one hour.",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["refreshToken"],
+                "properties": {
+                  "refreshToken": {
+                    "type": "string",
+                    "description": "Refresh token to exchange for an access token"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully obtained access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or bad request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - expired refresh token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/calculations/v1/flights": {
+      "post": {
+        "operationId": "calculateFlightEmissionsV1",
+        "summary": "Calculate flight emissions (v1)",
+        "description": "Calculate CO2 emissions for flights using the BEIS method with Haversine formula for distance calculations.",
+        "tags": ["Emissions Calculations"],
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["items"],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "maxItems": 50,
+                    "items": {
+                      "$ref": "#/components/schemas/FlightEmissionsV1Request"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Emissions calculation results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmissionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or bad request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions or unverified email"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/calculations/v2/flights": {
+      "post": {
+        "operationId": "calculateFlightEmissionsV2",
+        "summary": "Calculate flight emissions (v2)",
+        "description": "Calculate CO2 emissions for flights with enhanced parameters including carrier and equipment codes.",
+        "tags": ["Emissions Calculations"],
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["items"],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "maxItems": 50,
+                    "items": {
+                      "$ref": "#/components/schemas/FlightEmissionsV2Request"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Emissions calculation results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmissionsV2Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or bad request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions or unverified email"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/calculations/v1/hotels": {
+      "post": {
+        "operationId": "calculateHotelEmissions",
+        "summary": "Calculate hotel emissions",
+        "description": "Calculate CO2 emissions for hotel stays based on location, duration, and hotel rating.",
+        "tags": ["Emissions Calculations"],
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["items"],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "maxItems": 50,
+                    "items": {
+                      "$ref": "#/components/schemas/HotelEmissionsRequest"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Emissions calculation results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HotelEmissionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or bad request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions or unverified email"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/calculations/v1/distances/sea": {
+      "post": {
+        "operationId": "calculateSeaDistance",
+        "summary": "Calculate sea distance",
+        "description": "Create an asynchronous job to calculate sea distances using Rhumb Line Routing methodology. Accepts UN/LOCODE locations.",
+        "tags": ["Distance Calculations"],
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DistanceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Distance calculation job created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistanceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or bad request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/calculations/v1/distances/rail": {
+      "post": {
+        "operationId": "calculateRailDistance",
+        "summary": "Calculate rail distance",
+        "description": "Create an asynchronous job to calculate rail distances between addresses.",
+        "tags": ["Distance Calculations"],
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddressDistanceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Distance calculation job created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressDistanceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or bad request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/calculations/v1/distances/road": {
+      "post": {
+        "operationId": "calculateRoadDistance",
+        "summary": "Calculate road distance",
+        "description": "Create an asynchronous job to calculate road distances using ordinary truck route methodology.",
+        "tags": ["Distance Calculations"],
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddressDistanceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Distance calculation job created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressDistanceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or bad request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/calculations/v1/distances/air": {
+      "post": {
+        "operationId": "calculateAirDistance",
+        "summary": "Calculate air distance",
+        "description": "Create an asynchronous job to calculate air distances using Haversine great circle distance methodology.",
+        "tags": ["Distance Calculations"],
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AirDistanceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Distance calculation job created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistanceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or bad request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/calculations/v1/locations/airports": {
+      "get": {
+        "operationId": "getAirports",
+        "summary": "Get airports",
+        "description": "Search and retrieve airport information including IATA codes and geographic data.",
+        "tags": ["Location Datasets"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "description": "Airport search query (e.g., 'Berlin')",
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "iataCode",
+            "in": "query",
+            "description": "IATA code of the airport (e.g., 'BER')",
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "description": "Types of airport to include",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["small_airport", "medium_airport", "large_airport"]
+              }
+            }
+          },
+          {
+            "name": "scheduledService",
+            "in": "query",
+            "description": "Only show airports with scheduled service",
+            "schema": {"type": "boolean"}
+          },
+          {
+            "name": "queryFields",
+            "in": "query",
+            "description": "Fields to query by",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["iataCode", "name", "type", "regionName", "continentName", "countryName", "municipalityName", "keywords"]
+              }
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Field to sort results by",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["name:asc", "name:desc", "iataCode:asc", "iataCode:desc", "type:asc", "type:desc"]
+              }
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Number of airports per page (1-100, default 20)",
+            "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 20}
+          },
+          {
+            "name": "pageNumber",
+            "in": "query",
+            "description": "Page number to retrieve",
+            "schema": {"type": "integer", "default": 1}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of airports",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AirportsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing access token"
+          },
+          "403": {
+            "description": "Insufficient permissions"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/calculations/v1/locations/locodes": {
+      "get": {
+        "operationId": "getLocodes",
+        "summary": "Get UN/LOCODEs",
+        "description": "Search and retrieve UN/LOCODE location information.",
+        "tags": ["Location Datasets"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "description": "UN/LOCODE search query (e.g., 'Shanghai')",
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "locode",
+            "in": "query",
+            "description": "UN/LOCODE value (e.g., 'CN SGH')",
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "countryCode",
+            "in": "query",
+            "description": "ISO 3166-1 alpha-2 country code",
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "functions",
+            "in": "query",
+            "description": "Locode function types",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["UNKNOWN", "PORT", "RAIL_TERMINAL", "ROAD_TERMINAL", "AIRPORT", "POSTAL_EXCHANGE_OFFICE", "MULTIMODAL", "FIXED_TRANSPORT", "INLAND_PORT", "BORDER_CROSSING"]
+              }
+            }
+          },
+          {
+            "name": "queryFields",
+            "in": "query",
+            "description": "Fields to search",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["name", "originalName", "locode", "countryCode", "locationCode", "iataCode"]
+              }
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort options",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["name:asc", "name:desc", "locode:asc", "locode:desc", "countryCode:asc", "countryCode:desc"]
+              }
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Results per page (1-100, default 20)",
+            "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 20}
+          },
+          {
+            "name": "pageNumber",
+            "in": "query",
+            "description": "Page number (default 1)",
+            "schema": {"type": "integer", "default": 1}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of locodes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocodesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing access token"
+          },
+          "403": {
+            "description": "Insufficient permissions"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "Access token for calling secured endpoints"
+          },
+          "expiresIn": {
+            "type": "string",
+            "description": "Time in seconds until the access token expires"
+          }
+        }
+      },
+      "FlightEmissionsV1Request": {
+        "type": "object",
+        "required": ["returnFlight", "pax", "iataOrigin", "iataDestination"],
+        "properties": {
+          "returnFlight": {
+            "type": "boolean",
+            "default": false
+          },
+          "pax": {
+            "type": "number",
+            "description": "Number of passengers"
+          },
+          "iataOrigin": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3,
+            "description": "IATA code of origin airport"
+          },
+          "iataDestination": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3,
+            "description": "IATA code of destination airport"
+          },
+          "cabinClass": {
+            "type": "string",
+            "description": "Cabin class (e.g., Economy)"
+          }
+        }
+      },
+      "FlightEmissionsV2Request": {
+        "type": "object",
+        "required": ["originIataCode", "destinationIataCode", "pax", "returnFlight"],
+        "properties": {
+          "originIataCode": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3,
+            "description": "IATA code of origin airport"
+          },
+          "destinationIataCode": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3,
+            "description": "IATA code of destination airport"
+          },
+          "pax": {
+            "type": "number",
+            "description": "Number of passengers"
+          },
+          "returnFlight": {
+            "type": "boolean",
+            "default": false
+          },
+          "cabinClass": {
+            "type": "string",
+            "enum": ["business", "economy", "first", "premiumEconomy"]
+          },
+          "carrierIataCode": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 3,
+            "description": "Airline IATA code"
+          },
+          "equipmentIataCode": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 3,
+            "description": "Aircraft equipment IATA code"
+          },
+          "publicationYear": {
+            "type": "integer",
+            "enum": [2019, 2020, 2021, 2022, 2023, 2024, 2025],
+            "default": 2025
+          }
+        }
+      },
+      "HotelEmissionsRequest": {
+        "type": "object",
+        "required": ["locationISOCode", "nights"],
+        "properties": {
+          "locationISOCode": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country code"
+          },
+          "nights": {
+            "type": "number",
+            "description": "Number of nights"
+          },
+          "rooms": {
+            "type": "number",
+            "description": "Number of rooms (preferred over travelers)"
+          },
+          "travelers": {
+            "type": "number",
+            "description": "Number of travelers (fallback if rooms unavailable)"
+          },
+          "rating": {
+            "type": "string",
+            "description": "Hotel rating",
+            "default": "Average hotel"
+          }
+        }
+      },
+      "EmissionsTotal": {
+        "type": "object",
+        "properties": {
+          "quantity": {"type": "string"},
+          "unit": {"type": "string"}
+        }
+      },
+      "EmissionsResponse": {
+        "type": "object",
+        "properties": {
+          "total": {"$ref": "#/components/schemas/EmissionsTotal"},
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "total": {"$ref": "#/components/schemas/EmissionsTotal"}
+                  }
+                },
+                "error": {
+                  "type": "object",
+                  "nullable": true,
+                  "properties": {
+                    "message": {"type": "string"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "EmissionsV2Response": {
+        "type": "object",
+        "properties": {
+          "aggregatedEmissions": {
+            "type": "object",
+            "properties": {
+              "total": {"type": "string"},
+              "unit": {"type": "string"},
+              "ttwTotal": {"type": "string"},
+              "wttTotal": {"type": "string"},
+              "ttwRaw": {"type": "string"},
+              "ttwRfi": {"type": "string"},
+              "ttwGasesUplift": {"type": "string"},
+              "distanceKmWithUplift": {"type": "string"}
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "emissions": {
+                      "type": "object",
+                      "properties": {
+                        "total": {"type": "string"},
+                        "unit": {"type": "string"},
+                        "ttwTotal": {"type": "string"},
+                        "wttTotal": {"type": "string"},
+                        "ttwRaw": {"type": "string"},
+                        "ttwRfi": {"type": "string"},
+                        "ttwGasesUplift": {"type": "string"},
+                        "distanceKmWithUplift": {"type": "string"}
+                      }
+                    },
+                    "emissionFactors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "source": {"type": "string"},
+                          "originIataCode": {"type": "string"},
+                          "destinationIataCode": {"type": "string"},
+                          "haul": {"type": "string"},
+                          "cabinClass": {"type": "string"},
+                          "equipmentIataCode": {"type": "string"},
+                          "carrierIataCode": {"type": "string"},
+                          "ttw": {"type": "string"},
+                          "wtt": {"type": "string"}
+                        }
+                      }
+                    }
+                  }
+                },
+                "error": {
+                  "type": "object",
+                  "nullable": true,
+                  "properties": {
+                    "message": {"type": "string"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "HotelEmissionsResponse": {
+        "type": "object",
+        "properties": {
+          "total": {"$ref": "#/components/schemas/EmissionsTotal"},
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "total": {"$ref": "#/components/schemas/EmissionsTotal"},
+                    "matchedParameters": {
+                      "type": "object",
+                      "properties": {
+                        "locationISOCode": {"type": "string"},
+                        "rating": {"type": "string"}
+                      }
+                    },
+                    "matchedAllParameters": {"type": "boolean"}
+                  }
+                },
+                "error": {
+                  "type": "object",
+                  "nullable": true,
+                  "properties": {
+                    "message": {"type": "string"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "DistanceRequest": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "maxItems": 250,
+            "items": {
+              "type": "object",
+              "required": ["origin", "destination"],
+              "properties": {
+                "origin": {
+                  "type": "string",
+                  "description": "Origin location (UN/LOCODE format)"
+                },
+                "destination": {
+                  "type": "string",
+                  "description": "Destination location (UN/LOCODE format)"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AddressDistanceRequest": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "maxItems": 250,
+            "items": {
+              "type": "object",
+              "required": ["origin", "destination"],
+              "properties": {
+                "origin": {
+                  "type": "string",
+                  "description": "Full address for origin"
+                },
+                "destination": {
+                  "type": "string",
+                  "description": "Full address for destination"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AirDistanceRequest": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "maxItems": 250,
+            "items": {
+              "type": "object",
+              "required": ["origin", "destination"],
+              "properties": {
+                "origin": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 3,
+                  "description": "Origin IATA airport code"
+                },
+                "destination": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 3,
+                  "description": "Destination IATA airport code"
+                }
+              }
+            }
+          }
+        }
+      },
+      "DistanceValue": {
+        "type": "object",
+        "properties": {
+          "value": {"type": "string"},
+          "unit": {"type": "string"}
+        }
+      },
+      "DistanceResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["completed", "failed", "pending"]
+                },
+                "error": {
+                  "type": "object",
+                  "nullable": true,
+                  "properties": {
+                    "message": {"type": "string"}
+                  }
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "distance": {"$ref": "#/components/schemas/DistanceValue"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "AddressDistanceResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["completed", "failed", "pending"]
+                },
+                "error": {
+                  "type": "object",
+                  "nullable": true,
+                  "properties": {
+                    "message": {"type": "string"}
+                  }
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "distance": {"$ref": "#/components/schemas/DistanceValue"},
+                    "matchedAddresses": {
+                      "type": "object",
+                      "properties": {
+                        "origin": {"type": "string"},
+                        "destination": {"type": "string"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "AirportsResponse": {
+        "type": "object",
+        "properties": {
+          "airports": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "iataCode": {"type": "string"},
+                "name": {"type": "string"},
+                "lat": {"type": "number"},
+                "lng": {"type": "number"},
+                "type": {"type": "string"},
+                "continentName": {"type": "string"},
+                "continentCode": {"type": "string"},
+                "regionName": {"type": "string"},
+                "regionCode": {"type": "string"},
+                "countryName": {"type": "string"},
+                "countryCode": {"type": "string"},
+                "municipalityName": {"type": "string"},
+                "scheduledService": {"type": "boolean"},
+                "keywords": {"type": "string"}
+              }
+            }
+          }
+        }
+      },
+      "LocodesResponse": {
+        "type": "object",
+        "properties": {
+          "locodes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "locode": {"type": "string"},
+                "name": {"type": "string"},
+                "originalName": {"type": "string"},
+                "functions": {
+                  "type": "array",
+                  "items": {"type": "string"}
+                },
+                "countryCode": {"type": "string"},
+                "locationCode": {"type": "string"},
+                "iataCode": {"type": "string"},
+                "lat": {"type": "number"},
+                "lng": {"type": "number"}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {"bearerAuth": []}
+  ]
+}
