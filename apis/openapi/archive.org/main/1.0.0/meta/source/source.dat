@@ -1,0 +1,459 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Internet Archive Metadata API",
+    "description": "The Internet Archive Metadata API provides read and write access to item metadata in the Internet Archive, as well as search functionality.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://archive.org/developers/"
+  },
+  "servers": [
+    {
+      "url": "https://archive.org",
+      "description": "Internet Archive production"
+    }
+  ],
+  "security": [],
+  "paths": {
+    "/metadata/{identifier}": {
+      "get": {
+        "operationId": "getItemMetadata",
+        "summary": "Retrieve complete item metadata",
+        "description": "Returns an item's complete metadata record in JSON format.",
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The exact item identifier"
+          },
+          {
+            "name": "extended_err",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "enum": [1]
+            },
+            "description": "Enable machine-parsable error codes"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item metadata retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemMetadata"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Item not found"
+          }
+        }
+      },
+      "post": {
+        "operationId": "updateItemMetadata",
+        "summary": "Update item metadata",
+        "description": "Update item metadata, files, or user JSON using JSON Patch operations.",
+        "security": [
+          {
+            "s3Auth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The exact item identifier"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "-target": {
+                    "type": "string",
+                    "description": "Target location (metadata, files/{filename}, or user JSON identifier)"
+                  },
+                  "-patch": {
+                    "type": "string",
+                    "description": "JSON Patch (JSON-encoded)"
+                  },
+                  "-changes": {
+                    "type": "string",
+                    "description": "JSON-encoded array of objects containing target and patch keys (for multi-target writes)"
+                  },
+                  "priority": {
+                    "type": "integer",
+                    "description": "Execution priority (default: 0)"
+                  },
+                  "access": {
+                    "type": "string",
+                    "description": "S3 access key (alternative to Authorization header)"
+                  },
+                  "secret": {
+                    "type": "string",
+                    "description": "S3 secret key (alternative to Authorization header)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Metadata updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WriteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WriteErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Rate limited",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metadata/{identifier}/{field}": {
+      "get": {
+        "operationId": "getItemMetadataField",
+        "summary": "Retrieve a specific metadata field",
+        "description": "Fetches a specific field or sub-field from an item's metadata.",
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "field",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Target field name"
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Array slice starting index"
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Array slice length"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Field data retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "description": "The requested field data"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Item or field not found"
+          }
+        }
+      }
+    },
+    "/advancedsearch.php": {
+      "get": {
+        "operationId": "searchItems",
+        "summary": "Search Internet Archive items",
+        "description": "Search the Internet Archive catalog using Solr-based queries.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search query string"
+          },
+          {
+            "name": "fl[]",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Fields to return"
+          },
+          {
+            "name": "rows",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            },
+            "description": "Number of results to return"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number"
+          },
+          {
+            "name": "output",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["json", "xml", "csv"]
+            },
+            "description": "Output format"
+          },
+          {
+            "name": "sort[]",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Sort fields"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/download/{identifier}/{filename}": {
+      "get": {
+        "operationId": "downloadFile",
+        "summary": "Download a file from an item",
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filename",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File content",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "File not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "s3Auth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "S3-like auth: LOW <s3-access>:<s3-secret>"
+      }
+    },
+    "schemas": {
+      "ItemMetadata": {
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "number"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "server": {
+            "type": "string"
+          },
+          "d1": {
+            "type": "string"
+          },
+          "d2": {
+            "type": "string"
+          },
+          "dir": {
+            "type": "string"
+          }
+        }
+      },
+      "WriteResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "task_id": {
+            "type": "integer"
+          },
+          "log": {
+            "type": "string"
+          }
+        }
+      },
+      "WriteErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "SearchResponse": {
+        "type": "object",
+        "properties": {
+          "responseHeader": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "integer"
+              },
+              "QTime": {
+                "type": "integer"
+              },
+              "params": {
+                "type": "object"
+              }
+            }
+          },
+          "response": {
+            "type": "object",
+            "properties": {
+              "numFound": {
+                "type": "integer"
+              },
+              "start": {
+                "type": "integer"
+              },
+              "docs": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
