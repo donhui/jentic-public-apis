@@ -1,0 +1,244 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Canada Post Rating API",
+    "description": "Canada Post Rating Web Service for retrieving shipping rates, services, prices, and transit times. Uses XML-based requests and responses with HTTP Basic Authentication.",
+    "version": "4.0",
+    "x-jentic-source-url": "https://www.canadapost-postescanada.ca/info/mc/business/productsservices/developers/services/gettingstarted.jsf"
+  },
+  "servers": [
+    {
+      "url": "https://soa-gw.canadapost.ca",
+      "description": "Production"
+    },
+    {
+      "url": "https://ct.soa-gw.canadapost.ca",
+      "description": "Development / Testing"
+    }
+  ],
+  "paths": {
+    "/rs/ship/price": {
+      "post": {
+        "operationId": "getRates",
+        "summary": "Get shipping rates",
+        "description": "Returns a list of shipping services, prices, and transit times for a given shipment. Accepts XML mailing-scenario and returns price-quotes.",
+        "tags": ["Rating"],
+        "parameters": [
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "application/vnd.cpc.ship.rate-v4+xml"
+            }
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "application/vnd.cpc.ship.rate-v4+xml"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["en-CA", "fr-CA"],
+              "default": "en-CA"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/vnd.cpc.ship.rate-v4+xml": {
+              "schema": {
+                "$ref": "#/components/schemas/MailingScenario"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rates returned successfully",
+            "content": {
+              "application/vnd.cpc.ship.rate-v4+xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceQuotes"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Business rule violation",
+            "content": {
+              "application/vnd.cpc.ship.rate-v4+xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/Messages"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid credentials"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "HTTP Basic Authentication with userid:password"
+      }
+    },
+    "schemas": {
+      "MailingScenario": {
+        "type": "object",
+        "description": "Shipping rate request. XML root element: mailing-scenario with namespace http://www.canadapost.ca/ws/ship/rate-v4",
+        "required": ["origin-postal-code", "destination", "parcel-characteristics"],
+        "properties": {
+          "customer-number": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "Customer number for commercial discounts"
+          },
+          "contract-id": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "Required when customer-number is provided"
+          },
+          "promo-code": {
+            "type": "string",
+            "description": "Promotional discount code"
+          },
+          "quote-type": {
+            "type": "string",
+            "enum": ["commercial", "counter"],
+            "default": "commercial"
+          },
+          "expected-mailing-date": {
+            "type": "string",
+            "format": "date",
+            "description": "Date in YYYY-MM-DD format; impacts delivery date calculations"
+          },
+          "origin-postal-code": {
+            "type": "string",
+            "description": "Format: ANANAN (uppercase only)"
+          },
+          "parcel-characteristics": {
+            "type": "object",
+            "required": ["weight"],
+            "properties": {
+              "weight": {
+                "type": "number",
+                "format": "double",
+                "maximum": 99.999,
+                "description": "Weight in kg"
+              },
+              "dimensions": {
+                "type": "object",
+                "properties": {
+                  "length": { "type": "number", "description": "Length in cm" },
+                  "width": { "type": "number", "description": "Width in cm" },
+                  "height": { "type": "number", "description": "Height in cm" }
+                }
+              }
+            }
+          },
+          "destination": {
+            "type": "object",
+            "description": "One of domestic, united-states, or international",
+            "properties": {
+              "domestic": {
+                "type": "object",
+                "properties": {
+                  "postal-code": { "type": "string" }
+                }
+              },
+              "united-states": {
+                "type": "object",
+                "properties": {
+                  "zip-code": { "type": "string" }
+                }
+              },
+              "international": {
+                "type": "object",
+                "properties": {
+                  "country-code": { "type": "string" }
+                }
+              }
+            }
+          },
+          "service-code": {
+            "type": "string",
+            "description": "Specific service code; omit to get all applicable services"
+          }
+        }
+      },
+      "PriceQuotes": {
+        "type": "object",
+        "description": "Response containing rate quotes for available services",
+        "properties": {
+          "price-quotes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriceQuote"
+            }
+          }
+        }
+      },
+      "PriceQuote": {
+        "type": "object",
+        "properties": {
+          "service-code": { "type": "string", "description": "Service identifier (e.g., DOM.EP, USA.XP)" },
+          "service-name": { "type": "string", "description": "Localized service description" },
+          "price-details": {
+            "type": "object",
+            "properties": {
+              "base": { "type": "number", "format": "double", "description": "Pre-tax cost" },
+              "due": { "type": "number", "format": "double", "description": "Total including taxes and options" },
+              "gst": { "type": "number", "format": "double" },
+              "pst": { "type": "number", "format": "double" },
+              "hst": { "type": "number", "format": "double" }
+            }
+          },
+          "service-standard": {
+            "type": "object",
+            "properties": {
+              "expected-delivery-date": { "type": "string", "format": "date" },
+              "guaranteed-delivery": { "type": "boolean" },
+              "expected-transit-time": { "type": "integer", "description": "Days from drop-off to first attempt" }
+            }
+          }
+        }
+      },
+      "Messages": {
+        "type": "object",
+        "description": "Error response",
+        "properties": {
+          "message": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": { "type": "string" },
+                "description": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    { "basicAuth": [] }
+  ]
+}
