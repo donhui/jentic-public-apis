@@ -1,0 +1,333 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "BippyBox API",
+    "version": "1.0.0",
+    "description": "API for interacting with BippyBox IoT notification devices. Retrieve user data and trigger BippyBox devices to play audio with color notifications.",
+    "x-jentic-source-url": "https://bippybox.io/docs/"
+  },
+  "servers": [
+    {
+      "url": "https://app.bippybox.io",
+      "description": "BippyBox App Server"
+    },
+    {
+      "url": "https://mqtt.bippybox.io",
+      "description": "BippyBox MQTT Server"
+    }
+  ],
+  "paths": {
+    "/getuserdata": {
+      "get": {
+        "operationId": "getuserdata",
+        "summary": "Get user data",
+        "description": "Retrieves comprehensive user account information including connected devices, custom colors, and uploaded audio files.",
+        "tags": [
+          "User"
+        ],
+        "servers": [
+          {
+            "url": "https://app.bippybox.io"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "x-uid",
+            "in": "header",
+            "required": true,
+            "description": "User ID for authentication. Keep this secure and do not share publicly.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserData"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing or invalid UID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid UID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "uidAuth": []
+          }
+        ]
+      }
+    },
+    "/send": {
+      "post": {
+        "operationId": "triggerbippybox",
+        "summary": "Trigger a BippyBox device",
+        "description": "Activates a specified BippyBox device to play audio with a selected color notification.",
+        "tags": [
+          "Device"
+        ],
+        "servers": [
+          {
+            "url": "https://mqtt.bippybox.io"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TriggerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Command sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TriggerResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid or missing fields, or device not associated with account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid UID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "uidAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UserData": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "string",
+            "description": "User unique identifier"
+          },
+          "createdAt": {
+            "type": "number",
+            "description": "Account creation timestamp"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "User email address"
+          },
+          "claimedDevices": {
+            "type": "array",
+            "description": "List of connected BippyBox devices",
+            "items": {
+              "$ref": "#/components/schemas/ClaimedDevice"
+            }
+          },
+          "colors": {
+            "type": "array",
+            "description": "Custom color configurations",
+            "items": {
+              "$ref": "#/components/schemas/Color"
+            }
+          },
+          "audioFiles": {
+            "type": "array",
+            "description": "Uploaded audio files",
+            "items": {
+              "$ref": "#/components/schemas/AudioFile"
+            }
+          }
+        }
+      },
+      "ClaimedDevice": {
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "description": "Unique device identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "User-assigned device name"
+          }
+        }
+      },
+      "Color": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Color name"
+          },
+          "hex": {
+            "type": "string",
+            "description": "Hex color code"
+          }
+        }
+      },
+      "AudioFile": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Audio file name"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to the audio file"
+          }
+        }
+      },
+      "TriggerRequest": {
+        "type": "object",
+        "required": [
+          "uid",
+          "deviceID",
+          "URL",
+          "color"
+        ],
+        "properties": {
+          "uid": {
+            "type": "string",
+            "description": "User ID for authentication"
+          },
+          "deviceID": {
+            "type": "string",
+            "description": "Target BippyBox device ID"
+          },
+          "URL": {
+            "type": "string",
+            "format": "uri",
+            "description": "Audio file URL to play"
+          },
+          "color": {
+            "type": "string",
+            "description": "Hex color code for the notification"
+          }
+        }
+      },
+      "TriggerResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Result message",
+            "example": "Command sent successfully"
+          },
+          "status": {
+            "type": "string",
+            "description": "Device connection status",
+            "enum": [
+              "connected",
+              "disconnected"
+            ]
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "status": {
+            "type": "string",
+            "description": "Device status if applicable"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "description": "Error message"
+              },
+              "code": {
+                "type": "string",
+                "description": "Error code"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "uidAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-uid",
+        "description": "User ID used for authentication. Keep this secure."
+      }
+    }
+  },
+  "security": [
+    {
+      "uidAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Device",
+      "description": "Operations related to Device"
+    },
+    {
+      "name": "User",
+      "description": "Operations related to User"
+    }
+  ]
+}
