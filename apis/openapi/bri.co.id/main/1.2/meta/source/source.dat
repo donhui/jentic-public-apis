@@ -1,0 +1,384 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "BRIAPI",
+    "description": "BRI (Bank Rakyat Indonesia) API for banking services including direct debit, BRIZZI top-up, and BRIVA payment.",
+    "version": "1.2",
+    "x-jentic-source-url": "https://developers.bri.co.id/en"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.partner.api.bri.co.id",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://partner.api.bri.co.id",
+      "description": "Production"
+    }
+  ],
+  "paths": {
+    "/oauth/client_credential/accesstoken": {
+      "post": {
+        "operationId": "getAccessToken",
+        "tags": ["Authentication"],
+        "summary": "Get OAuth access token",
+        "description": "Obtain an access token using client credentials. Token is valid for 50 hours.",
+        "parameters": [
+          {
+            "name": "grant_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["client_credentials"]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["client_id", "client_secret"],
+                "properties": {
+                  "client_id": {
+                    "type": "string",
+                    "description": "Consumer key"
+                  },
+                  "client_secret": {
+                    "type": "string",
+                    "description": "Consumer secret"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Access token response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        }
+      }
+    },
+    "/v1.2/directdebit/tokens": {
+      "post": {
+        "operationId": "createDirectDebitToken",
+        "tags": ["Direct Debit"],
+        "summary": "Create direct debit token",
+        "description": "Create a token for direct debit transactions.",
+        "security": [{"bearerAuth": []}, {"briSignature": []}],
+        "parameters": [
+          {
+            "name": "BRI-Timestamp",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "ISO8601 timestamp (yyyy-MM-ddTHH:mm:ss.SSSZ) in UTC"
+          },
+          {
+            "name": "X-BRI-Signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "HMAC-SHA256 signature"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DirectDebitTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Direct debit token created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectDebitTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/v1/brizzi/topup": {
+      "post": {
+        "operationId": "topUpBrizzi",
+        "tags": ["BRIZZI"],
+        "summary": "BRIZZI top-up",
+        "description": "Top up a BRIZZI card.",
+        "security": [{"bearerAuth": []}, {"briSignature": []}],
+        "parameters": [
+          {
+            "name": "BRI-Timestamp",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "BRI-Signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BrizziTopUpRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Top-up successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/v1/briva": {
+      "post": {
+        "operationId": "createBrivaPayment",
+        "tags": ["BRIVA"],
+        "summary": "Create BRIVA payment",
+        "description": "Create a BRI Virtual Account payment.",
+        "security": [{"bearerAuth": []}, {"briSignature": []}],
+        "parameters": [
+          {
+            "name": "BRI-Timestamp",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "BRI-Signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BrivaPaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "BRIVA payment created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrivaPaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "OAuth2 access token obtained from /oauth/client_credential/accesstoken"
+      },
+      "briSignature": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "BRI-Signature",
+        "description": "HMAC-SHA256 signature using consumer secret as key, Base64 encoded"
+      }
+    },
+    "schemas": {
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "token_type": {
+            "type": "string"
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Token validity in seconds"
+          }
+        }
+      },
+      "DirectDebitTokenRequest": {
+        "type": "object",
+        "required": ["card_pan", "phone_number", "email"],
+        "properties": {
+          "card_pan": {
+            "type": "string"
+          },
+          "phone_number": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          }
+        }
+      },
+      "DirectDebitTokenResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "BrizziTopUpRequest": {
+        "type": "object",
+        "required": ["username", "card_number"],
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "card_number": {
+            "type": "string"
+          }
+        }
+      },
+      "BrivaPaymentRequest": {
+        "type": "object",
+        "required": ["institutionCode", "brivaNo", "custCode", "nama", "amount"],
+        "properties": {
+          "institutionCode": {
+            "type": "string"
+          },
+          "brivaNo": {
+            "type": "string"
+          },
+          "custCode": {
+            "type": "string"
+          },
+          "nama": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "keterangan": {
+            "type": "string"
+          },
+          "expiredDate": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BrivaPaymentResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "responseDescription": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "institutionCode": {
+                "type": "string"
+              },
+              "brivaNo": {
+                "type": "string"
+              },
+              "custCode": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
