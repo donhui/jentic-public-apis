@@ -1,0 +1,649 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "asciinema Server API",
+    "version": "1.0.0",
+    "description": "REST API for the asciinema server, allowing management of recordings and live streams.",
+    "x-jentic-source-url": "https://docs.asciinema.org/manual/server/api/"
+  },
+  "servers": [
+    {
+      "url": "https://asciinema.org",
+      "description": "asciinema.org public server"
+    }
+  ],
+  "paths": {
+    "/api/v1/recordings": {
+      "post": {
+        "operationId": "createRecording",
+        "summary": "Create a new recording",
+        "description": "Creates a new recording from an asciicast file upload.",
+        "tags": [
+          "Recordings"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The asciicast file to upload"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Recording title"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Recording description in markdown"
+                  },
+                  "visibility": {
+                    "type": "string",
+                    "enum": [
+                      "public",
+                      "unlisted",
+                      "private"
+                    ],
+                    "description": "Recording visibility"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Recording created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recording"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/recordings/{id}": {
+      "patch": {
+        "operationId": "updateRecording",
+        "summary": "Update recording metadata",
+        "description": "Updates the title, description, or visibility of a recording.",
+        "tags": [
+          "Recordings"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Recording integer ID or URL token",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordingUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recording updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recording"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "deleteRecording",
+        "summary": "Delete a recording",
+        "description": "Permanently deletes a recording.",
+        "tags": [
+          "Recordings"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Recording integer ID or URL token",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Recording deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/user/streams": {
+      "get": {
+        "operationId": "listUserStreams",
+        "summary": "List user streams",
+        "description": "Lists the authenticated user's streams with pagination support.",
+        "tags": [
+          "Streams"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of streams to return (max 100, default 10)",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "prefix",
+            "in": "query",
+            "description": "Filter streams by URL token prefix",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Cursor for pagination (from Link header rel=next)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of streams",
+            "headers": {
+              "Link": {
+                "description": "Pagination link header for next page",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Stream"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/streams": {
+      "post": {
+        "operationId": "createStream",
+        "summary": "Create a new live stream",
+        "description": "Creates a new live stream endpoint.",
+        "tags": [
+          "Streams"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StreamCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stream created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stream"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/streams/{id}": {
+      "patch": {
+        "operationId": "updateStream",
+        "summary": "Update stream metadata",
+        "description": "Updates the title, description, live status, or visibility of a stream.",
+        "tags": [
+          "Streams"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Stream integer ID or URL token",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StreamUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stream updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stream"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "deleteStream",
+        "summary": "Delete a stream",
+        "description": "Permanently deletes a stream.",
+        "tags": [
+          "Streams"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Stream integer ID or URL token",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Stream deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "HTTP Basic Authentication using the CLI install ID as the password field. Username is left empty."
+      }
+    },
+    "schemas": {
+      "Recording": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Recording ID"
+          },
+          "url_token": {
+            "type": "string",
+            "description": "URL token for the recording"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Web URL for the recording page"
+          },
+          "file_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to download the asciicast file"
+          },
+          "audio_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Audio file URL (e.g. mp3), if set"
+          },
+          "title": {
+            "type": "string",
+            "description": "Recording title"
+          },
+          "description": {
+            "type": "string",
+            "description": "Recording description in markdown"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "unlisted",
+              "private"
+            ],
+            "description": "Recording visibility"
+          }
+        }
+      },
+      "RecordingUpdate": {
+        "type": "object",
+        "properties": {
+          "audio_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Audio file URL (e.g. mp3) to attach to the recording"
+          },
+          "title": {
+            "type": "string",
+            "description": "New title for the recording"
+          },
+          "description": {
+            "type": "string",
+            "description": "New description in markdown"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "unlisted",
+              "private"
+            ],
+            "description": "New visibility setting"
+          }
+        }
+      },
+      "Stream": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Stream ID"
+          },
+          "url_token": {
+            "type": "string",
+            "description": "URL token for the stream"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Web URL for the stream page"
+          },
+          "ws_producer_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Producer WebSocket endpoint for sending stream data"
+          },
+          "audio_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Audio URL (e.g. Icecast stream endpoint), if set"
+          },
+          "title": {
+            "type": "string",
+            "description": "Stream title"
+          },
+          "description": {
+            "type": "string",
+            "description": "Stream description"
+          },
+          "live": {
+            "type": "boolean",
+            "description": "Whether the stream is currently live"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "unlisted",
+              "private"
+            ],
+            "description": "Stream visibility"
+          }
+        }
+      },
+      "StreamCreate": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Stream title"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "unlisted",
+              "private"
+            ],
+            "description": "Stream visibility"
+          },
+          "live": {
+            "type": "boolean",
+            "description": "Whether the stream is live"
+          },
+          "audio_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Audio URL (e.g. Icecast stream endpoint)"
+          }
+        }
+      },
+      "StreamUpdate": {
+        "type": "object",
+        "properties": {
+          "audio_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Audio URL (e.g. Icecast stream endpoint)"
+          },
+          "title": {
+            "type": "string",
+            "description": "New title"
+          },
+          "description": {
+            "type": "string",
+            "description": "New description"
+          },
+          "live": {
+            "type": "boolean",
+            "description": "Live status"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "unlisted",
+              "private"
+            ],
+            "description": "New visibility setting"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "basicAuth": []
+    }
+  ]
+}
