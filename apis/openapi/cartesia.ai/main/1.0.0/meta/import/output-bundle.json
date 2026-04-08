@@ -1,0 +1,506 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Cartesia API",
+    "description": "Cartesia provides ultra-fast, realistic voice AI APIs including text-to-speech (TTS) with the Sonic model family and speech-to-text (STT) with the Ink model family. Supports byte and server-sent event streaming output formats for TTS, and file-based transcription for STT.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://docs.cartesia.ai/"
+  },
+  "servers": [
+    {
+      "url": "https://api.cartesia.ai",
+      "description": "Cartesia Production API"
+    }
+  ],
+  "paths": {
+    "/tts/bytes": {
+      "post": {
+        "operationId": "generateSpeechBytes",
+        "summary": "Text to speech (bytes)",
+        "description": "Generate speech audio from text input. Returns the complete audio as a binary response in the specified output format.",
+        "tags": [
+          "Text to Speech"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/cartesiaVersion"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TTSRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Audio data returned successfully.",
+            "headers": {
+              "Cartesia-File-ID": {
+                "description": "File ID returned when save is set to true.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "audio/wav": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "audio/mpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "audio/pcm": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/stt": {
+      "post": {
+        "operationId": "transcribeAudio",
+        "summary": "Speech to text (transcribe)",
+        "description": "Transcribe an audio file to text using the Ink model family. Supports multiple audio formats and optional word-level timestamps.",
+        "tags": [
+          "Speech to Text"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/cartesiaVersion"
+          },
+          {
+            "name": "encoding",
+            "in": "query",
+            "description": "Audio encoding format.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pcm_s16le",
+                "pcm_s32le",
+                "pcm_f16le",
+                "pcm_f32le",
+                "pcm_mulaw",
+                "pcm_alaw"
+              ]
+            }
+          },
+          {
+            "name": "sample_rate",
+            "in": "query",
+            "description": "Audio sample rate in Hz.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file",
+                  "model"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Audio file to transcribe. Supported formats: flac, m4a, mp3, mp4, mpeg, mpga, oga, ogg, wav, webm."
+                  },
+                  "model": {
+                    "type": "string",
+                    "description": "Model identifier for transcription (e.g., ink-whisper)."
+                  },
+                  "language": {
+                    "type": "string",
+                    "description": "ISO-639-1 language code. Defaults to English."
+                  },
+                  "timestamp_granularities[]": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "word"
+                      ]
+                    },
+                    "description": "Request word-level timestamps in response."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transcription result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/tts/sse": {
+      "post": {
+        "operationId": "generateSpeechSSE",
+        "summary": "Text to speech (SSE)",
+        "description": "Generate speech audio from text using server-sent events streaming. Returns audio chunks progressively via SSE.",
+        "tags": [
+          "Text to Speech"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/cartesiaVersion"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TTSSSERequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Streaming audio response via server-sent events.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Cartesia API key passed as a Bearer token."
+      },
+      "tokenAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "JWT access token for authentication."
+      }
+    },
+    "parameters": {
+      "cartesiaVersion": {
+        "name": "Cartesia-Version",
+        "in": "header",
+        "required": true,
+        "description": "API version identifier.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "2024-06-10",
+            "2024-11-13",
+            "2025-04-16",
+            "2026-03-01"
+          ]
+        }
+      }
+    },
+    "schemas": {
+      "TTSRequest": {
+        "type": "object",
+        "required": [
+          "model_id",
+          "transcript",
+          "voice",
+          "output_format"
+        ],
+        "properties": {
+          "model_id": {
+            "type": "string",
+            "description": "Model identifier for generation (e.g., sonic-2, sonic-3)."
+          },
+          "transcript": {
+            "type": "string",
+            "description": "Text to synthesize into speech."
+          },
+          "voice": {
+            "$ref": "#/components/schemas/VoiceSpecifier"
+          },
+          "output_format": {
+            "$ref": "#/components/schemas/OutputFormat"
+          },
+          "language": {
+            "type": "string",
+            "description": "Language code for speech generation (e.g., en, fr, es, zh, ja, de, it, pt, ko, nl, pl, sv, tr, hi, id, ru)."
+          },
+          "generation_config": {
+            "$ref": "#/components/schemas/GenerationConfig"
+          },
+          "pronunciation_dict_id": {
+            "type": "string",
+            "description": "Pronunciation dictionary ID for sonic-3 models."
+          },
+          "save": {
+            "type": "boolean",
+            "description": "When true, persist the generated audio and return a Cartesia-File-ID header."
+          }
+        }
+      },
+      "TTSSSERequest": {
+        "type": "object",
+        "required": [
+          "model_id",
+          "transcript",
+          "voice",
+          "output_format"
+        ],
+        "properties": {
+          "model_id": {
+            "type": "string",
+            "description": "Model identifier for generation."
+          },
+          "transcript": {
+            "type": "string",
+            "description": "Text to synthesize into speech."
+          },
+          "voice": {
+            "$ref": "#/components/schemas/VoiceSpecifier"
+          },
+          "output_format": {
+            "$ref": "#/components/schemas/SSEOutputFormat"
+          },
+          "language": {
+            "type": "string",
+            "description": "Language code for speech generation."
+          },
+          "generation_config": {
+            "$ref": "#/components/schemas/GenerationConfig"
+          },
+          "pronunciation_dict_id": {
+            "type": "string",
+            "description": "Pronunciation dictionary ID for sonic-3 models."
+          },
+          "add_timestamps": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable word-level timing information in the response."
+          },
+          "add_phoneme_timestamps": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable phoneme-level timing information in the response."
+          },
+          "context_id": {
+            "type": "string",
+            "description": "Optional context identifier for request correlation."
+          }
+        }
+      },
+      "VoiceSpecifier": {
+        "type": "object",
+        "required": [
+          "mode",
+          "id"
+        ],
+        "description": "Voice specification for TTS generation.",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "id"
+            ],
+            "description": "Voice selection mode."
+          },
+          "id": {
+            "type": "string",
+            "description": "Voice identifier."
+          }
+        }
+      },
+      "OutputFormat": {
+        "type": "object",
+        "required": [
+          "container"
+        ],
+        "description": "Audio output format configuration.",
+        "properties": {
+          "container": {
+            "type": "string",
+            "enum": [
+              "raw",
+              "wav",
+              "mp3"
+            ],
+            "description": "Audio container format."
+          },
+          "encoding": {
+            "type": "string",
+            "enum": [
+              "pcm_f32le",
+              "pcm_s16le",
+              "pcm_mulaw",
+              "pcm_alaw"
+            ],
+            "description": "PCM encoding (required for raw container)."
+          },
+          "sample_rate": {
+            "type": "integer",
+            "description": "Audio sample rate in Hz."
+          },
+          "bit_rate": {
+            "type": "integer",
+            "enum": [
+              32000,
+              64000,
+              96000,
+              128000,
+              192000
+            ],
+            "description": "Bit rate for MP3 output in bits per second."
+          }
+        }
+      },
+      "SSEOutputFormat": {
+        "type": "object",
+        "required": [
+          "container"
+        ],
+        "description": "Audio output format configuration for SSE streaming.",
+        "properties": {
+          "container": {
+            "type": "string",
+            "enum": [
+              "raw"
+            ],
+            "description": "Container format for SSE (only raw supported)."
+          },
+          "encoding": {
+            "type": "string",
+            "enum": [
+              "pcm_f32le",
+              "pcm_s16le",
+              "pcm_mulaw",
+              "pcm_alaw"
+            ],
+            "description": "PCM encoding format."
+          },
+          "sample_rate": {
+            "type": "integer",
+            "description": "Audio sample rate in Hz."
+          }
+        }
+      },
+      "TranscriptionResponse": {
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "The transcribed text."
+          },
+          "language": {
+            "type": "string",
+            "nullable": true,
+            "description": "Detected or specified audio language."
+          },
+          "duration": {
+            "type": "number",
+            "nullable": true,
+            "description": "Audio duration in seconds."
+          },
+          "words": {
+            "type": "array",
+            "nullable": true,
+            "description": "Word-level timing data (when timestamp_granularities includes 'word').",
+            "items": {
+              "type": "object",
+              "properties": {
+                "word": {
+                  "type": "string"
+                },
+                "start": {
+                  "type": "number",
+                  "description": "Start time in seconds."
+                },
+                "end": {
+                  "type": "number",
+                  "description": "End time in seconds."
+                }
+              }
+            }
+          }
+        }
+      },
+      "GenerationConfig": {
+        "type": "object",
+        "description": "Controls for voice generation behavior (Sonic-3+ models).",
+        "properties": {
+          "volume": {
+            "type": "number",
+            "description": "Volume level adjustment."
+          },
+          "speed": {
+            "type": "number",
+            "description": "Speech speed adjustment."
+          },
+          "emotion": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Emotion controls for the generated speech."
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKeyAuth": []
+    }
+  ]
+}
