@@ -1,0 +1,771 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "BCA Developer API",
+    "description": "Bank Central Asia developer API for account information, business debit cards, virtual accounts, and account opening.",
+    "version": "1.0",
+    "x-jentic-source-url": "https://developer.bca.co.id/"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.bca.co.id",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://api.bca.co.id",
+      "description": "Production"
+    }
+  ],
+  "paths": {
+    "/api/oauth/token": {
+      "post": {
+        "operationId": "getOAuthToken",
+        "tags": ["Authentication"],
+        "summary": "Get OAuth 2.0 access token",
+        "description": "Obtain access token using client credentials.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["grant_type"],
+                "properties": {
+                  "grant_type": {
+                    "type": "string",
+                    "enum": ["client_credentials"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Basic auth with base64-encoded client_id:client_secret"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        }
+      }
+    },
+    "/openapi/v1.0/access-token/b2b": {
+      "post": {
+        "operationId": "getSnapAccessToken",
+        "tags": ["Authentication"],
+        "summary": "Get SNAP OAuth 2.0 access token",
+        "description": "Obtain SNAP-standard access token for B2B operations.",
+        "parameters": [
+          {
+            "name": "X-TIMESTAMP",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "X-CLIENT-KEY",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-SIGNATURE",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["grantType"],
+                "properties": {
+                  "grantType": {
+                    "type": "string",
+                    "enum": ["client_credentials"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SNAP token response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/openapi/bdc/v1.0/update-status": {
+      "post": {
+        "operationId": "updateBdcStatus",
+        "tags": ["Business Debit Card"],
+        "summary": "Change BDC status",
+        "description": "Update the status of a business debit card (block/unblock).",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "X-TIMESTAMP",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string", "format": "date-time" }
+          },
+          {
+            "name": "X-SIGNATURE",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "CHANNEL-ID",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string", "default": "95411" }
+          },
+          {
+            "name": "X-PARTNER-ID",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-EXTERNAL-ID",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["cardNumber", "blockType", "reasonCode"],
+                "properties": {
+                  "cardNumber": { "type": "string" },
+                  "blockType": { "type": "string" },
+                  "reasonCode": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "responseCode": { "type": "string" },
+                    "responseMessage": { "type": "string" },
+                    "cardNumber": { "type": "string" },
+                    "cardStatus": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/openapi/bdc/v1.0/inquiry-card": {
+      "post": {
+        "operationId": "inquiryBdcData",
+        "tags": ["Business Debit Card"],
+        "summary": "Inquiry BDC data",
+        "description": "Retrieve business debit card account details and balance.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "X-TIMESTAMP", "in": "header", "required": true, "schema": { "type": "string", "format": "date-time" } },
+          { "name": "X-SIGNATURE", "in": "header", "required": true, "schema": { "type": "string" } },
+          { "name": "CHANNEL-ID", "in": "header", "required": true, "schema": { "type": "string", "default": "95411" } },
+          { "name": "X-PARTNER-ID", "in": "header", "required": true, "schema": { "type": "string" } },
+          { "name": "X-EXTERNAL-ID", "in": "header", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["bankCardToken"],
+                "properties": {
+                  "bankCardToken": { "type": "string", "description": "16-digit card number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Card inquiry result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BdcInquiryResponse"
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/openapi/bdc/v1.0/setting-limit": {
+      "post": {
+        "operationId": "setBdcLimit",
+        "tags": ["Business Debit Card"],
+        "summary": "Set BDC limit",
+        "description": "Set transaction limit for a business debit card.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "X-TIMESTAMP", "in": "header", "required": true, "schema": { "type": "string", "format": "date-time" } },
+          { "name": "X-SIGNATURE", "in": "header", "required": true, "schema": { "type": "string" } },
+          { "name": "CHANNEL-ID", "in": "header", "required": true, "schema": { "type": "string", "default": "95411" } },
+          { "name": "X-PARTNER-ID", "in": "header", "required": true, "schema": { "type": "string" } },
+          { "name": "X-EXTERNAL-ID", "in": "header", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["transactionId", "cardNumber", "limitAmount"],
+                "properties": {
+                  "transactionId": { "type": "string" },
+                  "effectiveDate": { "type": "string", "format": "date" },
+                  "accountNumber": { "type": "string" },
+                  "cardType": { "type": "string" },
+                  "recurringType": { "type": "string" },
+                  "cardNumber": { "type": "string" },
+                  "limitAmount": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Limit set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "transactionId": { "type": "string" },
+                    "updateDateTime": { "type": "string", "format": "date-time" },
+                    "cardNumber": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/openapi/v1.0/balance-inquiry": {
+      "post": {
+        "operationId": "balanceInquiry",
+        "tags": ["Account Information"],
+        "summary": "Balance inquiry (SNAP)",
+        "description": "Retrieve account balance using SNAP standard.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "CHANNEL-ID", "in": "header", "required": true, "schema": { "type": "string", "default": "95051" } },
+          { "name": "X-PARTNER-ID", "in": "header", "required": true, "schema": { "type": "string" } },
+          { "name": "X-TIMESTAMP", "in": "header", "required": true, "schema": { "type": "string", "format": "date-time" } },
+          { "name": "X-SIGNATURE", "in": "header", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["partnerReferenceNo", "accountNo"],
+                "properties": {
+                  "partnerReferenceNo": { "type": "string" },
+                  "accountNo": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Balance response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceInquiryResponse"
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/openapi/v1.0/bank-statement": {
+      "post": {
+        "operationId": "getBankStatement",
+        "tags": ["Account Information"],
+        "summary": "Bank statement (SNAP)",
+        "description": "Retrieve bank statement using SNAP standard.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "CHANNEL-ID", "in": "header", "required": true, "schema": { "type": "string", "default": "95051" } },
+          { "name": "X-PARTNER-ID", "in": "header", "required": true, "schema": { "type": "string" } },
+          { "name": "X-TIMESTAMP", "in": "header", "required": true, "schema": { "type": "string", "format": "date-time" } },
+          { "name": "X-SIGNATURE", "in": "header", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["partnerReferenceNo", "accountNo", "fromDateTime", "toDateTime"],
+                "properties": {
+                  "partnerReferenceNo": { "type": "string" },
+                  "accountNo": { "type": "string" },
+                  "fromDateTime": { "type": "string", "format": "date-time" },
+                  "toDateTime": { "type": "string", "format": "date-time" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Statement response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankStatementResponse"
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/banking/offline/corporates/accounts/{AccountNumber}/filestatements": {
+      "get": {
+        "operationId": "getFileStatements",
+        "tags": ["Account Information"],
+        "summary": "Request file statements",
+        "description": "Request offline file statements for an account.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "AccountNumber", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "StartDate", "in": "query", "required": true, "schema": { "type": "string", "format": "date" }, "description": "Format: yyyy-MM-dd" },
+          { "name": "EndDate", "in": "query", "required": true, "schema": { "type": "string", "format": "date" }, "description": "Format: yyyy-MM-dd" },
+          { "name": "X-BCA-Key", "in": "header", "required": true, "schema": { "type": "string" } },
+          { "name": "X-BCA-Timestamp", "in": "header", "required": true, "schema": { "type": "string", "format": "date-time" } },
+          { "name": "X-BCA-Signature", "in": "header", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "File statement request accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "RequestID": { "type": "string" },
+                    "status": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/openapi/v1.0/transfer-va/inquiry": {
+      "post": {
+        "operationId": "inquiryVirtualAccount",
+        "tags": ["Virtual Account"],
+        "summary": "Virtual account inquiry (SNAP)",
+        "description": "Inquire virtual account details and bills.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "CHANNEL-ID", "in": "header", "required": true, "schema": { "type": "string", "default": "95231" } },
+          { "name": "X-PARTNER-ID", "in": "header", "required": true, "schema": { "type": "string" } },
+          { "name": "X-EXTERNAL-ID", "in": "header", "required": true, "schema": { "type": "string" } },
+          { "name": "X-TIMESTAMP", "in": "header", "required": true, "schema": { "type": "string", "format": "date-time" } },
+          { "name": "X-SIGNATURE", "in": "header", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["partnerServiceId", "customerNo", "virtualAccountNo"],
+                "properties": {
+                  "partnerServiceId": { "type": "string" },
+                  "customerNo": { "type": "string" },
+                  "virtualAccountNo": { "type": "string" },
+                  "inquiryRequestId": { "type": "string" },
+                  "channelCode": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "VA inquiry response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaInquiryResponse"
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/openapi/v1.0/transfer-va/status": {
+      "post": {
+        "operationId": "getVaPaymentStatus",
+        "tags": ["Virtual Account"],
+        "summary": "Virtual account payment status (SNAP)",
+        "description": "Check payment status for a virtual account.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "CHANNEL-ID", "in": "header", "required": true, "schema": { "type": "string", "default": "95231" } },
+          { "name": "X-PARTNER-ID", "in": "header", "required": true, "schema": { "type": "string" } },
+          { "name": "X-EXTERNAL-ID", "in": "header", "required": true, "schema": { "type": "string" } },
+          { "name": "X-TIMESTAMP", "in": "header", "required": true, "schema": { "type": "string", "format": "date-time" } },
+          { "name": "X-SIGNATURE", "in": "header", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["partnerServiceId", "customerNo", "virtualAccountNo"],
+                "properties": {
+                  "partnerServiceId": { "type": "string" },
+                  "customerNo": { "type": "string" },
+                  "virtualAccountNo": { "type": "string" },
+                  "paymentRequestId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment status response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaPaymentStatusResponse"
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/open-account/marketplace/status": {
+      "get": {
+        "operationId": "getAccountOpeningStatus",
+        "tags": ["Account Opening"],
+        "summary": "Get account opening status",
+        "description": "Check the status of an account opening application.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "credential-id", "in": "header", "required": true, "schema": { "type": "string" } },
+          { "name": "application-id", "in": "header", "required": true, "schema": { "type": "string" } },
+          { "name": "channel-id", "in": "header", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account opening status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "merchant_id": { "type": "string" },
+                    "application_id": { "type": "string" },
+                    "status_id": { "type": "string" },
+                    "status_name": { "type": "string" },
+                    "nomor_rekening": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/open-account/marketplace/merchants/tokens/generator": {
+      "post": {
+        "operationId": "generateAccountOpeningToken",
+        "tags": ["Account Opening"],
+        "summary": "Generate account opening webform token",
+        "description": "Generate a token for the account opening webform.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "credential-id", "in": "header", "required": true, "schema": { "type": "string" } },
+          { "name": "channel-id", "in": "header", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["user_id", "activity_code", "application_id", "email", "mobile_phone", "full_name"],
+                "properties": {
+                  "user_id": { "type": "string" },
+                  "activity_code": { "type": "string" },
+                  "application_id": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "mobile_phone": { "type": "string" },
+                  "full_name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "verification_id": { "type": "string" },
+                    "applicant_id": { "type": "string" },
+                    "url_pageview": { "type": "string", "format": "uri" },
+                    "application_id": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "OAuth2 access token"
+      }
+    },
+    "schemas": {
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": { "type": "string" },
+          "token_type": { "type": "string" },
+          "expires_in": { "type": "integer" },
+          "scope": { "type": "string" }
+        }
+      },
+      "BdcInquiryResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": { "type": "string" },
+          "responseMessage": { "type": "string" },
+          "accountNumber": { "type": "string" },
+          "cardNumber": { "type": "string" },
+          "balance": {
+            "type": "object",
+            "properties": {
+              "value": { "type": "string" },
+              "currency": { "type": "string" }
+            }
+          }
+        }
+      },
+      "BalanceInquiryResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": { "type": "string" },
+          "responseMessage": { "type": "string" },
+          "accountNo": { "type": "string" },
+          "name": { "type": "string" },
+          "accountInfos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "balanceType": { "type": "string" },
+                "amount": {
+                  "type": "object",
+                  "properties": {
+                    "value": { "type": "string" },
+                    "currency": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "BankStatementResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": { "type": "string" },
+          "responseMessage": { "type": "string" },
+          "startingBalance": {
+            "type": "object",
+            "properties": {
+              "value": { "type": "string" },
+              "currency": { "type": "string" }
+            }
+          },
+          "endingBalance": {
+            "type": "object",
+            "properties": {
+              "value": { "type": "string" },
+              "currency": { "type": "string" }
+            }
+          },
+          "detailData": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "transactionDate": { "type": "string" },
+                "transactionType": { "type": "string" },
+                "amount": {
+                  "type": "object",
+                  "properties": {
+                    "value": { "type": "string" },
+                    "currency": { "type": "string" }
+                  }
+                },
+                "remark": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "VaInquiryResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": { "type": "string" },
+          "responseMessage": { "type": "string" },
+          "virtualAccountData": {
+            "type": "object",
+            "properties": {
+              "partnerServiceId": { "type": "string" },
+              "customerNo": { "type": "string" },
+              "virtualAccountNo": { "type": "string" },
+              "virtualAccountName": { "type": "string" },
+              "totalAmount": {
+                "type": "object",
+                "properties": {
+                  "value": { "type": "string" },
+                  "currency": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "VaPaymentStatusResponse": {
+        "type": "object",
+        "properties": {
+          "responseCode": { "type": "string" },
+          "responseMessage": { "type": "string" },
+          "partnerServiceId": { "type": "string" },
+          "customerNo": { "type": "string" },
+          "virtualAccountNo": { "type": "string" },
+          "paidAmount": {
+            "type": "object",
+            "properties": {
+              "value": { "type": "string" },
+              "currency": { "type": "string" }
+            }
+          },
+          "transactionDate": { "type": "string", "format": "date-time" },
+          "referenceNo": { "type": "string" }
+        }
+      }
+    }
+  }
+}
