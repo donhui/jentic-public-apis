@@ -1,0 +1,1031 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Internet Archive API",
+    "description": "The Internet Archive provides multiple APIs for reading item metadata, tracking changes, viewing statistics, managing tasks, and managing reviews.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://archive.org/developers/"
+  },
+  "servers": [
+    {
+      "url": "https://archive.org",
+      "description": "Internet Archive main server"
+    },
+    {
+      "url": "https://be-api.us.archive.org",
+      "description": "Internet Archive backend API server"
+    }
+  ],
+  "paths": {
+    "/metadata/{identifier}": {
+      "get": {
+        "operationId": "getItemMetadata",
+        "summary": "Get item metadata",
+        "description": "Fetches an item's full metadata record in JSON format.",
+        "tags": [
+          "Metadata"
+        ],
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "description": "The exact item identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "extended_err",
+            "in": "query",
+            "required": false,
+            "description": "Enable extended errors (set to 1)",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful metadata retrieval",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemMetadata"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Item not found"
+          }
+        }
+      }
+    },
+    "/metadata/{identifier}/{field}": {
+      "get": {
+        "operationId": "getItemMetadataField",
+        "summary": "Get a specific metadata field",
+        "description": "Fetches a partial metadata record by addressing a specific field or sub-field.",
+        "tags": [
+          "Metadata"
+        ],
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "description": "The exact item identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "field",
+            "in": "path",
+            "required": true,
+            "description": "The metadata field to retrieve (e.g., server, files, files/0)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "description": "Index to start slice for array fields",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "required": false,
+            "description": "Length of slice for array fields",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful partial metadata retrieval",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartialMetadataResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Item or field not found"
+          }
+        }
+      }
+    },
+    "/views/v1/short/{identifiers}": {
+      "get": {
+        "operationId": "getViewCountsShort",
+        "summary": "Get summary view counts",
+        "description": "Returns simple summary view count data for one or more identifiers.",
+        "tags": [
+          "Views"
+        ],
+        "servers": [
+          {
+            "url": "https://be-api.us.archive.org"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "identifiers",
+            "in": "path",
+            "required": true,
+            "description": "Comma-separated list of item identifiers",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "View count data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShortViewCounts"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/views/v1/long/{identifiers}": {
+      "get": {
+        "operationId": "getViewCountsLong",
+        "summary": "Get detailed per-day view counts",
+        "description": "Returns detailed per-day view data suitable for sparklines and summary reporting.",
+        "tags": [
+          "Views"
+        ],
+        "servers": [
+          {
+            "url": "https://be-api.us.archive.org"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "identifiers",
+            "in": "path",
+            "required": true,
+            "description": "Comma-separated list of item identifiers",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detailed view count data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LongViewCounts"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/changes/v1": {
+      "post": {
+        "operationId": "getChanges",
+        "summary": "Discover changes to archive.org items",
+        "description": "Returns a list of identifiers that have changed since a particular time. Requires special privileges.",
+        "tags": [
+          "Changes"
+        ],
+        "servers": [
+          {
+            "url": "https://be-api.us.archive.org"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "List of changes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing credentials"
+          }
+        },
+        "security": [
+          {
+            "s3Auth": []
+          }
+        ]
+      }
+    },
+    "/services/tasks.php": {
+      "get": {
+        "operationId": "listTasks",
+        "summary": "List tasks",
+        "description": "List pending, running, and historical tasks with optional criteria to filter results.",
+        "tags": [
+          "Tasks"
+        ],
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "query",
+            "description": "Item identifier (may be wildcarded)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "task_id",
+            "in": "query",
+            "description": "Task identifier",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cmd",
+            "in": "query",
+            "description": "Task command (e.g., archive.php, derive.php)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "submitter",
+            "in": "query",
+            "description": "User submitting task",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "summary",
+            "in": "query",
+            "description": "Include summary counts (1 or 0)",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ]
+            }
+          },
+          {
+            "name": "catalog",
+            "in": "query",
+            "description": "Include active tasks (1 or 0)",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ]
+            }
+          },
+          {
+            "name": "history",
+            "in": "query",
+            "description": "Include completed tasks (1 or 0)",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Cursor for pagination",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task listing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "s3Auth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "submitTask",
+        "summary": "Submit a task",
+        "description": "Submit a new task to an item the user owns or has permission to edit.",
+        "tags": [
+          "Tasks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskSubmission"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task submitted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskSubmissionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "s3Auth": []
+          }
+        ]
+      }
+    },
+    "/services/reviews.php": {
+      "get": {
+        "operationId": "getReview",
+        "summary": "Read the user's review",
+        "description": "Fetch the authenticated user's review for a specific item.",
+        "tags": [
+          "Reviews"
+        ],
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "query",
+            "required": true,
+            "description": "Item identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Item not found or no review submitted"
+          }
+        },
+        "security": [
+          {
+            "s3Auth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "addOrUpdateReview",
+        "summary": "Add or update a review",
+        "description": "Add a new review or update an existing one for a specific item.",
+        "tags": [
+          "Reviews"
+        ],
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "query",
+            "required": true,
+            "description": "Item identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review submitted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewSubmissionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "s3Auth": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "deleteReview",
+        "summary": "Delete a review",
+        "description": "Delete the authenticated user's review for a specific item.",
+        "tags": [
+          "Reviews"
+        ],
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "query",
+            "required": true,
+            "description": "Item identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "No review found"
+          }
+        },
+        "security": [
+          {
+            "s3Auth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ItemMetadata": {
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "integer",
+            "description": "Unix timestamp of creation"
+          },
+          "d1": {
+            "type": "string",
+            "description": "Primary data node"
+          },
+          "d2": {
+            "type": "string",
+            "description": "Secondary data node"
+          },
+          "dir": {
+            "type": "string",
+            "description": "Directory path on server"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileRecord"
+            }
+          },
+          "files_count": {
+            "type": "integer"
+          },
+          "item_last_updated": {
+            "type": "integer"
+          },
+          "item_size": {
+            "type": "integer"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "mediatype": {
+                "type": "string"
+              },
+              "collection": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "title": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": true
+          },
+          "server": {
+            "type": "string"
+          },
+          "uniq": {
+            "type": "integer"
+          },
+          "workable_servers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "FileRecord": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "mtime": {
+            "type": "string"
+          },
+          "size": {
+            "type": "string"
+          },
+          "md5": {
+            "type": "string"
+          },
+          "crc32": {
+            "type": "string"
+          },
+          "sha1": {
+            "type": "string"
+          }
+        }
+      },
+      "PartialMetadataResult": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "description": "The requested field value"
+          }
+        }
+      },
+      "ShortViewCounts": {
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/components/schemas/ShortViewCount"
+        }
+      },
+      "ShortViewCount": {
+        "type": "object",
+        "properties": {
+          "have_data": {
+            "type": "boolean"
+          },
+          "all_time": {
+            "type": "integer"
+          },
+          "last_30day": {
+            "type": "integer"
+          },
+          "last_7day": {
+            "type": "integer"
+          }
+        }
+      },
+      "LongViewCounts": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ids": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LongViewCountDetail"
+            }
+          }
+        }
+      },
+      "LongViewCountDetail": {
+        "type": "object",
+        "properties": {
+          "all_time": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "object",
+            "properties": {
+              "pre_20170101_total": {
+                "type": "integer"
+              },
+              "non_robot": {
+                "$ref": "#/components/schemas/ViewCategory"
+              },
+              "robot": {
+                "$ref": "#/components/schemas/ViewCategory"
+              },
+              "unrecognized": {
+                "$ref": "#/components/schemas/ViewCategory"
+              },
+              "pre2017": {
+                "$ref": "#/components/schemas/ViewCategory"
+              }
+            }
+          }
+        }
+      },
+      "ViewCategory": {
+        "type": "object",
+        "properties": {
+          "per_day": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "previous_days_total": {
+            "type": "integer"
+          },
+          "sum_per_day_data": {
+            "type": "integer"
+          }
+        }
+      },
+      "ChangesRequest": {
+        "type": "object",
+        "required": [
+          "access",
+          "secret"
+        ],
+        "properties": {
+          "access": {
+            "type": "string",
+            "description": "S3 access key"
+          },
+          "secret": {
+            "type": "string",
+            "description": "S3 secret key"
+          },
+          "start_date": {
+            "type": "string",
+            "description": "Start date in YYYYMMDD format, or 0 for cold start"
+          },
+          "token": {
+            "type": "string",
+            "description": "Continuation token from a previous response"
+          }
+        }
+      },
+      "ChangesResponse": {
+        "type": "object",
+        "properties": {
+          "estimated_distance_from_head": {
+            "type": "integer"
+          },
+          "do_sleep_before_returning": {
+            "type": "boolean"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "identifier": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "next_token": {
+            "type": "string"
+          }
+        }
+      },
+      "TaskListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "value": {
+            "type": "object",
+            "properties": {
+              "summary": {
+                "type": "object",
+                "properties": {
+                  "queued": {
+                    "type": "integer"
+                  },
+                  "running": {
+                    "type": "integer"
+                  },
+                  "error": {
+                    "type": "integer"
+                  },
+                  "paused": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "catalog": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              },
+              "history": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "integer"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "server": {
+            "type": "string"
+          },
+          "cmd": {
+            "type": "string"
+          },
+          "submitter": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "integer"
+          },
+          "submittime": {
+            "type": "string"
+          },
+          "wait_admin": {
+            "type": "integer"
+          },
+          "args": {
+            "type": "string"
+          }
+        }
+      },
+      "TaskSubmission": {
+        "type": "object",
+        "required": [
+          "identifier",
+          "cmd"
+        ],
+        "properties": {
+          "identifier": {
+            "type": "string"
+          },
+          "cmd": {
+            "type": "string",
+            "description": "Task command (e.g., derive.php, delete.php, fixer.php)"
+          },
+          "args": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "priority": {
+            "type": "integer"
+          },
+          "reduced_priority": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TaskSubmissionResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "value": {
+            "type": "object",
+            "properties": {
+              "task_id": {
+                "type": "integer"
+              },
+              "log": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "ReviewResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "value": {
+            "$ref": "#/components/schemas/Review"
+          }
+        }
+      },
+      "Review": {
+        "type": "object",
+        "properties": {
+          "reviewbody": {
+            "type": "string"
+          },
+          "reviewtitle": {
+            "type": "string"
+          },
+          "reviewer": {
+            "type": "string"
+          },
+          "reviewer_itemname": {
+            "type": "string"
+          },
+          "reviewdate": {
+            "type": "string"
+          },
+          "createdate": {
+            "type": "string"
+          },
+          "stars": {
+            "type": "string"
+          }
+        }
+      },
+      "ReviewInput": {
+        "type": "object",
+        "required": [
+          "title",
+          "body"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "stars": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          }
+        }
+      },
+      "ReviewSubmissionResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "value": {
+            "type": "object",
+            "properties": {
+              "task_id": {
+                "type": "integer"
+              },
+              "review_updated": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "GenericResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "value": {
+            "description": "Response value"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "s3Auth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "IA S3 authentication: LOW <s3-access>:<s3-secret>"
+      }
+    }
+  },
+  "security": [],
+  "tags": [
+    {
+      "name": "Metadata",
+      "description": "Item Metadata API for reading item data"
+    },
+    {
+      "name": "Views",
+      "description": "Views data service for access statistics"
+    },
+    {
+      "name": "Changes",
+      "description": "API for discovering changes to archive.org items"
+    },
+    {
+      "name": "Tasks",
+      "description": "Internet Archive Tasks API for managing catalog tasks"
+    },
+    {
+      "name": "Reviews",
+      "description": "Reviews API for managing item reviews"
+    }
+  ]
+}
