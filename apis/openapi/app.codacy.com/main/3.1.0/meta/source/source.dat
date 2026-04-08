@@ -1,0 +1,464 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Codacy API",
+    "version": "3.1.0",
+    "description": "Codacy API v3 for automated code review. Provides endpoints for repository analysis, pull request quality, code coverage, organization management, and account management.",
+    "x-jentic-source-url": "https://api.codacy.com/swagger",
+    "contact": {
+      "name": "Codacy Team",
+      "email": "code@codacy.com",
+      "url": "https://www.codacy.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://app.codacy.com/api/v3"
+    }
+  ],
+  "paths": {
+    "/version": {
+      "get": {
+        "operationId": "getVersion",
+        "summary": "Get installation version",
+        "tags": ["System"],
+        "responses": {
+          "200": {
+            "description": "Version information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/user": {
+      "get": {
+        "operationId": "getCurrentUser",
+        "summary": "Get current user details",
+        "tags": ["Account"],
+        "responses": {
+          "200": {
+            "description": "User details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "patch": {
+        "operationId": "updateCurrentUser",
+        "summary": "Update current user details",
+        "tags": ["Account"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateUserRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "User updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCurrentUser",
+        "summary": "Delete current user account",
+        "tags": ["Account"],
+        "responses": {
+          "200": { "description": "User deleted" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/user/organizations": {
+      "get": {
+        "operationId": "listUserOrganizations",
+        "summary": "List user organizations",
+        "tags": ["Account"],
+        "responses": {
+          "200": {
+            "description": "List of organizations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Organization" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/user/emails": {
+      "get": {
+        "operationId": "listUserEmails",
+        "summary": "List user emails",
+        "tags": ["Account"],
+        "responses": {
+          "200": { "description": "List of emails" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "addUserEmail",
+        "summary": "Add a user email",
+        "tags": ["Account"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Email added" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/user/integrations": {
+      "get": {
+        "operationId": "listUserIntegrations",
+        "summary": "List user integrations",
+        "tags": ["Account"],
+        "responses": {
+          "200": { "description": "List of integrations" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/organizations/{provider}/{remoteOrganizationName}": {
+      "get": {
+        "operationId": "getOrganization",
+        "summary": "Get organization details",
+        "tags": ["Organizations"],
+        "parameters": [
+          { "name": "provider", "in": "path", "required": true, "description": "Git provider (gh, gl, bb)", "schema": { "type": "string", "enum": ["gh", "gl", "bb"] } },
+          { "name": "remoteOrganizationName", "in": "path", "required": true, "description": "Organization name on the provider", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Organization details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Organization" } } } },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteOrganization",
+        "summary": "Delete organization",
+        "tags": ["Organizations"],
+        "parameters": [
+          { "name": "provider", "in": "path", "required": true, "schema": { "type": "string", "enum": ["gh", "gl", "bb"] } },
+          { "name": "remoteOrganizationName", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Organization deleted" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/analysis/organizations/{provider}/{remoteOrganizationName}/repositories": {
+      "get": {
+        "operationId": "listRepositories",
+        "summary": "List organization repositories",
+        "tags": ["Analysis"],
+        "parameters": [
+          { "name": "provider", "in": "path", "required": true, "schema": { "type": "string", "enum": ["gh", "gl", "bb"] } },
+          { "name": "remoteOrganizationName", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of repositories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Repository" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/analysis/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/pull-requests/{pullRequestNumber}": {
+      "get": {
+        "operationId": "getPullRequest",
+        "summary": "Get pull request analysis",
+        "tags": ["Analysis"],
+        "parameters": [
+          { "name": "provider", "in": "path", "required": true, "schema": { "type": "string", "enum": ["gh", "gl", "bb"] } },
+          { "name": "remoteOrganizationName", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "repositoryName", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "pullRequestNumber", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Pull request analysis details" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/analysis/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/commits/{commitUuid}": {
+      "get": {
+        "operationId": "getCommit",
+        "summary": "Get commit analysis",
+        "tags": ["Analysis"],
+        "parameters": [
+          { "name": "provider", "in": "path", "required": true, "schema": { "type": "string", "enum": ["gh", "gl", "bb"] } },
+          { "name": "remoteOrganizationName", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "repositoryName", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "commitUuid", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Commit analysis details" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/analysis/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/issues/search": {
+      "post": {
+        "operationId": "searchIssues",
+        "summary": "Search repository issues",
+        "tags": ["Analysis"],
+        "parameters": [
+          { "name": "provider", "in": "path", "required": true, "schema": { "type": "string", "enum": ["gh", "gl", "bb"] } },
+          { "name": "remoteOrganizationName", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "repositoryName", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "query": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Search results" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/analysis/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/tools/{toolUuid}/patterns": {
+      "get": {
+        "operationId": "listToolPatterns",
+        "summary": "List tool patterns for repository",
+        "tags": ["Analysis"],
+        "parameters": [
+          { "name": "provider", "in": "path", "required": true, "schema": { "type": "string", "enum": ["gh", "gl", "bb"] } },
+          { "name": "remoteOrganizationName", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "repositoryName", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "toolUuid", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Tool patterns" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "patch": {
+        "operationId": "updateToolPatterns",
+        "summary": "Update tool patterns for repository",
+        "tags": ["Analysis"],
+        "parameters": [
+          { "name": "provider", "in": "path", "required": true, "schema": { "type": "string", "enum": ["gh", "gl", "bb"] } },
+          { "name": "remoteOrganizationName", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "repositoryName", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "toolUuid", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object" } } }
+        },
+        "responses": {
+          "200": { "description": "Patterns updated" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/follow": {
+      "post": {
+        "operationId": "followRepository",
+        "summary": "Follow a repository",
+        "tags": ["Repositories"],
+        "parameters": [
+          { "name": "provider", "in": "path", "required": true, "schema": { "type": "string", "enum": ["gh", "gl", "bb"] } },
+          { "name": "remoteOrganizationName", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "repositoryName", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Repository followed" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "unfollowRepository",
+        "summary": "Unfollow a repository",
+        "tags": ["Repositories"],
+        "parameters": [
+          { "name": "provider", "in": "path", "required": true, "schema": { "type": "string", "enum": ["gh", "gl", "bb"] } },
+          { "name": "remoteOrganizationName", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "repositoryName", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Repository unfollowed" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/settings/quality/repository": {
+      "get": {
+        "operationId": "getRepositoryQualitySettings",
+        "summary": "Get repository quality settings",
+        "tags": ["Repositories"],
+        "parameters": [
+          { "name": "provider", "in": "path", "required": true, "schema": { "type": "string", "enum": ["gh", "gl", "bb"] } },
+          { "name": "remoteOrganizationName", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "repositoryName", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Quality settings" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateRepositoryQualitySettings",
+        "summary": "Update repository quality settings",
+        "tags": ["Repositories"],
+        "parameters": [
+          { "name": "provider", "in": "path", "required": true, "schema": { "type": "string", "enum": ["gh", "gl", "bb"] } },
+          { "name": "remoteOrganizationName", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "repositoryName", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object" } } }
+        },
+        "responses": {
+          "200": { "description": "Settings updated" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/coverage/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/pull-requests/{pullRequestNumber}": {
+      "get": {
+        "operationId": "getPullRequestCoverage",
+        "summary": "Get pull request coverage",
+        "tags": ["Coverage"],
+        "parameters": [
+          { "name": "provider", "in": "path", "required": true, "schema": { "type": "string", "enum": ["gh", "gl", "bb"] } },
+          { "name": "remoteOrganizationName", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "repositoryName", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "pullRequestNumber", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Coverage details" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "email": { "type": "string", "format": "email" },
+          "name": { "type": "string" },
+          "username": { "type": "string" }
+        }
+      },
+      "UpdateUserRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" }
+        }
+      },
+      "Organization": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "provider": { "type": "string" },
+          "identifier": { "type": "string" }
+        }
+      },
+      "Repository": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "owner": { "type": "string" },
+          "provider": { "type": "string" },
+          "isPrivate": { "type": "boolean" }
+        }
+      }
+    },
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "api-token",
+        "description": "Account API token for authentication"
+      }
+    }
+  },
+  "security": [
+    { "ApiKeyAuth": [] }
+  ]
+}
