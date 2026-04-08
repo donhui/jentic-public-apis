@@ -1,0 +1,293 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Timetracker API",
+    "description": "Timetracker is a free time tracking software for teams to track work hours on projects and tasks. This API provides Zapier integration support.",
+    "version": "1.0.0",
+    "contact": { "name": "Timetracker API Support" },
+    "x-jentic-source-url": "https://docs.timetracker.in/openapi.json"
+  },
+  "servers": [
+    { "url": "https://app.timetracker.in", "description": "Production server" }
+  ],
+  "tags": [
+    { "name": "Health", "description": "Health check endpoints" },
+    { "name": "Zapier Integration", "description": "Zapier integration endpoints" },
+    { "name": "Clients", "description": "Client management" },
+    { "name": "Tags", "description": "Tag management" },
+    { "name": "Webhooks", "description": "Webhook subscription management" }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Health Check",
+        "operationId": "healthCheck",
+        "description": "Check API health and database connectivity.",
+        "responses": {
+          "200": {
+            "description": "API is healthy",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "string", "example": "healthy" }, "timestamp": { "type": "string", "format": "date-time" }, "service": { "type": "string", "example": "timetracker-api" }, "version": { "type": "string", "example": "1.0.0" } } } } }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/api/integrations/zapier/auth": {
+      "get": {
+        "tags": ["Zapier Integration"],
+        "summary": "Zapier Authentication",
+        "operationId": "zapierAuth",
+        "description": "Validate Zapier Bearer token and return user information.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Authentication successful",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "user_id": { "type": "string", "format": "uuid" }, "user_name": { "type": "string", "nullable": true }, "user_email": { "type": "string", "format": "email" } } } } }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Authentication failed" }
+        }
+      }
+    },
+    "/api/integrations/zapier/triggers/clients": {
+      "get": {
+        "tags": ["Zapier Integration", "Clients"],
+        "summary": "Get Clients",
+        "operationId": "getClients",
+        "description": "Retrieve clients with filtering and pagination options.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "workspace_id", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["individual", "company"] } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["active", "inactive"] } },
+          { "name": "currency", "in": "query", "schema": { "type": "string" } },
+          { "name": "has_email", "in": "query", "schema": { "type": "string", "enum": ["true", "false"] } },
+          { "name": "has_phone", "in": "query", "schema": { "type": "string", "enum": ["true", "false"] } },
+          { "name": "has_projects", "in": "query", "schema": { "type": "string", "enum": ["true", "false"] } },
+          { "name": "created_after", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "created_before", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 50 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "minimum": 0, "default": 0 } }
+        ],
+        "responses": {
+          "200": { "description": "List of clients", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Client" } } } } },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Authentication failed" }
+        }
+      },
+      "post": {
+        "tags": ["Zapier Integration", "Clients"],
+        "summary": "Create Client",
+        "operationId": "createClient",
+        "description": "Create a new client.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateClientRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Client created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Client" } } } },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Authentication failed" }
+        }
+      }
+    },
+    "/api/integrations/zapier/triggers/clients/fallback": {
+      "get": {
+        "tags": ["Zapier Integration", "Clients"],
+        "summary": "Get Clients Fallback",
+        "operationId": "getClientsFallback",
+        "description": "Fallback endpoint for Zapier triggers when webhook data is not available.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of clients", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Client" } } } } },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Authentication failed" }
+        }
+      }
+    },
+    "/api/integrations/zapier/actions/tags": {
+      "get": {
+        "tags": ["Zapier Integration", "Tags"],
+        "summary": "Get Tags",
+        "operationId": "getTags",
+        "description": "Retrieve tags for a specific workspace.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "workspace_id", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "List of tags", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Tag" } } } } },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Authentication failed" }
+        }
+      },
+      "post": {
+        "tags": ["Zapier Integration", "Tags"],
+        "summary": "Create Tag",
+        "operationId": "createTag",
+        "description": "Create a new tag.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateTagRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Tag created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Tag" } } } },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Authentication failed" }
+        }
+      }
+    },
+    "/api/integrations/zapier/webhooks/subscribe": {
+      "get": {
+        "tags": ["Zapier Integration", "Webhooks"],
+        "summary": "Get Webhooks",
+        "operationId": "getWebhooks",
+        "description": "Retrieve webhook subscriptions for the authenticated user.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of webhooks", "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" }, "webhooks": { "type": "array", "items": { "$ref": "#/components/schemas/Webhook" } } } } } } },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Zapier Integration", "Webhooks"],
+        "summary": "Subscribe to Webhook",
+        "operationId": "subscribeWebhook",
+        "description": "Create a new webhook subscription.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateWebhookRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Webhook created", "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" }, "webhook": { "$ref": "#/components/schemas/Webhook" } } } } } },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Authentication failed" }
+        }
+      }
+    },
+    "/api/integrations/zapier/webhooks/{webhookId}": {
+      "delete": {
+        "tags": ["Zapier Integration", "Webhooks"],
+        "summary": "Delete Webhook",
+        "operationId": "deleteWebhook",
+        "description": "Delete a webhook subscription by ID.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "webhookId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Webhook deleted", "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" }, "webhookId": { "type": "string", "format": "uuid" } } } } } },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Authentication failed" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API key for general API authentication"
+      },
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer token for Zapier integration and user authentication"
+      }
+    },
+    "schemas": {
+      "Client": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "type": { "type": "string", "enum": ["individual", "company"] },
+          "status": { "type": "string", "enum": ["active", "inactive"] },
+          "email": { "type": "string", "format": "email", "nullable": true },
+          "phone": { "type": "string", "nullable": true },
+          "address": { "type": "string", "nullable": true },
+          "note": { "type": "string", "nullable": true },
+          "currency": { "type": "string" },
+          "project_count": { "type": "integer" },
+          "workspace_count": { "type": "integer" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CreateClientRequest": {
+        "type": "object",
+        "required": ["name", "workspace_id"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 255 },
+          "type": { "type": "string", "enum": ["individual", "company"], "default": "individual" },
+          "status": { "type": "string", "enum": ["active", "inactive"], "default": "active" },
+          "email": { "type": "string", "format": "email" },
+          "phone": { "type": "string" },
+          "address": { "type": "string" },
+          "note": { "type": "string" },
+          "currency": { "type": "string", "default": "USD" },
+          "workspace_id": { "type": "string", "format": "uuid" }
+        }
+      },
+      "Tag": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "color": { "type": "string" },
+          "description": { "type": "string", "nullable": true },
+          "workspace_id": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CreateTagRequest": {
+        "type": "object",
+        "required": ["name", "workspace_id"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "color": { "type": "string" },
+          "description": { "type": "string" },
+          "workspace_id": { "type": "string", "minLength": 1 }
+        }
+      },
+      "Webhook": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "url": { "type": "string", "format": "uri" },
+          "events": { "type": "array", "items": { "type": "string" } },
+          "status": { "type": "string" },
+          "description": { "type": "string", "nullable": true },
+          "secret": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CreateWebhookRequest": {
+        "type": "object",
+        "required": ["url", "events"],
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "events": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "description": { "type": "string" },
+          "secret": { "type": "string" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" }
+        }
+      }
+    }
+  }
+}
