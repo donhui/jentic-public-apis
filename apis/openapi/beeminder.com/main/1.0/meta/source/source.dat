@@ -1,0 +1,1637 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Beeminder",
+    "version": "1.0",
+    "x-jentic-source-url": "https://raw.githubusercontent.com/bvtujo/beeminder-openapi/main/spec/3.0.1/beeminder.yaml"
+  },
+  "servers": [
+    {
+      "url": "https://www.beeminder.com/api/v1"
+    }
+  ],
+  "paths": {
+    "/users/{userId}.json": {
+      "get": {
+        "operationId": "GetUser",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "User ID to fetch"
+          },
+          {
+            "in": "query",
+            "name": "associations",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Convenience method to fetch all information about a user. Use sparingly."
+          },
+          {
+            "in": "query",
+            "name": "diff_since",
+            "schema": {
+              "type": "integer"
+            },
+            "required": false,
+            "description": "Send a Unix timestamp to receive a filtered list of the user's goals and datapoints. Only goals and datapoints that have been created or updated since the timestamp will be returned. Sending diff_since implies that you want the user's associations, so you don't need to send both."
+          },
+          {
+            "in": "query",
+            "name": "skinny",
+            "schema": {
+              "type": "boolean"
+            },
+            "required": false,
+            "description": "Only get a subset of attributes and most recent datapoint. Must be used together with `diff_since`."
+          },
+          {
+            "in": "query",
+            "name": "datapoints_count",
+            "schema": {
+              "type": "integer"
+            },
+            "required": false,
+            "description": "Number of datapoints to receive, sorted by updated_at."
+          },
+          {
+            "in": "query",
+            "name": "redirect_to_url",
+            "schema": {
+              "type": "string",
+              "format": "url"
+            },
+            "description": "Mutually exclusive with other parameters. Attempts to authenticate the user and if successful, redirects to the given URL."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SmallUser"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BigUser"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{userId}/goals.json": {
+      "get": {
+        "operationId": "GetGoals",
+        "summary": "Get user userId's goals, sorted in descending order of urgency.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": {
+              "type": "string"
+            },
+            "description": "The username of the user to fetch goals from.",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Goal"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "CreateGoal",
+        "summary": "Create a new goal for user userId.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": {
+              "type": "string"
+            },
+            "description": "The username of the user to fetch goals from.",
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Goal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{userId}/goals/archived.json": {
+      "get": {
+        "operationId": "GetArchivedGoals",
+        "description": "Get user userId's archived goals.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": {
+              "type": "string"
+            },
+            "description": "The username of the user to fetch goals from.",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Goal"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{userId}/goals/{goalSlug}.json": {
+      "get": {
+        "operationId": "GetGoal",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "User ID to fetch a goal from."
+          },
+          {
+            "in": "path",
+            "name": "goalSlug",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Name of the goal to fetch."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Goal"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "UpdateGoal",
+        "summary": "Update a goal for a user.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "User ID to fetch a goal from."
+          },
+          {
+            "in": "path",
+            "name": "goalSlug",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Name of the goal to update."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Goal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{userId}/goals/{goalSlug}/refresh_graph.json": {
+      "get": {
+        "operationId": "RefreshGraph",
+        "summary": "Analagous to the refresh button on the goal page. Forces a refetch of autodata for goals with automatic data sources. Refreshes the graph image regardless. Please be extremely conservative with this endpoint!",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "User ID."
+          },
+          {
+            "in": "path",
+            "name": "goalSlug",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Name of the goal to refresh."
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{userId}/goals/{goalSlug}/shortcircuit.json": {
+      "post": {
+        "operationId": "ShortCircuit",
+        "summary": "Increase the goal's pledge level and charge the user the amount of the current pledge.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "User ID."
+          },
+          {
+            "in": "path",
+            "name": "goalSlug",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Name of the goal to short circuit."
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Goal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{userId}/goals/{goalSlug}/stepdown.json": {
+      "post": {
+        "operationId": "StepDown",
+        "summary": "Decrease the goal's pledge level subject to the akrasia horizon; i.e. not immediately. After a successful request the goal will have a countdown to when it will revert to the lower pledge level.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "User ID."
+          },
+          {
+            "in": "path",
+            "name": "goalSlug",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Name of the goal to step down."
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Goal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{userId}/goals/{goalSlug}/cancel_stepdown.json": {
+      "post": {
+        "operationId": "CancelStepdown",
+        "summary": "Cancel a pending stepdown of a goal's pledge. The pledge will remain at the current amount.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "User ID."
+          },
+          {
+            "in": "path",
+            "name": "goalSlug",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Name of the goal to cancel step down."
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Goal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{userId}/goals/{goalSlug}/datapoints.json": {
+      "get": {
+        "operationId": "GetDatapoints",
+        "summary": "Get all the datapoints for userId's goal goalSlug. beeminder.com/u/g",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "User ID from whose goals to fetch datapoints."
+          },
+          {
+            "in": "path",
+            "name": "goalSlug",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Name of the goal to fetch datapoints from."
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Which attribute to sort on. Defaults to 'id' if none given.",
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "count",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Limit results to count number of datapoints. Defaults to all datapoints if parameter is missing.",
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Used to paginate results."
+          },
+          {
+            "in": "query",
+            "name": "per",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Number of results per page. Default 25. Ignored without page parameter.",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Datapoint"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "CreateDatapoint",
+        "summary": "add a new datapoint to userId's goal goalSlug.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "User ID."
+          },
+          {
+            "in": "path",
+            "name": "goalSlug",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Name of the goal to add a datapoint to."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDatapointRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Datapoint"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{userId}/goals/{goalSlug}/datapoints/create_all.json": {
+      "post": {
+        "operationId": "CreateDatapoints",
+        "summary": "Add all new datapoints to userId's goal goalSlug.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "User ID."
+          },
+          {
+            "in": "path",
+            "name": "goalSlug",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Name of the goal to add a datapoint to."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CreateDatapointRequest"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Datapoint"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{userId}/goals/{goalSlug}/datapoints/{datapointId}.json": {
+      "put": {
+        "operationId": "UpdateDatapoint",
+        "summary": "Update the datapoint with id.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "User ID."
+          },
+          {
+            "in": "path",
+            "name": "goalSlug",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Name of the goal."
+          },
+          {
+            "in": "path",
+            "name": "datapointId",
+            "required": true,
+            "description": "ID of the datapoint to edit.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/UpdateDatapointRequest"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Datapoint"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeleteDatapoint",
+        "summary": "Delete the datapoint with id.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "User ID."
+          },
+          {
+            "in": "path",
+            "name": "goalSlug",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Name of the goal."
+          },
+          {
+            "in": "path",
+            "name": "datapointId",
+            "required": true,
+            "description": "ID of the datapoint to edit.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Datapoint"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/charges.json": {
+      "post": {
+        "operationId": "CreateCharge",
+        "summary": "Create a new charge against a user.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChargeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "auth_token"
+      }
+    },
+    "schemas": {
+      "SmallUser": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "integer"
+          },
+          "urgency_load": {
+            "type": "integer"
+          },
+          "deadbeat": {
+            "type": "boolean"
+          },
+          "goals": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "has_authorized_fitbit": {
+            "type": "boolean"
+          },
+          "default_leadtime": {
+            "type": "integer"
+          },
+          "default_alertstart": {
+            "type": "integer"
+          },
+          "default_deadline": {
+            "type": "integer"
+          },
+          "subscription": {
+            "type": "string"
+          }
+        }
+      },
+      "BigUser": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "integer"
+          },
+          "urgency_load": {
+            "type": "integer"
+          },
+          "deadbeat": {
+            "type": "boolean"
+          },
+          "deleted_goals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "goals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Goal"
+            }
+          }
+        }
+      },
+      "GoalCreateRequest": {
+        "description": "Exactly two out of three of goaldate, goalval, and rate are required.",
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "rapid",
+            "description": "The final part of the URL of the goal, used as an identifier."
+          },
+          "title": {
+            "type": "string",
+            "example": "play at least one game of rapid chess a day."
+          },
+          "goal_type": {
+            "type": "string",
+            "enum": [
+              "hustler",
+              "biker",
+              "fatloser",
+              "gainer",
+              "inboxer",
+              "drinker",
+              "custom"
+            ]
+          },
+          "gunits": {
+            "type": "string",
+            "description": "Goal units, like \"hours\" or \"pushups\" or \"pages\"."
+          },
+          "goaldate": {
+            "type": "number",
+            "nullable": true,
+            "description": "The end date (unix timestamp) of the goal."
+          },
+          "goalval": {
+            "type": "number",
+            "nullable": true,
+            "description": "The number the bright red line will eventually reach."
+          },
+          "rate": {
+            "type": "number",
+            "nullable": true,
+            "description": "The slope of the (final section of the) bright red line in runits."
+          },
+          "initval": {
+            "type": "number",
+            "description": "The y-value of the start of the bright red line."
+          },
+          "secret": {
+            "type": "boolean",
+            "description": "Whether you have to be logged in as owner of the goal to view it.",
+            "default": false,
+            "nullable": true
+          },
+          "datapublic": {
+            "type": "boolean",
+            "description": "Whether you have to be logged in as the owner of the goal to view the datapoints",
+            "nullable": true
+          },
+          "datasource": {
+            "type": "string",
+            "default": "manual",
+            "description": "one of {\"api\", \"ifttt\", \"zapier\", or clientname}. Default: none (i.e., \"manual\").",
+            "nullable": true
+          },
+          "dryrun": {
+            "type": "boolean",
+            "default": false,
+            "description": "Pass this to test the endpoint without actually creating a goal. Defaults to false.",
+            "nullable": true
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "GoalUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "yaxis": {
+            "type": "string"
+          },
+          "tmin": {
+            "type": "string"
+          },
+          "tmax": {
+            "type": "string"
+          },
+          "secret": {
+            "type": "boolean"
+          },
+          "datapublic": {
+            "type": "boolean"
+          },
+          "roadall": {
+            "description": "Like road but with an additional initial row consisting of [initday, initval, null] and an additional final row consisting of [goaldate, goalval, rate]",
+            "type": "array",
+            "items": {
+              "type": "array",
+              "minItems": 3,
+              "items": {
+                "type": "number",
+                "nullable": true
+              },
+              "maxItems": 3
+            }
+          },
+          "datasource": {
+            "type": "string",
+            "default": "manual",
+            "description": "one of {\"api\", \"ifttt\", \"zapier\", or clientname}. Default: none (i.e., \"manual\")."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Goal": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "rapid",
+            "description": "The final part of the URL of the goal, used as an identifier."
+          },
+          "title": {
+            "type": "string",
+            "example": "play at least one game of rapid chess a day."
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional description."
+          },
+          "goalval": {
+            "type": "number",
+            "nullable": true,
+            "description": "The number the bright red line will eventually reach."
+          },
+          "rate": {
+            "type": "number",
+            "nullable": true,
+            "description": "The slope of the (final section of the) bright red line in runits."
+          },
+          "goaldate": {
+            "type": "number",
+            "nullable": true,
+            "description": "The end date (unix timestamp) of the goal."
+          },
+          "svg_url": {
+            "type": "string",
+            "example": "https://bmndr.s3.amazonaws.com/uploads/7989a124-d420-4bcf-9a9c-c8d3680751aa.svg"
+          },
+          "graph_url": {
+            "type": "string",
+            "example": "https://bmndr.s3.amazonaws.com/uploads/7989a124-d420-4bcf-9a9c-c8d3680751aa.png"
+          },
+          "thumb_url": {
+            "type": "string",
+            "example": "https://bmndr.s3.amazonaws.com/uploads/7989a124-d420-4bcf-9a9c-c8d3680751aa-thumb.png"
+          },
+          "goal_type": {
+            "type": "string",
+            "enum": [
+              "hustler",
+              "biker",
+              "fatloser",
+              "gainer",
+              "inboxer",
+              "drinker",
+              "custom"
+            ]
+          },
+          "autodata": {
+            "type": "string",
+            "nullable": true
+          },
+          "healthkitmetric": {
+            "type": "string"
+          },
+          "losedate": {
+            "type": "integer",
+            "example": 1660633199
+          },
+          "deadline": {
+            "type": "integer",
+            "description": "seconds by which the deadline differs from midnight",
+            "example": -3600,
+            "minimum": -61200,
+            "maximum": 21600
+          },
+          "leadtime": {
+            "type": "integer",
+            "description": "Days before deadline before we start sending you reminders."
+          },
+          "alertstart": {
+            "type": "integer",
+            "description": "Seconds after midight that we start sending you reminders.",
+            "example": 34200
+          },
+          "use_defaults": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "example": "6232221b55c133314d918619",
+            "description": "Unique hex identifier of goal"
+          },
+          "ephem": {
+            "type": "boolean",
+            "example": false
+          },
+          "queued": {
+            "type": "boolean"
+          },
+          "panic": {
+            "type": "integer",
+            "example": 54000
+          },
+          "updated_at": {
+            "type": "integer",
+            "example": 1660547396
+          },
+          "burner": {
+            "type": "string",
+            "enum": [
+              "frontburner",
+              "backburner"
+            ],
+            "deprecated": true
+          },
+          "yaw": {
+            "type": "integer",
+            "enum": [
+              -1,
+              1
+            ],
+            "description": "Good side of the bright red line."
+          },
+          "lane": {
+            "deprecated": true,
+            "type": "integer",
+            "description": "See LoseDate and SafeBuf"
+          },
+          "lanewidth": {
+            "deprecated": true,
+            "type": "number"
+          },
+          "delta": {
+            "type": "number",
+            "description": "Distance from the bright red line to today's datapoint",
+            "example": -0.8000000000000114
+          },
+          "runits": {
+            "type": "string",
+            "example": "d",
+            "enum": [
+              "y",
+              "m",
+              "w",
+              "d",
+              "h"
+            ]
+          },
+          "limsum": {
+            "type": "string",
+            "example": "+1 in 0 days (168)",
+            "description": "Summary of what you need to do eke by."
+          },
+          "frozen": {
+            "type": "boolean",
+            "description": "Whether the goal is currently frozen and therefore must be restarted before continuing to accept data."
+          },
+          "lost": {
+            "type": "boolean",
+            "description": "Whether the goal is currently off track."
+          },
+          "won": {
+            "type": "boolean",
+            "description": "Whether the goal has been successfully completed."
+          },
+          "contract": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number"
+              },
+              "stepdown_amount": {
+                "nullable": true,
+                "type": "number"
+              },
+              "pending_amount": {
+                "type": "number",
+                "nullable": true
+              },
+              "pending_at": {
+                "type": "number",
+                "nullable": true
+              }
+            }
+          },
+          "delta_text": {
+            "type": "string",
+            "example": "+1 +2 +3",
+            "deprecated": true
+          },
+          "safebump": {
+            "description": "The absolute y-axis number you need to reach to get one additional day of safety buffer.",
+            "example": 167.8,
+            "type": "number"
+          },
+          "safesum": {
+            "type": "string",
+            "example": "+1 games (168) due by 3am"
+          },
+          "limsumdate": {
+            "type": "string",
+            "example": "+1 due Mon night by 03:00am"
+          },
+          "limsumdays": {
+            "type": "string",
+            "example": "+1 due by 03:00"
+          },
+          "baremin": {
+            "type": "string",
+            "example": "+1"
+          },
+          "baremintotal": {
+            "type": "string",
+            "example": "168"
+          },
+          "roadstatuscolor": {
+            "type": "string",
+            "example": "red"
+          },
+          "lasttouch": {
+            "type": "string",
+            "example": "2022-08-15T02:37:49.000Z"
+          },
+          "safebuf": {
+            "type": "number",
+            "example": 0,
+            "description": "The integer number of safe days. If it's a beemergency this will be zero."
+          },
+          "coasting": {
+            "type": "boolean"
+          },
+          "integery": {
+            "type": "boolean",
+            "description": "Assume that the units must be integer values. Used for things like limsum."
+          },
+          "fineprint": {
+            "type": "string",
+            "example": "#autodialMax=2\r\n#autodialStrict",
+            "description": "The user-provided description of what exactly they are committing to."
+          },
+          "todayta": {
+            "type": "boolean",
+            "description": "Whether there are any datapoints for today"
+          },
+          "hhmmformat": {
+            "type": "boolean",
+            "description": "Whether to show data in a \"timey\" way, with colons. For example, this would make a 1.5 show up as 1:30."
+          },
+          "gunits": {
+            "type": "string",
+            "description": "Goal units, like \"hours\" or \"pushups\" or \"pages\"."
+          },
+          "weekends_off": {
+            "type": "boolean",
+            "description": "If the goal has weekends automatically scheduled."
+          },
+          "yaxis": {
+            "type": "string",
+            "example": "cumulative total games",
+            "description": "The label for the y-axis of the graph. E.g., \"Cumulative total hours\"."
+          },
+          "maxflux": {
+            "nullable": true,
+            "type": "number",
+            "description": "Max daily fluctuation for weight goals. Used as an absolute buffer amount on recommit. Also shown on the graph as a thick guiding line."
+          },
+          "tmin": {
+            "nullable": true,
+            "description": "Lower bound on x-axis; don't show data before this date; using yyyy-mm-dd date format.",
+            "type": "string"
+          },
+          "tmax": {
+            "nullable": true,
+            "description": "Upper bound on x-axis; don't show data after this date; using yyyy-mm-dd date format.",
+            "type": "string"
+          },
+          "initday": {
+            "type": "integer",
+            "example": 1647446400,
+            "description": "Unix timestamp (in seconds) of the start of the bright red line."
+          },
+          "initval": {
+            "type": "number",
+            "description": "The y-value of the start of the bright red line."
+          },
+          "curday": {
+            "type": "number",
+            "description": "Unix timestamp (in seconds) of the end of the bright red line, i.e., the most recent (inferred) datapoint."
+          },
+          "curval": {
+            "type": "number",
+            "description": "The value of the most recent datapoint."
+          },
+          "lastday": {
+            "type": "number",
+            "description": "Unix timestamp (in seconds) of the last (explicitly entered) datapoint."
+          },
+          "dir": {
+            "description": "Direction the bright red line is sloping, usually the same as yaw.",
+            "type": "number",
+            "enum": [
+              1,
+              -1
+            ]
+          },
+          "kyoom": {
+            "description": "Cumulative; plot values as the sum of all those entered so far, aka auto-summing.",
+            "type": "boolean"
+          },
+          "odom": {
+            "type": "boolean",
+            "description": "Treat zeros as accidental odometer resets."
+          },
+          "noisy": {
+            "type": "boolean"
+          },
+          "aggday": {
+            "type": "string",
+            "description": "How to aggregate points on the same day, eg, min/max/mean.",
+            "enum": [
+              "last",
+              "first",
+              "min",
+              "max",
+              "truemean",
+              "uniqmean",
+              "mean",
+              "median",
+              "mode",
+              "trimmean",
+              "sum",
+              "jolly",
+              "binary",
+              "nonzero",
+              "triangle",
+              "square",
+              "clocky",
+              "count",
+              "skatesum",
+              "cap1"
+            ]
+          },
+          "plotall": {
+            "type": "boolean",
+            "description": "Whether to plot all the datapoints, or only the aggday'd one. So if false then only the official datapoint that's counted is plotted."
+          },
+          "steppy": {
+            "type": "boolean",
+            "description": "Join dots with purple steppy-style line."
+          },
+          "rosy": {
+            "type": "boolean",
+            "description": "Show the rose-colored dots and connecting line."
+          },
+          "movingav": {
+            "type": "boolean",
+            "description": "Show moving average line superimposed on the data."
+          },
+          "aura": {
+            "type": "boolean",
+            "description": "Show turquoise swath, aka blue-green aura."
+          },
+          "numpts": {
+            "type": "number"
+          },
+          "road": {
+            "description": "Array of tuples that can be used to construct the Bright Red Line (formerly \"Yellow Brick Road\"). This field is also known as the graph matrix. Each tuple specifies 2 out of 3 of [time, goal, rate]. To construct road, start with a known starting point (time, value) and then each row of the graph matrix specifies 2 out of 3 of {t,v,r} which gives the segment ending at time t. You can walk forward filling in the missing 1-out-of-3 from the (time, value) in the previous row.",
+            "type": "array",
+            "items": {
+              "type": "array",
+              "minItems": 3,
+              "items": {
+                "type": "number",
+                "nullable": true
+              },
+              "maxItems": 3
+            }
+          },
+          "roadall": {
+            "description": "Like road but with an additional initial row consisting of [initday, initval, null] and an additional final row consisting of [goaldate, goalval, rate]",
+            "type": "array",
+            "items": {
+              "type": "array",
+              "minItems": 3,
+              "items": {
+                "type": "number",
+                "nullable": true
+              },
+              "maxItems": 3
+            }
+          },
+          "fullroad": {
+            "description": "Like roadall but with the nulls filled in.",
+            "type": "array",
+            "items": {
+              "type": "array",
+              "minItems": 3,
+              "items": {
+                "type": "number",
+                "nullable": false
+              },
+              "maxItems": 3
+            }
+          },
+          "secret": {
+            "type": "boolean",
+            "description": "Whether you have to be logged in as owner of the goal to view it.",
+            "default": false
+          },
+          "pledge": {
+            "type": "number",
+            "description": "Amount pledged (USD) on the goal."
+          },
+          "mathishard": {
+            "description": "The goaldate, goalval, and rate — all filled in. (The commitment dial specifies 2 out of 3 and you can check this if you want Beeminder to do the math for you on inferring the third one.)",
+            "type": "array",
+            "minItems": 3,
+            "items": {
+              "type": "number",
+              "nullable": false
+            },
+            "maxItems": 3
+          },
+          "headsum": {
+            "deprecated": true,
+            "type": "string",
+            "example": "Red: bmndr.com/are/rapid is safe for ~0 days (beemergency!)",
+            "description": "Deprecated. Summary text blurb saying how much safety buffer you have."
+          },
+          "datapublic": {
+            "type": "boolean",
+            "description": "Whether you have to be logged in as the owner of the goal to view the datapoints"
+          },
+          "graphsum": {
+            "deprecated": true,
+            "type": "string",
+            "description": "Deprecated. Text summary of the graph, not used in the web UI anymore.",
+            "example": "167 on 2022.08.15 (126 datapoints in 153 days) targeting 3853 on 2032.09.16 (3685 more days) @ +1 / day"
+          },
+          "rah": {
+            "type": "number",
+            "description": "Red line value (y-value of the bright red line) at the akrasia horizon (today plus one week)."
+          },
+          "last_datapoint": {
+            "$ref": "#/components/schemas/Datapoint"
+          },
+          "callback_url": {
+            "nullable": true,
+            "type": "string",
+            "description": "Callback URL.WARNING: If different apps change this they'll step on each other's toes."
+          },
+          "tags": {
+            "description": "A list of the goal's tags.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "recent_data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "object",
+                  "properties": {
+                    "$oid": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "fulltext": {
+                  "type": "string"
+                },
+                "canonical": {
+                  "type": "string"
+                },
+                "origin": {
+                  "type": "string"
+                },
+                "urtext": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "measured_at": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "comment": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "number"
+                },
+                "daystamp": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "dueby": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "delta": {
+                  "type": "number"
+                },
+                "total": {
+                  "type": "number"
+                },
+                "formatted_delta_for_beedroid": {
+                  "type": "string"
+                },
+                "formatted_total_for_beedroid": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "datapoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Datapoint"
+            }
+          }
+        }
+      },
+      "CreateDatapointRequest": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number"
+          },
+          "timestamp": {
+            "type": "integer",
+            "description": "The unix time (in seconds) of the datapoint.",
+            "nullable": true
+          },
+          "daystamp": {
+            "type": "string",
+            "description": "The date of the datapoint. Sometimes timestamps are surprising due to goal deadlines, so if you're looking at Beeminder data, you're probably interested in the daystamp.",
+            "example": "20150831",
+            "nullable": true
+          },
+          "comment": {
+            "type": "string",
+            "description": "An optional comment about the datapoint.",
+            "nullable": true
+          },
+          "requestId": {
+            "nullable": true,
+            "type": "string",
+            "description": "string to uniquely identify this datapoint (scoped to this goal. The same requestid can be used for different goals without being considered a duplicate). Clients can use this to verify that Beeminder received a datapoint (important for clients with spotty connectivity). Using requestids also means clients can safely resend datapoints without accidentally creating duplicates. If requestid is included and the datapoint is identical to the existing datapoint with that requestid then the datapoint will be ignored (the API will return \"duplicate datapoint\"). If requestid is included and the datapoint differs from the existing one with the same requestid then the datapoint will be updated. If no datapoint with the requestid exists then the datapoint is simply created. In other words, this is an upsert endpoint and requestid is an idempotency key."
+          }
+        }
+      },
+      "UpdateDatapointRequest": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "integer",
+            "description": "The unix time (in seconds) of the datapoint.",
+            "nullable": true
+          },
+          "comment": {
+            "type": "string",
+            "description": "An optional comment about the datapoint.",
+            "nullable": true
+          }
+        }
+      },
+      "Datapoint": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "A unique ID, used to identify a datapoint when deleting or editing it."
+          },
+          "timestamp": {
+            "type": "integer",
+            "description": "The unix time (in seconds) of the datapoint."
+          },
+          "canonical": {
+            "type": "string",
+            "description": "The canonical \"data entry format\" of the datapoint.",
+            "nullable": true
+          },
+          "daystamp": {
+            "type": "string",
+            "description": "The date of the datapoint. Sometimes timestamps are surprising due to goal deadlines, so if you're looking at Beeminder data, you're probably interested in the daystamp.",
+            "example": "20150831"
+          },
+          "value": {
+            "type": "number",
+            "description": "The value, e.g., how much you weighed on the day indicated by the timestamp."
+          },
+          "comment": {
+            "type": "string",
+            "description": "An optional comment about the datapoint.",
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "integer",
+            "description": "The unix time that this datapoint was entered or last updated."
+          },
+          "requestid": {
+            "type": "string",
+            "description": "If a datapoint was created via the API and this parameter was included, it will be echoed back.",
+            "nullable": true
+          },
+          "origin": {
+            "type": "string",
+            "description": "Parameter for datapoint representation in goals"
+          },
+          "fulltext": {
+            "type": "string"
+          }
+        }
+      },
+      "ChargeRequest": {
+        "type": "object",
+        "description": "The HTTP POST schema to create a charge.",
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "description": "Username of the user who is getting charged."
+          },
+          "amount": {
+            "type": "number",
+            "description": "The amount of the charge."
+          },
+          "note": {
+            "type": "string",
+            "description": "An optional note describing the charge."
+          },
+          "dryrun": {
+            "type": "string",
+            "enum": [
+              true,
+              false
+            ],
+            "default": true,
+            "description": "If passed, the Charge is not actually created, but the JSON for it is returned as if it were."
+          }
+        }
+      },
+      "ChargeResponse": {
+        "type": "object",
+        "description": "Beeminder provides an endpoint to charge an arbitrary amount to a Beeminder user. The user is inferred from the access_token or auth_token provided.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique ID of the charge."
+          },
+          "amount": {
+            "type": "number",
+            "description": "The amount of the charge."
+          },
+          "note": {
+            "type": "string",
+            "description": "An optional note describing the charge."
+          },
+          "user_id": {
+            "type": "string",
+            "description": "The user id this charge was applied to."
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ]
+}
