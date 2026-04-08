@@ -1,0 +1,755 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Cashfree Payment Gateway API",
+    "version": "2025-01-01",
+    "description": "Cashfree Payments - Complete Payment and Banking Platform for India. Create orders, process payments, manage refunds, payment links, and settlements.",
+    "x-jentic-source-url": "https://www.cashfree.com/docs/"
+  },
+  "servers": [
+    {
+      "url": "https://api.cashfree.com/pg",
+      "description": "Production server"
+    },
+    {
+      "url": "https://sandbox.cashfree.com/pg",
+      "description": "Sandbox server"
+    }
+  ],
+  "paths": {
+    "/orders": {
+      "post": {
+        "operationId": "createOrder",
+        "summary": "Create an order",
+        "description": "Create a new payment order. Returns a payment session ID to initiate payment.",
+        "tags": ["Orders"],
+        "parameters": [
+          {
+            "name": "x-api-version",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string", "default": "2025-01-01" },
+            "description": "API version in YYYY-MM-DD format"
+          },
+          {
+            "name": "x-request-id",
+            "in": "header",
+            "schema": { "type": "string", "format": "uuid" },
+            "description": "Request tracking identifier"
+          },
+          {
+            "name": "x-idempotency-key",
+            "in": "header",
+            "schema": { "type": "string", "format": "uuid" },
+            "description": "Idempotency key to prevent duplicate requests"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderEntity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "409": {
+            "description": "Duplicate order ID",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{"ClientCredentials": []}]
+      }
+    },
+    "/orders/{order_id}": {
+      "get": {
+        "operationId": "getOrder",
+        "summary": "Get order details",
+        "description": "Retrieve details of an existing order by its ID.",
+        "tags": ["Orders"],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "The order ID"
+          },
+          {
+            "name": "x-api-version",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string", "default": "2025-01-01" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order details retrieved",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OrderEntity" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Order not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{"ClientCredentials": []}]
+      }
+    },
+    "/orders/sessions": {
+      "post": {
+        "operationId": "payOrder",
+        "summary": "Pay for an order",
+        "description": "Submit a payment for an order using a payment session ID and a chosen payment method.",
+        "tags": ["Payments"],
+        "parameters": [
+          {
+            "name": "x-api-version",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string", "default": "2025-01-01" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayOrderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment declined/failed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{"ClientCredentials": []}]
+      }
+    },
+    "/orders/{order_id}/refunds": {
+      "post": {
+        "operationId": "createRefund",
+        "summary": "Create a refund",
+        "description": "Initiate a refund for a paid order. Refunds can only be initiated within six months of the original transaction.",
+        "tags": ["Refunds"],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "The order ID to refund"
+          },
+          {
+            "name": "x-api-version",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string", "default": "2025-01-01" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRefundRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Refund initiated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RefundEntity" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{"ClientCredentials": []}]
+      }
+    },
+    "/links": {
+      "post": {
+        "operationId": "createPaymentLink",
+        "summary": "Create a payment link",
+        "description": "Create a shareable payment link that customers can use to make a payment.",
+        "tags": ["Payment Links"],
+        "parameters": [
+          {
+            "name": "x-api-version",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string", "default": "2025-01-01" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentLinkRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment link created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PaymentLinkEntity" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{"ClientCredentials": []}]
+      }
+    },
+    "/settlements": {
+      "post": {
+        "operationId": "getSettlements",
+        "summary": "Get all settlements",
+        "description": "Retrieve settlement records with optional filters and pagination.",
+        "tags": ["Settlements"],
+        "parameters": [
+          {
+            "name": "x-api-version",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string", "default": "2025-01-01" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetSettlementsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Settlements retrieved",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SettlementEntity" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{"ClientCredentials": []}]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ClientCredentials": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-client-id",
+        "description": "Client ID and Client Secret pair. Send x-client-id and x-client-secret as headers."
+      },
+      "ClientSecret": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-client-secret",
+        "description": "Client secret for authentication"
+      }
+    },
+    "schemas": {
+      "CreateOrderRequest": {
+        "type": "object",
+        "required": ["order_amount", "order_currency", "customer_details"],
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 45,
+            "description": "Alphanumeric order ID with _ and -"
+          },
+          "order_amount": {
+            "type": "number",
+            "minimum": 1,
+            "description": "Bill amount with up to 2 decimal places"
+          },
+          "order_currency": {
+            "type": "string",
+            "default": "INR",
+            "description": "Currency code"
+          },
+          "order_note": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 200
+          },
+          "order_expiry_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Order expiry in ISO 8601 format"
+          },
+          "customer_details": {
+            "$ref": "#/components/schemas/CustomerDetails"
+          },
+          "order_meta": {
+            "type": "object",
+            "properties": {
+              "return_url": { "type": "string" },
+              "notify_url": { "type": "string" },
+              "payment_methods": { "type": "string" }
+            }
+          },
+          "order_tags": {
+            "type": "object",
+            "additionalProperties": { "type": "string" },
+            "description": "Custom key-value pairs, max 15 tags"
+          },
+          "order_splits": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "vendor_id": { "type": "string" },
+                "amount": { "type": "number" },
+                "percentage": { "type": "number" }
+              }
+            }
+          }
+        }
+      },
+      "CustomerDetails": {
+        "type": "object",
+        "required": ["customer_id", "customer_phone"],
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 50,
+            "description": "Alphanumeric customer ID"
+          },
+          "customer_phone": {
+            "type": "string",
+            "description": "10-digit phone number or with + prefix for international"
+          },
+          "customer_email": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 100
+          },
+          "customer_name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 100
+          }
+        }
+      },
+      "OrderEntity": {
+        "type": "object",
+        "properties": {
+          "cf_order_id": { "type": "string" },
+          "order_id": { "type": "string" },
+          "payment_session_id": { "type": "string" },
+          "order_status": {
+            "type": "string",
+            "enum": ["ACTIVE", "PAID", "EXPIRED", "TERMINATED", "TERMINATION_REQUESTED"]
+          },
+          "order_amount": { "type": "number" },
+          "order_currency": { "type": "string" },
+          "order_expiry_time": { "type": "string", "format": "date-time" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "customer_details": { "$ref": "#/components/schemas/CustomerDetails" },
+          "order_meta": {
+            "type": "object",
+            "properties": {
+              "return_url": { "type": "string" },
+              "notify_url": { "type": "string" },
+              "payment_methods": { "type": "string" }
+            }
+          },
+          "order_tags": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          }
+        }
+      },
+      "PayOrderRequest": {
+        "type": "object",
+        "required": ["payment_session_id", "payment_method"],
+        "properties": {
+          "payment_session_id": {
+            "type": "string",
+            "description": "Session ID from Create Order response"
+          },
+          "payment_method": {
+            "type": "object",
+            "description": "Payment method details (card, upi, netbanking, app, emi, paylater, etc.)"
+          },
+          "save_instrument": {
+            "type": "boolean",
+            "description": "Whether to tokenize the payment instrument"
+          },
+          "offer_id": {
+            "type": "string",
+            "description": "Offer identifier for discounts"
+          }
+        }
+      },
+      "PaymentResponse": {
+        "type": "object",
+        "properties": {
+          "payment_amount": { "type": "number" },
+          "cf_payment_id": { "type": "string" },
+          "payment_method": { "type": "string" },
+          "channel": {
+            "type": "string",
+            "enum": ["link", "post", "collect", "qrcode"]
+          },
+          "action": {
+            "type": "string",
+            "enum": ["link", "post", "custom", "form"]
+          },
+          "data": {
+            "type": "object",
+            "description": "Payment-specific data such as URL or payload"
+          }
+        }
+      },
+      "CreateRefundRequest": {
+        "type": "object",
+        "required": ["refund_amount", "refund_id"],
+        "properties": {
+          "refund_amount": {
+            "type": "number",
+            "description": "Refund amount, must be <= transaction amount"
+          },
+          "refund_id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 40,
+            "description": "Unique alphanumeric refund ID"
+          },
+          "refund_note": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 100
+          },
+          "refund_speed": {
+            "type": "string",
+            "enum": ["STANDARD", "INSTANT"],
+            "default": "STANDARD"
+          },
+          "refund_splits": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "vendor_id": { "type": "string" },
+                "amount": { "type": "number" }
+              }
+            }
+          }
+        }
+      },
+      "RefundEntity": {
+        "type": "object",
+        "properties": {
+          "cf_payment_id": { "type": "string" },
+          "cf_refund_id": { "type": "string" },
+          "order_id": { "type": "string" },
+          "refund_id": { "type": "string" },
+          "refund_amount": { "type": "number" },
+          "refund_currency": { "type": "string" },
+          "refund_status": {
+            "type": "string",
+            "enum": ["SUCCESS", "PENDING", "CANCELLED", "ONHOLD"]
+          },
+          "refund_type": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "processed_at": { "type": "string", "format": "date-time" },
+          "refund_charge": { "type": "number" },
+          "metadata": { "type": "object" }
+        }
+      },
+      "CreatePaymentLinkRequest": {
+        "type": "object",
+        "required": ["link_amount", "link_currency", "link_purpose", "customer_details"],
+        "properties": {
+          "link_id": {
+            "type": "string",
+            "maxLength": 50,
+            "description": "Unique merchant identifier for the link"
+          },
+          "link_amount": {
+            "type": "number",
+            "description": "Payment amount with up to 2 decimals"
+          },
+          "link_currency": {
+            "type": "string",
+            "default": "INR"
+          },
+          "link_purpose": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Payment description shown to customer"
+          },
+          "customer_details": {
+            "type": "object",
+            "required": ["customer_phone"],
+            "properties": {
+              "customer_phone": { "type": "string" },
+              "customer_email": { "type": "string" },
+              "customer_name": { "type": "string" }
+            }
+          },
+          "link_partial_payments": { "type": "boolean" },
+          "link_minimum_partial_amount": { "type": "number" },
+          "link_expiry_time": { "type": "string", "format": "date-time" },
+          "link_notify": {
+            "type": "object",
+            "properties": {
+              "send_sms": { "type": "boolean" },
+              "send_email": { "type": "boolean" }
+            }
+          },
+          "link_auto_reminders": { "type": "boolean" },
+          "link_notes": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
+          "link_meta": {
+            "type": "object",
+            "properties": {
+              "notify_url": { "type": "string" },
+              "return_url": { "type": "string" },
+              "upi_intent": { "type": "boolean" },
+              "payment_methods": { "type": "string" }
+            }
+          }
+        }
+      },
+      "PaymentLinkEntity": {
+        "type": "object",
+        "properties": {
+          "cf_link_id": { "type": "string" },
+          "link_id": { "type": "string" },
+          "link_status": { "type": "string" },
+          "link_url": { "type": "string" },
+          "link_qrcode": { "type": "string" },
+          "link_amount": { "type": "number" },
+          "link_currency": { "type": "string" },
+          "link_expiry_time": { "type": "string", "format": "date-time" },
+          "customer_details": {
+            "type": "object",
+            "properties": {
+              "customer_phone": { "type": "string" },
+              "customer_email": { "type": "string" },
+              "customer_name": { "type": "string" }
+            }
+          }
+        }
+      },
+      "GetSettlementsRequest": {
+        "type": "object",
+        "properties": {
+          "pagination": {
+            "type": "object",
+            "properties": {
+              "limit": { "type": "integer", "maximum": 1000, "default": 10 },
+              "cursor": { "type": "string" }
+            }
+          },
+          "filters": {
+            "type": "object",
+            "properties": {
+              "cf_settlement_ids": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "settlement_utrs": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "start_date": { "type": "string", "format": "date-time" },
+              "end_date": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      },
+      "SettlementEntity": {
+        "type": "object",
+        "properties": {
+          "cf_payment_id": { "type": "string" },
+          "cf_settlement_id": { "type": "string" },
+          "order_id": { "type": "string" },
+          "order_amount": { "type": "number" },
+          "settlement_amount": { "type": "number" },
+          "service_charge": { "type": "number" },
+          "service_tax": { "type": "number" },
+          "transfer_utr": { "type": "string" },
+          "transfer_time": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "code": { "type": "string" },
+          "type": { "type": "string" },
+          "help": { "type": "string" }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "ClientCredentials": []
+    }
+  ]
+}
