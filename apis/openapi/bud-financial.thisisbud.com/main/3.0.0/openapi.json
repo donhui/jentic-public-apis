@@ -1,0 +1,917 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Bud Financial Platform API",
+    "description": "Bud Financial Platform API for customer management, financial data access, and open banking connectivity.",
+    "version": "3.0.0",
+    "x-jentic-source-url": "https://docs.thisisbud.com"
+  },
+  "servers": [
+    {
+      "url": "https://api-sandbox.thisisbud.com",
+      "description": "Sandbox environment"
+    },
+    {
+      "url": "https://api.thisisbud.com",
+      "description": "Production environment"
+    }
+  ],
+  "paths": {
+    "/v1/oauth/token": {
+      "post": {
+        "operationId": "createoauthtoken",
+        "summary": "Generate OAuth access token",
+        "description": "Generates access and refresh tokens for API authentication using client credentials or refresh token grant.",
+        "tags": [
+          "Authentication"
+        ],
+        "security": [
+          {
+            "BasicAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/platform/v3/customers": {
+      "post": {
+        "operationId": "createcustomer",
+        "summary": "Create a customer",
+        "description": "Creates a new customer on the platform. Returns 201 for new customers, 200 for existing customers matched via idempotent identifier.",
+        "tags": [
+          "Customers"
+        ],
+        "parameters": [
+          {
+            "name": "X-Client-Id",
+            "in": "header",
+            "required": true,
+            "description": "The API Client Identifier (Service Application Identifier)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Existing customer returned (matched via idempotent identifier)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "New customer created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listcustomers",
+        "summary": "List customers",
+        "description": "Returns all customers associated with the current project, ordered by ID. Deleted customers are excluded.",
+        "tags": [
+          "Customers"
+        ],
+        "parameters": [
+          {
+            "name": "X-Client-Id",
+            "in": "header",
+            "required": true,
+            "description": "The API Client Identifier (Service Application Identifier)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "description": "RFC3339 date filter for customers created on or after this date",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "description": "RFC3339 date filter for customers created on or before this date",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "Number of results per page (1-1000, default: 200)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 200
+            }
+          },
+          {
+            "name": "page_token",
+            "in": "query",
+            "description": "Token for fetching subsequent result pages",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotent_identifier",
+            "in": "query",
+            "description": "Filter by internal client identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of customers returned successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/platform/v3/customers/{customer_id}": {
+      "get": {
+        "operationId": "getcustomer",
+        "summary": "Get a customer",
+        "description": "Retrieves a specific customer by ID.",
+        "tags": [
+          "Customers"
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Client-Id",
+            "in": "header",
+            "required": true,
+            "description": "The API Client Identifier",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deletecustomer",
+        "summary": "Delete a customer",
+        "description": "Removes a customer from the platform.",
+        "tags": [
+          "Customers"
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Client-Id",
+            "in": "header",
+            "required": true,
+            "description": "The API Client Identifier",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer deleted successfully"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/financial-data/v3/accounts": {
+      "get": {
+        "operationId": "listaccounts",
+        "summary": "List financial accounts",
+        "description": "Retrieves financial accounts for a customer.",
+        "tags": [
+          "Financial Data"
+        ],
+        "parameters": [
+          {
+            "name": "X-Client-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "customer_id",
+            "in": "query",
+            "required": true,
+            "description": "The customer ID to retrieve accounts for",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accounts retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/financial-data/v3/transactions": {
+      "get": {
+        "operationId": "listtransactions",
+        "summary": "List financial transactions",
+        "description": "Retrieves financial transactions for a customer.",
+        "tags": [
+          "Financial Data"
+        ],
+        "parameters": [
+          {
+            "name": "X-Client-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "customer_id",
+            "in": "query",
+            "required": true,
+            "description": "The customer ID to retrieve transactions for",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "Number of results per page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page_token",
+            "in": "query",
+            "description": "Token for fetching subsequent pages",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transactions retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/connect/v2/connections": {
+      "get": {
+        "operationId": "listconnections",
+        "summary": "List account connections",
+        "description": "Retrieves all account connections for a customer.",
+        "tags": [
+          "Connect"
+        ],
+        "parameters": [
+          {
+            "name": "X-Client-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "customer_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Connections listed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "operation_id": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Connection"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TokenRequest": {
+        "type": "object",
+        "required": [
+          "grant_type"
+        ],
+        "properties": {
+          "grant_type": {
+            "type": "string",
+            "enum": [
+              "client_credentials",
+              "refresh_token"
+            ],
+            "description": "The OAuth2 grant type"
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "Long-lived refresh token for obtaining new access tokens"
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "operation_id": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "access_token": {
+                "type": "string"
+              },
+              "token_type": {
+                "type": "string",
+                "example": "Bearer"
+              },
+              "expires_in": {
+                "type": "integer",
+                "description": "Token validity in seconds",
+                "example": 3600
+              },
+              "refresh_token": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "CreateCustomerRequest": {
+        "type": "object",
+        "properties": {
+          "customer_context": {
+            "$ref": "#/components/schemas/CustomerContext"
+          },
+          "client_metadata": {
+            "$ref": "#/components/schemas/ClientMetadata"
+          }
+        }
+      },
+      "CustomerContext": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "personal",
+              "business"
+            ],
+            "description": "Customer type"
+          },
+          "region": {
+            "type": "string",
+            "description": "ISO 3166 Alpha-2 country code"
+          },
+          "locale": {
+            "type": "string",
+            "description": "BCP 47 language format"
+          },
+          "models": {
+            "type": "object",
+            "properties": {
+              "categorisation": {
+                "type": "string",
+                "description": "Name of the categorization model"
+              }
+            }
+          }
+        }
+      },
+      "ClientMetadata": {
+        "type": "object",
+        "properties": {
+          "idempotent_identifier": {
+            "type": "string",
+            "description": "Internal client identifier ensuring one customer per identifier"
+          }
+        }
+      },
+      "CustomerResponse": {
+        "type": "object",
+        "properties": {
+          "operation_id": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "customer_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "customer_secret": {
+                "type": "string"
+              },
+              "customer_context": {
+                "$ref": "#/components/schemas/CustomerContext"
+              },
+              "client_metadata": {
+                "$ref": "#/components/schemas/ClientMetadata"
+              }
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      },
+      "CustomerListResponse": {
+        "type": "object",
+        "properties": {
+          "operation_id": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "customer_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "idempotent_identifier": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "next_page_token": {
+                "type": "string"
+              },
+              "results": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "AccountListResponse": {
+        "type": "object",
+        "properties": {
+          "operation_id": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Account"
+            }
+          }
+        }
+      },
+      "Account": {
+        "type": "object",
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "account_type": {
+            "type": "string"
+          },
+          "account_name": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "balance": {
+            "type": "number"
+          },
+          "provider": {
+            "type": "string"
+          }
+        }
+      },
+      "TransactionListResponse": {
+        "type": "object",
+        "properties": {
+          "operation_id": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Transaction"
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "next_page_token": {
+                "type": "string"
+              },
+              "results": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "transaction_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "transaction_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "category": {
+            "type": "string"
+          }
+        }
+      },
+      "Connection": {
+        "type": "object",
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code_id": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "BasicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Base64-encoded client_id:client_secret"
+      }
+    }
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "OAuth2 token management"
+    },
+    {
+      "name": "Customers",
+      "description": "Customer lifecycle management"
+    },
+    {
+      "name": "Financial Data",
+      "description": "Access financial accounts and transactions"
+    },
+    {
+      "name": "Connect",
+      "description": "Bank account connections and open banking"
+    }
+  ]
+}
