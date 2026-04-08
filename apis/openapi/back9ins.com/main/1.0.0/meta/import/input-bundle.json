@@ -1,0 +1,697 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "BackNine Insurance API",
+    "version": "1.0.0",
+    "description": "BackNine is a tech-enabled general agency for life insurance. This API provides endpoints for getting quotes, creating eApps (electronic applications), managing eApp access, resuming eApps, updating quotes, managing insured data, advancing eApp steps, sending text messages, and downloading illustrations.",
+    "x-jentic-source-url": "https://docs.back9ins.com/"
+  },
+  "servers": [
+    {
+      "url": "https://app.back9ins.com",
+      "description": "BackNine production server"
+    }
+  ],
+  "paths": {
+    "/api/v1/eapp-quotes": {
+      "post": {
+        "tags": [
+          "Quotes"
+        ],
+        "summary": "Get Quotes",
+        "operationId": "getQuotes",
+        "description": "Fetch a list of insurance quotes. Each quote contains an ID which can be used when creating an eApp.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetQuotesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "List of quotes returned successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Quote"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. API key not provided or invalid."
+          }
+        }
+      }
+    },
+    "/api/v1/eapps": {
+      "post": {
+        "tags": [
+          "eApps"
+        ],
+        "summary": "Create eApp",
+        "operationId": "createEapp",
+        "description": "Create an electronic application (eApp) via API. Allows creating an eApp without loading Quote & Apply in a browser. The application cannot be fully completed via API - the agent or insured will need to continue in Quote & Apply.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEappRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "eApp created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Eapp"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/eapps/{eapp_uuid}/accesses/create": {
+      "post": {
+        "tags": [
+          "eApps"
+        ],
+        "summary": "Grant eApp Access",
+        "operationId": "grantEappAccess",
+        "description": "Grant an agent access to an existing eApp.",
+        "parameters": [
+          {
+            "name": "eapp_uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "UUID of the eApp"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantAccessRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Access granted successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "422": {
+            "description": "Unprocessable entity"
+          }
+        }
+      }
+    },
+    "/api/v1/eapps/{eapp_uuid}/resume": {
+      "put": {
+        "tags": [
+          "eApps"
+        ],
+        "summary": "Resume eApp",
+        "operationId": "resumeEapp",
+        "description": "Get the resume URL for an existing eApp to continue the application process.",
+        "parameters": [
+          {
+            "name": "eapp_uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "UUID of the eApp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resume URL returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Cannot resume eApp or eApp not found"
+          }
+        }
+      }
+    },
+    "/api/v1/eapps/{eapp_uuid}/quotes": {
+      "post": {
+        "tags": [
+          "eApps"
+        ],
+        "summary": "Get New Quotes for eApp",
+        "operationId": "getNewQuotesForEapp",
+        "description": "Get quotes for an existing eApp. Does not update the eApp's current quote unless a separate request is made to update it.",
+        "parameters": [
+          {
+            "name": "eapp_uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "UUID of the eApp"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "term_duration": {
+                    "type": "integer",
+                    "description": "Optional term duration override"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Quotes returned successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Quote"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/eapps/{eapp_uuid}/active-quote": {
+      "put": {
+        "tags": [
+          "eApps"
+        ],
+        "summary": "Update eApp Quote",
+        "operationId": "updateEappActiveQuote",
+        "description": "Update the active quote on an existing eApp.",
+        "parameters": [
+          {
+            "name": "eapp_uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "UUID of the eApp"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateQuoteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Quote updated successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/eapps/{eapp_uuid}/insured": {
+      "patch": {
+        "tags": [
+          "eApps"
+        ],
+        "summary": "Update Insured Data",
+        "operationId": "updateInsuredData",
+        "description": "Update the insured's data on an existing eApp.",
+        "parameters": [
+          {
+            "name": "eapp_uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "UUID of the eApp"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InsuredData"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Insured data updated"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/eapps/{eapp_uuid}/step/next": {
+      "put": {
+        "tags": [
+          "eApps"
+        ],
+        "summary": "Advance eApp Step",
+        "operationId": "advanceEappStep",
+        "description": "Advance the eApp to the next step. The eApp's current step must be valid before proceeding.",
+        "parameters": [
+          {
+            "name": "eapp_uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "UUID of the eApp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Step advanced successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "422": {
+            "description": "Current step requirements not met or step cannot be advanced"
+          }
+        }
+      }
+    },
+    "/api/v1/text": {
+      "post": {
+        "tags": [
+          "Text"
+        ],
+        "summary": "Send Text Message",
+        "operationId": "sendTextMessage",
+        "description": "Send a personalized text message to a prospect with a customized rate, agent name, and Quote & Apply link. Cannot be used for mass/blast messages - rate limited.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendTextRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Text message sent successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/v1/webhook_zapier_test_case": {
+      "get": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Test Case Webhook Data",
+        "operationId": "getTestCaseWebhookData",
+        "description": "Get example case data structure for webhook integration testing.",
+        "responses": {
+          "200": {
+            "description": "Example case data structure"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/webhook_zapier_test_electronic_application": {
+      "get": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Test eApp Webhook Data",
+        "operationId": "getTestEappWebhookData",
+        "description": "Get example Quote & Apply application (eApp) data structure for webhook integration testing.",
+        "responses": {
+          "200": {
+            "description": "Example eApp data structure"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/quotes/{id}/illustration": {
+      "get": {
+        "tags": [
+          "Illustrations"
+        ],
+        "summary": "Download Illustration",
+        "operationId": "downloadIllustration",
+        "description": "Download the illustration PDF for a specific quote.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Quote ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Illustration PDF",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Quote not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-BACKNINE-AUTHENTICATION",
+        "description": "API key found at https://app.back9ins.com/settings?page=developer-settings"
+      }
+    },
+    "schemas": {
+      "GetQuotesRequest": {
+        "type": "object",
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "Male",
+              "Female"
+            ]
+          },
+          "date_of_birth": {
+            "type": "string",
+            "format": "date"
+          },
+          "state": {
+            "type": "string",
+            "description": "Two-letter state abbreviation"
+          },
+          "health": {
+            "type": "string"
+          },
+          "smoker": {
+            "type": "boolean"
+          },
+          "coverage_amount": {
+            "type": "number"
+          },
+          "term_duration": {
+            "type": "integer"
+          },
+          "product_type": {
+            "type": "string"
+          }
+        }
+      },
+      "Quote": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "carrier_name": {
+            "type": "string"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "premium": {
+            "type": "number"
+          },
+          "coverage_amount": {
+            "type": "number"
+          },
+          "term_duration": {
+            "type": "integer"
+          },
+          "rating_class": {
+            "type": "string"
+          },
+          "consumer_guide_url": {
+            "type": "string"
+          },
+          "underwriting_guide_url": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateEappRequest": {
+        "type": "object",
+        "properties": {
+          "quote_id": {
+            "type": "integer",
+            "description": "ID from Get Quotes response"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "test": {
+            "type": "boolean",
+            "description": "If true, creates a test eApp deleted nightly"
+          }
+        }
+      },
+      "Eapp": {
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "resume_url": {
+            "type": "string"
+          }
+        }
+      },
+      "GrantAccessRequest": {
+        "type": "object",
+        "required": [
+          "electronic_application_access"
+        ],
+        "properties": {
+          "electronic_application_access": {
+            "type": "object",
+            "properties": {
+              "agent_email": {
+                "type": "string"
+              },
+              "agent_first_name": {
+                "type": "string"
+              },
+              "agent_last_name": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "ResumeResponse": {
+        "type": "object",
+        "properties": {
+          "resume_url": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateQuoteRequest": {
+        "type": "object",
+        "properties": {
+          "quote_id": {
+            "type": "integer"
+          }
+        }
+      },
+      "InsuredData": {
+        "type": "object",
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string"
+          },
+          "date_of_birth": {
+            "type": "string",
+            "format": "date"
+          },
+          "state": {
+            "type": "string"
+          },
+          "zip": {
+            "type": "string"
+          }
+        }
+      },
+      "SendTextRequest": {
+        "type": "object",
+        "required": [
+          "phone",
+          "first_name",
+          "npn"
+        ],
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "Recipient phone number"
+          },
+          "first_name": {
+            "type": "string",
+            "description": "Recipient first name"
+          },
+          "npn": {
+            "type": "integer",
+            "description": "National Producer Number of the agent"
+          },
+          "quote_id": {
+            "type": "integer",
+            "description": "Optional quote ID for personalized rate"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Quotes",
+      "description": "Get insurance quotes"
+    },
+    {
+      "name": "eApps",
+      "description": "Manage electronic applications"
+    },
+    {
+      "name": "Text",
+      "description": "Send text messages"
+    },
+    {
+      "name": "Webhooks",
+      "description": "Webhook test data endpoints"
+    },
+    {
+      "name": "Illustrations",
+      "description": "Download illustrations for quotes"
+    }
+  ]
+}
