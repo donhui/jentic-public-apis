@@ -1,0 +1,411 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Bubble Data API",
+    "description": "Bubble Data API for creating, reading, updating, and deleting records in Bubble application databases.",
+    "version": "1.1.0",
+    "x-jentic-source-url": "https://manual.bubble.io/core-resources/api"
+  },
+  "servers": [
+    {
+      "url": "https://{appname}.bubbleapps.io/api/1.1",
+      "description": "Bubble application API",
+      "variables": {
+        "appname": {
+          "description": "Your Bubble application name",
+          "default": "your-app"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/obj/{typename}": {
+      "get": {
+        "operationId": "listRecords",
+        "summary": "List and search records",
+        "description": "Retrieve records of the specified type with optional search constraints, sorting, and pagination.",
+        "tags": [
+          "Data"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TypeName"
+          },
+          {
+            "name": "constraints",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "JSON array of constraint objects for filtering"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Starting index for pagination"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Maximum number of records to return"
+          },
+          {
+            "name": "sort_field",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Field to sort results by"
+          },
+          {
+            "name": "descending",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Sort in descending order"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Record list with pagination",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createRecord",
+        "summary": "Create a new record",
+        "tags": [
+          "Data"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TypeName"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Fields and values for the new record",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Record created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string",
+                      "description": "Unique ID of the created record"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/obj/{typename}/bulk": {
+      "post": {
+        "operationId": "bulkCreateRecords",
+        "summary": "Bulk create records",
+        "description": "Create up to 1000 records at once using newline-separated JSON.",
+        "tags": [
+          "Data"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TypeName"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/plain": {
+              "schema": {
+                "type": "string",
+                "description": "Newline-separated JSON objects"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bulk creation results with per-object status"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/obj/{typename}/{uid}": {
+      "get": {
+        "operationId": "getRecord",
+        "summary": "Retrieve a record by ID",
+        "tags": [
+          "Data"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TypeName"
+          },
+          {
+            "$ref": "#/components/parameters/RecordUid"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Record data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Record"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateRecord",
+        "summary": "Update record fields",
+        "tags": [
+          "Data"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TypeName"
+          },
+          {
+            "$ref": "#/components/parameters/RecordUid"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Fields to update",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Record updated"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "operationId": "replaceRecord",
+        "summary": "Replace entire record",
+        "description": "Overwrites all editable fields with the provided values.",
+        "tags": [
+          "Data"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TypeName"
+          },
+          {
+            "$ref": "#/components/parameters/RecordUid"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "All field values for the record",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Record replaced"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteRecord",
+        "summary": "Delete a record",
+        "tags": [
+          "Data"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TypeName"
+          },
+          {
+            "$ref": "#/components/parameters/RecordUid"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Record deleted"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer token for API authentication"
+      }
+    },
+    "parameters": {
+      "TypeName": {
+        "name": "typename",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Data type name as defined in the Bubble database"
+      },
+      "RecordUid": {
+        "name": "uid",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Unique record identifier"
+      }
+    },
+    "schemas": {
+      "Record": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "Created Date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "Modified Date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "Created By": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "RecordListResponse": {
+        "type": "object",
+        "properties": {
+          "response": {
+            "type": "object",
+            "properties": {
+              "cursor": {
+                "type": "integer"
+              },
+              "results": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Record"
+                }
+              },
+              "remaining": {
+                "type": "integer"
+              },
+              "count": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request - invalid parameters or constraints"
+      },
+      "Unauthorized": {
+        "description": "Authentication required or insufficient permissions"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}
