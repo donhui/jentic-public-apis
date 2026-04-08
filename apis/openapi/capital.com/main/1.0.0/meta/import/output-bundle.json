@@ -1,0 +1,2012 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Capital.com Trading API",
+    "description": "Capital.com public REST API for trading CFDs and spread betting. Provides session management, account information, position and order management, market data, price history, client sentiment, and watchlists.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://open-api.capital.com/"
+  },
+  "servers": [
+    {
+      "url": "https://api-capital.backend-capital.com",
+      "description": "Live trading server"
+    },
+    {
+      "url": "https://demo-api-capital.backend-capital.com",
+      "description": "Demo trading server"
+    }
+  ],
+  "paths": {
+    "/api/v1/ping": {
+      "get": {
+        "operationId": "ping",
+        "summary": "Keep session alive",
+        "tags": [
+          "General"
+        ],
+        "responses": {
+          "200": {
+            "description": "Session kept alive"
+          }
+        }
+      }
+    },
+    "/api/v1/time": {
+      "get": {
+        "operationId": "getServerTime",
+        "summary": "Get server time",
+        "description": "Retrieve current server time. No authentication required.",
+        "tags": [
+          "General"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Server time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "time": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/session/encryptionKey": {
+      "get": {
+        "operationId": "getEncryptionKey",
+        "summary": "Get encryption key",
+        "description": "Obtain RSA public key for password encryption.",
+        "tags": [
+          "Session"
+        ],
+        "security": [
+          {
+            "capApiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Encryption key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "encryptionKey": {
+                      "type": "string",
+                      "description": "RSA public key"
+                    },
+                    "timeStamp": {
+                      "type": "integer",
+                      "description": "Key timestamp"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/session": {
+      "get": {
+        "operationId": "getSession",
+        "summary": "Get session details",
+        "description": "Retrieve current session details.",
+        "tags": [
+          "Session"
+        ],
+        "responses": {
+          "200": {
+            "description": "Session details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createSession",
+        "summary": "Create a trading session",
+        "description": "Initiate a trading session. Rate limited to 1 request/second.",
+        "tags": [
+          "Session"
+        ],
+        "security": [
+          {
+            "capApiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "identifier",
+                  "password"
+                ],
+                "properties": {
+                  "identifier": {
+                    "type": "string",
+                    "description": "Account email or username"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "Account password (plain text)"
+                  },
+                  "encryptedPassword": {
+                    "type": "boolean",
+                    "description": "Whether password is RSA-encrypted"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session created. CST and X-SECURITY-TOKEN returned in response headers.",
+            "headers": {
+              "CST": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Client session token"
+              },
+              "X-SECURITY-TOKEN": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Account security token"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed"
+          }
+        }
+      },
+      "put": {
+        "operationId": "switchAccount",
+        "summary": "Switch active account",
+        "description": "Switch the active trading account for the current session.",
+        "tags": [
+          "Session"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "accountId"
+                ],
+                "properties": {
+                  "accountId": {
+                    "type": "string",
+                    "description": "Account ID to switch to"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account switched successfully"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteSession",
+        "summary": "Terminate session",
+        "description": "Terminate the current trading session.",
+        "tags": [
+          "Session"
+        ],
+        "responses": {
+          "200": {
+            "description": "Session terminated"
+          }
+        }
+      }
+    },
+    "/api/v1/accounts": {
+      "get": {
+        "operationId": "listAccounts",
+        "summary": "List all accounts",
+        "description": "List all client trading accounts.",
+        "tags": [
+          "Accounts"
+        ],
+        "responses": {
+          "200": {
+            "description": "Account list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accounts": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Account"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/preferences": {
+      "get": {
+        "operationId": "getAccountPreferences",
+        "summary": "Get account preferences",
+        "description": "Retrieve account settings including leverage and hedging mode.",
+        "tags": [
+          "Accounts"
+        ],
+        "responses": {
+          "200": {
+            "description": "Account preferences",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountPreferences"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateAccountPreferences",
+        "summary": "Update account preferences",
+        "description": "Update leverage and hedging settings.",
+        "tags": [
+          "Accounts"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountPreferences"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Preferences updated"
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/topUp": {
+      "post": {
+        "operationId": "topUpDemoAccount",
+        "summary": "Top up demo account",
+        "description": "Adjust demo account balance. Rate limited to 10 requests/second, 100 requests/account/day.",
+        "tags": [
+          "Accounts"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "amount"
+                ],
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "minimum": -400000,
+                    "maximum": 400000,
+                    "description": "Amount to add or remove"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Balance adjusted"
+          }
+        }
+      }
+    },
+    "/api/v1/history/activity": {
+      "get": {
+        "operationId": "getActivityHistory",
+        "summary": "Get account activity history",
+        "description": "Account activity log. Max date range is 1 day.",
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Start date (YYYY-MM-DDTHH:MM:SS)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "End date"
+          },
+          {
+            "name": "lastPeriod",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Last N seconds of activity"
+          },
+          {
+            "name": "detailed",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Include detailed information"
+          },
+          {
+            "name": "dealId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by deal ID"
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Activity type filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activity history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "activities": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Activity"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/history/transactions": {
+      "get": {
+        "operationId": "getTransactionHistory",
+        "summary": "Get transaction history",
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Start date"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "End date"
+          },
+          {
+            "name": "lastPeriod",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Last N seconds"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Transaction type filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "transactions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Transaction"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/positions": {
+      "get": {
+        "operationId": "listPositions",
+        "summary": "List all open positions",
+        "tags": [
+          "Positions"
+        ],
+        "responses": {
+          "200": {
+            "description": "Open positions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "positions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Position"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPosition",
+        "summary": "Open a new position",
+        "description": "Open a new trading position. Rate limited to 1000 requests/hour on demo.",
+        "tags": [
+          "Positions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "epic",
+                  "direction",
+                  "size"
+                ],
+                "properties": {
+                  "epic": {
+                    "type": "string",
+                    "description": "Instrument identifier"
+                  },
+                  "direction": {
+                    "type": "string",
+                    "enum": [
+                      "BUY",
+                      "SELL"
+                    ]
+                  },
+                  "size": {
+                    "type": "number",
+                    "description": "Deal size"
+                  },
+                  "guaranteedStop": {
+                    "type": "boolean"
+                  },
+                  "stopLevel": {
+                    "type": "number"
+                  },
+                  "stopDistance": {
+                    "type": "number"
+                  },
+                  "stopAmount": {
+                    "type": "number"
+                  },
+                  "profitLevel": {
+                    "type": "number"
+                  },
+                  "profitDistance": {
+                    "type": "number"
+                  },
+                  "profitAmount": {
+                    "type": "number"
+                  },
+                  "trailingStop": {
+                    "type": "boolean"
+                  },
+                  "trailingStopDistance": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Position opened",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "dealReference": {
+                      "type": "string",
+                      "description": "Reference for deal confirmation"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/positions/{dealId}": {
+      "get": {
+        "operationId": "getPosition",
+        "summary": "Get a single position",
+        "tags": [
+          "Positions"
+        ],
+        "parameters": [
+          {
+            "name": "dealId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Deal ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Position details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Position"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updatePosition",
+        "summary": "Update a position",
+        "description": "Update stop loss and take profit levels on an existing position.",
+        "tags": [
+          "Positions"
+        ],
+        "parameters": [
+          {
+            "name": "dealId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Deal ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "guaranteedStop": {
+                    "type": "boolean"
+                  },
+                  "stopLevel": {
+                    "type": "number"
+                  },
+                  "stopDistance": {
+                    "type": "number"
+                  },
+                  "stopAmount": {
+                    "type": "number"
+                  },
+                  "profitLevel": {
+                    "type": "number"
+                  },
+                  "profitDistance": {
+                    "type": "number"
+                  },
+                  "profitAmount": {
+                    "type": "number"
+                  },
+                  "trailingStop": {
+                    "type": "boolean"
+                  },
+                  "trailingStopDistance": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Position updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "dealReference": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "closePosition",
+        "summary": "Close a position",
+        "tags": [
+          "Positions"
+        ],
+        "parameters": [
+          {
+            "name": "dealId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Deal ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Position closed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "dealReference": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workingorders": {
+      "get": {
+        "operationId": "listWorkingOrders",
+        "summary": "List working orders",
+        "description": "Retrieve all pending working orders.",
+        "tags": [
+          "Working Orders"
+        ],
+        "responses": {
+          "200": {
+            "description": "Working orders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "workingOrders": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/WorkingOrder"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createWorkingOrder",
+        "summary": "Create a working order",
+        "description": "Create a pending working order. Rate limited to 1000 requests/hour on demo.",
+        "tags": [
+          "Working Orders"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "epic",
+                  "direction",
+                  "size",
+                  "level",
+                  "type"
+                ],
+                "properties": {
+                  "epic": {
+                    "type": "string",
+                    "description": "Instrument identifier"
+                  },
+                  "direction": {
+                    "type": "string",
+                    "enum": [
+                      "BUY",
+                      "SELL"
+                    ]
+                  },
+                  "size": {
+                    "type": "number"
+                  },
+                  "level": {
+                    "type": "number",
+                    "description": "Price level to trigger order"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "LIMIT",
+                      "STOP"
+                    ],
+                    "description": "Order type"
+                  },
+                  "goodTillDate": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "guaranteedStop": {
+                    "type": "boolean"
+                  },
+                  "stopLevel": {
+                    "type": "number"
+                  },
+                  "stopDistance": {
+                    "type": "number"
+                  },
+                  "stopAmount": {
+                    "type": "number"
+                  },
+                  "profitLevel": {
+                    "type": "number"
+                  },
+                  "profitDistance": {
+                    "type": "number"
+                  },
+                  "profitAmount": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Working order created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "dealReference": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workingorders/{dealId}": {
+      "put": {
+        "operationId": "updateWorkingOrder",
+        "summary": "Update a working order",
+        "tags": [
+          "Working Orders"
+        ],
+        "parameters": [
+          {
+            "name": "dealId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Deal ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "level": {
+                    "type": "number"
+                  },
+                  "goodTillDate": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "guaranteedStop": {
+                    "type": "boolean"
+                  },
+                  "stopLevel": {
+                    "type": "number"
+                  },
+                  "stopDistance": {
+                    "type": "number"
+                  },
+                  "stopAmount": {
+                    "type": "number"
+                  },
+                  "profitLevel": {
+                    "type": "number"
+                  },
+                  "profitDistance": {
+                    "type": "number"
+                  },
+                  "profitAmount": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "dealReference": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteWorkingOrder",
+        "summary": "Cancel a working order",
+        "tags": [
+          "Working Orders"
+        ],
+        "parameters": [
+          {
+            "name": "dealId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Deal ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "dealReference": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/markets": {
+      "get": {
+        "operationId": "searchMarkets",
+        "summary": "Search markets",
+        "description": "List markets by search term.",
+        "tags": [
+          "Markets"
+        ],
+        "parameters": [
+          {
+            "name": "searchTerm",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Market search term"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Market search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "markets": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Market"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/markets/{epic}": {
+      "get": {
+        "operationId": "getMarketDetails",
+        "summary": "Get market details",
+        "description": "Get detailed information for a specific market instrument.",
+        "tags": [
+          "Markets"
+        ],
+        "parameters": [
+          {
+            "name": "epic",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Instrument identifier (epic)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Market details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/marketnavigation": {
+      "get": {
+        "operationId": "getMarketNavigation",
+        "summary": "Get top-level market categories",
+        "tags": [
+          "Markets"
+        ],
+        "responses": {
+          "200": {
+            "description": "Market navigation tree",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "nodes": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/MarketNode"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/marketnavigation/{nodeId}": {
+      "get": {
+        "operationId": "getMarketNavigationNode",
+        "summary": "Get market sub-categories",
+        "description": "Get sub-categories within a market navigation node.",
+        "tags": [
+          "Markets"
+        ],
+        "parameters": [
+          {
+            "name": "nodeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Navigation node ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sub-category details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "nodes": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/MarketNode"
+                      }
+                    },
+                    "markets": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Market"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/history/prices": {
+      "get": {
+        "operationId": "getPriceHistory",
+        "summary": "Get historical prices",
+        "description": "Retrieve historical OHLC price data for an instrument.",
+        "tags": [
+          "Prices"
+        ],
+        "parameters": [
+          {
+            "name": "epic",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Instrument epic"
+          },
+          {
+            "name": "resolution",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "MINUTE",
+                "MINUTE_5",
+                "MINUTE_15",
+                "MINUTE_30",
+                "HOUR",
+                "HOUR_4",
+                "DAY",
+                "WEEK"
+              ]
+            },
+            "description": "Price resolution"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Start date"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "End date"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Price history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "prices": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PriceCandle"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/confirms/{dealReference}": {
+      "get": {
+        "operationId": "getDealConfirmation",
+        "summary": "Get deal confirmation",
+        "description": "Confirm execution of a position or order.",
+        "tags": [
+          "Confirms"
+        ],
+        "parameters": [
+          {
+            "name": "dealReference",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Deal reference from trade operation"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deal confirmation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DealConfirmation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clientSentiment": {
+      "get": {
+        "operationId": "getClientSentiment",
+        "summary": "Get aggregate client sentiment",
+        "description": "Aggregate client sentiment data across markets.",
+        "tags": [
+          "Sentiment"
+        ],
+        "responses": {
+          "200": {
+            "description": "Client sentiment data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "clientSentiments": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ClientSentiment"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clientSentiment/{epic}": {
+      "get": {
+        "operationId": "getClientSentimentForMarket",
+        "summary": "Get client sentiment for a market",
+        "tags": [
+          "Sentiment"
+        ],
+        "parameters": [
+          {
+            "name": "epic",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Instrument epic"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sentiment for specific instrument",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientSentiment"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/watchlists": {
+      "get": {
+        "operationId": "listWatchlists",
+        "summary": "List all watchlists",
+        "tags": [
+          "Watchlists"
+        ],
+        "responses": {
+          "200": {
+            "description": "Watchlist list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "watchlists": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Watchlist"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createWatchlist",
+        "summary": "Create a watchlist",
+        "tags": [
+          "Watchlists"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "watchlistName"
+                ],
+                "properties": {
+                  "watchlistName": {
+                    "type": "string",
+                    "description": "Watchlist name"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Watchlist created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Watchlist"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/watchlists/{watchlistId}": {
+      "get": {
+        "operationId": "getWatchlist",
+        "summary": "Get watchlist contents",
+        "tags": [
+          "Watchlists"
+        ],
+        "parameters": [
+          {
+            "name": "watchlistId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Watchlist ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Watchlist details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Watchlist"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "addToWatchlist",
+        "summary": "Add market to watchlist",
+        "tags": [
+          "Watchlists"
+        ],
+        "parameters": [
+          {
+            "name": "watchlistId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Watchlist ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "epic"
+                ],
+                "properties": {
+                  "epic": {
+                    "type": "string",
+                    "description": "Instrument epic to add"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Market added to watchlist"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteWatchlist",
+        "summary": "Delete a watchlist",
+        "tags": [
+          "Watchlists"
+        ],
+        "parameters": [
+          {
+            "name": "watchlistId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Watchlist ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Watchlist deleted"
+          }
+        }
+      }
+    },
+    "/api/v1/watchlists/{watchlistId}/{epic}": {
+      "delete": {
+        "operationId": "removeFromWatchlist",
+        "summary": "Remove market from watchlist",
+        "tags": [
+          "Watchlists"
+        ],
+        "parameters": [
+          {
+            "name": "watchlistId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Watchlist ID"
+          },
+          {
+            "name": "epic",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Instrument epic to remove"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Market removed from watchlist"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cstToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "CST",
+        "description": "Client session token obtained from POST /session"
+      },
+      "securityToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-SECURITY-TOKEN",
+        "description": "Account security token obtained from POST /session"
+      },
+      "capApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-CAP-API-KEY",
+        "description": "Capital.com API key for session creation"
+      }
+    },
+    "schemas": {
+      "Session": {
+        "type": "object",
+        "properties": {
+          "accountType": {
+            "type": "string"
+          },
+          "accountInfo": {
+            "type": "object"
+          },
+          "currencyIsoCode": {
+            "type": "string"
+          },
+          "currencySymbol": {
+            "type": "string"
+          },
+          "streamingHost": {
+            "type": "string"
+          }
+        }
+      },
+      "Account": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "accountName": {
+            "type": "string"
+          },
+          "accountType": {
+            "type": "string"
+          },
+          "balance": {
+            "type": "object",
+            "properties": {
+              "balance": {
+                "type": "number"
+              },
+              "deposit": {
+                "type": "number"
+              },
+              "profitLoss": {
+                "type": "number"
+              },
+              "available": {
+                "type": "number"
+              }
+            }
+          },
+          "currency": {
+            "type": "string"
+          },
+          "preferred": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "AccountPreferences": {
+        "type": "object",
+        "properties": {
+          "leverages": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "hedgingMode": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Position": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "object",
+            "properties": {
+              "dealId": {
+                "type": "string"
+              },
+              "dealReference": {
+                "type": "string"
+              },
+              "direction": {
+                "type": "string",
+                "enum": [
+                  "BUY",
+                  "SELL"
+                ]
+              },
+              "size": {
+                "type": "number"
+              },
+              "openLevel": {
+                "type": "number"
+              },
+              "stopLevel": {
+                "type": "number"
+              },
+              "profitLevel": {
+                "type": "number"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "createdDateUTC": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "market": {
+            "$ref": "#/components/schemas/Market"
+          }
+        }
+      },
+      "WorkingOrder": {
+        "type": "object",
+        "properties": {
+          "workingOrderData": {
+            "type": "object",
+            "properties": {
+              "dealId": {
+                "type": "string"
+              },
+              "direction": {
+                "type": "string",
+                "enum": [
+                  "BUY",
+                  "SELL"
+                ]
+              },
+              "epic": {
+                "type": "string"
+              },
+              "orderSize": {
+                "type": "number"
+              },
+              "orderLevel": {
+                "type": "number"
+              },
+              "orderType": {
+                "type": "string",
+                "enum": [
+                  "LIMIT",
+                  "STOP"
+                ]
+              },
+              "goodTillDate": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "createdDateUTC": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "market": {
+            "$ref": "#/components/schemas/Market"
+          }
+        }
+      },
+      "Market": {
+        "type": "object",
+        "properties": {
+          "epic": {
+            "type": "string"
+          },
+          "instrumentName": {
+            "type": "string"
+          },
+          "instrumentType": {
+            "type": "string"
+          },
+          "bid": {
+            "type": "number"
+          },
+          "offer": {
+            "type": "number"
+          },
+          "high": {
+            "type": "number"
+          },
+          "low": {
+            "type": "number"
+          },
+          "netChange": {
+            "type": "number"
+          },
+          "percentageChange": {
+            "type": "number"
+          },
+          "marketStatus": {
+            "type": "string"
+          }
+        }
+      },
+      "MarketDetail": {
+        "type": "object",
+        "properties": {
+          "instrument": {
+            "type": "object",
+            "properties": {
+              "epic": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "currencies": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "minDealSize": {
+                "type": "number"
+              },
+              "maxDealSize": {
+                "type": "number"
+              }
+            }
+          },
+          "dealingRules": {
+            "type": "object"
+          },
+          "snapshot": {
+            "type": "object"
+          }
+        }
+      },
+      "MarketNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "PriceCandle": {
+        "type": "object",
+        "properties": {
+          "snapshotTime": {
+            "type": "string"
+          },
+          "snapshotTimeUTC": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "openPrice": {
+            "type": "object",
+            "properties": {
+              "bid": {
+                "type": "number"
+              },
+              "ask": {
+                "type": "number"
+              }
+            }
+          },
+          "closePrice": {
+            "type": "object",
+            "properties": {
+              "bid": {
+                "type": "number"
+              },
+              "ask": {
+                "type": "number"
+              }
+            }
+          },
+          "highPrice": {
+            "type": "object",
+            "properties": {
+              "bid": {
+                "type": "number"
+              },
+              "ask": {
+                "type": "number"
+              }
+            }
+          },
+          "lowPrice": {
+            "type": "object",
+            "properties": {
+              "bid": {
+                "type": "number"
+              },
+              "ask": {
+                "type": "number"
+              }
+            }
+          },
+          "lastTradedVolume": {
+            "type": "integer"
+          }
+        }
+      },
+      "DealConfirmation": {
+        "type": "object",
+        "properties": {
+          "dealId": {
+            "type": "string"
+          },
+          "dealReference": {
+            "type": "string"
+          },
+          "dealStatus": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string"
+          },
+          "epic": {
+            "type": "string"
+          },
+          "size": {
+            "type": "number"
+          },
+          "level": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ClientSentiment": {
+        "type": "object",
+        "properties": {
+          "epic": {
+            "type": "string"
+          },
+          "longPositionPercentage": {
+            "type": "number"
+          },
+          "shortPositionPercentage": {
+            "type": "number"
+          },
+          "marketId": {
+            "type": "string"
+          }
+        }
+      },
+      "Watchlist": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "markets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Market"
+            }
+          }
+        }
+      },
+      "Activity": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "type": "string"
+          },
+          "dealId": {
+            "type": "string"
+          },
+          "epic": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "type": "string"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "instrumentName": {
+            "type": "string"
+          },
+          "size": {
+            "type": "number"
+          },
+          "openLevel": {
+            "type": "number"
+          },
+          "closeLevel": {
+            "type": "number"
+          },
+          "profitAndLoss": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "cstToken": [],
+      "securityToken": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Session",
+      "description": "Session management and authentication"
+    },
+    {
+      "name": "Accounts",
+      "description": "Account information and preferences"
+    },
+    {
+      "name": "Positions",
+      "description": "Open position management"
+    },
+    {
+      "name": "Working Orders",
+      "description": "Pending order management"
+    },
+    {
+      "name": "Markets",
+      "description": "Market data and navigation"
+    },
+    {
+      "name": "Prices",
+      "description": "Historical price data"
+    },
+    {
+      "name": "Confirms",
+      "description": "Deal confirmations"
+    },
+    {
+      "name": "Sentiment",
+      "description": "Client sentiment data"
+    },
+    {
+      "name": "Watchlists",
+      "description": "Watchlist management"
+    },
+    {
+      "name": "General",
+      "description": "General utility endpoints"
+    }
+  ]
+}
