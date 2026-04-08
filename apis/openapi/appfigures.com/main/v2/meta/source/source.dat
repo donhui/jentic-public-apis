@@ -1,0 +1,830 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Appfigures API",
+    "version": "v2",
+    "description": "Appfigures provides a simple, RESTful way to interact with app store reports and account data. Access sales and ads data, ranks, reviews, featured data, and perform account management tasks.",
+    "x-jentic-source-url": "https://docs.appfigures.com"
+  },
+  "servers": [
+    {
+      "url": "https://api.appfigures.com/v2"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "getRoot",
+        "summary": "API Root",
+        "description": "Returns the API root information.",
+        "tags": ["General"],
+        "responses": {
+          "200": {
+            "description": "API root information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/{id}": {
+      "get": {
+        "operationId": "getProductById",
+        "summary": "Get product by Appfigures ID",
+        "description": "Retrieve a product by its Appfigures-assigned ID.",
+        "tags": ["Products"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The Appfigures-assigned product ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/search/{term}": {
+      "get": {
+        "operationId": "searchProducts",
+        "summary": "Search for products",
+        "description": "Search for products by name or developer. Prefix with @name= or @developer= to search specific fields.",
+        "tags": ["Products"],
+        "parameters": [
+          {
+            "name": "term",
+            "in": "path",
+            "required": true,
+            "description": "Search term. Prefix with @name= or @developer= for field-specific search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "storefronts",
+            "in": "query",
+            "description": "Semicolon-separated set of storefronts to filter results (e.g., apple, google_play, amazon_appstore).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page of results to show. Defaults to the first page.",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "description": "Number of results per page. Defaults to 25.",
+            "schema": {
+              "type": "integer",
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of matching products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Product"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/{store}/{id_in_store}": {
+      "get": {
+        "operationId": "getProductByStoreId",
+        "summary": "Get product by store ID",
+        "description": "Retrieve a product by its ID in the store. If the product does not exist in the database, the API will attempt a real-time lookup.",
+        "tags": ["Products"],
+        "parameters": [
+          {
+            "name": "store",
+            "in": "path",
+            "required": true,
+            "description": "The store (e.g., apple, google_play, amazon_appstore)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id_in_store",
+            "in": "path",
+            "required": true,
+            "description": "The product's unique identifier in the store",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Lookup in progress - product not yet available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "description": "URL to check the status of the lookup"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/mine": {
+      "get": {
+        "operationId": "listMyProducts",
+        "summary": "List all your products",
+        "description": "List all products owned by or shared with your account.",
+        "tags": ["Products"],
+        "responses": {
+          "200": {
+            "description": "Map of products keyed by product ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/Product"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/{id}/sdks": {
+      "get": {
+        "operationId": "getProductSdks",
+        "summary": "Get product SDKs",
+        "description": "Retrieve SDKs used by a specific product.",
+        "tags": ["Products"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The Appfigures-assigned product ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SDK information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/sales": {
+      "get": {
+        "operationId": "getSalesReport",
+        "summary": "Get sales report",
+        "description": "Generate sales reports with various filtering and grouping options.",
+        "tags": ["Reports"],
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "description": "Start date (YYYY-MM-DD), inclusive.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "description": "End date (YYYY-MM-DD), inclusive.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "group_by",
+            "in": "query",
+            "description": "Comma-separated pivots: products, countries, dates, stores, device.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "granularity",
+            "in": "query",
+            "description": "Date grouping granularity.",
+            "schema": {
+              "type": "string",
+              "enum": ["daily", "weekly", "monthly", "yearly"],
+              "default": "daily"
+            }
+          },
+          {
+            "name": "products",
+            "in": "query",
+            "description": "Comma-separated product IDs to include.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "countries",
+            "in": "query",
+            "description": "Semicolon-separated ISO country codes.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dataset",
+            "in": "query",
+            "description": "Use 'financial' for financial reports (Apple and Google Play only).",
+            "schema": {
+              "type": "string",
+              "enum": ["none", "financial"]
+            }
+          },
+          {
+            "name": "include_inapps",
+            "in": "query",
+            "description": "Automatically include in-app purchases of specified products.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Output format.",
+            "schema": {
+              "type": "string",
+              "enum": ["json", "csv"],
+              "default": "json"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sales report data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalesReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/revenue": {
+      "get": {
+        "operationId": "getRevenueReport",
+        "summary": "Get revenue report",
+        "description": "Generate revenue reports with filtering and grouping options.",
+        "tags": ["Reports"],
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "group_by",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "granularity",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["daily", "weekly", "monthly", "yearly"] }
+          },
+          {
+            "name": "products",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "countries",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revenue report data",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/reports/subscriptions": {
+      "get": {
+        "operationId": "getSubscriptionsReport",
+        "summary": "Get subscriptions report",
+        "description": "Generate subscription reports.",
+        "tags": ["Reports"],
+        "parameters": [
+          { "name": "start_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "end_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "group_by", "in": "query", "schema": { "type": "string" } },
+          { "name": "granularity", "in": "query", "schema": { "type": "string", "enum": ["daily", "weekly", "monthly", "yearly"] } },
+          { "name": "products", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Subscriptions report data", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/reports/ads": {
+      "get": {
+        "operationId": "getAdsReport",
+        "summary": "Get ads report",
+        "description": "Generate advertising reports.",
+        "tags": ["Reports"],
+        "parameters": [
+          { "name": "start_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "end_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "group_by", "in": "query", "schema": { "type": "string" } },
+          { "name": "granularity", "in": "query", "schema": { "type": "string", "enum": ["daily", "weekly", "monthly", "yearly"] } },
+          { "name": "products", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Ads report data", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/reports/adspend": {
+      "get": {
+        "operationId": "getAdSpendReport",
+        "summary": "Get ad spend report",
+        "description": "Generate ad spend reports.",
+        "tags": ["Reports"],
+        "parameters": [
+          { "name": "start_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "end_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "group_by", "in": "query", "schema": { "type": "string" } },
+          { "name": "granularity", "in": "query", "schema": { "type": "string", "enum": ["daily", "weekly", "monthly", "yearly"] } }
+        ],
+        "responses": {
+          "200": { "description": "Ad spend report data", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/reports/ratings": {
+      "get": {
+        "operationId": "getRatingsReport",
+        "summary": "Get ratings report",
+        "description": "Generate ratings reports.",
+        "tags": ["Reports"],
+        "parameters": [
+          { "name": "start_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "end_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "group_by", "in": "query", "schema": { "type": "string" } },
+          { "name": "granularity", "in": "query", "schema": { "type": "string", "enum": ["daily", "weekly", "monthly", "yearly"] } },
+          { "name": "products", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Ratings report data", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/reports/payments": {
+      "get": {
+        "operationId": "getPaymentsReport",
+        "summary": "Get payments report",
+        "description": "Generate payments reports.",
+        "tags": ["Reports"],
+        "parameters": [
+          { "name": "start_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "end_date", "in": "query", "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": { "description": "Payments report data", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/reports/usage": {
+      "get": {
+        "operationId": "getUsageReport",
+        "summary": "Get usage report",
+        "description": "Generate usage reports.",
+        "tags": ["Reports"],
+        "parameters": [
+          { "name": "start_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "end_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "group_by", "in": "query", "schema": { "type": "string" } },
+          { "name": "granularity", "in": "query", "schema": { "type": "string", "enum": ["daily", "weekly", "monthly", "yearly"] } }
+        ],
+        "responses": {
+          "200": { "description": "Usage report data", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/reports/estimates": {
+      "get": {
+        "operationId": "getEstimatesReport",
+        "summary": "Get estimates report",
+        "description": "Generate estimate reports for public data.",
+        "tags": ["Reports"],
+        "parameters": [
+          { "name": "start_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "end_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "group_by", "in": "query", "schema": { "type": "string" } },
+          { "name": "granularity", "in": "query", "schema": { "type": "string", "enum": ["daily", "weekly", "monthly", "yearly"] } }
+        ],
+        "responses": {
+          "200": { "description": "Estimates report data", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/reviews": {
+      "get": {
+        "operationId": "listReviews",
+        "summary": "List reviews",
+        "description": "Retrieve reviews for your products.",
+        "tags": ["Reviews"],
+        "parameters": [
+          { "name": "products", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "count", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "List of reviews", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/ranks": {
+      "get": {
+        "operationId": "getRanks",
+        "summary": "Get ranks",
+        "description": "Retrieve app store ranking data.",
+        "tags": ["Ranks"],
+        "parameters": [
+          { "name": "products", "in": "query", "schema": { "type": "string" } },
+          { "name": "start_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "end_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "granularity", "in": "query", "schema": { "type": "string", "enum": ["daily", "hourly"] } }
+        ],
+        "responses": {
+          "200": { "description": "Ranking data", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/aso": {
+      "get": {
+        "operationId": "getAsoKeywordRanks",
+        "summary": "Get ASO keyword ranks",
+        "description": "Retrieve ASO keyword ranking data.",
+        "tags": ["ASO"],
+        "parameters": [
+          { "name": "products", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "ASO data", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/featured": {
+      "get": {
+        "operationId": "getFeatured",
+        "summary": "Get featured data",
+        "description": "Retrieve app store featured data.",
+        "tags": ["Featured"],
+        "parameters": [
+          { "name": "products", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Featured data", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/events": {
+      "get": {
+        "operationId": "listEvents",
+        "summary": "List events",
+        "description": "Retrieve events for your products.",
+        "tags": ["Events"],
+        "responses": {
+          "200": { "description": "List of events", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "operationId": "listUsers",
+        "summary": "List users",
+        "description": "Retrieve users in your account.",
+        "tags": ["Users"],
+        "responses": {
+          "200": { "description": "User information", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/external_accounts": {
+      "get": {
+        "operationId": "listExternalAccounts",
+        "summary": "List external accounts",
+        "description": "Retrieve connected external accounts (e.g., App Store Connect, Google Play Console).",
+        "tags": ["External Accounts"],
+        "responses": {
+          "200": { "description": "List of external accounts", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/data/stores": {
+      "get": {
+        "operationId": "listStores",
+        "summary": "List available stores",
+        "description": "Retrieve all available app stores.",
+        "tags": ["Data"],
+        "responses": {
+          "200": { "description": "List of stores", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/data/countries": {
+      "get": {
+        "operationId": "listCountries",
+        "summary": "List available countries",
+        "description": "Retrieve all available countries with ISO codes.",
+        "tags": ["Data"],
+        "responses": {
+          "200": { "description": "List of countries", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/usage": {
+      "get": {
+        "operationId": "getApiUsage",
+        "summary": "Get API usage",
+        "description": "Retrieve your API usage statistics.",
+        "tags": ["Usage"],
+        "responses": {
+          "200": { "description": "API usage data", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Product": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "Appfigures-assigned product ID" },
+          "name": { "type": "string", "description": "Full name of the product" },
+          "developer": { "type": "string", "description": "Developer name" },
+          "icon": { "type": "string", "description": "URL to the product icon" },
+          "vendor_identifier": { "type": "string", "description": "Store-specific identifier" },
+          "ref_no": { "type": "integer", "nullable": true, "description": "Product store ID (Apple only)" },
+          "sku": { "type": "string", "description": "Developer-assigned SKU" },
+          "store_id": { "type": "integer", "description": "Store ID" },
+          "store": { "type": "string", "description": "Store name (apple, google_play, etc.)" },
+          "release_date": { "type": "string", "format": "date-time", "description": "Release date" },
+          "added_date": { "type": "string", "format": "date-time", "description": "Date added to Appfigures" },
+          "updated_date": { "type": "string", "format": "date-time", "description": "Last update date" },
+          "version": { "type": "string", "description": "Current version" },
+          "type": { "type": "string", "description": "Product type: app, inapp, book" },
+          "devices": { "type": "array", "items": { "type": "string" }, "description": "Device types: Handheld, Tablet, Desktop" },
+          "active": { "type": "boolean", "description": "Whether the product is active" },
+          "price": {
+            "type": "object",
+            "properties": {
+              "currency": { "type": "string" },
+              "price": { "type": "string" }
+            }
+          }
+        }
+      },
+      "SalesReport": {
+        "type": "object",
+        "properties": {
+          "downloads": { "type": "integer", "description": "Total downloads" },
+          "net_downloads": { "type": "integer", "description": "Downloads minus returns" },
+          "app_downloads": { "type": "integer", "description": "App downloads (excluding IAP)" },
+          "re_downloads": { "type": "integer", "description": "Reinstalls" },
+          "updates": { "type": "integer", "description": "Total updates" },
+          "revenue": { "type": "number", "description": "Total revenue after store fees" },
+          "app_revenue": { "type": "number", "description": "App revenue (excluding IAP)" },
+          "gross_revenue": { "type": "number", "description": "Total revenue before store fees" },
+          "returns": { "type": "integer", "description": "Total returns" },
+          "gifts": { "type": "integer", "description": "Number of gifts" },
+          "promos": { "type": "integer", "description": "Promo codes used" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "integer" },
+          "message": { "type": "string" }
+        }
+      }
+    },
+    "securitySchemes": {
+      "httpAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "HTTP Basic Authentication using client key credentials."
+      },
+      "oauth1": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "OAuth 1.0 authentication for public-facing applications."
+      }
+    }
+  },
+  "security": [
+    {
+      "httpAuth": []
+    }
+  ]
+}
