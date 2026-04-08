@@ -1,0 +1,1168 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "BART Legacy API",
+    "version": "1.0.0",
+    "description": "Bay Area Rapid Transit (BART) Legacy API providing real-time departure estimates, station information, route data, schedule information, trip planning, and service advisories. A public key MW9S-E7SL-26DU-VV8V is available for testing.",
+    "x-jentic-source-url": "https://www.bart.gov/schedules/developers/api"
+  },
+  "servers": [
+    {
+      "url": "https://api.bart.gov/api",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/etd.aspx": {
+      "get": {
+        "operationId": "getEstimatedDepartures",
+        "summary": "Get real-time estimated departures",
+        "description": "Returns real-time estimated departure information for a station. The optional parameters plat and dir should not be used together; platform takes precedence if both are specified.",
+        "tags": [
+          "Real-Time Estimates"
+        ],
+        "parameters": [
+          {
+            "name": "cmd",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "etd"
+              ]
+            },
+            "description": "Command type"
+          },
+          {
+            "name": "orig",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Station abbreviation or 'ALL' for all stations"
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "API registration key"
+          },
+          {
+            "name": "plat",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 4
+            },
+            "description": "Platform number filter (1-4, varies by station). Not usable with orig=ALL."
+          },
+          {
+            "name": "dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "n",
+                "s"
+              ]
+            },
+            "description": "Direction filter: 'n' (northbound) or 's' (southbound). Not usable with orig=ALL."
+          },
+          {
+            "name": "json",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "y"
+              ]
+            },
+            "description": "Set to 'y' for JSON response, default is XML"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estimated departure data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EtdResponse"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/EtdResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stn.aspx": {
+      "get": {
+        "operationId": "getStations",
+        "summary": "Get all stations",
+        "description": "Returns a list of all BART stations with their full names, abbreviations, latitude, longitude, and addresses. Use cmd=stns for all stations or cmd=stninfo for a specific station.",
+        "tags": [
+          "Stations"
+        ],
+        "parameters": [
+          {
+            "name": "cmd",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "stns",
+                "stninfo"
+              ]
+            },
+            "description": "Command type: 'stns' for all stations, 'stninfo' for specific station details"
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "API registration key"
+          },
+          {
+            "name": "orig",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Station abbreviation (required when cmd=stninfo)"
+          },
+          {
+            "name": "json",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "y"
+              ]
+            },
+            "description": "Set to 'y' for JSON response, default is XML"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Station data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StationsResponse"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/StationsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/route.aspx": {
+      "get": {
+        "operationId": "getRoutes",
+        "summary": "Get route information",
+        "description": "Returns information about BART routes. Use cmd=routes for all routes or cmd=routeinfo for a specific route.",
+        "tags": [
+          "Routes"
+        ],
+        "parameters": [
+          {
+            "name": "cmd",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "routes",
+                "routeinfo"
+              ]
+            },
+            "description": "Command type: 'routes' for all routes, 'routeinfo' for specific route details"
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "API registration key"
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Route number (1-12) or 'all' (required when cmd=routeinfo)"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Date in mm/dd/yyyy format, or 'today'/'now'"
+          },
+          {
+            "name": "json",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "y"
+              ]
+            },
+            "description": "Set to 'y' for JSON response, default is XML"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Route data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutesResponse"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sched.aspx": {
+      "get": {
+        "operationId": "getSchedules",
+        "summary": "Get schedule information or plan trips",
+        "description": "Returns schedule information or plans trips. Use cmd=scheds for schedule list, cmd=depart for departure-based trip planning, or cmd=arrive for arrival-based trip planning.",
+        "tags": [
+          "Schedules"
+        ],
+        "parameters": [
+          {
+            "name": "cmd",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "scheds",
+                "depart",
+                "arrive"
+              ]
+            },
+            "description": "Command type: 'scheds' for schedule list, 'depart' for departure trips, 'arrive' for arrival trips"
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "API registration key"
+          },
+          {
+            "name": "orig",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Origin station abbreviation (required for depart/arrive commands)"
+          },
+          {
+            "name": "dest",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Destination station abbreviation (required for depart/arrive commands)"
+          },
+          {
+            "name": "time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Time in h:mm+am/pm format (for depart/arrive commands, defaults to current time)"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Date in mm/dd/yyyy format, or 'today'/'now'. Range: 10 days past to 8 weeks future."
+          },
+          {
+            "name": "b",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3,
+              "default": 2
+            },
+            "description": "Number of trips before specified time (0-3, for depart/arrive commands)"
+          },
+          {
+            "name": "a",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3,
+              "default": 2
+            },
+            "description": "Number of trips after specified time (1-3, for depart/arrive commands). Sum of a+b must not exceed 6."
+          },
+          {
+            "name": "l",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ],
+              "default": 0
+            },
+            "description": "Include legend (0 or 1, for depart/arrive commands)"
+          },
+          {
+            "name": "json",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "y"
+              ]
+            },
+            "description": "Set to 'y' for JSON response, default is XML"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Schedule or trip data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulesResponse"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bsa.aspx": {
+      "get": {
+        "operationId": "getAdvisories",
+        "summary": "Get service advisories, elevator status, or train count",
+        "description": "Returns BART service advisories, elevator information, or active train count. Use cmd=bsa for advisories, cmd=elev for elevator status, or cmd=count for train count.",
+        "tags": [
+          "Advisories"
+        ],
+        "parameters": [
+          {
+            "name": "cmd",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "bsa",
+                "elev",
+                "count"
+              ]
+            },
+            "description": "Command type: 'bsa' for advisories, 'elev' for elevator status, 'count' for train count"
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "API registration key"
+          },
+          {
+            "name": "orig",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Station code filter (for cmd=bsa only, defaults to 'all')"
+          },
+          {
+            "name": "json",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "y"
+              ]
+            },
+            "description": "Set to 'y' for JSON response, default is XML"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Advisory, elevator, or train count data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdvisoryResponse"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdvisoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/version.aspx": {
+      "get": {
+        "operationId": "getApiVersion",
+        "summary": "Get API version information",
+        "description": "Returns the current BART API version, copyright notice, and license information.",
+        "tags": [
+          "System"
+        ],
+        "parameters": [
+          {
+            "name": "json",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "y"
+              ]
+            },
+            "description": "Set to 'y' for JSON response, default is XML"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "API version information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionResponse"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "EtdResponse": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "object",
+            "properties": {
+              "uri": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string"
+              },
+              "time": {
+                "type": "string"
+              },
+              "station": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/StationEtd"
+                }
+              }
+            }
+          }
+        }
+      },
+      "StationEtd": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "abbr": {
+            "type": "string"
+          },
+          "etd": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Destination"
+            }
+          }
+        }
+      },
+      "Destination": {
+        "type": "object",
+        "properties": {
+          "destination": {
+            "type": "string"
+          },
+          "abbreviation": {
+            "type": "string"
+          },
+          "estimate": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Estimate"
+            }
+          }
+        }
+      },
+      "Estimate": {
+        "type": "object",
+        "properties": {
+          "minutes": {
+            "type": "string",
+            "description": "Minutes until departure or 'Leaving'"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string"
+          },
+          "length": {
+            "type": "string",
+            "description": "Train length (number of cars)"
+          },
+          "color": {
+            "type": "string",
+            "description": "Line color"
+          },
+          "hexcolor": {
+            "type": "string",
+            "description": "Line hex color code"
+          },
+          "bikeflag": {
+            "type": "string",
+            "description": "Bike availability flag (1=bikes allowed)"
+          },
+          "delay": {
+            "type": "string",
+            "description": "Delay in seconds"
+          },
+          "cancelflag": {
+            "type": "string",
+            "description": "Whether the train is cancelled (1=cancelled)"
+          },
+          "dynamicflag": {
+            "type": "string",
+            "description": "Dynamic service flag"
+          }
+        }
+      },
+      "StationsResponse": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "object",
+            "properties": {
+              "uri": {
+                "type": "string"
+              },
+              "stations": {
+                "type": "object",
+                "properties": {
+                  "station": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Station"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Station": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "abbr": {
+            "type": "string"
+          },
+          "gtfs_latitude": {
+            "type": "string"
+          },
+          "gtfs_longitude": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "county": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "zipcode": {
+            "type": "string"
+          },
+          "north_routes": {
+            "type": "object",
+            "description": "Routes serving the station in the north direction"
+          },
+          "south_routes": {
+            "type": "object",
+            "description": "Routes serving the station in the south direction"
+          },
+          "north_platforms": {
+            "type": "object",
+            "description": "Platform assignments for northbound trains"
+          },
+          "south_platforms": {
+            "type": "object",
+            "description": "Platform assignments for southbound trains"
+          },
+          "intro": {
+            "type": "string",
+            "description": "Station introduction text (stninfo only)"
+          },
+          "cross_street": {
+            "type": "string",
+            "description": "Nearby cross streets (stninfo only)"
+          },
+          "food": {
+            "type": "string",
+            "description": "Nearby food options (stninfo only)"
+          },
+          "shopping": {
+            "type": "string",
+            "description": "Nearby shopping (stninfo only)"
+          },
+          "attraction": {
+            "type": "string",
+            "description": "Nearby attractions (stninfo only)"
+          },
+          "link": {
+            "type": "string",
+            "description": "Station page URL (stninfo only)"
+          }
+        }
+      },
+      "RoutesResponse": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "object",
+            "properties": {
+              "uri": {
+                "type": "string"
+              },
+              "routes": {
+                "type": "object",
+                "properties": {
+                  "route": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Route"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Route": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "abbr": {
+            "type": "string"
+          },
+          "routeID": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "hexcolor": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string",
+            "description": "Cardinal direction (North/South)"
+          },
+          "origin": {
+            "type": "string",
+            "description": "Origin station code (routeinfo only)"
+          },
+          "destination": {
+            "type": "string",
+            "description": "Destination station code (routeinfo only)"
+          },
+          "num_stns": {
+            "type": "integer",
+            "description": "Number of stations on route (routeinfo only)"
+          },
+          "config": {
+            "type": "object",
+            "description": "Ordered list of station codes from origin to destination (routeinfo only)",
+            "properties": {
+              "station": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "SchedulesResponse": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "object",
+            "properties": {
+              "uri": {
+                "type": "string"
+              },
+              "schedules": {
+                "type": "object",
+                "properties": {
+                  "schedule": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "effectivedate": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "schedule": {
+                "type": "object",
+                "description": "Trip planning response (depart/arrive commands)",
+                "properties": {
+                  "request": {
+                    "type": "object"
+                  },
+                  "trip": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Trip"
+                    }
+                  }
+                }
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Trip": {
+        "type": "object",
+        "properties": {
+          "fare": {
+            "type": "string",
+            "description": "Trip fare in dollars"
+          },
+          "clipper": {
+            "type": "string",
+            "description": "Clipper card fare"
+          },
+          "tripTime": {
+            "type": "string",
+            "description": "Total trip time in minutes"
+          },
+          "origTimeMin": {
+            "type": "string",
+            "description": "Departure time"
+          },
+          "destTimeMin": {
+            "type": "string",
+            "description": "Arrival time"
+          },
+          "origTimeDate": {
+            "type": "string"
+          },
+          "destTimeDate": {
+            "type": "string"
+          },
+          "fares": {
+            "type": "object",
+            "properties": {
+              "fare": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "amount": {
+                      "type": "string"
+                    },
+                    "class": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "leg": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TripLeg"
+            }
+          }
+        }
+      },
+      "TripLeg": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "string"
+          },
+          "destination": {
+            "type": "string"
+          },
+          "line": {
+            "type": "string"
+          },
+          "bikeflag": {
+            "type": "string"
+          },
+          "trainHeadStation": {
+            "type": "string"
+          },
+          "load": {
+            "type": "string"
+          },
+          "transfercode": {
+            "type": "string"
+          },
+          "trainId": {
+            "type": "string"
+          },
+          "originPlatform": {
+            "type": "string"
+          },
+          "destinationPlatform": {
+            "type": "string"
+          }
+        }
+      },
+      "AdvisoryResponse": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "object",
+            "properties": {
+              "uri": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string"
+              },
+              "time": {
+                "type": "string"
+              },
+              "bsa": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Advisory"
+                }
+              },
+              "traincount": {
+                "type": "string",
+                "description": "Number of active trains (cmd=count only)"
+              }
+            }
+          }
+        }
+      },
+      "Advisory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Advisory identifier"
+          },
+          "station": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "description": "Advisory type: DELAY, EMERGENCY, or ELEVATOR"
+          },
+          "description": {
+            "type": "string"
+          },
+          "sms_text": {
+            "type": "string",
+            "description": "Shortened version for text messaging"
+          },
+          "posted": {
+            "type": "string"
+          },
+          "expires": {
+            "type": "string"
+          }
+        }
+      },
+      "VersionResponse": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "object",
+            "properties": {
+              "uri": {
+                "type": "string"
+              },
+              "apiVersion": {
+                "type": "string",
+                "description": "Current API version number"
+              },
+              "copyright": {
+                "type": "string"
+              },
+              "license": {
+                "type": "string",
+                "description": "Link to developer license agreement"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "key",
+        "description": "API registration key. A public key is available: MW9S-E7SL-26DU-VV8V"
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKey": []
+    }
+  ]
+}
