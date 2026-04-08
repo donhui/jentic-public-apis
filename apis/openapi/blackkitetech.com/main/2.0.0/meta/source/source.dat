@@ -1,0 +1,1388 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Black Kite API",
+    "description": "Black Kite is a cyber risk intelligence platform used to assess supply chain risk from technical, compliance, and financial perspectives. Rate limit: 60 requests per minute.",
+    "version": "2.0.0",
+    "x-jentic-source-url": "https://app.blackkitetech.com/apidocs/v2/swagger/index.html"
+  },
+  "servers": [
+    {
+      "url": "https://app.blackkitetech.com",
+      "description": "Black Kite API server"
+    }
+  ],
+  "security": [
+    {
+      "oauth2": []
+    }
+  ],
+  "tags": [
+    { "name": "Status", "description": "Token validation and status" },
+    { "name": "Companies", "description": "Company monitoring and management" },
+    { "name": "Risk & Reporting", "description": "Risk summaries, trends, and report generation" },
+    { "name": "Digital Footprint", "description": "Domains, subdomains, IPs, IP blocks, and ASNs" },
+    { "name": "Services & DNS", "description": "Network services and DNS records" },
+    { "name": "Organization Data", "description": "Emails, social media, company information, and cloud providers" }
+  ],
+  "paths": {
+    "/api/v2/status": {
+      "get": {
+        "operationId": "getStatus",
+        "summary": "Validate access token",
+        "tags": ["Status"],
+        "responses": {
+          "200": {
+            "description": "Token status",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/StatusResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v2/companies": {
+      "get": {
+        "operationId": "getCompanies",
+        "summary": "List monitored companies",
+        "tags": ["Companies"],
+        "parameters": [
+          { "$ref": "#/components/parameters/pageNumber" },
+          { "$ref": "#/components/parameters/pageSize" },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "Search key (GUID) from search endpoint",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of companies",
+            "headers": {
+              "X-Total-Items": { "schema": { "type": "integer" } },
+              "X-Current-Page-Number": { "schema": { "type": "integer" } },
+              "X-Current-Page-Size": { "schema": { "type": "integer" } }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Company" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "post": {
+        "operationId": "monitorCompany",
+        "summary": "Add a company for monitoring",
+        "tags": ["Companies"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MonitorCompanyRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Company added for monitoring",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MonitorCompanyResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/search": {
+      "post": {
+        "operationId": "searchCompanies",
+        "summary": "Search companies with filtering",
+        "description": "Creates a search operation and returns a key for paginating results via GET /api/v2/companies. Key valid for 6 hours. Limit: 100,000 searches per day.",
+        "tags": ["Companies"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CompanySearchRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Search key returned",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CompanySearchResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}": {
+      "get": {
+        "operationId": "getCompany",
+        "summary": "Get company details",
+        "tags": ["Companies"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Company details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CompanyLean" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "patch": {
+        "operationId": "updateCompany",
+        "summary": "Update company properties",
+        "tags": ["Companies"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateCompanyRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Company updated" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCompany",
+        "summary": "Remove a monitored company",
+        "tags": ["Companies"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" },
+          {
+            "name": "EcosystemId",
+            "in": "query",
+            "schema": { "type": "integer", "format": "int32" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Company removed" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/summary": {
+      "get": {
+        "operationId": "getCompanySummary",
+        "summary": "Get company risk score summary",
+        "tags": ["Risk & Reporting"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Risk summary",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CompanyRiskSummary" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/trend/technical": {
+      "get": {
+        "operationId": "getCompanyTrendTechnical",
+        "summary": "Get monthly technical risk trends",
+        "tags": ["Risk & Reporting"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Technical trend data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/TechnicalTrend" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/trend/financial": {
+      "get": {
+        "operationId": "getCompanyTrendFinancial",
+        "summary": "Get monthly financial risk trends",
+        "tags": ["Risk & Reporting"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Financial trend data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/FinancialTrend" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/report/{type}": {
+      "get": {
+        "operationId": "getCompanyReport",
+        "summary": "Get company report download link",
+        "tags": ["Risk & Reporting"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" },
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "enum": ["summary", "strategy", "rsi"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Report link",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ReportLink": { "type": "string", "format": "uri" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/report-generate": {
+      "post": {
+        "operationId": "generateCompanyReport",
+        "summary": "Generate a company report",
+        "tags": ["Risk & Reporting"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/GenerateReportRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Report generation started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Token": { "type": "string", "format": "uuid", "description": "Tracking token" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/report-status": {
+      "get": {
+        "operationId": "getReportStatus",
+        "summary": "Check report generation status",
+        "tags": ["Risk & Reporting"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" },
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Report status",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReportStatus" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/report-download": {
+      "get": {
+        "operationId": "downloadGeneratedReport",
+        "summary": "Download a generated report",
+        "tags": ["Risk & Reporting"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" },
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PDF report file",
+            "content": {
+              "application/pdf": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/domains": {
+      "get": {
+        "operationId": "listDomains",
+        "summary": "List company domains",
+        "tags": ["Digital Footprint"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" },
+          { "$ref": "#/components/parameters/pageNumber" },
+          { "$ref": "#/components/parameters/pageSize" },
+          { "name": "classification", "in": "query", "schema": { "type": "string", "enum": ["active", "dormant"] } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["active", "inactive"] } },
+          { "name": "domain", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of domains",
+            "headers": {
+              "X-Total-Items": { "schema": { "type": "integer" } },
+              "X-Current-Page-Number": { "schema": { "type": "integer" } },
+              "X-Current-Page-Size": { "schema": { "type": "integer" } }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Domain" } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "post": {
+        "operationId": "addDomain",
+        "summary": "Add a secondary domain",
+        "tags": ["Digital Footprint"],
+        "parameters": [ { "$ref": "#/components/parameters/companyId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["Domain"],
+                "properties": {
+                  "Domain": { "type": "string" },
+                  "Importance": { "type": "string", "enum": ["Low", "Medium", "High", "Critical", "Urgent"], "default": "Medium" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Domain added" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "patch": {
+        "operationId": "updateDomain",
+        "summary": "Update domain status",
+        "tags": ["Digital Footprint"],
+        "parameters": [ { "$ref": "#/components/parameters/companyId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["Domain"],
+                "properties": {
+                  "Domain": { "type": "string" },
+                  "Status": { "type": "string", "enum": ["Active", "Inactive"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Domain updated" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/subdomains": {
+      "get": {
+        "operationId": "listSubdomains",
+        "summary": "List company subdomains",
+        "tags": ["Digital Footprint"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" },
+          { "$ref": "#/components/parameters/pageNumber" },
+          { "$ref": "#/components/parameters/pageSize" },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["active", "inactive"] } },
+          { "name": "query", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of subdomains",
+            "headers": {
+              "X-Total-Items": { "schema": { "type": "integer" } },
+              "X-Current-Page-Number": { "schema": { "type": "integer" } },
+              "X-Current-Page-Size": { "schema": { "type": "integer" } }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Subdomain" } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "post": {
+        "operationId": "addSubdomain",
+        "summary": "Add a subdomain",
+        "tags": ["Digital Footprint"],
+        "parameters": [ { "$ref": "#/components/parameters/companyId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["Domain", "Subdomain"],
+                "properties": {
+                  "Domain": { "type": "string" },
+                  "Subdomain": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Subdomain added" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "patch": {
+        "operationId": "updateSubdomain",
+        "summary": "Update subdomain status",
+        "tags": ["Digital Footprint"],
+        "parameters": [ { "$ref": "#/components/parameters/companyId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["Subdomain"],
+                "properties": {
+                  "Subdomain": { "type": "string" },
+                  "Status": { "type": "string", "enum": ["Active", "Inactive"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Subdomain updated" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/ips": {
+      "get": {
+        "operationId": "listIPs",
+        "summary": "List company IP addresses",
+        "tags": ["Digital Footprint"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" },
+          { "$ref": "#/components/parameters/pageNumber" },
+          { "$ref": "#/components/parameters/pageSize" },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["active", "inactive"] } },
+          { "name": "query", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of IPs",
+            "headers": {
+              "X-Total-Items": { "schema": { "type": "integer" } },
+              "X-Current-Page-Number": { "schema": { "type": "integer" } },
+              "X-Current-Page-Size": { "schema": { "type": "integer" } }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/IPAddress" } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "post": {
+        "operationId": "addIP",
+        "summary": "Add an IP address",
+        "tags": ["Digital Footprint"],
+        "parameters": [ { "$ref": "#/components/parameters/companyId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["Domain", "IP"],
+                "properties": {
+                  "Domain": { "type": "string" },
+                  "IP": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "IP added" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "patch": {
+        "operationId": "updateIP",
+        "summary": "Update IP status",
+        "tags": ["Digital Footprint"],
+        "parameters": [ { "$ref": "#/components/parameters/companyId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["IP"],
+                "properties": {
+                  "IP": { "type": "string" },
+                  "Status": { "type": "string", "enum": ["Active", "Inactive"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "IP updated" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/ipblocks": {
+      "get": {
+        "operationId": "listIPBlocks",
+        "summary": "List company IP blocks",
+        "tags": ["Digital Footprint"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" },
+          { "$ref": "#/components/parameters/pageNumber" },
+          { "$ref": "#/components/parameters/pageSize" },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["active", "inactive"] } },
+          { "name": "query", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of IP blocks",
+            "headers": {
+              "X-Total-Items": { "schema": { "type": "integer" } },
+              "X-Current-Page-Number": { "schema": { "type": "integer" } },
+              "X-Current-Page-Size": { "schema": { "type": "integer" } }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/IPBlock" } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "post": {
+        "operationId": "addIPBlock",
+        "summary": "Add an IP block",
+        "tags": ["Digital Footprint"],
+        "parameters": [ { "$ref": "#/components/parameters/companyId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["Domain", "IPBlock"],
+                "properties": {
+                  "Domain": { "type": "string" },
+                  "IPBlock": { "type": "string", "description": "CIDR notation" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "IP block added" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "patch": {
+        "operationId": "updateIPBlock",
+        "summary": "Update IP block status",
+        "tags": ["Digital Footprint"],
+        "parameters": [ { "$ref": "#/components/parameters/companyId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["IPBlock"],
+                "properties": {
+                  "IPBlock": { "type": "string" },
+                  "Status": { "type": "string", "enum": ["Active", "Inactive"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "IP block updated" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/asn": {
+      "get": {
+        "operationId": "listAsn",
+        "summary": "List autonomous system numbers",
+        "tags": ["Digital Footprint"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" },
+          { "$ref": "#/components/parameters/pageNumber" },
+          { "$ref": "#/components/parameters/pageSize" },
+          { "name": "query", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of ASNs",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Asn" } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/asn/assets": {
+      "get": {
+        "operationId": "listAsnAssets",
+        "summary": "List assets per ASN",
+        "tags": ["Digital Footprint"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" },
+          { "$ref": "#/components/parameters/pageNumber" },
+          { "$ref": "#/components/parameters/pageSize" },
+          { "name": "code", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "cidr", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of asset names",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/geomap": {
+      "get": {
+        "operationId": "listGeomap",
+        "summary": "Get geolocation mapping",
+        "tags": ["Digital Footprint"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" },
+          { "$ref": "#/components/parameters/pageNumber" },
+          { "$ref": "#/components/parameters/pageSize" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Geolocation data",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Geo" } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/services/{type}": {
+      "get": {
+        "operationId": "listServices",
+        "summary": "List network services by type",
+        "tags": ["Services & DNS"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" },
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "enum": ["Ftp", "Dns", "Http", "Https", "MailSmtp", "SshTelnet", "Other"] }
+          },
+          { "$ref": "#/components/parameters/pageNumber" },
+          { "$ref": "#/components/parameters/pageSize" },
+          { "name": "query", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of services",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Service" } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/dnsrecords/{type}": {
+      "get": {
+        "operationId": "listDnsRecords",
+        "summary": "List DNS records by type",
+        "tags": ["Services & DNS"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" },
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "enum": ["IpAddress", "NameServer", "MailServer", "OtherDig"] }
+          },
+          { "$ref": "#/components/parameters/pageNumber" },
+          { "$ref": "#/components/parameters/pageSize" },
+          { "name": "query", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of DNS records",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/DnsRecord" } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/emails": {
+      "get": {
+        "operationId": "listEmails",
+        "summary": "List exposed email addresses",
+        "tags": ["Organization Data"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" },
+          { "$ref": "#/components/parameters/pageNumber" },
+          { "$ref": "#/components/parameters/pageSize" },
+          { "name": "query", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of emails",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Email" } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/socialmedia": {
+      "get": {
+        "operationId": "listSocialMedia",
+        "summary": "List social media accounts",
+        "tags": ["Organization Data"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" },
+          { "$ref": "#/components/parameters/pageNumber" },
+          { "$ref": "#/components/parameters/pageSize" },
+          { "name": "query", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of social media accounts",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/SocialMediaAccount" } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/information": {
+      "get": {
+        "operationId": "listCompanyInformation",
+        "summary": "Get crawled company information",
+        "tags": ["Organization Data"],
+        "parameters": [ { "$ref": "#/components/parameters/companyId" } ],
+        "responses": {
+          "200": {
+            "description": "Company information",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CompanyInformation" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/clouds": {
+      "get": {
+        "operationId": "listCompanyCloud",
+        "summary": "List cloud provider associations",
+        "tags": ["Organization Data"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" },
+          { "$ref": "#/components/parameters/pageNumber" },
+          { "$ref": "#/components/parameters/pageSize" },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["active", "inactive"] } },
+          { "name": "query", "in": "query", "schema": { "type": "string", "minLength": 3 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cloud provider data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CompanyCloud" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "post": {
+        "operationId": "addCloud",
+        "summary": "Add cloud provider association",
+        "tags": ["Organization Data"],
+        "parameters": [ { "$ref": "#/components/parameters/companyId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AddCloudRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cloud provider added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "CloudProviderId": { "type": "integer", "format": "int32" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v2/companies/{id}/clouds/{cloudid}": {
+      "patch": {
+        "operationId": "updateCloudProvider",
+        "summary": "Update cloud provider status",
+        "tags": ["Organization Data"],
+        "parameters": [
+          { "$ref": "#/components/parameters/companyId" },
+          {
+            "name": "cloudid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer", "format": "int32" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "Status": { "type": "string", "enum": ["Active", "Inactive"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Cloud provider updated" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://app.blackkitetech.com/oauth/token",
+            "scopes": {}
+          }
+        }
+      }
+    },
+    "parameters": {
+      "companyId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Company ID",
+        "schema": { "type": "integer", "format": "int32" }
+      },
+      "pageNumber": {
+        "name": "page_number",
+        "in": "query",
+        "schema": { "type": "integer", "format": "int32", "default": 1, "minimum": 1 }
+      },
+      "pageSize": {
+        "name": "page_size",
+        "in": "query",
+        "schema": { "type": "integer", "format": "int32", "enum": [10, 20, 30, 50, 100, 250], "default": 10 }
+      }
+    },
+    "responses": {
+      "Unauthorized": { "description": "Authentication required or token invalid" },
+      "Forbidden": { "description": "Insufficient permissions" },
+      "NotFound": { "description": "Resource not found" },
+      "BadRequest": {
+        "description": "Bad request",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "RateLimited": { "description": "Rate limit exceeded (60 requests per minute)" }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "Message": { "type": "string" }
+        }
+      },
+      "StatusResponse": {
+        "type": "object",
+        "properties": {
+          "IsValid": { "type": "boolean" },
+          "ClientId": { "type": "string", "nullable": true },
+          "CanStartScan": { "type": "boolean", "nullable": true },
+          "CurrentIp": { "type": "string", "nullable": true },
+          "ExpirationDateOfClientCredential": { "type": "string", "format": "date-time", "nullable": true },
+          "ExpirationDateOfToken": { "type": "string", "nullable": true },
+          "IpWhiteList": { "type": "array", "nullable": true, "items": { "type": "string" } },
+          "Role": { "type": "string", "enum": ["SuperAdmin", "EcosystemAdmin", "CompanyAdmin", "SuperUser", "EcosystemUser", "CompanyUser"] }
+        }
+      },
+      "Company": {
+        "type": "object",
+        "properties": {
+          "Id": { "type": "integer", "format": "int64" },
+          "Name": { "type": "string" },
+          "MainDomainValue": { "type": "string" },
+          "EcosystemId": { "type": "integer", "format": "int32" }
+        }
+      },
+      "CompanyLean": {
+        "type": "object",
+        "properties": {
+          "Id": { "type": "integer", "format": "int64" },
+          "Name": { "type": "string" },
+          "MainDomainValue": { "type": "string" },
+          "EcosystemId": { "type": "integer", "format": "int32" },
+          "IndustryId": { "type": "integer", "format": "int32" },
+          "CountryCode": { "type": "string" }
+        }
+      },
+      "MonitorCompanyRequest": {
+        "type": "object",
+        "required": ["MainDomainValue", "EcosystemId"],
+        "properties": {
+          "MainDomainValue": { "type": "string" },
+          "EcosystemId": { "type": "integer", "format": "int32" },
+          "LicenseType": { "type": "string", "enum": ["ContinuousAnnual", "Continuous60day"], "default": "ContinuousAnnual" },
+          "IsSubsidiary": { "type": "boolean", "default": false },
+          "IsCloudProvider": { "type": "boolean", "default": false },
+          "IgnoreDomainCheck": { "type": "boolean", "default": false }
+        }
+      },
+      "MonitorCompanyResponse": {
+        "type": "object",
+        "properties": {
+          "CompanyId": { "type": "integer", "format": "int64" },
+          "MainDomainValue": { "type": "string" },
+          "LicenseId": { "type": "integer", "format": "int32" }
+        }
+      },
+      "CompanySearchRequest": {
+        "type": "object",
+        "properties": {
+          "GenericSearchText": { "type": "string" },
+          "EcosystemIds": { "type": "array", "items": { "type": "integer", "format": "int32" } },
+          "IndustryIds": { "type": "array", "items": { "type": "integer", "format": "int32" } },
+          "CountryCodes": { "type": "array", "items": { "type": "string" } },
+          "TagIds": { "type": "array", "items": { "type": "integer", "format": "int32" } },
+          "ProductGroupIds": { "type": "array", "items": { "type": "integer", "format": "int32" }, "maxItems": 5 },
+          "LicenseTypes": { "type": "array", "items": { "type": "string", "enum": ["Not Attached", "Continuous Annual", "Continuous 60-day"] } },
+          "LicenseStatus": { "type": "array", "items": { "type": "string", "enum": ["Inactive", "Active"] } },
+          "GradeLetters": { "type": "array", "items": { "type": "string", "enum": ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "F"] } },
+          "ControlCodes": { "type": "array", "items": { "type": "string" } },
+          "CveOrCweCodes": { "type": "array", "items": { "type": "string" } },
+          "ThreatActorIds": { "type": "array", "items": { "type": "integer", "format": "int32" } },
+          "LeakIds": { "type": "array", "items": { "type": "integer", "format": "int32" } },
+          "TagConfidences": { "type": "array", "items": { "type": "string", "enum": ["Low", "Medium", "High", "VeryHigh"] } },
+          "HasCriticalVuln": { "type": "boolean", "default": false },
+          "HasLeakIn90Days": { "type": "boolean", "default": false },
+          "HasPoorSsl": { "type": "boolean", "default": false },
+          "HasPoorDdos": { "type": "boolean", "default": false },
+          "HasPoorSmtp": { "type": "boolean", "default": false },
+          "HasPoorDns": { "type": "boolean", "default": false },
+          "CwssCvssBiggerThanValue": { "type": "integer", "format": "int32", "default": 0 },
+          "CompanySizeGreaterThan": { "type": "integer", "format": "int32", "nullable": true },
+          "CompanySizeLessThan": { "type": "integer", "format": "int32", "nullable": true },
+          "CountryRiskRatings": { "type": "array", "items": { "type": "string", "enum": ["Low", "Medium", "High", "Sensitive"] } },
+          "NumberOfEmployeeGreaterThan": { "type": "integer", "format": "int32", "nullable": true },
+          "NumberOfEmployeeLessThan": { "type": "integer", "format": "int32", "nullable": true },
+          "IsInOfac": { "type": "boolean", "default": false },
+          "RevenueGreaterThan": { "type": "integer", "format": "int64", "nullable": true },
+          "RevenueLessThan": { "type": "integer", "format": "int64", "nullable": true },
+          "NetIncomeGreaterThan": { "type": "integer", "format": "int64", "nullable": true },
+          "NetIncomeLessThan": { "type": "integer", "format": "int64", "nullable": true },
+          "OperatingIncomeGreaterThan": { "type": "integer", "format": "int64", "nullable": true },
+          "OperatingIncomeLessThan": { "type": "integer", "format": "int64", "nullable": true },
+          "EquityGreaterThan": { "type": "integer", "format": "int64", "nullable": true },
+          "EquityLessThan": { "type": "integer", "format": "int64", "nullable": true },
+          "UseGenAIs": { "type": "array", "items": { "type": "string", "enum": ["Yes", "Unknown"] } }
+        }
+      },
+      "CompanySearchResponse": {
+        "type": "object",
+        "properties": {
+          "Key": { "type": "string", "format": "uuid", "description": "Search key valid for 6 hours" }
+        }
+      },
+      "UpdateCompanyRequest": {
+        "type": "object",
+        "properties": {
+          "IndustryId": { "type": "integer", "format": "int32" },
+          "CountryCode": { "type": "string", "maxLength": 2 }
+        }
+      },
+      "CompanyRiskSummary": {
+        "type": "object",
+        "properties": {
+          "GradeLetter": { "type": "string", "enum": ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "F"] },
+          "CyberRating": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "BreachIndex": { "type": "number", "format": "float", "nullable": true },
+          "RansomwareIndex": { "type": "number", "format": "float", "nullable": true }
+        }
+      },
+      "TechnicalTrend": {
+        "type": "object",
+        "properties": {
+          "GradeLetter": { "type": "string", "enum": ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "F"] },
+          "CyberRating": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "IndustryAverageCyberRating": { "type": "integer", "nullable": true },
+          "IndustryAverageGradeLetter": { "type": "string", "nullable": true },
+          "BreachIndex": { "type": "number", "format": "float", "nullable": true },
+          "RansomwareIndex": { "type": "number", "format": "float", "nullable": true },
+          "SnapshotDate": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "FinancialTrend": {
+        "type": "object",
+        "properties": {
+          "RiskType": { "type": "string", "description": "Data Breach, Ransomware, or Business Interruption" },
+          "Rating": { "type": "number", "format": "float", "nullable": true },
+          "RatingMin": { "type": "number", "format": "float", "nullable": true },
+          "RatingMax": { "type": "number", "format": "float", "nullable": true },
+          "LossMagnitude": { "type": "number", "format": "float", "nullable": true },
+          "LossEventFrequency": { "type": "number", "format": "float", "nullable": true },
+          "SnapshotDate": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "GenerateReportRequest": {
+        "type": "object",
+        "required": ["Type"],
+        "properties": {
+          "Type": { "type": "string", "enum": ["summary", "strategy", "rsi", "assessment"] },
+          "Assessment": {
+            "type": "object",
+            "description": "Required when Type is assessment",
+            "properties": {
+              "AssessmentId": { "type": "integer", "format": "int32" },
+              "ReportType": { "type": "string", "enum": ["Summary"] }
+            }
+          }
+        }
+      },
+      "ReportStatus": {
+        "type": "object",
+        "properties": {
+          "Status": { "type": "string", "enum": ["Queued", "Processing", "Ready", "Archived", "Failed", "Deleted"] },
+          "ExpirationDate": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Domain": {
+        "type": "object",
+        "properties": {
+          "Domain": { "type": "string" },
+          "Classification": { "type": "string" },
+          "Status": { "type": "string" },
+          "Importance": { "type": "string" }
+        }
+      },
+      "Subdomain": {
+        "type": "object",
+        "properties": {
+          "Subdomain": { "type": "string" },
+          "Domain": { "type": "string" },
+          "Status": { "type": "string" }
+        }
+      },
+      "IPAddress": {
+        "type": "object",
+        "properties": {
+          "IP": { "type": "string" },
+          "Domain": { "type": "string" },
+          "Status": { "type": "string" }
+        }
+      },
+      "IPBlock": {
+        "type": "object",
+        "properties": {
+          "IPBlock": { "type": "string" },
+          "Domain": { "type": "string" },
+          "Status": { "type": "string" }
+        }
+      },
+      "Asn": {
+        "type": "object",
+        "properties": {
+          "Code": { "type": "string" },
+          "CIDR": { "type": "string" },
+          "ISP": { "type": "string" },
+          "Country": { "type": "string" },
+          "City": { "type": "string" }
+        }
+      },
+      "Geo": {
+        "type": "object",
+        "properties": {
+          "Latitude": { "type": "number", "format": "double" },
+          "Longitude": { "type": "number", "format": "double" },
+          "Weight": { "type": "integer" },
+          "Country": { "type": "string" },
+          "City": { "type": "string" }
+        }
+      },
+      "Service": {
+        "type": "object",
+        "properties": {
+          "Host": { "type": "string" },
+          "Port": { "type": "integer" },
+          "Protocol": { "type": "string" },
+          "Banner": { "type": "string" },
+          "Version": { "type": "string" }
+        }
+      },
+      "DnsRecord": {
+        "type": "object",
+        "properties": {
+          "Name": { "type": "string" },
+          "Type": { "type": "string" },
+          "Value": { "type": "string" },
+          "TTL": { "type": "integer" }
+        }
+      },
+      "Email": {
+        "type": "object",
+        "properties": {
+          "Email": { "type": "string", "format": "email" },
+          "Source": { "type": "string" }
+        }
+      },
+      "SocialMediaAccount": {
+        "type": "object",
+        "properties": {
+          "Platform": { "type": "string" },
+          "Url": { "type": "string", "format": "uri" },
+          "Name": { "type": "string" }
+        }
+      },
+      "CompanyInformation": {
+        "type": "object",
+        "properties": {
+          "Description": { "type": "string" },
+          "Industry": { "type": "string" },
+          "Country": { "type": "string" },
+          "NumberOfEmployees": { "type": "integer" },
+          "Revenue": { "type": "integer", "format": "int64" }
+        }
+      },
+      "CompanyCloud": {
+        "type": "object",
+        "properties": {
+          "CloudProviderId": { "type": "integer", "format": "int32" },
+          "CompanySubdomain": { "type": "string" },
+          "CloudSubdomain": { "type": "string" },
+          "IPAddress": { "type": "string" },
+          "StatusCode": { "type": "string" },
+          "CloudService": { "type": "string" },
+          "HasSslTlsSupport": { "type": "boolean" },
+          "Status": { "type": "string" }
+        }
+      },
+      "AddCloudRequest": {
+        "type": "object",
+        "required": ["CompanySubdomain", "CloudSubdomain", "IPAddress", "StatusCode", "CloudService"],
+        "properties": {
+          "CompanySubdomain": { "type": "string" },
+          "CloudSubdomain": { "type": "string" },
+          "IPAddress": { "type": "string" },
+          "StatusCode": { "type": "string" },
+          "CloudService": { "type": "string" },
+          "HasSslTlsSupport": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}
