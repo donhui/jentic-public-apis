@@ -1,0 +1,868 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Clicksign Envelope API",
+    "description": "Clicksign is an electronic document signing platform. This API (v3) provides endpoints for managing envelopes, documents, signatories, requirements, notifications, templates, folders, webhooks, users, members, and WhatsApp acceptance flows.",
+    "version": "3.0.0",
+    "x-jentic-source-url": "https://developers.clicksign.com/docs/introducao-a-documentacao"
+  },
+  "servers": [
+    {
+      "url": "https://app.clicksign.com/api/v3",
+      "description": "Production"
+    },
+    {
+      "url": "https://sandbox.clicksign.com/api/v3",
+      "description": "Sandbox"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "paths": {
+    "/envelopes": {
+      "get": {
+        "operationId": "listEnvelopes",
+        "summary": "List envelopes",
+        "tags": ["Envelopes"],
+        "parameters": [
+          { "name": "filter[status]", "in": "query", "schema": { "type": "string", "enum": ["draft", "running", "closed", "canceled"] } },
+          { "name": "filter[name]", "in": "query", "schema": { "type": "string" } },
+          { "name": "filter[created]", "in": "query", "schema": { "type": "string" }, "description": "ISO 8601 date range, comma-separated" },
+          { "name": "filter[modified]", "in": "query", "schema": { "type": "string" } },
+          { "name": "filter[deadline_at]", "in": "query", "schema": { "type": "string" } },
+          { "name": "sort", "in": "query", "schema": { "type": "string" }, "description": "Sort by name (name or -name)" },
+          { "name": "page[number]", "in": "query", "schema": { "type": "integer" } },
+          { "name": "page[size]", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of envelopes",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeListResponse"
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid access token" },
+          "403": { "description": "Account blocked" }
+        }
+      },
+      "post": {
+        "operationId": "createEnvelope",
+        "summary": "Create an envelope",
+        "tags": ["Envelopes"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/vnd.api+json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnvelopeCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Envelope created",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeResponse"
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthorized" },
+          "422": { "description": "Unprocessable entity" }
+        }
+      }
+    },
+    "/envelopes/{envelopeId}": {
+      "get": {
+        "operationId": "getEnvelope",
+        "summary": "Get envelope details",
+        "tags": ["Envelopes"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Envelope details",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": { "$ref": "#/components/schemas/EnvelopeResponse" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Not found" }
+        }
+      },
+      "patch": {
+        "operationId": "updateEnvelope",
+        "summary": "Edit an envelope",
+        "tags": ["Envelopes"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/vnd.api+json": {
+              "schema": { "$ref": "#/components/schemas/EnvelopeCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Envelope updated",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": { "$ref": "#/components/schemas/EnvelopeResponse" }
+              }
+            }
+          },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteEnvelope",
+        "summary": "Delete an envelope",
+        "tags": ["Envelopes"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Envelope deleted" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/envelopes/{envelopeId}/activate": {
+      "post": {
+        "operationId": "activateEnvelope",
+        "summary": "Activate an envelope",
+        "tags": ["Envelopes"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Envelope activated", "content": { "application/vnd.api+json": { "schema": { "$ref": "#/components/schemas/EnvelopeResponse" } } } },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/envelopes/{envelopeId}/documents": {
+      "get": {
+        "operationId": "listDocuments",
+        "summary": "List documents in an envelope",
+        "tags": ["Documents"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Documents list", "content": { "application/vnd.api+json": { "schema": { "$ref": "#/components/schemas/DocumentListResponse" } } } },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "uploadDocument",
+        "summary": "Upload a document to an envelope",
+        "tags": ["Documents"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/vnd.api+json": {
+              "schema": { "$ref": "#/components/schemas/DocumentUploadRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Document uploaded", "content": { "application/vnd.api+json": { "schema": { "$ref": "#/components/schemas/DocumentResponse" } } } },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Envelope not found" }
+        }
+      }
+    },
+    "/envelopes/{envelopeId}/documents/{documentId}": {
+      "get": {
+        "operationId": "getDocument",
+        "summary": "Get document details",
+        "tags": ["Documents"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "documentId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Document details", "content": { "application/vnd.api+json": { "schema": { "$ref": "#/components/schemas/DocumentResponse" } } } },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Not found" }
+        }
+      },
+      "patch": {
+        "operationId": "updateDocument",
+        "summary": "Edit a document",
+        "tags": ["Documents"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "documentId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": { "required": true, "content": { "application/vnd.api+json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "200": { "description": "Document updated" },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteDocument",
+        "summary": "Delete a document",
+        "tags": ["Documents"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "documentId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Document deleted" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/envelopes/{envelopeId}/signers": {
+      "get": {
+        "operationId": "listSignatories",
+        "summary": "List signatories",
+        "tags": ["Signatories"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Signatories list" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createSignatory",
+        "summary": "Create a signatory",
+        "tags": ["Signatories"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": { "required": true, "content": { "application/vnd.api+json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "201": { "description": "Signatory created" },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/envelopes/{envelopeId}/signers/{signerId}": {
+      "get": {
+        "operationId": "getSignatory",
+        "summary": "Get signatory details",
+        "tags": ["Signatories"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "signerId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Signatory details" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Not found" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteSignatory",
+        "summary": "Delete a signatory",
+        "tags": ["Signatories"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "signerId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Signatory deleted" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/envelopes/{envelopeId}/requirements": {
+      "get": {
+        "operationId": "listRequirements",
+        "summary": "List requirements",
+        "tags": ["Requirements"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Requirements list" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createRequirement",
+        "summary": "Create a requirement",
+        "tags": ["Requirements"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": { "required": true, "content": { "application/vnd.api+json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "201": { "description": "Requirement created" },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/envelopes/{envelopeId}/requirements/{requirementId}": {
+      "get": {
+        "operationId": "getRequirement",
+        "summary": "Get requirement details",
+        "tags": ["Requirements"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "requirementId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Requirement details" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Not found" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteRequirement",
+        "summary": "Delete a requirement",
+        "tags": ["Requirements"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "requirementId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Requirement deleted" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/envelopes/{envelopeId}/observers": {
+      "get": {
+        "operationId": "listObservers",
+        "summary": "List envelope observers",
+        "tags": ["Observers"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Observers list" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createObserver",
+        "summary": "Create an observer",
+        "tags": ["Observers"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": { "required": true, "content": { "application/vnd.api+json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "201": { "description": "Observer created" },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/envelopes/{envelopeId}/observers/{observerId}": {
+      "delete": {
+        "operationId": "deleteObserver",
+        "summary": "Delete an observer",
+        "tags": ["Observers"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "observerId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Observer deleted" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/envelopes/{envelopeId}/notifications/signers/{signerId}": {
+      "post": {
+        "operationId": "notifySignatory",
+        "summary": "Notify a single signatory",
+        "tags": ["Notifications"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "signerId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Notification sent" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/envelopes/{envelopeId}/notifications": {
+      "post": {
+        "operationId": "notifyEnvelopeSignatories",
+        "summary": "Notify all envelope signatories",
+        "tags": ["Notifications"],
+        "parameters": [
+          { "name": "envelopeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Notifications sent" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/templates": {
+      "get": {
+        "operationId": "listTemplates",
+        "summary": "List templates",
+        "tags": ["Templates"],
+        "responses": {
+          "200": { "description": "Templates list" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createTemplate",
+        "summary": "Create a template",
+        "tags": ["Templates"],
+        "requestBody": { "required": true, "content": { "application/vnd.api+json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "201": { "description": "Template created" },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/templates/{templateId}": {
+      "get": {
+        "operationId": "getTemplate",
+        "summary": "Get template details",
+        "tags": ["Templates"],
+        "parameters": [
+          { "name": "templateId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Template details" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Not found" }
+        }
+      },
+      "patch": {
+        "operationId": "updateTemplate",
+        "summary": "Edit a template",
+        "tags": ["Templates"],
+        "parameters": [
+          { "name": "templateId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": { "required": true, "content": { "application/vnd.api+json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "200": { "description": "Template updated" },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteTemplate",
+        "summary": "Delete a template",
+        "tags": ["Templates"],
+        "parameters": [
+          { "name": "templateId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Template deleted" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/folders": {
+      "get": {
+        "operationId": "listFolders",
+        "summary": "List folders",
+        "tags": ["Folders"],
+        "responses": {
+          "200": { "description": "Folders list" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createFolder",
+        "summary": "Create a folder",
+        "tags": ["Folders"],
+        "requestBody": { "required": true, "content": { "application/vnd.api+json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "201": { "description": "Folder created" },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/folders/{folderId}": {
+      "get": {
+        "operationId": "getFolder",
+        "summary": "Get folder details",
+        "tags": ["Folders"],
+        "parameters": [
+          { "name": "folderId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Folder details" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/webhooks": {
+      "get": {
+        "operationId": "listWebhooks",
+        "summary": "List webhooks",
+        "tags": ["Webhooks"],
+        "responses": {
+          "200": { "description": "Webhooks list" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createWebhook",
+        "summary": "Create a webhook",
+        "tags": ["Webhooks"],
+        "requestBody": { "required": true, "content": { "application/vnd.api+json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "201": { "description": "Webhook created" },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/webhooks/{webhookId}": {
+      "get": {
+        "operationId": "getWebhook",
+        "summary": "Get webhook details",
+        "tags": ["Webhooks"],
+        "parameters": [
+          { "name": "webhookId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Webhook details" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Not found" }
+        }
+      },
+      "patch": {
+        "operationId": "updateWebhook",
+        "summary": "Edit a webhook",
+        "tags": ["Webhooks"],
+        "parameters": [
+          { "name": "webhookId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": { "required": true, "content": { "application/vnd.api+json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "200": { "description": "Webhook updated" },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteWebhook",
+        "summary": "Delete a webhook",
+        "tags": ["Webhooks"],
+        "parameters": [
+          { "name": "webhookId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Webhook deleted" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "operationId": "listUsers",
+        "summary": "List users",
+        "tags": ["Users"],
+        "responses": {
+          "200": { "description": "Users list" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createUser",
+        "summary": "Create a user",
+        "tags": ["Users"],
+        "requestBody": { "required": true, "content": { "application/vnd.api+json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "201": { "description": "User created" },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/users/{userId}": {
+      "get": {
+        "operationId": "getUser",
+        "summary": "Get user details",
+        "tags": ["Users"],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "User details" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/members": {
+      "get": {
+        "operationId": "listMembers",
+        "summary": "List account members",
+        "tags": ["Members"],
+        "responses": {
+          "200": { "description": "Members list" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createMember",
+        "summary": "Create a member",
+        "tags": ["Members"],
+        "requestBody": { "required": true, "content": { "application/vnd.api+json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "201": { "description": "Member created" },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/members/{memberId}": {
+      "put": {
+        "operationId": "updateMember",
+        "summary": "Edit a member",
+        "tags": ["Members"],
+        "parameters": [
+          { "name": "memberId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": { "required": true, "content": { "application/vnd.api+json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "200": { "description": "Member updated" },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteMember",
+        "summary": "Delete a member",
+        "tags": ["Members"],
+        "parameters": [
+          { "name": "memberId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Member deleted" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Access token generated by account administrator"
+      }
+    },
+    "schemas": {
+      "EnvelopeListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Envelope" }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "record_count": { "type": "integer" }
+            }
+          },
+          "links": {
+            "type": "object",
+            "properties": {
+              "first": { "type": "string" },
+              "last": { "type": "string" }
+            }
+          }
+        }
+      },
+      "EnvelopeCreateRequest": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": ["type", "attributes"],
+            "properties": {
+              "type": { "type": "string", "enum": ["envelopes"] },
+              "attributes": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string", "description": "Envelope name" },
+                  "deadline_at": { "type": "string", "format": "date-time", "description": "Deadline in RFC 3339 format" },
+                  "locale": { "type": "string", "enum": ["pt-BR", "en-US"], "default": "pt-BR" },
+                  "auto_close": { "type": "boolean", "default": true, "description": "Auto-close after last signer" },
+                  "remind_interval": { "type": "string", "enum": ["1", "2", "3", "7", "14"], "default": "3" },
+                  "block_after_refusal": { "type": "boolean", "default": false },
+                  "default_subject": { "type": "string" },
+                  "default_message": { "type": "string" }
+                }
+              },
+              "relationships": {
+                "type": "object",
+                "properties": {
+                  "folder": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "type": { "type": "string", "enum": ["folders"] },
+                          "id": { "type": "string", "format": "uuid" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "EnvelopeResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/Envelope" }
+        }
+      },
+      "Envelope": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "type": { "type": "string", "enum": ["envelopes"] },
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "status": { "type": "string", "enum": ["draft", "running", "closed", "canceled"] },
+              "deadline_at": { "type": "string", "format": "date-time" },
+              "locale": { "type": "string" },
+              "auto_close": { "type": "boolean" },
+              "rubric_enabled": { "type": "boolean" },
+              "remind_interval": { "type": "integer" },
+              "block_after_refusal": { "type": "boolean" },
+              "default_message": { "type": "string" },
+              "created": { "type": "string", "format": "date-time" },
+              "modified": { "type": "string", "format": "date-time" }
+            }
+          },
+          "relationships": { "type": "object" }
+        }
+      },
+      "DocumentListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Document" }
+          }
+        }
+      },
+      "DocumentUploadRequest": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": ["type", "attributes"],
+            "properties": {
+              "type": { "type": "string", "enum": ["documents"] },
+              "attributes": {
+                "type": "object",
+                "required": ["filename", "file"],
+                "properties": {
+                  "filename": { "type": "string" },
+                  "file": { "type": "string", "format": "byte", "description": "Base64-encoded file content" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "DocumentResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/Document" }
+        }
+      },
+      "Document": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "type": { "type": "string", "enum": ["documents"] },
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "status": { "type": "string" },
+              "filename": { "type": "string" },
+              "created": { "type": "string", "format": "date-time" },
+              "modified": { "type": "string", "format": "date-time" }
+            }
+          },
+          "links": {
+            "type": "object",
+            "properties": {
+              "self": { "type": "string" },
+              "files": {
+                "type": "object",
+                "properties": {
+                  "original": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    { "name": "Envelopes", "description": "Envelope management" },
+    { "name": "Documents", "description": "Document management within envelopes" },
+    { "name": "Signatories", "description": "Signatory management" },
+    { "name": "Requirements", "description": "Signing requirements" },
+    { "name": "Observers", "description": "Envelope observers" },
+    { "name": "Notifications", "description": "Signatory notifications" },
+    { "name": "Templates", "description": "Document templates" },
+    { "name": "Folders", "description": "Folder organization" },
+    { "name": "Webhooks", "description": "Webhook management" },
+    { "name": "Users", "description": "User management" },
+    { "name": "Members", "description": "Account member management" }
+  ]
+}
