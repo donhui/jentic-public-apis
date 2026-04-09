@@ -1,0 +1,1264 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ConnectyCube API",
+    "description": "ConnectyCube server REST API for user management, sessions, chat dialogs and messages, file storage, and push notifications.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://developers.connectycube.com"
+  },
+  "servers": [
+    {
+      "url": "https://api.connectycube.com",
+      "description": "ConnectyCube API server"
+    }
+  ],
+  "paths": {
+    "/session": {
+      "post": {
+        "operationId": "createSession",
+        "summary": "Create a new session",
+        "description": "Create an authentication session. Can be app-level, user-level, or guest session.",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SessionCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Session created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SessionResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "get": {
+        "operationId": "getSession",
+        "summary": "Get current session info",
+        "tags": ["Authentication"],
+        "responses": {
+          "200": {
+            "description": "Current session details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SessionResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "destroySession",
+        "summary": "Destroy current session",
+        "tags": ["Authentication"],
+        "responses": {
+          "200": { "description": "Session destroyed" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/users": {
+      "post": {
+        "operationId": "createUser",
+        "summary": "Register a new user",
+        "tags": ["Users"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/users/v2": {
+      "get": {
+        "operationId": "listUsers",
+        "summary": "List and filter users (v2)",
+        "description": "Advanced user retrieval with filtering, sorting, and pagination.",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "filter",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Filter criteria with operators (eq, gt, lt, etc.)"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": { "type": "integer" },
+            "description": "Results per page"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer" },
+            "description": "Page number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "current_page": { "type": "integer" },
+                    "per_page": { "type": "integer" },
+                    "total_entries": { "type": "integer" },
+                    "items": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/User" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/users/{user_id}": {
+      "put": {
+        "operationId": "updateUser",
+        "summary": "Update user profile",
+        "tags": ["Users"],
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteUser",
+        "summary": "Delete a user",
+        "tags": ["Users"],
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" }
+        ],
+        "responses": {
+          "200": { "description": "User deleted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/users/external/{external_id}": {
+      "delete": {
+        "operationId": "deleteUserByExternalId",
+        "summary": "Delete user by external ID",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "external_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "User deleted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/chat/Dialog": {
+      "get": {
+        "operationId": "listDialogs",
+        "summary": "Retrieve user's chat dialogs",
+        "tags": ["Chat"],
+        "responses": {
+          "200": {
+            "description": "List of dialogs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Dialog" }
+                    },
+                    "total_entries": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createDialog",
+        "summary": "Create a new chat dialog",
+        "tags": ["Chat"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DialogCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Dialog created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Dialog" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/chat/Dialog/{dialog_id}": {
+      "put": {
+        "operationId": "updateDialog",
+        "summary": "Update a chat dialog",
+        "tags": ["Chat"],
+        "parameters": [
+          { "$ref": "#/components/parameters/DialogId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DialogUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Dialog updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Dialog" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteDialog",
+        "summary": "Delete a chat dialog",
+        "tags": ["Chat"],
+        "parameters": [
+          { "$ref": "#/components/parameters/DialogId" }
+        ],
+        "responses": {
+          "200": { "description": "Dialog deleted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/chat/Dialog/clearHistory/{dialog_id}": {
+      "delete": {
+        "operationId": "clearDialogHistory",
+        "summary": "Clear message history for a dialog",
+        "tags": ["Chat"],
+        "parameters": [
+          { "$ref": "#/components/parameters/DialogId" }
+        ],
+        "responses": {
+          "200": { "description": "History cleared" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/chat/Dialog/{dialog_id}/subscribe": {
+      "post": {
+        "operationId": "subscribeToDialog",
+        "summary": "Subscribe to a public dialog",
+        "tags": ["Chat"],
+        "parameters": [
+          { "$ref": "#/components/parameters/DialogId" }
+        ],
+        "responses": {
+          "200": { "description": "Subscribed" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "unsubscribeFromDialog",
+        "summary": "Unsubscribe from a public dialog",
+        "tags": ["Chat"],
+        "parameters": [
+          { "$ref": "#/components/parameters/DialogId" }
+        ],
+        "responses": {
+          "200": { "description": "Unsubscribed" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/chat/Dialog/{dialog_id}/occupants": {
+      "get": {
+        "operationId": "listDialogOccupants",
+        "summary": "List occupants of a public dialog",
+        "tags": ["Chat"],
+        "parameters": [
+          { "$ref": "#/components/parameters/DialogId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of occupant IDs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": { "type": "integer" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/chat/Dialog/{dialog_id}/admins": {
+      "put": {
+        "operationId": "updateDialogAdmins",
+        "summary": "Add or remove dialog administrators",
+        "tags": ["Chat"],
+        "parameters": [
+          { "$ref": "#/components/parameters/DialogId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "push_all": {
+                    "type": "object",
+                    "properties": {
+                      "admins_ids": {
+                        "type": "array",
+                        "items": { "type": "integer" }
+                      }
+                    }
+                  },
+                  "pull_all": {
+                    "type": "object",
+                    "properties": {
+                      "admins_ids": {
+                        "type": "array",
+                        "items": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Admins updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/chat/Dialog/{dialog_id}/notifications": {
+      "get": {
+        "operationId": "getDialogNotifications",
+        "summary": "Check notification status for a dialog",
+        "tags": ["Chat"],
+        "parameters": [
+          { "$ref": "#/components/parameters/DialogId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "notifications": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateDialogNotifications",
+        "summary": "Toggle push notifications for a dialog",
+        "tags": ["Chat"],
+        "parameters": [
+          { "$ref": "#/components/parameters/DialogId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": { "type": "boolean" }
+                },
+                "required": ["enabled"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Notifications updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/chat/Message": {
+      "get": {
+        "operationId": "listMessages",
+        "summary": "Retrieve messages from a dialog",
+        "tags": ["Messages"],
+        "parameters": [
+          {
+            "name": "chat_dialog_id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Dialog ID to get messages from"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of messages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Message" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createMessage",
+        "summary": "Send a chat message",
+        "tags": ["Messages"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MessageCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Message sent",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Message" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/chat/Message/{message_id}": {
+      "put": {
+        "operationId": "updateMessage",
+        "summary": "Update a message or mark as read/delivered",
+        "tags": ["Messages"],
+        "parameters": [
+          { "$ref": "#/components/parameters/MessageId" }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": { "type": "string" },
+                  "read": { "type": "boolean" },
+                  "delivered": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Message updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteMessage",
+        "summary": "Delete a message",
+        "tags": ["Messages"],
+        "parameters": [
+          { "$ref": "#/components/parameters/MessageId" }
+        ],
+        "responses": {
+          "200": { "description": "Message deleted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/chat/Message/{message_id}/reactions": {
+      "put": {
+        "operationId": "updateMessageReactions",
+        "summary": "Add or remove message reactions",
+        "tags": ["Messages"],
+        "parameters": [
+          { "$ref": "#/components/parameters/MessageId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "add": { "type": "string", "description": "Reaction to add" },
+                  "remove": { "type": "string", "description": "Reaction to remove" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Reactions updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "get": {
+        "operationId": "getMessageReactions",
+        "summary": "List reactions on a message",
+        "tags": ["Messages"],
+        "parameters": [
+          { "$ref": "#/components/parameters/MessageId" }
+        ],
+        "responses": {
+          "200": { "description": "Message reactions" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/chat/Message/system": {
+      "post": {
+        "operationId": "sendSystemMessage",
+        "summary": "Send a system message",
+        "tags": ["Messages"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MessageCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "System message sent" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/chat/Message/unread": {
+      "get": {
+        "operationId": "getUnreadMessageCount",
+        "summary": "Get unread message count",
+        "tags": ["Messages"],
+        "responses": {
+          "200": {
+            "description": "Unread message counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/chat/search": {
+      "get": {
+        "operationId": "searchChat",
+        "summary": "Search across messages and dialogs",
+        "tags": ["Chat"],
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Search query string"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Search results" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/blobs": {
+      "post": {
+        "operationId": "createBlob",
+        "summary": "Create a file record (step 1 of upload)",
+        "tags": ["Storage"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BlobCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Blob record created with upload parameters",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Blob" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "get": {
+        "operationId": "listBlobs",
+        "summary": "List uploaded files",
+        "tags": ["Storage"],
+        "responses": {
+          "200": {
+            "description": "List of blobs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Blob" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/blobs/{blob_id}": {
+      "get": {
+        "operationId": "getBlob",
+        "summary": "Get file information",
+        "tags": ["Storage"],
+        "parameters": [
+          { "$ref": "#/components/parameters/BlobId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blob details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Blob" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateBlob",
+        "summary": "Update file information",
+        "tags": ["Storage"],
+        "parameters": [
+          { "$ref": "#/components/parameters/BlobId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BlobCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Blob updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteBlob",
+        "summary": "Delete a file",
+        "tags": ["Storage"],
+        "parameters": [
+          { "$ref": "#/components/parameters/BlobId" }
+        ],
+        "responses": {
+          "200": { "description": "Blob deleted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/blobs/{blob_id}/complete": {
+      "put": {
+        "operationId": "markBlobComplete",
+        "summary": "Mark file upload as complete (step 3 of upload)",
+        "tags": ["Storage"],
+        "parameters": [
+          { "$ref": "#/components/parameters/BlobId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "size": { "type": "integer", "description": "File size in bytes" }
+                },
+                "required": ["size"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Upload marked complete" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/blobs/{uid}/download": {
+      "get": {
+        "operationId": "downloadBlob",
+        "summary": "Download a file",
+        "tags": ["Storage"],
+        "parameters": [
+          {
+            "name": "uid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Blob UID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File content",
+            "content": {
+              "application/octet-stream": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/subscriptions": {
+      "post": {
+        "operationId": "createPushSubscription",
+        "summary": "Subscribe a device for push notifications",
+        "tags": ["Push Notifications"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PushSubscriptionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Subscription created" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "get": {
+        "operationId": "listPushSubscriptions",
+        "summary": "Get all push notification subscriptions",
+        "tags": ["Push Notifications"],
+        "responses": {
+          "200": { "description": "List of subscriptions" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/subscriptions/{subscription_id}": {
+      "delete": {
+        "operationId": "deletePushSubscription",
+        "summary": "Remove a push notification subscription",
+        "tags": ["Push Notifications"],
+        "parameters": [
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Subscription removed" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/events": {
+      "post": {
+        "operationId": "createPushEvent",
+        "summary": "Send a push notification",
+        "tags": ["Push Notifications"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PushEventRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Push notification sent" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "CB-Token",
+        "description": "Session token obtained from POST /session"
+      }
+    },
+    "parameters": {
+      "UserId": {
+        "name": "user_id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" },
+        "description": "User ID"
+      },
+      "DialogId": {
+        "name": "dialog_id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" },
+        "description": "Dialog ID"
+      },
+      "MessageId": {
+        "name": "message_id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" },
+        "description": "Message ID"
+      },
+      "BlobId": {
+        "name": "blob_id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" },
+        "description": "Blob ID"
+      }
+    },
+    "schemas": {
+      "SessionCreateRequest": {
+        "type": "object",
+        "properties": {
+          "application_id": { "type": "string" },
+          "auth_key": { "type": "string" },
+          "timestamp": { "type": "integer" },
+          "nonce": { "type": "string" },
+          "signature": { "type": "string" },
+          "user": {
+            "type": "object",
+            "properties": {
+              "login": { "type": "string" },
+              "email": { "type": "string" },
+              "password": { "type": "string" }
+            }
+          }
+        }
+      },
+      "SessionResponse": {
+        "type": "object",
+        "properties": {
+          "session": {
+            "type": "object",
+            "properties": {
+              "_id": { "type": "string" },
+              "token": { "type": "string" },
+              "user_id": { "type": "integer" },
+              "application_id": { "type": "integer" },
+              "created_at": { "type": "string" },
+              "updated_at": { "type": "string" }
+            }
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "login": { "type": "string" },
+          "email": { "type": "string" },
+          "phone": { "type": "string" },
+          "website": { "type": "string" },
+          "full_name": { "type": "string" },
+          "avatar": { "type": "string" },
+          "custom_data": { "type": "string" },
+          "tag_list": { "type": "string" },
+          "created_at": { "type": "string" },
+          "updated_at": { "type": "string" }
+        }
+      },
+      "UserResponse": {
+        "type": "object",
+        "properties": {
+          "user": { "$ref": "#/components/schemas/User" }
+        }
+      },
+      "UserCreateRequest": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "object",
+            "properties": {
+              "login": { "type": "string" },
+              "email": { "type": "string" },
+              "password": { "type": "string" },
+              "phone": { "type": "string" },
+              "full_name": { "type": "string" },
+              "website": { "type": "string" },
+              "custom_data": { "type": "string" },
+              "tag_list": { "type": "string" }
+            },
+            "required": ["password"]
+          }
+        },
+        "required": ["user"]
+      },
+      "UserUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "object",
+            "properties": {
+              "login": { "type": "string" },
+              "email": { "type": "string" },
+              "password": { "type": "string" },
+              "phone": { "type": "string" },
+              "full_name": { "type": "string" },
+              "website": { "type": "string" },
+              "custom_data": { "type": "string" },
+              "tag_list": { "type": "string" }
+            }
+          }
+        }
+      },
+      "Dialog": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "type": { "type": "integer", "description": "1=broadcast, 2=group, 3=private, 4=public" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "occupants_ids": {
+            "type": "array",
+            "items": { "type": "integer" }
+          },
+          "last_message": { "type": "string" },
+          "last_message_date_sent": { "type": "integer" },
+          "unread_messages_count": { "type": "integer" },
+          "created_at": { "type": "string" },
+          "updated_at": { "type": "string" }
+        }
+      },
+      "DialogCreateRequest": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "integer", "description": "1=broadcast, 2=group, 3=private, 4=public" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "occupants_ids": {
+            "type": "array",
+            "items": { "type": "integer" }
+          }
+        },
+        "required": ["type"]
+      },
+      "DialogUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "push_all": {
+            "type": "object",
+            "properties": {
+              "occupants_ids": {
+                "type": "array",
+                "items": { "type": "integer" }
+              }
+            }
+          },
+          "pull_all": {
+            "type": "object",
+            "properties": {
+              "occupants_ids": {
+                "type": "array",
+                "items": { "type": "integer" }
+              }
+            }
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "chat_dialog_id": { "type": "string" },
+          "message": { "type": "string" },
+          "sender_id": { "type": "integer" },
+          "recipient_id": { "type": "integer" },
+          "date_sent": { "type": "integer" },
+          "read": { "type": "boolean" },
+          "delivered": { "type": "boolean" },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string" },
+                "id": { "type": "string" },
+                "uid": { "type": "string" }
+              }
+            }
+          },
+          "created_at": { "type": "string" },
+          "updated_at": { "type": "string" }
+        }
+      },
+      "MessageCreateRequest": {
+        "type": "object",
+        "properties": {
+          "chat_dialog_id": { "type": "string" },
+          "message": { "type": "string" },
+          "recipient_id": { "type": "integer" },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string" },
+                "id": { "type": "string" },
+                "uid": { "type": "string" }
+              }
+            }
+          }
+        },
+        "required": ["chat_dialog_id"]
+      },
+      "BlobCreateRequest": {
+        "type": "object",
+        "properties": {
+          "blob": {
+            "type": "object",
+            "properties": {
+              "content_type": { "type": "string" },
+              "name": { "type": "string" },
+              "public": { "type": "boolean" }
+            },
+            "required": ["content_type", "name"]
+          }
+        },
+        "required": ["blob"]
+      },
+      "Blob": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "uid": { "type": "string" },
+          "content_type": { "type": "string" },
+          "name": { "type": "string" },
+          "size": { "type": "integer" },
+          "public": { "type": "boolean" },
+          "created_at": { "type": "string" },
+          "updated_at": { "type": "string" },
+          "blob_object_access": {
+            "type": "object",
+            "properties": {
+              "params": { "type": "string" }
+            }
+          }
+        }
+      },
+      "PushSubscriptionRequest": {
+        "type": "object",
+        "properties": {
+          "notification_channel": { "type": "string", "description": "apns, gcm, or web" },
+          "push_token": {
+            "type": "object",
+            "properties": {
+              "environment": { "type": "string" },
+              "client_identification_sequence": { "type": "string" },
+              "bundle_identifier": { "type": "string" }
+            }
+          },
+          "device": {
+            "type": "object",
+            "properties": {
+              "platform": { "type": "string" },
+              "udid": { "type": "string" }
+            }
+          }
+        },
+        "required": ["notification_channel"]
+      },
+      "PushEventRequest": {
+        "type": "object",
+        "properties": {
+          "notification_type": { "type": "string" },
+          "push_type": { "type": "string" },
+          "user": {
+            "type": "object",
+            "properties": {
+              "ids": {
+                "type": "array",
+                "items": { "type": "integer" }
+              },
+              "tags": {
+                "type": "object",
+                "properties": {
+                  "any": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "message": { "type": "string" }
+        },
+        "required": ["notification_type", "message"]
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request"
+      },
+      "Unauthorized": {
+        "description": "Authentication required or session expired"
+      },
+      "NotFound": {
+        "description": "Resource not found"
+      },
+      "TooManyRequests": {
+        "description": "Rate limit exceeded"
+      }
+    }
+  },
+  "security": [
+    { "sessionToken": [] }
+  ]
+}
