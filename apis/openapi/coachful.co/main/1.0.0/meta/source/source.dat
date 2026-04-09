@@ -1,0 +1,1249 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Coachful Zapier API",
+    "description": "API for integrating Coachful with Zapier. Provides webhooks, polling triggers, actions for task/habit/message/invoice management, and search endpoints for coaches and creators.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Coachful",
+      "url": "https://coachful.co"
+    },
+    "x-jentic-source-url": "https://coachful.co/docs/api"
+  },
+  "servers": [
+    {
+      "url": "https://app.coachful.co",
+      "description": "Production server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "API key verification"
+    },
+    {
+      "name": "Webhooks",
+      "description": "Webhook subscription management"
+    },
+    {
+      "name": "Triggers",
+      "description": "Event polling triggers"
+    },
+    {
+      "name": "Actions",
+      "description": "Create and manage resources"
+    },
+    {
+      "name": "Searches",
+      "description": "Find and list resources"
+    }
+  ],
+  "paths": {
+    "/api/zapier/auth/test": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Verify API key",
+        "description": "Verify your API key and get organization info.",
+        "operationId": "testAuth",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authentication successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/hooks": {
+      "post": {
+        "tags": ["Webhooks"],
+        "summary": "Subscribe to events",
+        "description": "Register a webhook URL to receive real-time event notifications.",
+        "operationId": "subscribeWebhook",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscribeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Subscription created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSubscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/hooks/{hookId}": {
+      "delete": {
+        "tags": ["Webhooks"],
+        "summary": "Unsubscribe from events",
+        "description": "Remove an existing webhook subscription.",
+        "operationId": "unsubscribeWebhook",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "hookId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The webhook subscription ID to remove"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscription removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Webhook not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/triggers/{event}": {
+      "get": {
+        "tags": ["Triggers"],
+        "summary": "Poll for recent events",
+        "description": "Poll for recent events of a given type. Returns last 50 events.",
+        "operationId": "pollTrigger",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "event",
+            "in": "path",
+            "required": true,
+            "description": "Event type to poll for",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "client.checkin.completed",
+                "client.added",
+                "program.purchased",
+                "payment.received",
+                "session.completed",
+                "habit.completed",
+                "goal.achieved",
+                "intake.call.booked",
+                "intake.call.completed",
+                "group.call.completed",
+                "course.joined"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of recent events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Event"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/triggers/{event}/sample": {
+      "get": {
+        "tags": ["Triggers"],
+        "summary": "Get sample event data",
+        "description": "Get sample event data for a given event type.",
+        "operationId": "getSampleEvent",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "event",
+            "in": "path",
+            "required": true,
+            "description": "Event type",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sample event data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Event"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/actions/create-task": {
+      "post": {
+        "tags": ["Actions"],
+        "summary": "Create a task",
+        "description": "Create a new task for a client.",
+        "operationId": "createTask",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/actions/create-habit": {
+      "post": {
+        "tags": ["Actions"],
+        "summary": "Create a habit",
+        "description": "Create a new habit for a client.",
+        "operationId": "createHabit",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHabitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Habit created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/actions/send-message": {
+      "post": {
+        "tags": ["Actions"],
+        "summary": "Send a message",
+        "description": "Send a message to a client, channel, program, or cohort.",
+        "operationId": "sendMessage",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/actions/create-post": {
+      "post": {
+        "tags": ["Actions"],
+        "summary": "Create a post",
+        "description": "Create a new community post.",
+        "operationId": "createPost",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["content"],
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "Post content"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Post created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/actions/create-invoice": {
+      "post": {
+        "tags": ["Actions"],
+        "summary": "Create an invoice",
+        "description": "Create a new invoice for a client.",
+        "operationId": "createInvoice",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInvoiceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invoice created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/actions/enroll-in-program": {
+      "post": {
+        "tags": ["Actions"],
+        "summary": "Enroll client in program",
+        "description": "Enroll a client in a specific program or cohort.",
+        "operationId": "enrollInProgram",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnrollInProgramRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Client enrolled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/actions/grant-resource": {
+      "post": {
+        "tags": ["Actions"],
+        "summary": "Grant resource to client",
+        "description": "Grant a resource (course, file, etc.) to a client.",
+        "operationId": "grantResource",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantResourceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resource granted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/searches/find-client": {
+      "get": {
+        "tags": ["Searches"],
+        "summary": "Find client by email",
+        "description": "Search for a client by their email address.",
+        "operationId": "findClient",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "email",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "email"
+            },
+            "description": "Client email to search for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Client found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Client"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Client not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/searches/list-programs": {
+      "get": {
+        "tags": ["Searches"],
+        "summary": "List programs",
+        "description": "List all available programs.",
+        "operationId": "listPrograms",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of programs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Program"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/searches/list-cohorts": {
+      "get": {
+        "tags": ["Searches"],
+        "summary": "List cohorts",
+        "description": "List cohorts for a specific program.",
+        "operationId": "listCohorts",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "programId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Program ID to list cohorts for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of cohorts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Cohort"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/searches/list-resources": {
+      "get": {
+        "tags": ["Searches"],
+        "summary": "List resources",
+        "description": "List available resources filtered by type.",
+        "operationId": "listResources",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "resourceType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter resources by type"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of resources",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Resource"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/searches/list-channels": {
+      "get": {
+        "tags": ["Searches"],
+        "summary": "List channels",
+        "description": "List all available messaging channels.",
+        "operationId": "listChannels",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of channels",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Channel"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/searches/list-checkin-flows": {
+      "get": {
+        "tags": ["Searches"],
+        "summary": "List check-in flows",
+        "description": "List all available check-in flows.",
+        "operationId": "listCheckinFlows",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of check-in flows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CheckinFlow"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API key for authentication. Rate limits: 100 reads/min, 30 writes/min per API key."
+      }
+    },
+    "schemas": {
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "organizationName": {
+            "type": "string"
+          },
+          "coachName": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          }
+        }
+      },
+      "WebhookSubscribeRequest": {
+        "type": "object",
+        "required": ["hookUrl", "event"],
+        "properties": {
+          "hookUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to receive webhook payloads"
+          },
+          "event": {
+            "type": "string",
+            "enum": [
+              "client.checkin.completed",
+              "client.added",
+              "program.purchased",
+              "payment.received",
+              "session.completed",
+              "habit.completed",
+              "goal.achieved",
+              "intake.call.booked",
+              "intake.call.completed",
+              "group.call.completed",
+              "course.joined"
+            ],
+            "description": "Event type to subscribe to"
+          }
+        }
+      },
+      "WebhookSubscription": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "event": {
+            "type": "string"
+          },
+          "hookUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "event": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateTaskRequest": {
+        "type": "object",
+        "required": ["clientEmail", "title"],
+        "properties": {
+          "clientEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "title": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "listType": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateHabitRequest": {
+        "type": "object",
+        "required": ["clientEmail", "text"],
+        "properties": {
+          "clientEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "text": {
+            "type": "string"
+          },
+          "frequency": {
+            "type": "string"
+          }
+        }
+      },
+      "SendMessageRequest": {
+        "type": "object",
+        "required": ["message"],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "clientEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "programId": {
+            "type": "string"
+          },
+          "cohortId": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateInvoiceRequest": {
+        "type": "object",
+        "required": ["clientEmail", "amount", "description"],
+        "properties": {
+          "clientEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "description": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          }
+        }
+      },
+      "EnrollInProgramRequest": {
+        "type": "object",
+        "required": ["clientEmail", "programId"],
+        "properties": {
+          "clientEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "programId": {
+            "type": "string"
+          },
+          "cohortId": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "GrantResourceRequest": {
+        "type": "object",
+        "required": ["clientEmail", "resourceType", "resourceId"],
+        "properties": {
+          "clientEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "resourceType": {
+            "type": "string"
+          },
+          "resourceId": {
+            "type": "string"
+          }
+        }
+      },
+      "ActionResult": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "Client": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          }
+        }
+      },
+      "Program": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "Cohort": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "programId": {
+            "type": "string"
+          }
+        }
+      },
+      "Resource": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "Channel": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CheckinFlow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
