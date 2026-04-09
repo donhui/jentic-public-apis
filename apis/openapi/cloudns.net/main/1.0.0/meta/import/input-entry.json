@@ -1,0 +1,1121 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ClouDNS DNS API",
+    "version": "1.0.0",
+    "description": "ClouDNS HTTP API for managing DNS zones and records. Supports both JSON and XML response formats.",
+    "x-jentic-source-url": "https://www.cloudns.net/wiki/article/42/"
+  },
+  "servers": [
+    {
+      "url": "https://api.cloudns.net",
+      "description": "ClouDNS API server"
+    }
+  ],
+  "paths": {
+    "/login/login.json": {
+      "get": {
+        "operationId": "testLogin",
+        "summary": "Test login credentials",
+        "tags": [
+          "Authentication"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AuthId"
+          },
+          {
+            "$ref": "#/components/parameters/AuthPassword"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Login result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Invalid authentication credentials"
+          }
+        }
+      }
+    },
+    "/dns/register.json": {
+      "post": {
+        "operationId": "registerZone",
+        "summary": "Register a new DNS zone",
+        "tags": [
+          "Zones"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AuthId"
+          },
+          {
+            "$ref": "#/components/parameters/AuthPassword"
+          },
+          {
+            "name": "domain-name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Domain name or reverse zone name"
+          },
+          {
+            "name": "zone-type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "master",
+                "slave",
+                "parked",
+                "geodns"
+              ]
+            },
+            "description": "Type of DNS zone"
+          },
+          {
+            "name": "ns[]",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Name servers array (master zones only)"
+          },
+          {
+            "name": "master-ip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Master server IP (slave zones only)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Zone registration result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Invalid authentication credentials"
+          }
+        }
+      }
+    },
+    "/dns/delete.json": {
+      "post": {
+        "operationId": "deleteZone",
+        "summary": "Delete a DNS zone",
+        "tags": [
+          "Zones"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AuthId"
+          },
+          {
+            "$ref": "#/components/parameters/AuthPassword"
+          },
+          {
+            "name": "domain-name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Domain name or reverse zone name to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Zone deletion result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Invalid authentication credentials"
+          }
+        }
+      }
+    },
+    "/dns/list-zones.json": {
+      "get": {
+        "operationId": "listZones",
+        "summary": "List DNS zones",
+        "tags": [
+          "Zones"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AuthId"
+          },
+          {
+            "$ref": "#/components/parameters/AuthPassword"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Current page number"
+          },
+          {
+            "name": "rows-per-page",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                10,
+                20,
+                30,
+                50,
+                100
+              ]
+            },
+            "description": "Results per page"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Domain/reverse zone name or keyword filter"
+          },
+          {
+            "name": "group-id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Group identifier for filtering zones"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of zones",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/Zone"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Invalid authentication credentials"
+          }
+        }
+      }
+    },
+    "/dns/get-pages-count.json": {
+      "get": {
+        "operationId": "getZonePagesCount",
+        "summary": "Get total pages count for zone listing",
+        "tags": [
+          "Zones"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AuthId"
+          },
+          {
+            "$ref": "#/components/parameters/AuthPassword"
+          },
+          {
+            "name": "rows-per-page",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                10,
+                20,
+                30,
+                50,
+                100,
+                250
+              ]
+            },
+            "description": "Results per page"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Domain/zone name or keyword filter"
+          },
+          {
+            "name": "group-id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Specific group identifier or 'none'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Total pages count",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Invalid authentication credentials"
+          }
+        }
+      }
+    },
+    "/dns/get-zones-stats.json": {
+      "get": {
+        "operationId": "getZonesStats",
+        "summary": "Get zones statistics",
+        "tags": [
+          "Zones"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AuthId"
+          },
+          {
+            "$ref": "#/components/parameters/AuthPassword"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Zone statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZonesStats"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Invalid authentication credentials"
+          }
+        }
+      }
+    },
+    "/dns/change-status.json": {
+      "post": {
+        "operationId": "changeZoneStatus",
+        "summary": "Activate or deactivate a DNS zone",
+        "tags": [
+          "Zones"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AuthId"
+          },
+          {
+            "$ref": "#/components/parameters/AuthPassword"
+          },
+          {
+            "name": "domain-name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Domain name"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ]
+            },
+            "description": "1 to activate, 0 to deactivate. Toggles if omitted."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status change result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Invalid authentication credentials"
+          }
+        }
+      }
+    },
+    "/dns/update-status.json": {
+      "get": {
+        "operationId": "getUpdateStatus",
+        "summary": "Get zone update status across nameservers",
+        "tags": [
+          "Zones"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AuthId"
+          },
+          {
+            "$ref": "#/components/parameters/AuthPassword"
+          },
+          {
+            "name": "domain-name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Domain name or reverse zone name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Update status per nameserver",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NameserverStatus"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Invalid authentication credentials"
+          }
+        }
+      }
+    },
+    "/dns/is-updated.json": {
+      "get": {
+        "operationId": "isZoneUpdated",
+        "summary": "Check if a zone is fully updated across all servers",
+        "tags": [
+          "Zones"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AuthId"
+          },
+          {
+            "$ref": "#/components/parameters/AuthPassword"
+          },
+          {
+            "name": "domain-name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Domain name or reverse zone name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns TRUE or FALSE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Invalid authentication credentials"
+          }
+        }
+      }
+    },
+    "/dns/records.json": {
+      "get": {
+        "operationId": "listRecords",
+        "summary": "List DNS records for a zone",
+        "tags": [
+          "Records"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AuthId"
+          },
+          {
+            "$ref": "#/components/parameters/AuthPassword"
+          },
+          {
+            "name": "domain-name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Domain name or reverse zone name"
+          },
+          {
+            "name": "host",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by specific host"
+          },
+          {
+            "name": "host-like",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Partial host match filter"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Record type filter"
+          },
+          {
+            "name": "rows-per-page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                10,
+                20,
+                30,
+                50,
+                100
+              ]
+            },
+            "description": "Pagination size"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Page number"
+          },
+          {
+            "name": "order-by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "host",
+                "points-to"
+              ]
+            },
+            "description": "Sort order"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of DNS records",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/DnsRecord"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Invalid authentication credentials"
+          }
+        }
+      }
+    },
+    "/dns/add-record.json": {
+      "post": {
+        "operationId": "addRecord",
+        "summary": "Add a DNS record to a zone",
+        "tags": [
+          "Records"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AuthId"
+          },
+          {
+            "$ref": "#/components/parameters/AuthPassword"
+          },
+          {
+            "name": "domain-name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Domain name or reverse zone name"
+          },
+          {
+            "name": "record-type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "A",
+                "AAAA",
+                "MX",
+                "CNAME",
+                "TXT",
+                "SPF",
+                "NS",
+                "SRV",
+                "WR",
+                "RP",
+                "SSHFP",
+                "ALIAS",
+                "CAA",
+                "TLSA",
+                "CERT",
+                "DS",
+                "PTR",
+                "NAPTR",
+                "HINFO",
+                "LOC",
+                "DNAME",
+                "SMIMEA",
+                "OPENPGPKEY"
+              ]
+            },
+            "description": "DNS record type"
+          },
+          {
+            "name": "host",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Subdomain or host name"
+          },
+          {
+            "name": "record",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Record value (IP address, domain, URL)"
+          },
+          {
+            "name": "ttl",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                60,
+                300,
+                900,
+                1800,
+                3600,
+                21600,
+                43200,
+                86400,
+                172800,
+                259200,
+                604800,
+                1209600,
+                2592000
+              ]
+            },
+            "description": "Time-to-live in seconds"
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Priority for MX/SRV records"
+          },
+          {
+            "name": "weight",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Weight for SRV records"
+          },
+          {
+            "name": "port",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Port for SRV records"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ]
+            },
+            "description": "1 for active, 0 for inactive"
+          },
+          {
+            "name": "geodns-location",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "GeoDNS location ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Record creation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Invalid authentication credentials"
+          }
+        }
+      }
+    },
+    "/dns/mod-record.json": {
+      "post": {
+        "operationId": "modifyRecord",
+        "summary": "Modify an existing DNS record",
+        "tags": [
+          "Records"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AuthId"
+          },
+          {
+            "$ref": "#/components/parameters/AuthPassword"
+          },
+          {
+            "name": "domain-name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Domain name or reverse zone name"
+          },
+          {
+            "name": "record-id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Record identifier"
+          },
+          {
+            "name": "host",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Hostname/subdomain"
+          },
+          {
+            "name": "record",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Record value"
+          },
+          {
+            "name": "ttl",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                60,
+                300,
+                900,
+                1800,
+                3600,
+                21600,
+                43200,
+                86400,
+                172800,
+                259200,
+                604800,
+                1209600,
+                2592000
+              ]
+            },
+            "description": "Time-to-live in seconds"
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Priority for MX/SRV records"
+          },
+          {
+            "name": "weight",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Weight for SRV records"
+          },
+          {
+            "name": "port",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Port for SRV records"
+          },
+          {
+            "name": "geodns-location",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "GeoDNS location ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Record modification result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Invalid authentication credentials"
+          }
+        }
+      }
+    },
+    "/dns/delete-record.json": {
+      "post": {
+        "operationId": "deleteRecord",
+        "summary": "Delete a DNS record",
+        "tags": [
+          "Records"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AuthId"
+          },
+          {
+            "$ref": "#/components/parameters/AuthPassword"
+          },
+          {
+            "name": "domain-name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Domain name or reverse zone name"
+          },
+          {
+            "name": "record-id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Record identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Record deletion result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Invalid authentication credentials"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "AuthId": {
+        "name": "auth-id",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        },
+        "description": "API user ID for authentication"
+      },
+      "AuthPassword": {
+        "name": "auth-password",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "API user password"
+      }
+    },
+    "schemas": {
+      "StatusResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Success or Failed"
+          },
+          "statusDescription": {
+            "type": "string",
+            "description": "Human-readable status message"
+          }
+        }
+      },
+      "Zone": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Domain name"
+          },
+          "type": {
+            "type": "string",
+            "description": "Zone type (master, slave, parked, geodns)"
+          },
+          "zone": {
+            "type": "string",
+            "description": "Zone identifier"
+          },
+          "status": {
+            "type": "string",
+            "description": "Zone status"
+          }
+        }
+      },
+      "ZonesStats": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "description": "Total number of zones"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Zone limit per customer plan"
+          }
+        }
+      },
+      "NameserverStatus": {
+        "type": "object",
+        "properties": {
+          "server": {
+            "type": "string",
+            "description": "Server name"
+          },
+          "ip4": {
+            "type": "string",
+            "description": "IPv4 address"
+          },
+          "ip6": {
+            "type": "string",
+            "description": "IPv6 address"
+          },
+          "updated": {
+            "type": "boolean",
+            "description": "Whether the zone is updated on this server"
+          }
+        }
+      },
+      "DnsRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Record ID"
+          },
+          "type": {
+            "type": "string",
+            "description": "Record type"
+          },
+          "host": {
+            "type": "string",
+            "description": "Host/subdomain"
+          },
+          "record": {
+            "type": "string",
+            "description": "Record value"
+          },
+          "ttl": {
+            "type": "integer",
+            "description": "Time-to-live in seconds"
+          },
+          "priority": {
+            "type": "integer",
+            "description": "Priority (MX/SRV records)"
+          },
+          "weight": {
+            "type": "integer",
+            "description": "Weight (SRV records)"
+          },
+          "port": {
+            "type": "integer",
+            "description": "Port (SRV records)"
+          },
+          "status": {
+            "type": "integer",
+            "description": "1 for active, 0 for inactive"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiCredentials": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "auth-id",
+        "description": "ClouDNS API authentication using auth-id and auth-password query parameters"
+      }
+    }
+  },
+  "security": [
+    {
+      "apiCredentials": []
+    }
+  ]
+}
