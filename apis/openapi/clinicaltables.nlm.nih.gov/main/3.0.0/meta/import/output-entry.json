@@ -1,0 +1,322 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "NIH Clinical Table Search Service - NCBI Genes API",
+    "description": "Search for human gene information from NCBI's Gene dataset. The data is sourced from NCBI Gene (gene_info.gz) and includes only human genes. This is a public API provided by the National Library of Medicine and requires no authentication.",
+    "version": "3.0.0",
+    "contact": {
+      "name": "NLM Clinical Table Search Service",
+      "url": "https://clinicaltables.nlm.nih.gov"
+    },
+    "x-jentic-source-url": "https://raw.githubusercontent.com/aislingbyrnemc-sudo/openapis-specs/refs/heads/import/clinicaltables.nlm.nih.gov/ncbi-genes/v3/openapi.json"
+  },
+  "servers": [
+    {
+      "url": "https://clinicaltables.nlm.nih.gov",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/api/ncbi_genes/v3/search": {
+      "get": {
+        "operationId": "searchGenes",
+        "summary": "Search for human gene information",
+        "description": "Search for human gene records from NCBI's Gene dataset. Supports partial word matching, field filtering, pagination, and Elasticsearch query syntax for advanced filtering.",
+        "tags": [
+          "Genes"
+        ],
+        "parameters": [
+          {
+            "name": "terms",
+            "in": "query",
+            "required": true,
+            "description": "The search string (e.g., a partial word) for which to find matches. Multiple terms are combined with implicit AND logic.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "BRCA"
+          },
+          {
+            "name": "maxList",
+            "in": "query",
+            "required": false,
+            "description": "Maximum number of results to return. If left empty the server returns up to 500 results.",
+            "schema": {
+              "type": "integer",
+              "default": 7,
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "required": false,
+            "description": "Number of results per page.",
+            "schema": {
+              "type": "integer",
+              "default": 7,
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Zero-based index of the first result to return. The sum of offset and count is capped at 7500.",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Additional query string using Elasticsearch query syntax for filtering results. Supports wildcards and field-specific searches.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "type_of_gene:protein-coding"
+          },
+          {
+            "name": "df",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated list of fields to include in the display strings (element [3] of the response array).",
+            "schema": {
+              "type": "string",
+              "default": "_code_system, _code, chromosome, Symbol, description, type_of_gene"
+            }
+          },
+          {
+            "name": "sf",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated list of fields to search against. Defaults to all searchable fields when omitted.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cf",
+            "in": "query",
+            "required": false,
+            "description": "The field whose values are returned as the code list (element [1] of the response array).",
+            "schema": {
+              "type": "string",
+              "default": "GeneID"
+            }
+          },
+          {
+            "name": "ef",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated list of extra fields to return in the extra data hash (element [2] of the response). Supports field:alias syntax to rename fields in the output.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Symbol,chromosome,type_of_gene"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful search response. Returns a JSON array with five elements: total count, code array, extra data object, display string arrays, and code system arrays.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                },
+                "example": [
+                  2,
+                  [
+                    "672",
+                    "675"
+                  ],
+                  {},
+                  [
+                    [
+                      "NCBI Gene",
+                      "672",
+                      "17",
+                      "BRCA1",
+                      "BRCA1 DNA repair associated",
+                      "protein-coding"
+                    ],
+                    [
+                      "NCBI Gene",
+                      "675",
+                      "13",
+                      "BRCA2",
+                      "BRCA2 DNA repair associated",
+                      "protein-coding"
+                    ]
+                  ],
+                  [
+                    [
+                      "NCBI Gene"
+                    ],
+                    [
+                      "NCBI Gene"
+                    ]
+                  ]
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SearchResponse": {
+        "type": "array",
+        "description": "A five-element tuple: [totalCount, codes, extraData, displayStrings, codeSystems].",
+        "minItems": 5,
+        "maxItems": 5,
+        "prefixItems": [
+          {
+            "$ref": "#/components/schemas/TotalCount"
+          },
+          {
+            "$ref": "#/components/schemas/CodeArray"
+          },
+          {
+            "$ref": "#/components/schemas/ExtraDataHash"
+          },
+          {
+            "$ref": "#/components/schemas/DisplayStringsArray"
+          },
+          {
+            "$ref": "#/components/schemas/CodeSystemsArray"
+          }
+        ],
+        "items": {}
+      },
+      "TotalCount": {
+        "type": "integer",
+        "description": "Total number of results matching the query, capped at 10000.",
+        "minimum": 0,
+        "maximum": 10000
+      },
+      "CodeArray": {
+        "type": "array",
+        "description": "Array of code values from the field specified by the cf parameter (default: GeneID).",
+        "items": {
+          "type": "string"
+        }
+      },
+      "ExtraDataHash": {
+        "type": "object",
+        "description": "Hash/object of extra field data as requested by the ef parameter. Keys are field names (or aliases) and values are arrays of field values per result.",
+        "additionalProperties": {
+          "type": "array",
+          "items": {}
+        }
+      },
+      "DisplayStringsArray": {
+        "type": "array",
+        "description": "Array of display string arrays, one per result. Each inner array contains the values of the fields specified by the df parameter.",
+        "items": {
+          "$ref": "#/components/schemas/DisplayStringRow"
+        }
+      },
+      "DisplayStringRow": {
+        "type": "array",
+        "description": "An array of field values for a single result, corresponding to the fields in the df parameter.",
+        "items": {
+          "type": "string"
+        }
+      },
+      "CodeSystemsArray": {
+        "type": "array",
+        "description": "Array of code system arrays, one per result. Each inner array contains the code system identifier(s) for that result.",
+        "items": {
+          "$ref": "#/components/schemas/CodeSystemRow"
+        }
+      },
+      "CodeSystemRow": {
+        "type": "array",
+        "description": "Code system identifier(s) for a single result.",
+        "items": {
+          "type": "string"
+        }
+      },
+      "GeneRecord": {
+        "type": "object",
+        "description": "Available fields in the NCBI Genes dataset that can be used with df, sf, cf, and ef parameters.",
+        "properties": {
+          "GeneID": {
+            "type": "string",
+            "description": "NCBI Gene identifier"
+          },
+          "HGNC_ID": {
+            "type": "string",
+            "description": "HUGO Gene Nomenclature Committee identifier"
+          },
+          "Symbol": {
+            "type": "string",
+            "description": "Official gene symbol"
+          },
+          "Synonyms": {
+            "type": "string",
+            "description": "Alternative gene symbols/names"
+          },
+          "dbXrefs": {
+            "type": "string",
+            "description": "Cross-references to other databases"
+          },
+          "chromosome": {
+            "type": "string",
+            "description": "Chromosome location"
+          },
+          "map_location": {
+            "type": "string",
+            "description": "Cytogenetic map location"
+          },
+          "description": {
+            "type": "string",
+            "description": "Full gene name/description"
+          },
+          "type_of_gene": {
+            "type": "string",
+            "description": "Gene type classification (e.g., protein-coding, pseudo, ncRNA)"
+          },
+          "na_symbol": {
+            "type": "string",
+            "description": "Nomenclature Authority symbol"
+          },
+          "na_name": {
+            "type": "string",
+            "description": "Nomenclature Authority full name"
+          },
+          "Other_designations": {
+            "type": "string",
+            "description": "Other known designations for the gene"
+          },
+          "Modification_date": {
+            "type": "string",
+            "description": "Date of last modification"
+          },
+          "_code_system": {
+            "type": "string",
+            "description": "Code system identifier (non-searchable, display only)"
+          },
+          "_code": {
+            "type": "string",
+            "description": "Code value (non-searchable, display only)"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Genes",
+      "description": "Human gene search operations using NCBI Gene data"
+    }
+  ]
+}
