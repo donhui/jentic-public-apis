@@ -1,0 +1,1694 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Crunchy Bridge API",
+    "description": "The Crunchy Bridge API allows you to automate management of PostgreSQL databases managed by Crunchy Bridge, including cluster provisioning, team management, and account operations.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://docs.crunchybridge.com/"
+  },
+  "servers": [
+    {
+      "url": "https://api.crunchybridge.com",
+      "description": "Crunchy Bridge API"
+    }
+  ],
+  "paths": {
+    "/account": {
+      "get": {
+        "operationId": "getAccount",
+        "summary": "Get current account",
+        "description": "Retrieve the currently authenticated user account.",
+        "tags": [
+          "Account"
+        ],
+        "responses": {
+          "200": {
+            "description": "Account details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteAccount",
+        "summary": "Delete current account",
+        "description": "Delete the currently authenticated account. Accounts can only be deleted if no teams for which they are the only admin own any provisioned clusters.",
+        "tags": [
+          "Account"
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted account details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "409": {
+            "description": "Conflict - account cannot be deleted"
+          }
+        }
+      }
+    },
+    "/clusters": {
+      "get": {
+        "operationId": "listClusters",
+        "summary": "List clusters",
+        "description": "Retrieve clusters across all teams or filter by specific team.",
+        "tags": [
+          "Clusters"
+        ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Pagination cursor from a previous response.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of items per page (1-200, default 100).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 100
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "description": "Sort direction.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "asc"
+            }
+          },
+          {
+            "name": "order_field",
+            "in": "query",
+            "description": "Field to sort by.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id",
+                "name"
+              ]
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "query",
+            "description": "Filter clusters by team ID.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of clusters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "clusters": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Cluster"
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createCluster",
+        "summary": "Create cluster",
+        "description": "Provision a new database cluster.",
+        "tags": [
+          "Clusters"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClusterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Cluster created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cluster"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/clusters/{cluster_id}": {
+      "get": {
+        "operationId": "getCluster",
+        "summary": "Get cluster",
+        "description": "Fetch a specific cluster by identifier.",
+        "tags": [
+          "Clusters"
+        ],
+        "parameters": [
+          {
+            "name": "cluster_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Cluster identifier."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cluster details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cluster"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Cluster not found"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateCluster",
+        "summary": "Update cluster",
+        "description": "Modify cluster properties.",
+        "tags": [
+          "Clusters"
+        ],
+        "parameters": [
+          {
+            "name": "cluster_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Cluster identifier."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClusterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated cluster",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cluster"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "destroyCluster",
+        "summary": "Destroy cluster",
+        "description": "Delete a database cluster permanently.",
+        "tags": [
+          "Clusters"
+        ],
+        "parameters": [
+          {
+            "name": "cluster_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Cluster identifier."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted cluster details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cluster"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Cluster not found"
+          }
+        }
+      }
+    },
+    "/clusters/{cluster_id}/status": {
+      "get": {
+        "operationId": "getClusterStatus",
+        "summary": "Get cluster status",
+        "description": "Retrieve real-time cluster operational status and metrics.",
+        "tags": [
+          "Clusters"
+        ],
+        "parameters": [
+          {
+            "name": "cluster_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Cluster identifier."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cluster status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClusterStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/clusters/{cluster_id}/forks": {
+      "post": {
+        "operationId": "createClusterFork",
+        "summary": "Create cluster fork",
+        "description": "Generate a point-in-time database clone.",
+        "tags": [
+          "Clusters"
+        ],
+        "parameters": [
+          {
+            "name": "cluster_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Source cluster identifier."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClusterForkRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Forked cluster created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cluster"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/clusters/{cluster_id}/actions/disable-ha": {
+      "put": {
+        "operationId": "disableHighAvailability",
+        "summary": "Disable high availability",
+        "description": "Remove redundancy from cluster.",
+        "tags": [
+          "Cluster Actions"
+        ],
+        "parameters": [
+          {
+            "name": "cluster_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upgrade operation status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpgradeOperation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/clusters/{cluster_id}/actions/enable-ha": {
+      "put": {
+        "operationId": "enableHighAvailability",
+        "summary": "Enable high availability",
+        "description": "Configure automatic failover capability.",
+        "tags": [
+          "Cluster Actions"
+        ],
+        "parameters": [
+          {
+            "name": "cluster_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upgrade operation status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpgradeOperation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/clusters/{cluster_id}/actions/ping": {
+      "put": {
+        "operationId": "pingCluster",
+        "summary": "Ping cluster",
+        "description": "Test database connectivity and responsiveness.",
+        "tags": [
+          "Cluster Actions"
+        ],
+        "parameters": [
+          {
+            "name": "cluster_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ping response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/clusters/{cluster_id}/actions/restart": {
+      "put": {
+        "operationId": "restartCluster",
+        "summary": "Restart cluster",
+        "description": "Reboot server or specific service.",
+        "tags": [
+          "Cluster Actions"
+        ],
+        "parameters": [
+          {
+            "name": "cluster_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "service": {
+                    "type": "string",
+                    "enum": [
+                      "postgres",
+                      "server"
+                    ],
+                    "default": "server",
+                    "description": "Service to restart."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Restarted cluster",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cluster"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/clusters/{cluster_id}/actions/resume": {
+      "put": {
+        "operationId": "resumeCluster",
+        "summary": "Resume cluster",
+        "description": "Restart suspended cluster operations.",
+        "tags": [
+          "Cluster Actions"
+        ],
+        "parameters": [
+          {
+            "name": "cluster_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resumed cluster",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cluster"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/clusters/{cluster_id}/actions/start-backup": {
+      "put": {
+        "operationId": "startBackup",
+        "summary": "Start backup",
+        "description": "Initiate immediate backup capture.",
+        "tags": [
+          "Cluster Actions"
+        ],
+        "parameters": [
+          {
+            "name": "cluster_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Backup started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/clusters/{cluster_id}/actions/suspend": {
+      "put": {
+        "operationId": "suspendCluster",
+        "summary": "Suspend cluster",
+        "description": "Pause cluster while preserving disk storage.",
+        "tags": [
+          "Cluster Actions"
+        ],
+        "parameters": [
+          {
+            "name": "cluster_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Suspended cluster",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cluster"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/clusters/{cluster_id}/actions/tailscale-connect": {
+      "put": {
+        "operationId": "tailscaleConnect",
+        "summary": "Connect to Tailscale network",
+        "description": "Join cluster to Tailscale tailnet.",
+        "tags": [
+          "Cluster Actions"
+        ],
+        "parameters": [
+          {
+            "name": "cluster_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "auth_key": {
+                    "type": "string",
+                    "description": "One-time Tailscale auth token."
+                  },
+                  "tailscale_oauth_client_id": {
+                    "type": "string",
+                    "description": "OAuth client reference."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Connection confirmation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/clusters/{cluster_id}/actions/tailscale-disconnect": {
+      "put": {
+        "operationId": "tailscaleDisconnect",
+        "summary": "Disconnect from Tailscale network",
+        "description": "Remove cluster from Tailscale tailnet.",
+        "tags": [
+          "Cluster Actions"
+        ],
+        "parameters": [
+          {
+            "name": "cluster_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Disconnection confirmation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/teams": {
+      "get": {
+        "operationId": "listTeams",
+        "summary": "List teams",
+        "description": "List teams for which the authenticated account has access.",
+        "tags": [
+          "Teams"
+        ],
+        "parameters": [
+          {
+            "name": "automatic_sso_join_enabled",
+            "in": "query",
+            "description": "Filter teams joinable via SSO.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Pagination cursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum items per page.",
+            "schema": {
+              "type": "integer",
+              "default": 100
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "description": "Sort direction.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "order_field",
+            "in": "query",
+            "description": "Field to sort by.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id",
+                "name"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of teams",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "teams": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Team"
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createTeam",
+        "summary": "Create team",
+        "description": "Create a new team.",
+        "tags": [
+          "Teams"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTeamRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created team",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Team"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/teams/{team_id}": {
+      "get": {
+        "operationId": "getTeam",
+        "summary": "Get team",
+        "description": "Get an existing team.",
+        "tags": [
+          "Teams"
+        ],
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Team identifier."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Team details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Team"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Team not found"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateTeam",
+        "summary": "Update team",
+        "description": "Update an existing team.",
+        "tags": [
+          "Teams"
+        ],
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Team identifier."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTeamRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated team",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Team"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "destroyTeam",
+        "summary": "Destroy team",
+        "description": "Delete an existing team.",
+        "tags": [
+          "Teams"
+        ],
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Team identifier."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted team",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Team"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API key obtained from account settings at https://crunchybridge.com/account. Format: cbkey_[your_api_key]"
+      }
+    },
+    "schemas": {
+      "Account": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Primary account identifier (EID format)."
+          },
+          "email": {
+            "type": "string",
+            "description": "Associated email address."
+          },
+          "name": {
+            "type": "string",
+            "description": "Full name."
+          },
+          "has_password": {
+            "type": "boolean",
+            "description": "Whether password authentication is configured."
+          },
+          "has_sso": {
+            "type": "boolean",
+            "description": "Whether SSO is enabled."
+          },
+          "multi_factor_enabled": {
+            "type": "boolean",
+            "description": "MFA activation status."
+          },
+          "notifications_enabled": {
+            "type": "boolean",
+            "description": "Global notification preference."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Account creation timestamp."
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Last update timestamp."
+          },
+          "last_seen_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Last activity timestamp."
+          },
+          "default_team_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "Default team reference (EID format)."
+          },
+          "login_url": {
+            "type": "string",
+            "nullable": true,
+            "description": "Redirect URL for re-authentication."
+          },
+          "has_personal_team": {
+            "type": "boolean",
+            "description": "Personal team indicator (deprecated).",
+            "deprecated": true
+          }
+        }
+      },
+      "Cluster": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Cluster identifier (EID format)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable cluster name."
+          },
+          "team_id": {
+            "type": "string",
+            "description": "Owning team identifier."
+          },
+          "plan_id": {
+            "type": "string",
+            "description": "Plan identifier."
+          },
+          "provider_id": {
+            "type": "string",
+            "enum": [
+              "aws",
+              "azure",
+              "gcp"
+            ],
+            "description": "Cloud provider."
+          },
+          "region_id": {
+            "type": "string",
+            "description": "Cloud provider region."
+          },
+          "is_ha": {
+            "type": "boolean",
+            "description": "High availability enabled."
+          },
+          "storage": {
+            "type": "integer",
+            "description": "Storage allocation in GB."
+          },
+          "postgres_version_id": {
+            "type": "integer",
+            "description": "PostgreSQL version identifier."
+          },
+          "environment": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "production",
+              null
+            ],
+            "description": "Environment designation."
+          },
+          "firewall_mode": {
+            "type": "string",
+            "enum": [
+              "allow_all",
+              "deny_all"
+            ],
+            "description": "Firewall mode."
+          },
+          "is_protected": {
+            "type": "boolean",
+            "description": "Protection flag."
+          },
+          "maintenance_window_start": {
+            "type": "integer",
+            "description": "Maintenance window start hour (0-23 UTC)."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp."
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp."
+          }
+        }
+      },
+      "ClusterStatus": {
+        "type": "object",
+        "properties": {
+          "disk_usage": {
+            "type": "object",
+            "properties": {
+              "available_mb": {
+                "type": "number",
+                "description": "Available disk space in MB."
+              },
+              "total_mb": {
+                "type": "number",
+                "description": "Total disk space in MB."
+              },
+              "used_mb": {
+                "type": "number",
+                "description": "Used disk space in MB."
+              }
+            }
+          },
+          "oldest_backup_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Earliest backup timestamp."
+          },
+          "oldest_backup_lsn": {
+            "type": "string",
+            "nullable": true,
+            "description": "Log sequence number."
+          },
+          "ongoing_upgrade": {
+            "type": "object",
+            "nullable": true,
+            "description": "Active upgrade operation details."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "creating",
+              "destroying",
+              "failed",
+              "ready",
+              "restarting",
+              "resuming",
+              "suspended",
+              "suspending",
+              "upgrading"
+            ],
+            "description": "Cluster state."
+          }
+        }
+      },
+      "CreateClusterRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "plan_id",
+          "team_id"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Human-readable cluster name."
+          },
+          "plan_id": {
+            "type": "string",
+            "description": "Plan identifier."
+          },
+          "team_id": {
+            "type": "string",
+            "description": "Team ownership."
+          },
+          "cluster_group_id": {
+            "type": "string",
+            "description": "Cluster group assignment."
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "production"
+            ],
+            "description": "Environment designation."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Expiration time (RFC 3339)."
+          },
+          "firewall_mode": {
+            "type": "string",
+            "enum": [
+              "allow_all",
+              "deny_all"
+            ],
+            "description": "Firewall mode."
+          },
+          "is_ha": {
+            "type": "boolean",
+            "description": "High availability flag."
+          },
+          "keychain_id": {
+            "type": "string",
+            "description": "Encryption keychain."
+          },
+          "maintenance_window_start": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23,
+            "description": "Maintenance window start hour (0-23 UTC)."
+          },
+          "network_cidr4": {
+            "type": "string",
+            "description": "Private IPv4 CIDR."
+          },
+          "network_id": {
+            "type": "string",
+            "description": "Existing network reference."
+          },
+          "postgres_version_id": {
+            "type": "integer",
+            "description": "PostgreSQL version identifier."
+          },
+          "provider_id": {
+            "type": "string",
+            "enum": [
+              "aws",
+              "azure",
+              "gcp"
+            ],
+            "description": "Cloud provider."
+          },
+          "region_id": {
+            "type": "string",
+            "description": "Cloud provider region."
+          },
+          "storage": {
+            "type": "integer",
+            "description": "Storage allocation in GB."
+          }
+        }
+      },
+      "UpdateClusterRequest": {
+        "type": "object",
+        "properties": {
+          "cluster_group_id": {
+            "type": "string",
+            "description": "Reassign cluster group."
+          },
+          "environment": {
+            "type": "string",
+            "description": "Environment designation (production or empty string to unset)."
+          },
+          "is_protected": {
+            "type": "boolean",
+            "description": "Protection flag."
+          },
+          "maintenance_window_start": {
+            "type": "integer",
+            "description": "Maintenance window start hour (0-23 UTC, or -1 to unset)."
+          },
+          "name": {
+            "type": "string",
+            "description": "New cluster name."
+          }
+        }
+      },
+      "CreateClusterForkRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Fork name."
+          },
+          "firewall_mode": {
+            "type": "string",
+            "enum": [
+              "allow_all",
+              "deny_all"
+            ],
+            "description": "Firewall mode."
+          },
+          "is_ha": {
+            "type": "boolean",
+            "description": "High availability configuration."
+          },
+          "keychain_id": {
+            "type": "string",
+            "description": "Encryption key."
+          },
+          "network_cidr4": {
+            "type": "string",
+            "description": "IPv4 CIDR block."
+          },
+          "network_id": {
+            "type": "string",
+            "description": "Network reference."
+          },
+          "plan_id": {
+            "type": "string",
+            "description": "Instance plan."
+          },
+          "provider_id": {
+            "type": "string",
+            "enum": [
+              "aws",
+              "azure",
+              "gcp"
+            ],
+            "description": "Cloud provider."
+          },
+          "region_id": {
+            "type": "string",
+            "description": "Cloud region."
+          },
+          "storage": {
+            "type": "integer",
+            "description": "Storage allocation in GB."
+          },
+          "target_lsn": {
+            "type": "string",
+            "description": "Specific LSN recovery point."
+          },
+          "target_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Recovery timestamp (RFC 3339)."
+          }
+        }
+      },
+      "Team": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Team identifier (EID format)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Team name."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp."
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp."
+          },
+          "is_default": {
+            "type": "boolean",
+            "description": "Whether this is the default team."
+          },
+          "role": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "admin",
+              "manager",
+              "member"
+            ],
+            "description": "Current user's role in the team."
+          },
+          "billing_email": {
+            "type": "string",
+            "nullable": true,
+            "description": "Billing contact email."
+          },
+          "technical_email": {
+            "type": "string",
+            "nullable": true,
+            "description": "Technical notifications email."
+          },
+          "support_tier": {
+            "type": "string",
+            "enum": [
+              "business",
+              "premium",
+              "standard"
+            ],
+            "description": "Support tier."
+          },
+          "enforce_mfa": {
+            "type": "boolean",
+            "description": "Require MFA."
+          },
+          "enforce_sso": {
+            "type": "boolean",
+            "description": "Require SSO."
+          },
+          "default_role_flavor": {
+            "type": "string",
+            "enum": [
+              "nologin",
+              "read",
+              "write"
+            ],
+            "description": "Default role type."
+          }
+        }
+      },
+      "CreateTeamRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Team name."
+          },
+          "automatic_sso_join_enabled": {
+            "type": "boolean",
+            "description": "Enable automatic SSO joining."
+          },
+          "automatic_sso_join_default_role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "manager",
+              "member"
+            ],
+            "description": "Default role for SSO users."
+          },
+          "default_role_flavor": {
+            "type": "string",
+            "enum": [
+              "nologin",
+              "read",
+              "write"
+            ],
+            "description": "Default role type."
+          }
+        }
+      },
+      "UpdateTeamRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Team name."
+          },
+          "billing_email": {
+            "type": "string",
+            "description": "Billing contact email."
+          },
+          "technical_email": {
+            "type": "string",
+            "description": "Technical notifications email."
+          },
+          "billing_address": {
+            "type": "object",
+            "properties": {
+              "city": {
+                "type": "string"
+              },
+              "country": {
+                "type": "string"
+              },
+              "line_1": {
+                "type": "string"
+              },
+              "line_2": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "postal_code": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              }
+            }
+          },
+          "invoice_note": {
+            "type": "string",
+            "description": "Invoice annotation."
+          },
+          "enforce_mfa": {
+            "type": "boolean",
+            "description": "Require MFA."
+          },
+          "enforce_sso": {
+            "type": "boolean",
+            "description": "Require SSO."
+          },
+          "support_tier": {
+            "type": "string",
+            "enum": [
+              "business",
+              "premium",
+              "standard"
+            ],
+            "description": "Support tier."
+          },
+          "default_role_flavor": {
+            "type": "string",
+            "enum": [
+              "nologin",
+              "read",
+              "write"
+            ],
+            "description": "Default role type."
+          },
+          "automatic_sso_join_enabled": {
+            "type": "boolean",
+            "description": "Enable automatic SSO joining."
+          }
+        }
+      },
+      "UpgradeOperation": {
+        "type": "object",
+        "properties": {
+          "flavor": {
+            "type": "string",
+            "description": "Type of upgrade operation."
+          },
+          "state": {
+            "type": "string",
+            "description": "Current state of the operation."
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Confirmation message."
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "code": {
+            "type": "integer",
+            "description": "Error code"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Account management operations."
+    },
+    {
+      "name": "Clusters",
+      "description": "Cluster CRUD operations."
+    },
+    {
+      "name": "Cluster Actions",
+      "description": "Cluster action operations (HA, restart, suspend, etc.)."
+    },
+    {
+      "name": "Teams",
+      "description": "Team management operations."
+    }
+  ]
+}
