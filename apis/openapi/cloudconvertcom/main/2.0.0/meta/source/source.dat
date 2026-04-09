@@ -1,0 +1,1182 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CloudConvert API",
+    "description": "CloudConvert is an online file conversion API. It supports nearly all audio, video, document, ebook, archive, image, spreadsheet, and presentation formats. The API allows creating conversion jobs with multiple tasks, managing webhooks, and importing/exporting files from various sources.",
+    "version": "2.0.0",
+    "x-jentic-source-url": "https://cloudconvert.com/api/v2"
+  },
+  "servers": [
+    {
+      "url": "https://api.cloudconvert.com/v2",
+      "description": "Production API"
+    },
+    {
+      "url": "https://sandbox.api.cloudconvert.com/v2",
+      "description": "Sandbox API"
+    },
+    {
+      "url": "https://eu-central.api.cloudconvert.com/v2",
+      "description": "EU Central Regional API"
+    },
+    {
+      "url": "https://us-east.api.cloudconvert.com/v2",
+      "description": "US East Regional API"
+    }
+  ],
+  "paths": {
+    "/jobs": {
+      "post": {
+        "operationId": "createJob",
+        "summary": "Create a job",
+        "description": "Create a job with one or more tasks. The job will be processed asynchronously.",
+        "tags": ["Jobs"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateJobRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Job created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Job"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid job configuration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - validation errors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listJobs",
+        "summary": "List all jobs",
+        "description": "List all jobs with optional filtering and pagination.",
+        "tags": ["Jobs"],
+        "parameters": [
+          {
+            "name": "filter[status]",
+            "in": "query",
+            "description": "Filter by job status",
+            "schema": {
+              "type": "string",
+              "enum": ["processing", "finished", "error"]
+            }
+          },
+          {
+            "name": "filter[tag]",
+            "in": "query",
+            "description": "Filter by custom tag",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "description": "Include related resources (e.g. 'tasks')",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Number of results per page",
+            "schema": {
+              "type": "integer",
+              "default": 100
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with paginated job list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Job"
+                      }
+                    },
+                    "links": {
+                      "$ref": "#/components/schemas/PaginationLinks"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs/{jobId}": {
+      "get": {
+        "operationId": "getJob",
+        "summary": "Get a job",
+        "description": "Retrieve the status and details of a specific job.",
+        "tags": ["Jobs"],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "description": "The job ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "redirect",
+            "in": "query",
+            "description": "If true, redirects to the export URL when the job is finished",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Job"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteJob",
+        "summary": "Delete a job",
+        "description": "Delete a job and all associated data.",
+        "tags": ["Jobs"],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "description": "The job ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Job deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs/{jobId}/wait": {
+      "get": {
+        "operationId": "waitForJob",
+        "summary": "Wait for a job to complete",
+        "description": "Blocks until the job is finished or has errored. Uses the sync API server.",
+        "tags": ["Jobs"],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "description": "The job ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "redirect",
+            "in": "query",
+            "description": "If true, redirects to the export URL when the job is finished",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job completed (finished or error)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Job"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "302": {
+            "description": "Redirect to export URL (when redirect=true)"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks": {
+      "get": {
+        "operationId": "listTasks",
+        "summary": "List all tasks",
+        "description": "List all tasks with their status, payload, and result.",
+        "tags": ["Tasks"],
+        "parameters": [
+          {
+            "name": "filter[job_id]",
+            "in": "query",
+            "description": "Filter by job ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[status]",
+            "in": "query",
+            "description": "Filter by task status",
+            "schema": {
+              "type": "string",
+              "enum": ["waiting", "processing", "finished", "error"]
+            }
+          },
+          {
+            "name": "filter[operation]",
+            "in": "query",
+            "description": "Filter by operation type (e.g. convert, import/url, export/url)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "description": "Include additional data (retries, depends_on_tasks, payload, job)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Number of results per page",
+            "schema": {
+              "type": "integer",
+              "default": 100
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with paginated task list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Task"
+                      }
+                    },
+                    "links": {
+                      "$ref": "#/components/schemas/PaginationLinks"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}": {
+      "get": {
+        "operationId": "getTask",
+        "summary": "Get a task",
+        "description": "Show a task status. Responds immediately even if the task is not completed.",
+        "tags": ["Tasks"],
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "description": "The task ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "description": "Include additional data (retries, depends_on_tasks, payload, job)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Task"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteTask",
+        "summary": "Delete a task",
+        "description": "Delete a task and all associated data. Tasks are automatically deleted 24 hours after completion.",
+        "tags": ["Tasks"],
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "description": "The task ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Task deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}/cancel": {
+      "post": {
+        "operationId": "cancelTask",
+        "summary": "Cancel a task",
+        "description": "Cancel a task that is in waiting or processing status.",
+        "tags": ["Tasks"],
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "description": "The task ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task cancelled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Task"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - task cannot be cancelled in current status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}/retry": {
+      "post": {
+        "operationId": "retryTask",
+        "summary": "Retry a task",
+        "description": "Create a new task based on the payload of another task.",
+        "tags": ["Tasks"],
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "description": "The task ID to retry",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "New task created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Task"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks": {
+      "post": {
+        "operationId": "createWebhook",
+        "summary": "Create a webhook",
+        "description": "Create a webhook to receive notifications about job events.",
+        "tags": ["Webhooks"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWebhookRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Webhook"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid webhook configuration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/webhooks": {
+      "get": {
+        "operationId": "listWebhooks",
+        "summary": "List all webhooks",
+        "description": "List all webhooks for the authenticated user.",
+        "tags": ["Webhooks"],
+        "parameters": [
+          {
+            "name": "filter[url]",
+            "in": "query",
+            "description": "Filter by webhook URL",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Number of results per page",
+            "schema": {
+              "type": "integer",
+              "default": 100
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Webhook"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/{webhookId}": {
+      "delete": {
+        "operationId": "deleteWebhook",
+        "summary": "Delete a webhook",
+        "description": "Delete a webhook.",
+        "tags": ["Webhooks"],
+        "parameters": [
+          {
+            "name": "webhookId",
+            "in": "path",
+            "required": true,
+            "description": "The webhook ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Webhook deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Webhook not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API key created at https://cloudconvert.com/dashboard/api/v2/keys"
+      },
+      "oauth2": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://cloudconvert.com/oauth/authorize",
+            "tokenUrl": "https://cloudconvert.com/oauth/token",
+            "scopes": {
+              "user.read": "Read user information",
+              "user.write": "Write user information",
+              "task.read": "Read tasks",
+              "task.write": "Create and manage tasks",
+              "webhook.read": "Read webhooks",
+              "webhook.write": "Create and manage webhooks"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "CreateJobRequest": {
+        "type": "object",
+        "required": ["tasks"],
+        "properties": {
+          "tasks": {
+            "type": "object",
+            "description": "Object of task definitions. Keys are task names, values are task configurations with an operation field.",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "description": "The operation type (e.g., import/url, import/upload, import/base64, import/raw, import/s3, import/azure/blob, import/google-cloud-storage, import/openstack, import/sftp, convert, optimize, watermark, capture-website, thumbnail, merge, archive, metadata, export/url, export/s3, export/azure/blob, export/google-cloud-storage, export/openstack, export/sftp)"
+                },
+                "input": {
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  ],
+                  "description": "Reference to another task name as input, or an array of task name references"
+                },
+                "input_format": {
+                  "type": "string",
+                  "description": "Input file format"
+                },
+                "output_format": {
+                  "type": "string",
+                  "description": "Output file format"
+                },
+                "ignore_error": {
+                  "type": "boolean",
+                  "description": "If true, the job will not fail when this task has an error"
+                }
+              }
+            }
+          },
+          "tag": {
+            "type": "string",
+            "description": "Custom identifier for the job"
+          },
+          "webhook_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Webhook callback URL for this specific job"
+          }
+        }
+      },
+      "Job": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The job ID"
+          },
+          "tag": {
+            "type": "string",
+            "description": "Custom tag"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["waiting", "processing", "finished", "error"],
+            "description": "The job status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Job creation timestamp in ISO 8601 format"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Job start timestamp in ISO 8601 format"
+          },
+          "ended_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Job completion timestamp in ISO 8601 format"
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            },
+            "description": "Array of tasks in this job (included when requested)"
+          }
+        }
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The task ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "The task name as defined in the job"
+          },
+          "job_id": {
+            "type": "string",
+            "description": "The parent job ID"
+          },
+          "operation": {
+            "type": "string",
+            "description": "The operation type"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["waiting", "processing", "finished", "error"],
+            "description": "The task status"
+          },
+          "message": {
+            "type": "string",
+            "description": "Status message or error description"
+          },
+          "code": {
+            "type": "string",
+            "description": "Error code if applicable"
+          },
+          "credits": {
+            "type": "integer",
+            "description": "Number of conversion minutes used by this task"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Task creation timestamp"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Task start timestamp"
+          },
+          "ended_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Task completion timestamp"
+          },
+          "depends_on_task_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "IDs of tasks this task depends on"
+          },
+          "engine": {
+            "type": "string",
+            "description": "The conversion engine used"
+          },
+          "engine_version": {
+            "type": "string",
+            "description": "The engine version"
+          },
+          "payload": {
+            "type": "object",
+            "description": "The task payload/configuration"
+          },
+          "result": {
+            "type": "object",
+            "description": "The task result including output files",
+            "properties": {
+              "files": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "filename": {
+                      "type": "string",
+                      "description": "Output file name"
+                    },
+                    "url": {
+                      "type": "string",
+                      "format": "uri",
+                      "description": "Temporary download URL for the file"
+                    },
+                    "size": {
+                      "type": "integer",
+                      "description": "File size in bytes"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "CreateWebhookRequest": {
+        "type": "object",
+        "required": ["url", "events"],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The webhook endpoint URL"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["job.created", "job.finished", "job.failed"]
+            },
+            "description": "Array of event types to subscribe to"
+          }
+        }
+      },
+      "Webhook": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The webhook ID"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The webhook endpoint URL"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Subscribed event types"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Webhook creation timestamp"
+          }
+        }
+      },
+      "PaginationLinks": {
+        "type": "object",
+        "description": "Pagination navigation links",
+        "properties": {
+          "first": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the first page"
+          },
+          "last": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the last page"
+          },
+          "prev": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "description": "URL of the previous page"
+          },
+          "next": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "description": "URL of the next page"
+          }
+        }
+      },
+      "PaginationMeta": {
+        "type": "object",
+        "description": "Pagination metadata",
+        "properties": {
+          "current_page": {
+            "type": "integer",
+            "description": "Current page number"
+          },
+          "from": {
+            "type": "integer",
+            "description": "Index of first item on current page"
+          },
+          "path": {
+            "type": "string",
+            "description": "Base path for pagination"
+          },
+          "per_page": {
+            "type": "integer",
+            "description": "Items per page"
+          },
+          "to": {
+            "type": "integer",
+            "description": "Index of last item on current page"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "code": {
+            "type": "string",
+            "description": "Error code"
+          },
+          "errors": {
+            "type": "object",
+            "description": "Detailed validation errors keyed by field name",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}
