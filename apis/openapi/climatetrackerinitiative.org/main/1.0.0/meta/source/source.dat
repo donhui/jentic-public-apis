@@ -1,0 +1,305 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Climate Tracker Initiative ESG Data API",
+    "description": "API for retrieving Environmental, Social, and Governance (ESG) data for companies, including emissions data (Scope 1, 2, and 3), financial metrics, and related source information.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Climate Tracker Initiative",
+      "url": "https://climatetrackerinitiative.org/esg-data-api/"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.climatetrackerinitiative.org/api/v1",
+      "description": "Production server"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "ESGData",
+      "description": "Operations for retrieving ESG company data"
+    }
+  ],
+  "paths": {
+    "/get-company-data": {
+      "post": {
+        "operationId": "getCompanyData",
+        "summary": "Retrieve ESG data for companies",
+        "description": "Returns ESG data for companies matching the provided identifiers. At least one identifier (company_name, isin, lei, or registration_authority_id) must be supplied.",
+        "tags": [
+          "ESGData"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyDataRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Company ESG data retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyDataResponse"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No records found matching the provided criteria."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Provide your API token in the Authorization header as: Bearer YOUR_API_TOKEN"
+      }
+    },
+    "schemas": {
+      "CompanyDataRequest": {
+        "type": "object",
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "description": "Full or partial company name to search for."
+          },
+          "fuzzy_search": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable approximate (fuzzy) matching on the company name."
+          },
+          "year_of_emission": {
+            "type": "integer",
+            "description": "Specific year of emission data to retrieve."
+          },
+          "isin": {
+            "type": "string",
+            "description": "International Securities Identification Number."
+          },
+          "lei": {
+            "type": "string",
+            "description": "Legal Entity Identifier (20 characters).",
+            "minLength": 20,
+            "maxLength": 20
+          },
+          "registration_authority_id": {
+            "type": "string",
+            "description": "Registration authority identifier for the company."
+          }
+        }
+      },
+      "CompanyDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompanyRecord"
+            }
+          }
+        }
+      },
+      "CompanyRecord": {
+        "type": "object",
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "description": "Official name of the company."
+          },
+          "isin": {
+            "type": "string",
+            "description": "International Securities Identification Number.",
+            "nullable": true
+          },
+          "lei": {
+            "type": "string",
+            "description": "Legal Entity Identifier.",
+            "nullable": true
+          },
+          "registration_authority_id": {
+            "type": "string",
+            "description": "Registration authority identifier.",
+            "nullable": true
+          },
+          "year_of_emission": {
+            "type": "integer",
+            "description": "Year the emission data pertains to."
+          },
+          "revenue": {
+            "$ref": "#/components/schemas/FinancialMetric"
+          },
+          "employee_count": {
+            "type": "integer",
+            "description": "Number of employees.",
+            "nullable": true
+          },
+          "emissions": {
+            "$ref": "#/components/schemas/Emissions"
+          },
+          "financial_metrics": {
+            "$ref": "#/components/schemas/FinancialMetrics"
+          },
+          "source_links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceLink"
+            },
+            "description": "References to the original data sources."
+          }
+        }
+      },
+      "Emissions": {
+        "type": "object",
+        "description": "Greenhouse gas emissions broken down by scope.",
+        "properties": {
+          "scope_1": {
+            "$ref": "#/components/schemas/EmissionScope"
+          },
+          "scope_2": {
+            "$ref": "#/components/schemas/EmissionScope"
+          },
+          "scope_3": {
+            "$ref": "#/components/schemas/EmissionScope"
+          }
+        }
+      },
+      "EmissionScope": {
+        "type": "object",
+        "description": "Emission data for a specific scope.",
+        "properties": {
+          "value": {
+            "type": "number",
+            "description": "Emission value in tonnes of CO2 equivalent.",
+            "nullable": true
+          },
+          "unit": {
+            "type": "string",
+            "description": "Unit of measurement (e.g., tCO2e)."
+          },
+          "verified": {
+            "type": "boolean",
+            "description": "Whether the emission data has been independently verified.",
+            "nullable": true
+          }
+        }
+      },
+      "FinancialMetric": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number",
+            "description": "Monetary value.",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 currency code."
+          }
+        }
+      },
+      "FinancialMetrics": {
+        "type": "object",
+        "description": "Additional financial metrics for the company.",
+        "properties": {
+          "market_cap": {
+            "$ref": "#/components/schemas/FinancialMetric"
+          },
+          "total_assets": {
+            "$ref": "#/components/schemas/FinancialMetric"
+          },
+          "net_income": {
+            "$ref": "#/components/schemas/FinancialMetric"
+          }
+        }
+      },
+      "SourceLink": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Title or label for the source."
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to the original data source."
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error code or short identifier."
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message."
+          }
+        },
+        "required": [
+          "error",
+          "message"
+        ]
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Missing required identifiers. At least one of company_name, isin, lei, or registration_authority_id must be provided.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Invalid or missing authentication token.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "RateLimitExceeded": {
+        "description": "Rate limit exceeded. Please wait before retrying.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  }
+}
