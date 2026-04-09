@@ -1,0 +1,514 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Coconut Video Encoding API",
+    "version": "v2",
+    "description": "Coconut API for video transcoding jobs, including job creation, status checking, and metadata retrieval. Supports multiple output formats including MP4, HLS, and DASH streaming.",
+    "x-jentic-source-url": "https://docs.coconut.co/"
+  },
+  "servers": [
+    {
+      "url": "https://api.coconut.co/v2",
+      "description": "North Virginia (default)"
+    },
+    {
+      "url": "https://api-us-west-2.coconut.co/v2",
+      "description": "Oregon"
+    },
+    {
+      "url": "https://api-eu-west-1.coconut.co/v2",
+      "description": "Ireland"
+    }
+  ],
+  "paths": {
+    "/jobs": {
+      "post": {
+        "operationId": "createJob",
+        "summary": "Create a transcoding job",
+        "description": "Submit a job for transcoding with a single HTTP request. Specify input source, output formats, storage destination, and notification webhook.",
+        "tags": [
+          "Jobs"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateJobRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Job created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs/{jobId}": {
+      "get": {
+        "operationId": "getJob",
+        "summary": "Get job status",
+        "description": "Retrieve the status and details of a transcoding job.",
+        "tags": [
+          "Jobs"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "description": "Job identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metadata/jobs/{jobId}": {
+      "get": {
+        "operationId": "getJobMetadata",
+        "summary": "Get all metadata from a job",
+        "description": "Get all the specs and info about a media file including input and output files.",
+        "tags": [
+          "Metadata"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "description": "Job identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobMetadata"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metadata/jobs/{jobId}/{outputKey}": {
+      "get": {
+        "operationId": "getOutputMetadata",
+        "summary": "Get metadata for a specific output",
+        "description": "Retrieve detailed metadata for a particular source or output file of a job.",
+        "tags": [
+          "Metadata"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "description": "Job identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "outputKey",
+            "in": "path",
+            "required": true,
+            "description": "Output key identifier (e.g., mp4:trailer)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Output metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutputMetadata"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateJobRequest": {
+        "type": "object",
+        "required": [
+          "input",
+          "outputs"
+        ],
+        "properties": {
+          "input": {
+            "type": "object",
+            "description": "Source video configuration",
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "URL of the source video file"
+              }
+            }
+          },
+          "storage": {
+            "type": "object",
+            "description": "Output storage settings",
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "Storage destination URL (e.g., s3://bucket/path)"
+              },
+              "credentials": {
+                "type": "object",
+                "description": "Storage access credentials"
+              }
+            }
+          },
+          "notification": {
+            "type": "object",
+            "description": "Webhook notification configuration",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Notification type (e.g., http)"
+              },
+              "url": {
+                "type": "string",
+                "description": "Webhook URL to receive notifications"
+              }
+            }
+          },
+          "outputs": {
+            "type": "object",
+            "description": "Output format specifications. Keys are format identifiers (e.g., mp4:720p, hls:playlist)",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Output file path"
+                },
+                "format": {
+                  "type": "string",
+                  "description": "Output format"
+                },
+                "resolution": {
+                  "type": "string",
+                  "description": "Output resolution"
+                },
+                "bitrate": {
+                  "type": "string",
+                  "description": "Output bitrate"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Job": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Job identifier"
+          },
+          "status": {
+            "type": "string",
+            "description": "Job status",
+            "enum": [
+              "processing",
+              "completed",
+              "error"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Job creation timestamp"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Job completion timestamp"
+          },
+          "progress": {
+            "type": "number",
+            "description": "Job progress percentage"
+          },
+          "outputs": {
+            "type": "object",
+            "description": "Output status and details",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "JobMetadata": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "description": "Job identifier"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "input": {
+                "$ref": "#/components/schemas/MediaMetadata"
+              },
+              "outputs": {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/MediaMetadata"
+                }
+              }
+            }
+          }
+        }
+      },
+      "OutputMetadata": {
+        "type": "object",
+        "properties": {
+          "streams": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StreamInfo"
+            }
+          },
+          "format": {
+            "$ref": "#/components/schemas/FormatInfo"
+          }
+        }
+      },
+      "MediaMetadata": {
+        "type": "object",
+        "properties": {
+          "streams": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StreamInfo"
+            }
+          },
+          "format": {
+            "$ref": "#/components/schemas/FormatInfo"
+          }
+        }
+      },
+      "StreamInfo": {
+        "type": "object",
+        "properties": {
+          "codec_name": {
+            "type": "string",
+            "description": "Codec name"
+          },
+          "codec_type": {
+            "type": "string",
+            "description": "Stream type (video, audio)"
+          },
+          "profile": {
+            "type": "string",
+            "description": "Codec profile"
+          },
+          "width": {
+            "type": "integer",
+            "description": "Video width in pixels"
+          },
+          "height": {
+            "type": "integer",
+            "description": "Video height in pixels"
+          },
+          "frame_rate": {
+            "type": "string",
+            "description": "Frame rate"
+          },
+          "bit_rate": {
+            "type": "string",
+            "description": "Stream bitrate"
+          },
+          "duration": {
+            "type": "string",
+            "description": "Stream duration"
+          },
+          "nb_frames": {
+            "type": "integer",
+            "description": "Number of frames"
+          }
+        }
+      },
+      "FormatInfo": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "File name"
+          },
+          "nb_streams": {
+            "type": "integer",
+            "description": "Number of streams"
+          },
+          "format_name": {
+            "type": "string",
+            "description": "Format type"
+          },
+          "duration": {
+            "type": "string",
+            "description": "Total duration"
+          },
+          "size": {
+            "type": "string",
+            "description": "File size in bytes"
+          },
+          "bit_rate": {
+            "type": "string",
+            "description": "Overall bitrate"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "code": {
+            "type": "string",
+            "description": "Error code"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Basic Auth using API key as username and blank password"
+      }
+    }
+  },
+  "security": [
+    {
+      "basicAuth": []
+    }
+  ]
+}
