@@ -1,0 +1,226 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Convex HTTP API",
+    "description": "Convex HTTP API for calling query, mutation, and action functions on a Convex deployment. Streaming export/import endpoints require admin key authentication via 'Convex {access_key}' header.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://docs.convex.dev/http-api"
+  },
+  "servers": [
+    {
+      "url": "https://{deployment}.convex.cloud",
+      "description": "Convex deployment",
+      "variables": {
+        "deployment": {
+          "description": "Your Convex deployment identifier",
+          "default": "your-deployment"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/api/query": {
+      "post": {
+        "operationId": "callQuery",
+        "summary": "Call a Convex query function",
+        "tags": ["Functions"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/FunctionCallRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FunctionCallResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/mutation": {
+      "post": {
+        "operationId": "callMutation",
+        "summary": "Call a Convex mutation function",
+        "tags": ["Functions"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/FunctionCallRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mutation result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FunctionCallResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/action": {
+      "post": {
+        "operationId": "callAction",
+        "summary": "Call a Convex action function",
+        "tags": ["Functions"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/FunctionCallRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Action result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FunctionCallResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/run/{functionIdentifier}": {
+      "post": {
+        "operationId": "runFunction",
+        "summary": "Call an arbitrary Convex function by path",
+        "tags": ["Functions"],
+        "parameters": [
+          {
+            "name": "functionIdentifier",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Function identifier path (e.g. 'messages:list')"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "args": {
+                    "type": "object",
+                    "description": "Named arguments for the function"
+                  },
+                  "format": {
+                    "type": "string",
+                    "enum": ["json"],
+                    "description": "Response format, defaults to json"
+                  }
+                },
+                "required": ["args"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Function result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FunctionCallResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer token with deployment access key"
+      },
+      "convexAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Convex admin key using 'Convex {access_key}' format"
+      }
+    },
+    "schemas": {
+      "FunctionCallRequest": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Function path (e.g. 'messages:list')"
+          },
+          "args": {
+            "type": "object",
+            "description": "Named arguments for the function"
+          },
+          "format": {
+            "type": "string",
+            "enum": ["json"],
+            "description": "Response format (currently only 'json' supported)"
+          }
+        },
+        "required": ["path", "args"]
+      },
+      "FunctionCallResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["success", "error"],
+            "description": "Execution status"
+          },
+          "value": {
+            "description": "Return value from the function (on success)"
+          },
+          "errorMessage": {
+            "type": "string",
+            "description": "Error message (on error)"
+          },
+          "errorData": {
+            "description": "Additional error data (on error)"
+          },
+          "logLines": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Log output from the function"
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request - invalid function path or arguments"
+      },
+      "Unauthorized": {
+        "description": "Authentication required or invalid token"
+      }
+    }
+  },
+  "security": [
+    { "bearerAuth": [] }
+  ]
+}
