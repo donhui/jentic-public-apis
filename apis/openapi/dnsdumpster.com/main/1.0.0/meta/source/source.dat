@@ -1,0 +1,312 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "DNSDumpster API",
+    "version": "1.0.0",
+    "description": "DNSDumpster provides a DNS reconnaissance API for discovering hosts, subdomains, and network information related to a domain. It returns DNS records including A, CNAME, MX, NS, and TXT records along with network banner information.",
+    "x-jentic-source-url": "https://dnsdumpster.com/developer/"
+  },
+  "servers": [
+    {
+      "url": "https://api.dnsdumpster.com"
+    }
+  ],
+  "paths": {
+    "/domain/{domain}": {
+      "get": {
+        "operationId": "getDomainDns",
+        "summary": "Look up DNS records for a domain",
+        "description": "Retrieve DNS records including A, CNAME, MX, NS, and TXT records for a given domain, along with IP information, ASN details, and network banners.",
+        "tags": ["DNS Lookup"],
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "required": true,
+            "description": "Target domain name to look up.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number for paginated results (Plus membership required).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "map",
+            "in": "query",
+            "required": false,
+            "description": "Set to 1 to include a base64-encoded domain map image (Plus membership required).",
+            "schema": {
+              "type": "integer",
+              "enum": [0, 1]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DNS lookup results for the domain.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainDnsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. Invalid domain provided.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (1 request per 2 seconds).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/banners/{cidr}": {
+      "get": {
+        "operationId": "getNetworkBanners",
+        "summary": "Look up network banners for a CIDR range",
+        "description": "Retrieve network banner information for hosts within a Class C network range (maximum 254 hosts). Requires Plus membership.",
+        "tags": ["Network Banners"],
+        "parameters": [
+          {
+            "name": "cidr",
+            "in": "path",
+            "required": true,
+            "description": "Class C network range in CIDR notation (max 254 hosts).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Network banner results.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BannersResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. Invalid CIDR range or exceeds maximum host count.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DomainDnsResponse": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "array",
+            "description": "A records for the domain.",
+            "items": {
+              "$ref": "#/components/schemas/DnsRecord"
+            }
+          },
+          "cname": {
+            "type": "array",
+            "description": "CNAME records for the domain.",
+            "items": {
+              "$ref": "#/components/schemas/DnsRecord"
+            }
+          },
+          "mx": {
+            "type": "array",
+            "description": "MX records for the domain.",
+            "items": {
+              "$ref": "#/components/schemas/DnsRecord"
+            }
+          },
+          "ns": {
+            "type": "array",
+            "description": "NS records for the domain.",
+            "items": {
+              "$ref": "#/components/schemas/DnsRecord"
+            }
+          },
+          "txt": {
+            "type": "array",
+            "description": "TXT records for the domain.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "total_a_recs": {
+            "type": "integer",
+            "description": "Total number of A records found."
+          }
+        }
+      },
+      "DnsRecord": {
+        "type": "object",
+        "properties": {
+          "host": {
+            "type": "string",
+            "description": "Hostname."
+          },
+          "ips": {
+            "type": "array",
+            "description": "IP addresses associated with this record.",
+            "items": {
+              "$ref": "#/components/schemas/IpInfo"
+            }
+          }
+        }
+      },
+      "IpInfo": {
+        "type": "object",
+        "properties": {
+          "ip": {
+            "type": "string",
+            "description": "IP address."
+          },
+          "asn": {
+            "type": "string",
+            "description": "Autonomous System Number."
+          },
+          "asn_name": {
+            "type": "string",
+            "description": "ASN organization name."
+          },
+          "asn_range": {
+            "type": "string",
+            "description": "ASN IP range."
+          },
+          "ptr": {
+            "type": "string",
+            "description": "PTR (reverse DNS) record."
+          },
+          "country": {
+            "type": "string",
+            "description": "Country name."
+          },
+          "country_code": {
+            "type": "string",
+            "description": "ISO country code."
+          },
+          "banners": {
+            "type": "array",
+            "description": "Network service banners.",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "BannersResponse": {
+        "type": "object",
+        "properties": {
+          "banners": {
+            "type": "array",
+            "description": "List of banner results for the CIDR range.",
+            "items": {
+              "$ref": "#/components/schemas/BannerEntry"
+            }
+          }
+        }
+      },
+      "BannerEntry": {
+        "type": "object",
+        "properties": {
+          "ip": {
+            "type": "string",
+            "description": "IP address."
+          },
+          "port": {
+            "type": "integer",
+            "description": "Port number."
+          },
+          "banner": {
+            "type": "string",
+            "description": "Service banner text."
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message."
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API key obtained from DNSDumpster account dashboard."
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKeyAuth": []
+    }
+  ]
+}
