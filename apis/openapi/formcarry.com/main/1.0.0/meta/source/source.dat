@@ -1,0 +1,297 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Formcarry API",
+    "version": "1.0.0",
+    "description": "Formcarry API for managing forms and submissions programmatically.",
+    "x-jentic-source-url": "https://docs.formcarry.com/formcarry-api/forms-api"
+  },
+  "servers": [
+    {
+      "url": "https://formcarry.com/api",
+      "description": "Formcarry API server"
+    }
+  ],
+  "paths": {
+    "/auth": {
+      "get": {
+        "operationId": "authenticate",
+        "summary": "Test API authentication",
+        "tags": ["Authentication"],
+        "responses": {
+          "200": {
+            "description": "Authentication result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AuthResponse" }
+              }
+            }
+          },
+          "401": { "description": "Invalid API key" }
+        },
+        "security": [{ "apiKey": [] }]
+      }
+    },
+    "/form": {
+      "put": {
+        "operationId": "createForm",
+        "summary": "Create a new form",
+        "tags": ["Forms"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateFormRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Form created successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CreateFormResponse" }
+              }
+            }
+          },
+          "400": { "description": "Bad request - missing required fields" },
+          "401": { "description": "Invalid API key" }
+        },
+        "security": [{ "apiKey": [] }]
+      }
+    },
+    "/form/{formId}": {
+      "delete": {
+        "operationId": "deleteForm",
+        "summary": "Delete a form",
+        "tags": ["Forms"],
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Unique form identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Form deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponse" }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Invalid API key" }
+        },
+        "security": [{ "apiKey": [] }]
+      }
+    },
+    "/form/{formId}/submissions": {
+      "get": {
+        "operationId": "listSubmissions",
+        "summary": "Retrieve form submissions",
+        "tags": ["Submissions"],
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Unique form identifier"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 25,
+              "maximum": 50
+            },
+            "description": "Submissions per page (max 50)"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "createdAt:-1"
+            },
+            "description": "Sort format: field:order (1 for ascending, -1 for descending)"
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Filter format: key:value. Supports date:N, attachments:true|false, spam:true|false"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of submissions",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SubmissionsResponse" }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Invalid API key" }
+        },
+        "security": [{ "apiKey": [] }]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      },
+      "CreateFormRequest": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Form name"
+          },
+          "email": {
+            "type": "string",
+            "description": "Recipient email(s) for notifications"
+          },
+          "returnUrl": {
+            "type": "string",
+            "description": "Redirect URL after successful submission"
+          },
+          "failUrl": {
+            "type": "string",
+            "description": "Redirect URL after failed submission"
+          },
+          "returnParams": {
+            "type": "boolean",
+            "description": "Enable form message in query string"
+          },
+          "googleRecaptcha": {
+            "type": "string",
+            "description": "Google Recaptcha secret key"
+          },
+          "webhook": {
+            "type": "string",
+            "description": "Webhook URL for new submissions"
+          },
+          "retention": {
+            "type": "boolean",
+            "default": true,
+            "description": "Save submissions to database"
+          }
+        }
+      },
+      "CreateFormResponse": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer" },
+          "title": { "type": "string" },
+          "message": { "type": "string" },
+          "type": { "type": "string" },
+          "formUrl": {
+            "type": "string",
+            "description": "URL for submitting to the created form"
+          }
+        }
+      },
+      "ApiResponse": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer" },
+          "title": { "type": "string" },
+          "message": { "type": "string" },
+          "type": { "type": "string" }
+        }
+      },
+      "SubmissionsResponse": {
+        "type": "object",
+        "properties": {
+          "form": {
+            "type": "string",
+            "description": "Form identifier"
+          },
+          "results": {
+            "type": "integer",
+            "description": "Count of returned submissions"
+          },
+          "pagination": { "$ref": "#/components/schemas/Pagination" },
+          "submissions": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Submission" }
+          }
+        }
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "current_page": { "type": "integer" },
+          "previous_page": {
+            "type": "integer",
+            "nullable": true
+          },
+          "next_page": {
+            "type": "integer",
+            "nullable": true
+          },
+          "total_page": { "type": "integer" },
+          "total_submissions": { "type": "integer" }
+        }
+      },
+      "Submission": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "form": { "type": "string" },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Dynamic form field values"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "api_key",
+        "description": "Formcarry API key passed in the request header"
+      }
+    }
+  },
+  "security": [
+    { "apiKey": [] }
+  ]
+}
