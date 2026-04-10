@@ -1,0 +1,653 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "JSONBin.io API",
+    "version": "3.0.0",
+    "description": "JSONBin.io is a free JSON storage service. Store, retrieve, update, and delete JSON data with versioning support, collections, schema validation, and access key management.",
+    "x-jentic-source-url": "https://jsonbin.io/api-reference"
+  },
+  "servers": [
+    {
+      "url": "https://api.jsonbin.io/v3"
+    }
+  ],
+  "paths": {
+    "/b": {
+      "post": {
+        "operationId": "createBin",
+        "summary": "Create a new bin",
+        "description": "Creates a new JSON bin with the provided data.",
+        "tags": [
+          "Bins"
+        ],
+        "parameters": [
+          {
+            "name": "X-Bin-Private",
+            "in": "header",
+            "description": "Set bin privacy (default: true)",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "X-Bin-Name",
+            "in": "header",
+            "description": "Name for the bin (1-128 chars)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Collection-Id",
+            "in": "header",
+            "description": "Collection ID to add the bin to",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bin created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BinResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/b/{binId}": {
+      "get": {
+        "operationId": "readBin",
+        "summary": "Read a bin",
+        "description": "Retrieves the JSON data stored in a bin.",
+        "tags": [
+          "Bins"
+        ],
+        "parameters": [
+          {
+            "name": "binId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "meta",
+            "in": "query",
+            "description": "Include metadata",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          {
+            "name": "X-Bin-Meta",
+            "in": "header",
+            "description": "Include metadata in response",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "X-JSON-Path",
+            "in": "header",
+            "description": "JSON path to access specific data",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bin data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BinResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateBin",
+        "summary": "Update a bin",
+        "description": "Updates the JSON data in an existing bin, creating a new version.",
+        "tags": [
+          "Bins"
+        ],
+        "parameters": [
+          {
+            "name": "binId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Bin-Versioning",
+            "in": "header",
+            "description": "Enable versioning for this update",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bin updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BinResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteBin",
+        "summary": "Delete a bin",
+        "description": "Permanently deletes a bin and all its versions.",
+        "tags": [
+          "Bins"
+        ],
+        "parameters": [
+          {
+            "name": "binId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bin deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/b/{binId}/{version}": {
+      "get": {
+        "operationId": "readBinVersion",
+        "summary": "Read a specific bin version",
+        "description": "Retrieves a specific version of a bin.",
+        "tags": [
+          "Bins"
+        ],
+        "parameters": [
+          {
+            "name": "binId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "description": "Version number or 'latest'",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Bin-Meta",
+            "in": "header",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bin version data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BinResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/c": {
+      "post": {
+        "operationId": "createCollection",
+        "summary": "Create a collection",
+        "description": "Creates a new collection to group bins.",
+        "tags": [
+          "Collections"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollectionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Collection created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/c/{collectionId}/bins": {
+      "get": {
+        "operationId": "listCollectionBins",
+        "summary": "List bins in a collection",
+        "description": "Returns bins that belong to a specific collection.",
+        "tags": [
+          "Collections"
+        ],
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortOrder",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of bins",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BinSummary"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/s": {
+      "post": {
+        "operationId": "createSchemaDoc",
+        "summary": "Create a schema document",
+        "description": "Creates a JSON schema document for validating bins.",
+        "tags": [
+          "SchemaValidation"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Schema created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/s/{schemaId}": {
+      "get": {
+        "operationId": "readSchemaDoc",
+        "summary": "Read a schema document",
+        "tags": [
+          "SchemaValidation"
+        ],
+        "parameters": [
+          {
+            "name": "schemaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Schema document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateSchemaDoc",
+        "summary": "Update a schema document",
+        "tags": [
+          "SchemaValidation"
+        ],
+        "parameters": [
+          {
+            "name": "schemaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Schema updated"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BinResponse": {
+        "type": "object",
+        "properties": {
+          "record": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "private": {
+                "type": "boolean"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "DeleteResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "versionsDeleted": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "BinSummary": {
+        "type": "object",
+        "properties": {
+          "record": {
+            "type": "string"
+          },
+          "snippetMeta": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "private": {
+                "type": "boolean"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "CollectionInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CollectionResponse": {
+        "type": "object",
+        "properties": {
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "masterKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Master-Key",
+        "description": "Master API key for full access"
+      },
+      "accessKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Access-Key",
+        "description": "Access key with scoped permissions"
+      }
+    }
+  },
+  "security": [
+    {
+      "masterKey": []
+    }
+  ]
+}
