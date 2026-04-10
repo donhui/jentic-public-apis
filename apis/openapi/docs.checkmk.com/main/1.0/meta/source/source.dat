@@ -1,0 +1,632 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Checkmk REST",
+    "version": "1.0",
+    "description": "Checkmk REST API for monitoring configuration management including hosts, folders, services, and activation of changes.",
+    "x-jentic-source-url": "https://docs.checkmk.com/latest/en/rest_api.html"
+  },
+  "servers": [
+    {
+      "url": "https://{host}/{siteName}/check_mk/api/1.0",
+      "variables": {
+        "host": {
+          "default": "checkmk.example.com",
+          "description": "Checkmk server hostname"
+        },
+        "siteName": {
+          "default": "cmk",
+          "description": "Checkmk site name"
+        }
+      }
+    }
+  ],
+  "security": [
+    { "bearerAuth": [] }
+  ],
+  "tags": [
+    { "name": "Folders", "description": "Folder management" },
+    { "name": "Hosts", "description": "Host management" },
+    { "name": "Services", "description": "Service discovery" },
+    { "name": "Activation", "description": "Change activation" }
+  ],
+  "paths": {
+    "/domain-types/folder_config/collections/all": {
+      "get": {
+        "operationId": "listFolders",
+        "summary": "List all folders recursively",
+        "tags": ["Folders"],
+        "parameters": [
+          {
+            "name": "parent",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Parent folder path (e.g., ~, ~main~sub)"
+          },
+          {
+            "name": "recursive",
+            "in": "query",
+            "schema": { "type": "boolean", "default": true }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of folders",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FolderCollection" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createFolder",
+        "summary": "Create a new folder",
+        "tags": ["Folders"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/FolderInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Folder created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Folder" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/objects/folder_config/{folderId}": {
+      "get": {
+        "operationId": "getFolder",
+        "summary": "Get folder details",
+        "tags": ["Folders"],
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Folder ID (path with ~ separator)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Folder details",
+            "headers": {
+              "ETag": {
+                "schema": { "type": "string" },
+                "description": "ETag for conditional updates"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Folder" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/objects/folder_config/{folderId}/collections/hosts": {
+      "get": {
+        "operationId": "listHostsInFolder",
+        "summary": "List hosts in a folder",
+        "tags": ["Folders"],
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of hosts in folder",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HostCollection" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/domain-types/host_config/collections/all": {
+      "post": {
+        "operationId": "createHost",
+        "summary": "Create a host",
+        "tags": ["Hosts"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/HostInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Host created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Host" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/domain-types/host_config/actions/bulk-create/invoke": {
+      "post": {
+        "operationId": "bulkCreateHosts",
+        "summary": "Create multiple hosts",
+        "tags": ["Hosts"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["entries"],
+                "properties": {
+                  "entries": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/HostInput" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hosts created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HostCollection" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/objects/host_config/{hostName}": {
+      "get": {
+        "operationId": "getHost",
+        "summary": "Get host details",
+        "tags": ["Hosts"],
+        "parameters": [
+          { "$ref": "#/components/parameters/HostName" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Host details",
+            "headers": {
+              "ETag": {
+                "schema": { "type": "string" },
+                "description": "ETag for conditional updates"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Host" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateHost",
+        "summary": "Update host configuration",
+        "tags": ["Hosts"],
+        "parameters": [
+          { "$ref": "#/components/parameters/HostName" },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ETag from previous GET"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/HostUpdateInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Host updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Host" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteHost",
+        "summary": "Delete a host",
+        "tags": ["Hosts"],
+        "parameters": [
+          { "$ref": "#/components/parameters/HostName" }
+        ],
+        "responses": {
+          "204": { "description": "Host deleted" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/objects/host_config/{hostName}/actions/rename/invoke": {
+      "put": {
+        "operationId": "renameHost",
+        "summary": "Rename a host",
+        "tags": ["Hosts"],
+        "parameters": [
+          { "$ref": "#/components/parameters/HostName" },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["new_name"],
+                "properties": {
+                  "new_name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Host renamed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Host" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/domain-types/service_discovery_run/actions/start/invoke": {
+      "post": {
+        "operationId": "startServiceDiscovery",
+        "summary": "Start service discovery on a host",
+        "tags": ["Services"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["host_name"],
+                "properties": {
+                  "host_name": { "type": "string" },
+                  "mode": {
+                    "type": "string",
+                    "enum": ["new", "remove", "fix_all", "refresh", "only_host_labels"],
+                    "default": "fix_all"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Service discovery started" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/domain-types/activation_run/collections/pending_changes": {
+      "get": {
+        "operationId": "listPendingChanges",
+        "summary": "List pending configuration changes",
+        "tags": ["Activation"],
+        "responses": {
+          "200": {
+            "description": "Pending changes",
+            "headers": {
+              "ETag": {
+                "schema": { "type": "string" }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "array",
+                      "items": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/domain-types/activation_run/actions/activate-changes/invoke": {
+      "post": {
+        "operationId": "activateChanges",
+        "summary": "Activate pending configuration changes",
+        "tags": ["Activation"],
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "schema": { "type": "string" },
+            "description": "ETag from pending changes"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "redirect": { "type": "boolean", "default": false },
+                  "sites": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "force_foreign_changes": { "type": "boolean", "default": false }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Changes activated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/objects/activation_run/{activationId}": {
+      "get": {
+        "operationId": "getActivationStatus",
+        "summary": "Check activation run status",
+        "tags": ["Activation"],
+        "parameters": [
+          {
+            "name": "activationId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activation status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "title": { "type": "string" },
+                    "extensions": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/objects/activation_run/{activationId}/actions/wait-for-completion/invoke": {
+      "get": {
+        "operationId": "waitForActivation",
+        "summary": "Wait for activation to complete",
+        "tags": ["Activation"],
+        "parameters": [
+          {
+            "name": "activationId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Activation completed" },
+          "204": { "description": "Activation still running (redirect)" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer token: 'Bearer USERNAME PASSWORD'"
+      }
+    },
+    "parameters": {
+      "HostName": {
+        "name": "hostName",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" },
+        "description": "Hostname of the monitored host"
+      }
+    },
+    "schemas": {
+      "FolderCollection": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Folder" }
+          }
+        }
+      },
+      "HostCollection": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Host" }
+          }
+        }
+      },
+      "Folder": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "extensions": {
+            "type": "object",
+            "properties": {
+              "path": { "type": "string" },
+              "attributes": { "type": "object" }
+            }
+          }
+        }
+      },
+      "FolderInput": {
+        "type": "object",
+        "required": ["name", "title", "parent"],
+        "properties": {
+          "name": { "type": "string", "description": "URL-safe folder name" },
+          "title": { "type": "string", "description": "Display title" },
+          "parent": { "type": "string", "description": "Parent folder path (~ for root)" },
+          "attributes": { "type": "object" }
+        }
+      },
+      "Host": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "extensions": {
+            "type": "object",
+            "properties": {
+              "folder": { "type": "string" },
+              "attributes": { "type": "object" },
+              "effective_attributes": { "type": "object" },
+              "is_cluster": { "type": "boolean" },
+              "is_offline": { "type": "boolean" }
+            }
+          }
+        }
+      },
+      "HostInput": {
+        "type": "object",
+        "required": ["host_name", "folder"],
+        "properties": {
+          "host_name": { "type": "string" },
+          "folder": { "type": "string", "description": "Folder path (~ for root)" },
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "ipaddress": { "type": "string" },
+              "alias": { "type": "string" },
+              "tag_agent": { "type": "string" },
+              "tag_snmp_ds": { "type": "string" }
+            }
+          }
+        }
+      },
+      "HostUpdateInput": {
+        "type": "object",
+        "properties": {
+          "update_attributes": {
+            "type": "object",
+            "properties": {
+              "ipaddress": { "type": "string" },
+              "alias": { "type": "string" }
+            }
+          },
+          "remove_attributes": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "status": { "type": "integer" },
+          "detail": { "type": "string" },
+          "fields": { "type": "object" }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Authentication required",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      }
+    }
+  }
+}
