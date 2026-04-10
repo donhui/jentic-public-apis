@@ -1,0 +1,317 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Jedlix OCPP Data Exchange API",
+    "version": "1.0.0",
+    "description": "API for CPOs to forward relevant charger data based on OCPP formatted messages to the Jedlix Smart Charging platform. Supports TransactionEvent and MeterValues endpoints.",
+    "x-jentic-source-url": "https://developer.jedlix.com/docs/ocpi-sessions-api"
+  },
+  "servers": [
+    {
+      "url": "https://api.jedlix.com/v1/scsp",
+      "description": "Jedlix SCSP API v1"
+    }
+  ],
+  "paths": {
+    "/evse/{evseUid}/events/{payloadProtocol}/TransactionEvent": {
+      "post": {
+        "operationId": "postTransactionEvent",
+        "summary": "Forward a transaction event from a charging station",
+        "description": "Forward events about significant charging session activities (start, stop, state changes) to the Jedlix Smart Charging platform.",
+        "tags": [
+          "TransactionEvents"
+        ],
+        "parameters": [
+          {
+            "name": "evseUid",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the EVSE",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "payloadProtocol",
+            "in": "path",
+            "required": true,
+            "description": "The OCPP protocol version, e.g. ocpp2.0.1",
+            "schema": {
+              "type": "string",
+              "example": "ocpp2.0.1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransactionEvent"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK - Event received successfully"
+          },
+          "400": {
+            "description": "Bad Request - Invalid message format"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/evse/{evseUid}/events/{payloadProtocol}/MeterValues": {
+      "post": {
+        "operationId": "postMeterValues",
+        "summary": "Forward meter values from a charging station",
+        "description": "Forward important measurements (energy, power, SoC) to the Jedlix Smart Charging platform for charging profile optimization and settlement.",
+        "tags": [
+          "MeterValues"
+        ],
+        "parameters": [
+          {
+            "name": "evseUid",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the EVSE",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "payloadProtocol",
+            "in": "path",
+            "required": true,
+            "description": "The OCPP protocol version, e.g. ocpp2.0.1",
+            "schema": {
+              "type": "string",
+              "example": "ocpp2.0.1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeterValuesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK - Meter values received successfully"
+          },
+          "400": {
+            "description": "Bad Request - Invalid message format"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "OAuth 2.0 access token"
+      },
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "ApiKey",
+        "description": "Static API key to identify the caller"
+      }
+    },
+    "schemas": {
+      "TransactionEvent": {
+        "type": "object",
+        "required": [
+          "timestamp",
+          "eventType",
+          "transactionInfo"
+        ],
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp of the event"
+          },
+          "eventType": {
+            "type": "string",
+            "enum": [
+              "Started",
+              "Updated",
+              "Ended"
+            ],
+            "description": "Type of the transaction event"
+          },
+          "evse": {
+            "$ref": "#/components/schemas/EvseInfo"
+          },
+          "triggerReason": {
+            "type": "string",
+            "enum": [
+              "Authorized",
+              "RemoteStop",
+              "ChargingStateChanged",
+              "EVDeparted",
+              "StopAuthorized",
+              "EnergyLimitReached",
+              "LocalOutOfCredit"
+            ],
+            "description": "Reason that triggered the event"
+          },
+          "transactionInfo": {
+            "$ref": "#/components/schemas/TransactionInfo"
+          }
+        }
+      },
+      "EvseInfo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "EVSE identifier"
+          },
+          "connectorId": {
+            "type": "integer",
+            "description": "Connector identifier"
+          }
+        }
+      },
+      "TransactionInfo": {
+        "type": "object",
+        "required": [
+          "transactionId"
+        ],
+        "properties": {
+          "transactionId": {
+            "type": "string",
+            "description": "Unique transaction identifier"
+          },
+          "chargingState": {
+            "type": "string",
+            "enum": [
+              "Charging",
+              "SuspendedEV",
+              "SuspendedEVSE",
+              "Idle",
+              "EVConnected"
+            ],
+            "description": "Current charging state"
+          },
+          "stoppedReason": {
+            "type": "string",
+            "description": "Reason the transaction was stopped"
+          }
+        }
+      },
+      "MeterValuesRequest": {
+        "type": "object",
+        "required": [
+          "evseId",
+          "MeterValue"
+        ],
+        "properties": {
+          "evseId": {
+            "type": "integer",
+            "description": "EVSE identifier"
+          },
+          "MeterValue": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeterValue"
+            }
+          }
+        }
+      },
+      "MeterValue": {
+        "type": "object",
+        "required": [
+          "timestamp",
+          "sampledValue"
+        ],
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp of the measurement"
+          },
+          "sampledValue": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SampledValue"
+            }
+          }
+        }
+      },
+      "SampledValue": {
+        "type": "object",
+        "required": [
+          "value",
+          "measurand"
+        ],
+        "properties": {
+          "value": {
+            "type": "number",
+            "description": "Measured value"
+          },
+          "measurand": {
+            "type": "string",
+            "enum": [
+              "Energy.Active.Import.Register",
+              "Energy.Active.Export.Register",
+              "Power.Active.Import",
+              "Power.Active.Export",
+              "Energy.Active.Import.Interval",
+              "Energy.Active.Export.Interval",
+              "SoC"
+            ],
+            "description": "Type of measurement"
+          },
+          "unitOfMeasure": {
+            "type": "object",
+            "properties": {
+              "unit": {
+                "type": "string",
+                "description": "Unit of the measurement (e.g. Wh, W, Percent)"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": [],
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "TransactionEvents",
+      "description": "Transaction event forwarding"
+    },
+    {
+      "name": "MeterValues",
+      "description": "Meter value forwarding"
+    }
+  ]
+}
