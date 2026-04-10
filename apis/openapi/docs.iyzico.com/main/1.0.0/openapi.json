@@ -1,0 +1,684 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "iyzico Payment API",
+    "description": "iyzico payment API for processing non-3DS card payments. Supports credit cards, debit cards, and prepaid cards with installment options.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://docs.iyzico.com/en/payment-methods/api/non-3ds/non-3ds-implementation/create-payment"
+  },
+  "servers": [
+    {
+      "url": "https://api.iyzipay.com",
+      "description": "Production server"
+    },
+    {
+      "url": "https://sandbox-api.iyzipay.com",
+      "description": "Sandbox server"
+    }
+  ],
+  "paths": {
+    "/payment/auth": {
+      "post": {
+        "operationId": "createNon3dsPayment",
+        "summary": "Create Non-3DS Payment",
+        "description": "Creates a non-3DS card payment. Processes the payment immediately without 3D Secure authentication.",
+        "tags": [
+          "Payments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing authorization header",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "iyzicoAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "IYZWSv2 authorization header with signed base64-encoded hash value. Format: IYZWSv2 <signed_hash>"
+      }
+    },
+    "schemas": {
+      "CreatePaymentRequest": {
+        "type": "object",
+        "required": [
+          "price",
+          "paidPrice",
+          "paymentCard",
+          "buyer",
+          "billingAddress",
+          "basketItems"
+        ],
+        "properties": {
+          "conversationId": {
+            "type": "string",
+            "description": "Conversation ID for request/response matching"
+          },
+          "locale": {
+            "type": "string",
+            "description": "Locale for response messages",
+            "enum": [
+              "tr",
+              "en"
+            ],
+            "default": "tr"
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "description": "Total price of the basket items"
+          },
+          "paidPrice": {
+            "type": "number",
+            "format": "double",
+            "description": "Total amount to be collected including installment fees"
+          },
+          "paymentGroup": {
+            "type": "string",
+            "description": "Payment group type",
+            "enum": [
+              "PRODUCT",
+              "LISTING",
+              "SUBSCRIPTION"
+            ],
+            "default": "PRODUCT"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency code",
+            "enum": [
+              "TRY",
+              "USD",
+              "EUR",
+              "GBP",
+              "NOK",
+              "CHF"
+            ],
+            "default": "TRY"
+          },
+          "installment": {
+            "type": "integer",
+            "description": "Installment count",
+            "enum": [
+              1,
+              2,
+              3,
+              6,
+              9,
+              12
+            ]
+          },
+          "basketId": {
+            "type": "string",
+            "description": "Basket identifier"
+          },
+          "paymentChannel": {
+            "type": "string",
+            "description": "Payment channel",
+            "enum": [
+              "WEB",
+              "MOBILE",
+              "MOBILE_WEB",
+              "MOBILE_IOS",
+              "MOBILE_ANDROID",
+              "MOBILE_WINDOWS",
+              "MOBILE_TABLET",
+              "MOBILE_PHONE"
+            ]
+          },
+          "paymentCard": {
+            "$ref": "#/components/schemas/PaymentCard"
+          },
+          "buyer": {
+            "$ref": "#/components/schemas/Buyer"
+          },
+          "shippingAddress": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "billingAddress": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "basketItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BasketItem"
+            }
+          }
+        }
+      },
+      "PaymentCard": {
+        "type": "object",
+        "required": [
+          "cardHolderName",
+          "cardNumber",
+          "expireYear",
+          "expireMonth",
+          "cvc"
+        ],
+        "properties": {
+          "cardHolderName": {
+            "type": "string",
+            "description": "Name on the card"
+          },
+          "cardNumber": {
+            "type": "string",
+            "description": "Card number"
+          },
+          "expireYear": {
+            "type": "string",
+            "description": "Card expiry year in YYYY format"
+          },
+          "expireMonth": {
+            "type": "string",
+            "description": "Card expiry month in MM format"
+          },
+          "cvc": {
+            "type": "string",
+            "description": "Card verification code"
+          },
+          "registerCard": {
+            "type": "integer",
+            "description": "Whether to register the card for future use",
+            "enum": [
+              0,
+              1
+            ]
+          }
+        }
+      },
+      "Buyer": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "surname",
+          "identityNumber",
+          "email",
+          "gsmNumber",
+          "registrationAddress",
+          "city",
+          "country"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Buyer identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Buyer first name"
+          },
+          "surname": {
+            "type": "string",
+            "description": "Buyer last name"
+          },
+          "identityNumber": {
+            "type": "string",
+            "description": "Buyer identity number"
+          },
+          "email": {
+            "type": "string",
+            "description": "Buyer email address"
+          },
+          "gsmNumber": {
+            "type": "string",
+            "description": "Buyer phone number"
+          },
+          "registrationDate": {
+            "type": "string",
+            "description": "Registration date in yyyy-MM-dd HH:mm:ss format"
+          },
+          "lastLoginDate": {
+            "type": "string",
+            "description": "Last login date in yyyy-MM-dd HH:mm:ss format"
+          },
+          "registrationAddress": {
+            "type": "string",
+            "description": "Buyer registration address"
+          },
+          "city": {
+            "type": "string",
+            "description": "Buyer city"
+          },
+          "country": {
+            "type": "string",
+            "description": "Buyer country"
+          },
+          "zipCode": {
+            "type": "string",
+            "description": "Buyer zip code"
+          },
+          "ip": {
+            "type": "string",
+            "description": "Buyer IP address"
+          }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "required": [
+          "address",
+          "contactName",
+          "city",
+          "country"
+        ],
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "Street address"
+          },
+          "zipCode": {
+            "type": "string",
+            "description": "Zip code"
+          },
+          "contactName": {
+            "type": "string",
+            "description": "Contact name"
+          },
+          "city": {
+            "type": "string",
+            "description": "City"
+          },
+          "country": {
+            "type": "string",
+            "description": "Country"
+          }
+        }
+      },
+      "BasketItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "price",
+          "name",
+          "category1",
+          "itemType"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Item identifier"
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "description": "Item price"
+          },
+          "name": {
+            "type": "string",
+            "description": "Item name"
+          },
+          "category1": {
+            "type": "string",
+            "description": "Primary category"
+          },
+          "category2": {
+            "type": "string",
+            "description": "Secondary category"
+          },
+          "itemType": {
+            "type": "string",
+            "description": "Item type",
+            "enum": [
+              "PHYSICAL",
+              "VIRTUAL"
+            ]
+          },
+          "subMerchantKey": {
+            "type": "string",
+            "description": "Sub-merchant key (marketplace only)"
+          },
+          "subMerchantPrice": {
+            "type": "string",
+            "description": "Sub-merchant price (marketplace only)"
+          }
+        }
+      },
+      "PaymentResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Payment status",
+            "enum": [
+              "success",
+              "failure"
+            ]
+          },
+          "locale": {
+            "type": "string",
+            "description": "Response locale"
+          },
+          "systemTime": {
+            "type": "integer",
+            "format": "int64",
+            "description": "System time in epoch milliseconds"
+          },
+          "conversationId": {
+            "type": "string",
+            "description": "Request/response matching identifier"
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "description": "Basket total amount"
+          },
+          "paidPrice": {
+            "type": "number",
+            "format": "double",
+            "description": "Total collected amount"
+          },
+          "installment": {
+            "type": "integer",
+            "description": "Installment count"
+          },
+          "paymentId": {
+            "type": "string",
+            "description": "Payment identifier"
+          },
+          "fraudStatus": {
+            "type": "integer",
+            "description": "Fraud status: 1=approved, 0=under review, -1=declined"
+          },
+          "merchantCommissionRate": {
+            "type": "number",
+            "format": "double",
+            "description": "Merchant commission percentage"
+          },
+          "merchantCommissionRateAmount": {
+            "type": "number",
+            "format": "double",
+            "description": "Merchant commission amount"
+          },
+          "iyziCommissionRateAmount": {
+            "type": "number",
+            "format": "double",
+            "description": "iyzico commission amount"
+          },
+          "iyziCommissionFee": {
+            "type": "number",
+            "format": "double",
+            "description": "iyzico transaction fee"
+          },
+          "cardType": {
+            "type": "string",
+            "description": "Card type",
+            "enum": [
+              "CREDIT_CARD",
+              "DEBIT_CARD",
+              "PREPAID_CARD"
+            ]
+          },
+          "cardAssociation": {
+            "type": "string",
+            "description": "Card association/network",
+            "enum": [
+              "VISA",
+              "MASTER_CARD",
+              "AMERICAN_EXPRESS",
+              "TROY"
+            ]
+          },
+          "cardFamily": {
+            "type": "string",
+            "description": "Card family name"
+          },
+          "binNumber": {
+            "type": "string",
+            "description": "First 8 digits of the card"
+          },
+          "lastFourDigits": {
+            "type": "string",
+            "description": "Last 4 digits of the card"
+          },
+          "basketId": {
+            "type": "string",
+            "description": "Basket identifier"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency code"
+          },
+          "authCode": {
+            "type": "string",
+            "description": "Bank authorization code"
+          },
+          "phase": {
+            "type": "string",
+            "description": "Payment phase"
+          },
+          "hostReference": {
+            "type": "string",
+            "description": "Bank host reference value"
+          },
+          "signature": {
+            "type": "string",
+            "description": "Signature for verification"
+          },
+          "itemTransactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemTransaction"
+            }
+          }
+        }
+      },
+      "ItemTransaction": {
+        "type": "object",
+        "properties": {
+          "paymentTransactionId": {
+            "type": "string",
+            "description": "Payment transaction identifier"
+          },
+          "itemId": {
+            "type": "string",
+            "description": "Item identifier"
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "description": "Item price"
+          },
+          "paidPrice": {
+            "type": "number",
+            "format": "double",
+            "description": "Amount paid for item"
+          },
+          "transactionStatus": {
+            "type": "integer",
+            "description": "Transaction status: 0=pending, -1=failed, 1=approved, 2=completed"
+          },
+          "blockageRate": {
+            "type": "number",
+            "format": "double",
+            "description": "Blockage rate"
+          },
+          "blockageRateAmountMerchant": {
+            "type": "number",
+            "format": "double",
+            "description": "Merchant blockage amount"
+          },
+          "blockageRateAmountSubMerchant": {
+            "type": "number",
+            "format": "double",
+            "description": "Sub-merchant blockage amount"
+          },
+          "blockageResolvedDate": {
+            "type": "string",
+            "description": "Blockage resolved date in yyyy-MM-dd HH:mm:ss format"
+          },
+          "iyziCommissionFee": {
+            "type": "number",
+            "format": "double",
+            "description": "iyzico commission fee"
+          },
+          "iyziCommissionRateAmount": {
+            "type": "number",
+            "format": "double",
+            "description": "iyzico commission rate amount"
+          },
+          "merchantCommissionRate": {
+            "type": "number",
+            "format": "double",
+            "description": "Merchant commission rate"
+          },
+          "merchantCommissionRateAmount": {
+            "type": "number",
+            "format": "double",
+            "description": "Merchant commission rate amount"
+          },
+          "merchantPayoutAmount": {
+            "type": "number",
+            "format": "double",
+            "description": "Merchant payout amount"
+          },
+          "subMerchantPrice": {
+            "type": "number",
+            "format": "double",
+            "description": "Sub-merchant price"
+          },
+          "subMerchantPayoutRate": {
+            "type": "string",
+            "description": "Sub-merchant payout rate"
+          },
+          "subMerchantPayoutAmount": {
+            "type": "number",
+            "format": "double",
+            "description": "Sub-merchant payout amount"
+          },
+          "convertedPayout": {
+            "type": "object",
+            "description": "Currency conversion payout details",
+            "properties": {
+              "paidPrice": {
+                "type": "number",
+                "format": "double"
+              },
+              "iyziCommissionRateAmount": {
+                "type": "number",
+                "format": "double"
+              },
+              "iyziCommissionFee": {
+                "type": "number",
+                "format": "double"
+              },
+              "blockageRateAmountMerchant": {
+                "type": "number",
+                "format": "double"
+              },
+              "blockageRateAmountSubMerchant": {
+                "type": "number",
+                "format": "double"
+              },
+              "merchantPayoutAmount": {
+                "type": "number",
+                "format": "double"
+              },
+              "subMerchantPayoutAmount": {
+                "type": "number",
+                "format": "double"
+              },
+              "iyziConversionRate": {
+                "type": "number",
+                "format": "double"
+              },
+              "iyziConversionRateAmount": {
+                "type": "number",
+                "format": "double"
+              },
+              "currency": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Status (failure)"
+          },
+          "errorCode": {
+            "type": "string",
+            "description": "Error code"
+          },
+          "errorMessage": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "errorGroup": {
+            "type": "string",
+            "description": "Error group"
+          },
+          "locale": {
+            "type": "string",
+            "description": "Response locale"
+          },
+          "systemTime": {
+            "type": "integer",
+            "format": "int64",
+            "description": "System time in epoch milliseconds"
+          },
+          "conversationId": {
+            "type": "string",
+            "description": "Request/response matching identifier"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "iyzicoAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Payments",
+      "description": "Payment processing operations"
+    }
+  ]
+}
