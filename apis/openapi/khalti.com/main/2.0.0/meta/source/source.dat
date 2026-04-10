@@ -1,0 +1,260 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Khalti ePayment API",
+    "description": "Khalti Payment Gateway ePayment API for initiating and verifying online payments in Nepal.",
+    "version": "2.0.0",
+    "x-jentic-source-url": "https://docs.khalti.com/"
+  },
+  "servers": [
+    {
+      "url": "https://khalti.com/api/v2",
+      "description": "Production server"
+    },
+    {
+      "url": "https://dev.khalti.com/api/v2",
+      "description": "Sandbox/Development server"
+    }
+  ],
+  "paths": {
+    "/epayment/initiate/": {
+      "post": {
+        "operationId": "initiatePayment",
+        "summary": "Initiate Payment",
+        "description": "Initiate a payment request and receive a unique payment identifier (pidx) and payment URL for redirecting the customer.",
+        "tags": ["ePayment"],
+        "security": [{"apiKeyAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InitiatePaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment initiated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InitiatePaymentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/epayment/lookup/": {
+      "post": {
+        "operationId": "lookupPayment",
+        "summary": "Payment Verification (Lookup)",
+        "description": "Verify the status of a payment using the pidx identifier received during payment initiation.",
+        "tags": ["ePayment"],
+        "security": [{"apiKeyAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LookupPaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment status retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LookupPaymentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "API key authentication. Format: 'Key <LIVE_SECRET_KEY>'"
+      }
+    },
+    "schemas": {
+      "InitiatePaymentRequest": {
+        "type": "object",
+        "required": ["return_url", "website_url", "amount", "purchase_order_id", "purchase_order_name"],
+        "properties": {
+          "return_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Landing page URL after the transaction"
+          },
+          "website_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Merchant website URL"
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "Total payable amount in Paisa (minimum 1000 i.e. Rs 10)"
+          },
+          "purchase_order_id": {
+            "type": "string",
+            "description": "Unique identifier for the transaction"
+          },
+          "purchase_order_name": {
+            "type": "string",
+            "description": "Product or order name"
+          },
+          "customer_info": {
+            "$ref": "#/components/schemas/CustomerInfo"
+          },
+          "amount_breakdown": {
+            "type": "array",
+            "description": "Breakdown of the total amount",
+            "items": {
+              "$ref": "#/components/schemas/AmountBreakdown"
+            }
+          },
+          "product_details": {
+            "type": "array",
+            "description": "Details of products in the order",
+            "items": {
+              "$ref": "#/components/schemas/ProductDetail"
+            }
+          }
+        }
+      },
+      "CustomerInfo": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Customer name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Customer email"
+          },
+          "phone": {
+            "type": "string",
+            "description": "Customer phone number"
+          }
+        }
+      },
+      "AmountBreakdown": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Label for the amount component"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Amount in Paisa"
+          }
+        }
+      },
+      "ProductDetail": {
+        "type": "object",
+        "properties": {
+          "identity": {
+            "type": "string",
+            "description": "Product identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Product name"
+          },
+          "total_price": {
+            "type": "integer",
+            "description": "Total price in Paisa"
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Quantity"
+          },
+          "unit_price": {
+            "type": "integer",
+            "description": "Unit price in Paisa"
+          }
+        }
+      },
+      "InitiatePaymentResponse": {
+        "type": "object",
+        "properties": {
+          "pidx": {
+            "type": "string",
+            "description": "Payment identifier for future references"
+          },
+          "payment_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to redirect user for payment"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Expiration timestamp of the payment session"
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Time in seconds until the payment session expires"
+          }
+        }
+      },
+      "LookupPaymentRequest": {
+        "type": "object",
+        "required": ["pidx"],
+        "properties": {
+          "pidx": {
+            "type": "string",
+            "description": "Payment identifier from the initiation response"
+          }
+        }
+      },
+      "LookupPaymentResponse": {
+        "type": "object",
+        "properties": {
+          "pidx": {
+            "type": "string",
+            "description": "Payment identifier"
+          },
+          "total_amount": {
+            "type": "integer",
+            "description": "Transaction amount in Paisa"
+          },
+          "status": {
+            "type": "string",
+            "description": "Transaction status",
+            "enum": ["Completed", "Pending", "Initiated", "Refunded", "Expired", "User canceled"]
+          },
+          "transaction_id": {
+            "type": "string",
+            "description": "Khalti's unique transaction identifier"
+          },
+          "fee": {
+            "type": "integer",
+            "description": "Merchant fee amount in Paisa"
+          },
+          "refunded": {
+            "type": "boolean",
+            "description": "Whether the payment has been refunded"
+          }
+        }
+      }
+    }
+  }
+}
