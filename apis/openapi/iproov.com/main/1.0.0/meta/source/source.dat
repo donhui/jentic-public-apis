@@ -1,0 +1,320 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "iProov REST API",
+    "version": "1.0.0",
+    "description": "iProov biometric verification REST API providing user management, token generation, service health checks, and token invalidation operations.",
+    "x-jentic-source-url": "https://docs.iproov.com/implementation_A-Z/rest_api/operations"
+  },
+  "servers": [
+    {
+      "url": "https://eu.rp.secure.iproov.me"
+    }
+  ],
+  "paths": {
+    "/{api_key}/access_token": {
+      "post": {
+        "operationId": "generateAccessToken",
+        "summary": "Generate OAuth 2.0 Bearer Token for API authentication",
+        "description": "Generate an access token that is valid for 1 hour or 50 requests, whichever expires first.",
+        "tags": ["Authentication"],
+        "parameters": [
+          {
+            "name": "api_key",
+            "in": "path",
+            "required": true,
+            "description": "The API key for the account",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "grant_type": {
+                    "type": "string",
+                    "description": "OAuth grant type"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          { "basicAuth": [] }
+        ],
+        "responses": {
+          "200": {
+            "description": "Access token generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/users/{user_id}": {
+      "get": {
+        "operationId": "getUser",
+        "summary": "Retrieve an existing, previously enrolled user",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique user identifier",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing bearer token",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        },
+        "security": [
+          { "bearerAuth": [] }
+        ]
+      },
+      "put": {
+        "operationId": "updateUser",
+        "summary": "Update a user profile",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique user identifier",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        },
+        "security": [
+          { "bearerAuth": [] }
+        ]
+      },
+      "delete": {
+        "operationId": "deleteUser",
+        "summary": "Delete a user profile for data retention policy compliance",
+        "description": "Delete a user profile. Deleted users cannot be used in verify transactions.",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique user identifier",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "description": "Deletion status" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        },
+        "security": [
+          { "bearerAuth": [] }
+        ]
+      }
+    },
+    "/availability": {
+      "get": {
+        "operationId": "checkServiceHealth",
+        "summary": "Check service provider availability status",
+        "tags": ["Health"],
+        "parameters": [
+          {
+            "name": "api_key",
+            "in": "query",
+            "required": true,
+            "description": "API key for authentication",
+            "schema": { "type": "string" }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Service availability status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailabilityResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/claim/{token}/invalidate": {
+      "post": {
+        "operationId": "invalidateToken",
+        "summary": "Invalidate a generated Enroll or Verify token",
+        "tags": ["Tokens"],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "The token to invalidate",
+            "schema": { "type": "string" }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Token invalidated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "description": "Invalidation status" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AccessTokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": { "type": "string", "description": "The OAuth 2.0 bearer token" },
+          "token_type": { "type": "string", "description": "Token type (bearer)" },
+          "expires_in": { "type": "integer", "description": "Token validity in seconds" }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "user_id": { "type": "string", "description": "Unique user identifier" },
+          "status": { "type": "string", "description": "User status" }
+        }
+      },
+      "UserUpdate": {
+        "type": "object",
+        "properties": {
+          "user_id": { "type": "string", "description": "Unique user identifier" }
+        }
+      },
+      "AvailabilityResponse": {
+        "type": "object",
+        "properties": {
+          "available": { "type": "boolean", "description": "Whether the service is available" },
+          "status": { "type": "string", "description": "Service status description" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string", "description": "Error code" },
+          "error_description": { "type": "string", "description": "Human-readable error description" }
+        }
+      }
+    },
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "OAuth credentials (username/password) for token generation"
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "OAuth 2.0 Bearer Token obtained from the access_token endpoint"
+      }
+    }
+  },
+  "security": [
+    { "bearerAuth": [] }
+  ]
+}
