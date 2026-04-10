@@ -1,0 +1,3540 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Epic Online Services Web API",
+    "version": "1.0.0",
+    "description": "RESTful Web APIs for Epic Online Services (EOS) including authentication, connect, friends, ecommerce, anti-cheat, sanctions, player reports, and voice chat.",
+    "x-jentic-source-url": "https://dev.epicgames.com/docs/web-api-ref"
+  },
+  "servers": [
+    {
+      "url": "https://api.epicgames.dev",
+      "description": "EOS Production API"
+    }
+  ],
+  "paths": {
+    "/epic/oauth/v2/token": {
+      "post": {
+        "operationId": "requestEpicAuthToken",
+        "summary": "Request Epic Account OAuth Token",
+        "description": "Obtain an access token via various OAuth 2.0 grant types for Epic Account Services.",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "grant_type"
+                ],
+                "properties": {
+                  "grant_type": {
+                    "type": "string",
+                    "enum": [
+                      "authorization_code",
+                      "client_credentials",
+                      "exchange_code",
+                      "password",
+                      "refresh_token"
+                    ],
+                    "description": "OAuth 2.0 grant type"
+                  },
+                  "deployment_id": {
+                    "type": "string",
+                    "description": "Deployment identifier for service interactions"
+                  },
+                  "scope": {
+                    "type": "string",
+                    "description": "Space-delimited permissions (e.g. basic_profile friends_list presence)"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "Authorization code (for authorization_code grant)"
+                  },
+                  "client_id": {
+                    "type": "string",
+                    "description": "OAuth Client ID (for client_credentials grant)"
+                  },
+                  "client_secret": {
+                    "type": "string",
+                    "description": "OAuth Client Secret (for client_credentials grant)"
+                  },
+                  "exchange_code": {
+                    "type": "string",
+                    "description": "One-time use code from Epic Launcher (for exchange_code grant)"
+                  },
+                  "username": {
+                    "type": "string",
+                    "description": "User email address (for password grant)"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "User account password (for password grant)"
+                  },
+                  "refresh_token": {
+                    "type": "string",
+                    "description": "Refresh token for session extension (for refresh_token grant)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token granted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EpicAuthTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/epic/oauth/v2/revoke": {
+      "post": {
+        "operationId": "revokeEpicAuthToken",
+        "summary": "Revoke Token",
+        "description": "Revoke an access or refresh token per RFC 7009.",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "token"
+                ],
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "description": "Access or refresh token to revoke"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token revoked successfully"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/epic/oauth/v2/.well-known/jwks.json": {
+      "get": {
+        "operationId": "getEpicPublicKeys",
+        "summary": "Get Public Keys (JWKS)",
+        "description": "Retrieve JWK Set for offline JWT verification of Epic Account tokens.",
+        "tags": [
+          "Auth"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "JWK Set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JwksResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/epic/oauth/v2/tokenInfo": {
+      "post": {
+        "operationId": "introspectEpicToken",
+        "summary": "Token Introspection",
+        "description": "Verify and introspect an access or refresh token per RFC 7662.",
+        "tags": [
+          "Auth"
+        ],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "token"
+                ],
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "description": "Access or refresh token to verify"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenInfoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/epic/id/v2/accounts": {
+      "get": {
+        "operationId": "getEpicAccounts",
+        "summary": "Get Account Information",
+        "description": "Retrieve account information for up to 50 Epic accounts.",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "query",
+            "required": true,
+            "description": "Account identifiers to resolve (up to 50, repeatable)",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 50
+            },
+            "style": "form",
+            "explode": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EpicAccount"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/v1/oauth/token": {
+      "post": {
+        "operationId": "requestEosConnectToken",
+        "summary": "Request EOS Connect Access Token",
+        "description": "Obtain an EOS access token for Game Services using client credentials or external authentication.",
+        "tags": [
+          "Connect"
+        ],
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "grant_type"
+                ],
+                "properties": {
+                  "grant_type": {
+                    "type": "string",
+                    "enum": [
+                      "client_credentials",
+                      "external_auth"
+                    ],
+                    "description": "client_credentials for client access, external_auth for user access"
+                  },
+                  "client_id": {
+                    "type": "string",
+                    "description": "OAuth Client ID (if not using Basic auth header)"
+                  },
+                  "client_secret": {
+                    "type": "string",
+                    "description": "OAuth Client Secret (if not using Basic auth header)"
+                  },
+                  "nonce": {
+                    "type": "string",
+                    "description": "Arbitrary string for security verification (for user access)"
+                  },
+                  "deployment_id": {
+                    "type": "string",
+                    "description": "Target EOS deployment identifier (for user access)"
+                  },
+                  "external_auth_token": {
+                    "type": "string",
+                    "description": "External authentication token (for user access)"
+                  },
+                  "external_auth_type": {
+                    "type": "string",
+                    "enum": [
+                      "amazon_access_token",
+                      "apple_id_token",
+                      "discord_access_token",
+                      "epicgames_access_token",
+                      "epicgames_id_token",
+                      "gog_encrypted_sessionticket",
+                      "google_id_token",
+                      "itchio_jwt",
+                      "itchio_key",
+                      "nintendo_id_token",
+                      "oculus_userid_nonce",
+                      "openid_access_token",
+                      "psn_id_token",
+                      "steam_access_token",
+                      "steam_encrypted_appticket",
+                      "steam_session_ticket",
+                      "xbl_xsts_token"
+                    ],
+                    "description": "External auth token type"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "EOS access token granted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EosConnectTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/v1/accounts": {
+      "get": {
+        "operationId": "queryExternalAccounts",
+        "summary": "Query External Accounts",
+        "description": "Map external platform account IDs to EOS Product User IDs.",
+        "tags": [
+          "Connect"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "query",
+            "required": true,
+            "description": "External account IDs (max 16, repeatable)",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 16
+            },
+            "style": "form",
+            "explode": true
+          },
+          {
+            "name": "identityProviderId",
+            "in": "query",
+            "required": true,
+            "description": "Identity provider",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "amazon",
+                "apple",
+                "discord",
+                "epicgames",
+                "gog",
+                "google",
+                "itchio",
+                "nintendo",
+                "oculus",
+                "openid",
+                "psn",
+                "steam",
+                "xbl"
+              ]
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "required": false,
+            "description": "Platform-specific environment (e.g. xbl_retail for Xbox)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account mapping",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalAccountsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/v1/product-users": {
+      "get": {
+        "operationId": "queryProductUsers",
+        "summary": "Query Product Users",
+        "description": "Get linked external accounts for EOS Product User IDs.",
+        "tags": [
+          "Connect"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "productUserId",
+            "in": "query",
+            "required": true,
+            "description": "Product User IDs to query (max 16, repeatable)",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 16
+            },
+            "style": "form",
+            "explode": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product user data with linked accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductUsersResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/epic/friends/v1/{accountId}": {
+      "get": {
+        "operationId": "getFriendsAndBlockList",
+        "summary": "Get Friends and Block List",
+        "description": "Retrieve both a player's friends list and block list in a single request.",
+        "tags": [
+          "Friends"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "description": "Epic Account ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Friends and block list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendsAndBlockListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token verification failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient scopes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Account not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/epic/friends/v1/{accountId}/friends": {
+      "get": {
+        "operationId": "getFriendsList",
+        "summary": "Get Friends List",
+        "description": "Retrieve only a player's friends list.",
+        "tags": [
+          "Friends"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "description": "Epic Account ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Friends list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Friend"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token verification failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/epic/friends/v1/{accountId}/blocklist": {
+      "get": {
+        "operationId": "getBlockList",
+        "summary": "Get Block List",
+        "description": "Retrieve only a player's block list.",
+        "tags": [
+          "Friends"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "description": "Epic Account ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Block list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BlockedUser"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token verification failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/epic/ecom/v3/platforms/{platform}/identities/{accountId}/ownership": {
+      "get": {
+        "operationId": "verifyOwnership",
+        "summary": "Verify Ownership",
+        "description": "Verify ownership of catalog items for an Epic Games account.",
+        "tags": [
+          "Ecom"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "platform",
+            "in": "path",
+            "required": true,
+            "description": "Platform identifier",
+            "schema": {
+              "type": "string",
+              "default": "EPIC"
+            }
+          },
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "description": "Epic Games Account ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nsCatalogItemId",
+            "in": "query",
+            "required": false,
+            "description": "Format sandboxId:catalogItemId (repeatable)",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "style": "form",
+            "explode": true
+          },
+          {
+            "name": "sandboxId",
+            "in": "query",
+            "required": false,
+            "description": "Retrieve full list of owned catalog items in sandbox",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ownership verification results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OwnershipItem"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/epic/ecom/v3/platforms/{platform}/identities/{accountId}/ownershipToken": {
+      "post": {
+        "operationId": "requestOwnershipToken",
+        "summary": "Request Ownership Verification Token",
+        "description": "Request a JWT for offline ownership verification.",
+        "tags": [
+          "Ecom"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "platform",
+            "in": "path",
+            "required": true,
+            "description": "Platform identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "description": "Epic Games Account ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nsCatalogItemId"
+                ],
+                "properties": {
+                  "nsCatalogItemId": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Format sandboxId:catalogItemId (repeatable)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ownership verification JWT token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnershipTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/epic/ecom/v4/identities/{accountId}/entitlements": {
+      "get": {
+        "operationId": "getEntitlements",
+        "summary": "Get Entitlements",
+        "description": "Enumerate entitlements for an Epic Games account.",
+        "tags": [
+          "Ecom"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "description": "Epic Games Account ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sandboxId",
+            "in": "query",
+            "required": true,
+            "description": "Game namespace/sandbox",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entitlementName",
+            "in": "query",
+            "required": false,
+            "description": "Filter by entitlement name (repeatable)",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "style": "form",
+            "explode": true
+          },
+          {
+            "name": "includeRedeemed",
+            "in": "query",
+            "required": false,
+            "description": "Include redeemed entitlements",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of entitlements",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Entitlement"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/epic/ecom/v4/platforms/{platform}/identities/{accountId}/entitlementToken": {
+      "post": {
+        "operationId": "requestEntitlementToken",
+        "summary": "Request Entitlement Verification Token",
+        "description": "Request a JWT for offline entitlement verification.",
+        "tags": [
+          "Ecom"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "platform",
+            "in": "path",
+            "required": true,
+            "description": "Platform identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "description": "Epic Games Account ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "sandboxId"
+                ],
+                "properties": {
+                  "sandboxId": {
+                    "type": "string",
+                    "description": "Game namespace"
+                  },
+                  "entitlementName": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Specific entitlements to verify (repeatable)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Entitlement verification JWT token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntitlementTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/epic/ecom/v3/identities/{accountId}/namespaces/{sandboxId}/offers": {
+      "get": {
+        "operationId": "queryOffers",
+        "summary": "Query Offers",
+        "description": "Query available offers for an account in a namespace.",
+        "tags": [
+          "Ecom"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "description": "Epic Games Account ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sandboxId",
+            "in": "path",
+            "required": true,
+            "description": "Game namespace/sandbox ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of offers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OffersResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/epic/ecom/v3/identities/{accountId}/entitlements/redeem": {
+      "put": {
+        "operationId": "redeemEntitlements",
+        "summary": "Redeem Entitlements",
+        "description": "Redeem or consume entitlements for an account.",
+        "tags": [
+          "Ecom"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "description": "Epic Games Account ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedeemEntitlementsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Entitlements redeemed successfully"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/epic/ecom/v3/namespace/{namespace}/entitlements/clawbacks": {
+      "get": {
+        "operationId": "queryClawbacks",
+        "summary": "Query Clawbacks",
+        "description": "Query entitlement clawbacks for a namespace.",
+        "tags": [
+          "Ecom"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "description": "Game sandbox ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clawbackDate",
+            "in": "query",
+            "required": true,
+            "description": "Clawback date filter",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "required": false,
+            "description": "Number of results (1-100, default 10)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            }
+          },
+          {
+            "name": "nextPageKey",
+            "in": "query",
+            "required": false,
+            "description": "Pagination key",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Clawback results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClawbacksResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Client restricted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/anticheat/v1/{deploymentId}/status": {
+      "get": {
+        "operationId": "getAntiCheatStatus",
+        "summary": "Query Anti-Cheat Service Status",
+        "description": "Query the anti-cheat service status for a deployment.",
+        "tags": [
+          "AntiCheat"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "deploymentId",
+            "in": "path",
+            "required": true,
+            "description": "EOS Deployment ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Anti-cheat status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AntiCheatStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sanctions/v1/productUser/{productUserId}/active": {
+      "get": {
+        "operationId": "getActivePlayerSanctions",
+        "summary": "Get Active Sanctions for Player",
+        "description": "Query active sanctions for a specific player.",
+        "tags": [
+          "Sanctions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "productUserId",
+            "in": "path",
+            "required": true,
+            "description": "EOS Product User ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "description": "Filter by action (repeatable, max 5)",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 5
+            },
+            "style": "form",
+            "explode": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active sanctions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompactSanctionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sanctions/v1/sync": {
+      "get": {
+        "operationId": "syncSanctions",
+        "summary": "Synchronize Sanctions",
+        "description": "Synchronize sanctions events to an external service.",
+        "tags": [
+          "Sanctions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "lastLogId",
+            "in": "query",
+            "required": false,
+            "description": "Last processed sanction event entry ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sanction events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SanctionEventsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sanctions/v1/{deploymentId}/active-sanctions": {
+      "get": {
+        "operationId": "bulkQueryActiveSanctions",
+        "summary": "Bulk Query Active Sanctions",
+        "description": "Query active sanctions for multiple players at once.",
+        "tags": [
+          "Sanctions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "deploymentId",
+            "in": "path",
+            "required": true,
+            "description": "EOS Deployment ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "productUserId",
+            "in": "query",
+            "required": true,
+            "description": "Product User IDs (repeatable, max 100)",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 100
+            },
+            "style": "form",
+            "explode": true
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": true,
+            "description": "Filter by action (repeatable, max 5)",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 5
+            },
+            "style": "form",
+            "explode": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active sanctions for queried players",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkSanctionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sanctions/v1/{deploymentId}/sanctions": {
+      "get": {
+        "operationId": "queryAllSanctions",
+        "summary": "Query All Sanctions",
+        "description": "Query all sanctions for a deployment with pagination.",
+        "tags": [
+          "Sanctions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "deploymentId",
+            "in": "path",
+            "required": true,
+            "description": "EOS Deployment ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Number of results per page",
+            "schema": {
+              "type": "integer",
+              "default": 100
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Offset for pagination",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated sanctions list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedSanctionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createSanctions",
+        "summary": "Create Sanctions",
+        "description": "Create one or more sanctions for players.",
+        "tags": [
+          "Sanctions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "deploymentId",
+            "in": "path",
+            "required": true,
+            "description": "EOS Deployment ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SanctionCreatePayload"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created sanctions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Sanction"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateSanctions",
+        "summary": "Update Sanctions",
+        "description": "Update one or more existing sanctions.",
+        "tags": [
+          "Sanctions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "deploymentId",
+            "in": "path",
+            "required": true,
+            "description": "EOS Deployment ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SanctionUpdatePayload"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated sanctions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Sanction"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeSanctions",
+        "summary": "Remove Sanctions",
+        "description": "Remove one or more sanctions.",
+        "tags": [
+          "Sanctions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "deploymentId",
+            "in": "path",
+            "required": true,
+            "description": "EOS Deployment ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "referenceId"
+                  ],
+                  "properties": {
+                    "referenceId": {
+                      "type": "string",
+                      "description": "Sanction reference ID to remove"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Sanctions removed"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sanctions/v1/{deploymentId}/users/{productUserId}": {
+      "get": {
+        "operationId": "queryPlayerSanctions",
+        "summary": "Query All Sanctions for Player",
+        "description": "Query all sanctions (active and historical) for a specific player.",
+        "tags": [
+          "Sanctions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "deploymentId",
+            "in": "path",
+            "required": true,
+            "description": "EOS Deployment ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "productUserId",
+            "in": "path",
+            "required": true,
+            "description": "EOS Product User ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated sanctions for player",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedSanctionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/player-reports/v1/report": {
+      "post": {
+        "operationId": "sendPlayerReport",
+        "summary": "Send Player Report",
+        "description": "Submit a new player report.",
+        "tags": [
+          "PlayerReports"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlayerReportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Report submitted"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/player-reports/v1/report/{deploymentId}": {
+      "get": {
+        "operationId": "findPlayerReports",
+        "summary": "Find Player Reports",
+        "description": "Search and retrieve player reports with filtering and pagination.",
+        "tags": [
+          "PlayerReports"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "deploymentId",
+            "in": "path",
+            "required": true,
+            "description": "EOS Deployment ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reportingPlayerId",
+            "in": "query",
+            "required": false,
+            "description": "Filter by reporter Product User ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reportedPlayerId",
+            "in": "query",
+            "required": false,
+            "description": "Filter by reported Product User ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reasonId",
+            "in": "query",
+            "required": false,
+            "description": "Filter by report reason ID",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "startTime",
+            "in": "query",
+            "required": false,
+            "description": "Start of time range (ISO 8601)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "endTime",
+            "in": "query",
+            "required": false,
+            "description": "End of time range (ISO 8601)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "pagination",
+            "in": "query",
+            "required": false,
+            "description": "Enable pagination",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "Sort order",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "time:desc",
+                "time:asc",
+                "reasonId:asc",
+                "reasonId:desc"
+              ],
+              "default": "time:desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Player reports",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerReportsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/player-reports/v1/report/reason/definition": {
+      "get": {
+        "operationId": "getReportReasonDefinitions",
+        "summary": "Get Report Reason Definitions",
+        "description": "Retrieve the list of valid report reason IDs and descriptions.",
+        "tags": [
+          "PlayerReports"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Report reason definitions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportReasonsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rtc/v1/{deploymentId}/room/{roomId}": {
+      "post": {
+        "operationId": "createRoomTokens",
+        "summary": "Create Voice Room Tokens",
+        "description": "Create a voice room and generate tokens for participants.",
+        "tags": [
+          "Voice"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "deploymentId",
+            "in": "path",
+            "required": true,
+            "description": "EOS Deployment ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "roomId",
+            "in": "path",
+            "required": true,
+            "description": "Voice room ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoomTokensRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Room created with participant tokens",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomTokensResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rtc/v1/{deploymentId}/room/{roomId}/participants/{productUserId}": {
+      "post": {
+        "operationId": "modifyRoomParticipant",
+        "summary": "Modify Room Participant",
+        "description": "Modify a participant's settings in a voice room (e.g. mute/unmute).",
+        "tags": [
+          "Voice"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "deploymentId",
+            "in": "path",
+            "required": true,
+            "description": "EOS Deployment ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "roomId",
+            "in": "path",
+            "required": true,
+            "description": "Voice room ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "productUserId",
+            "in": "path",
+            "required": true,
+            "description": "Product User ID of participant",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "hardMuted"
+                ],
+                "properties": {
+                  "hardMuted": {
+                    "type": "boolean",
+                    "description": "Mute status"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Participant modified"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeRoomParticipant",
+        "summary": "Remove Room Participant",
+        "description": "Remove a participant from a voice room.",
+        "tags": [
+          "Voice"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "deploymentId",
+            "in": "path",
+            "required": true,
+            "description": "EOS Deployment ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "roomId",
+            "in": "path",
+            "required": true,
+            "description": "Voice room ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "productUserId",
+            "in": "path",
+            "required": true,
+            "description": "Product User ID of participant to remove",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Participant removed"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "errorCode": {
+            "type": "integer"
+          },
+          "errorMessage": {
+            "type": "string"
+          },
+          "numericErrorCode": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "EpicAuthTokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "expires_in": {
+            "type": "integer"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "account_id": {
+            "type": "string"
+          },
+          "client_id": {
+            "type": "string"
+          },
+          "application_id": {
+            "type": "string"
+          },
+          "token_type": {
+            "type": "string",
+            "enum": [
+              "bearer"
+            ]
+          },
+          "refresh_token": {
+            "type": "string"
+          },
+          "refresh_expires_in": {
+            "type": "integer"
+          },
+          "refresh_expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "scope": {
+            "type": "string"
+          }
+        }
+      },
+      "JwksResponse": {
+        "type": "object",
+        "properties": {
+          "keys": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kty": {
+                  "type": "string"
+                },
+                "e": {
+                  "type": "string"
+                },
+                "kid": {
+                  "type": "string"
+                },
+                "n": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "TokenInfoResponse": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "token_type": {
+            "type": "string"
+          },
+          "expires_in": {
+            "type": "integer"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "account_id": {
+            "type": "string"
+          },
+          "client_id": {
+            "type": "string"
+          },
+          "application_id": {
+            "type": "string"
+          }
+        }
+      },
+      "EpicAccount": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "preferredLanguage": {
+            "type": "string"
+          },
+          "linkedAccounts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "identityProviderId": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "EosConnectTokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "token_type": {
+            "type": "string",
+            "enum": [
+              "bearer"
+            ]
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_in": {
+            "type": "integer"
+          },
+          "nonce": {
+            "type": "string"
+          },
+          "organization_id": {
+            "type": "string"
+          },
+          "product_id": {
+            "type": "string"
+          },
+          "sandbox_id": {
+            "type": "string"
+          },
+          "deployment_id": {
+            "type": "string"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "organization_user_id": {
+            "type": "string"
+          },
+          "product_user_id": {
+            "type": "string"
+          },
+          "id_token": {
+            "type": "string"
+          }
+        }
+      },
+      "ExternalAccountsResponse": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ProductUsersResponse": {
+        "type": "object",
+        "properties": {
+          "productUsers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "accounts": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LinkedAccount"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "LinkedAccount": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "identityProviderId": {
+            "type": "string"
+          },
+          "lastLogin": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "FriendsAndBlockListResponse": {
+        "type": "object",
+        "properties": {
+          "friends": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Friend"
+            }
+          },
+          "blockList": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BlockedUser"
+            }
+          }
+        }
+      },
+      "Friend": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "favorite": {
+            "type": "boolean"
+          },
+          "nickname": {
+            "type": "string"
+          }
+        }
+      },
+      "BlockedUser": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OwnershipItem": {
+        "type": "object",
+        "properties": {
+          "namespace": {
+            "type": "string"
+          },
+          "itemId": {
+            "type": "string"
+          },
+          "owned": {
+            "type": "boolean"
+          }
+        }
+      },
+      "OwnershipTokenResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "RS512-signed JWT with 5-minute expiration"
+          }
+        }
+      },
+      "Entitlement": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "entitlementName": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "catalogItemId": {
+            "type": "string"
+          },
+          "entitlementType": {
+            "type": "string"
+          },
+          "grantDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "consumable": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "useCount": {
+            "type": "integer"
+          },
+          "entitlementSource": {
+            "type": "string"
+          }
+        }
+      },
+      "EntitlementTokenResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "RS512-signed JWT with 5-minute expiration"
+          }
+        }
+      },
+      "OffersResponse": {
+        "type": "object",
+        "properties": {
+          "elements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Offer"
+            }
+          }
+        }
+      },
+      "Offer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "offerType": {
+            "type": "string"
+          },
+          "priceInfo": {
+            "type": "object",
+            "properties": {
+              "currencyCode": {
+                "type": "string"
+              },
+              "decimals": {
+                "type": "integer"
+              },
+              "prices": {
+                "type": "object"
+              }
+            }
+          },
+          "keyImages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "RedeemEntitlementsRequest": {
+        "type": "object",
+        "required": [
+          "entitlementIds",
+          "sandboxId"
+        ],
+        "properties": {
+          "entitlementIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sandboxId": {
+            "type": "string"
+          }
+        }
+      },
+      "ClawbacksResponse": {
+        "type": "object",
+        "properties": {
+          "nextPageKey": {
+            "type": "string"
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "elements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Clawback"
+            }
+          }
+        }
+      },
+      "Clawback": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "entitlementId": {
+            "type": "string"
+          },
+          "entitlementName": {
+            "type": "string"
+          },
+          "catalogItemId": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "entitlementType": {
+            "type": "string"
+          },
+          "clawbackReason": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "consumable": {
+            "type": "boolean"
+          },
+          "country": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "grantDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "originalUseCount": {
+            "type": "integer"
+          },
+          "useCount": {
+            "type": "integer"
+          },
+          "platformType": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "AntiCheatStatus": {
+        "type": "object",
+        "properties": {
+          "serverKick": {
+            "type": "boolean",
+            "description": "Whether anti-cheat server kicks are enabled"
+          }
+        }
+      },
+      "CompactSanctionsResponse": {
+        "type": "object",
+        "properties": {
+          "elements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompactSanction"
+            }
+          }
+        }
+      },
+      "CompactSanction": {
+        "type": "object",
+        "properties": {
+          "referenceId": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Epoch timestamp when sanction was placed"
+          },
+          "action": {
+            "type": "string"
+          },
+          "expirationTimestamp": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          }
+        }
+      },
+      "SanctionEventsResponse": {
+        "type": "object",
+        "properties": {
+          "elements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SanctionEvent"
+            }
+          }
+        }
+      },
+      "SanctionEvent": {
+        "type": "object",
+        "properties": {
+          "productUserId": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "justification": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "eventType": {
+            "type": "integer",
+            "description": "1=created, 2=updated, 3=deleted"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "logId": {
+            "type": "string"
+          },
+          "referenceId": {
+            "type": "string"
+          }
+        }
+      },
+      "BulkSanctionsResponse": {
+        "type": "object",
+        "properties": {
+          "elements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "productUserId": {
+                  "type": "string"
+                },
+                "referenceId": {
+                  "type": "string"
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "action": {
+                  "type": "string"
+                },
+                "expirationTimestamp": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                }
+              }
+            }
+          }
+        }
+      },
+      "PaginatedSanctionsResponse": {
+        "type": "object",
+        "properties": {
+          "elements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Sanction"
+            }
+          },
+          "paging": {
+            "$ref": "#/components/schemas/Paging"
+          }
+        }
+      },
+      "Sanction": {
+        "type": "object",
+        "properties": {
+          "referenceId": {
+            "type": "string"
+          },
+          "productUserId": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "justification": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string"
+          },
+          "pending": {
+            "type": "boolean"
+          },
+          "automated": {
+            "type": "boolean"
+          },
+          "deploymentId": {
+            "type": "string"
+          },
+          "batchUuid": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expirationTimestamp": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "removedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "identityProvider": {
+            "type": "string"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SanctionCreatePayload": {
+        "type": "object",
+        "required": [
+          "productUserId",
+          "action",
+          "justification",
+          "source"
+        ],
+        "properties": {
+          "productUserId": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "maxLength": 64
+          },
+          "justification": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "source": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "minLength": 2,
+            "maxLength": 64
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 16
+            }
+          },
+          "pending": {
+            "type": "boolean"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "maxProperties": 25
+          },
+          "displayName": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "identityProvider": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "accountId": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Sanction length in seconds"
+          }
+        }
+      },
+      "SanctionUpdatePayload": {
+        "type": "object",
+        "required": [
+          "referenceId",
+          "updates"
+        ],
+        "properties": {
+          "referenceId": {
+            "type": "string"
+          },
+          "updates": {
+            "type": "object",
+            "properties": {
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "metadata": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "justification": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            }
+          }
+        }
+      },
+      "PlayerReportRequest": {
+        "type": "object",
+        "required": [
+          "reportingPlayerId",
+          "reportedPlayerId",
+          "time",
+          "reasonId"
+        ],
+        "properties": {
+          "reportingPlayerId": {
+            "type": "string",
+            "description": "EOS Product User ID of reporter"
+          },
+          "reportedPlayerId": {
+            "type": "string",
+            "description": "EOS Product User ID being reported"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Report timestamp (ISO 8601)"
+          },
+          "reasonId": {
+            "type": "integer",
+            "description": "Report reason ID"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 1024,
+            "description": "Report message"
+          },
+          "context": {
+            "type": "string",
+            "maxLength": 4096,
+            "description": "Additional context as valid JSON"
+          }
+        }
+      },
+      "PlayerReportsResponse": {
+        "type": "object",
+        "properties": {
+          "paging": {
+            "$ref": "#/components/schemas/Paging"
+          },
+          "elements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayerReport"
+            }
+          }
+        }
+      },
+      "PlayerReport": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string"
+          },
+          "sandboxId": {
+            "type": "string"
+          },
+          "deploymentId": {
+            "type": "string"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reportingPlayerId": {
+            "type": "string"
+          },
+          "reportedPlayerId": {
+            "type": "string"
+          },
+          "reasonId": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "context": {
+            "type": "string"
+          }
+        }
+      },
+      "ReportReasonsResponse": {
+        "type": "object",
+        "properties": {
+          "elements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "reasonId": {
+                  "type": "integer"
+                },
+                "reasonString": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "CreateRoomTokensRequest": {
+        "type": "object",
+        "required": [
+          "participants"
+        ],
+        "properties": {
+          "participants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "puid",
+                "hardMuted"
+              ],
+              "properties": {
+                "puid": {
+                  "type": "string",
+                  "description": "EOS Product User ID"
+                },
+                "clientIp": {
+                  "type": "string",
+                  "description": "Player's IP for server selection"
+                },
+                "hardMuted": {
+                  "type": "boolean",
+                  "description": "Initial mute status"
+                }
+              }
+            }
+          }
+        }
+      },
+      "RoomTokensResponse": {
+        "type": "object",
+        "properties": {
+          "roomId": {
+            "type": "string"
+          },
+          "clientBaseUrl": {
+            "type": "string"
+          },
+          "deploymentId": {
+            "type": "string"
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "puid": {
+                  "type": "string"
+                },
+                "token": {
+                  "type": "string"
+                },
+                "hardMuted": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Paging": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "EOS access token obtained via Auth or Connect endpoints"
+      },
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Base64-encoded ClientId:ClientSecret"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}
