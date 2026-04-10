@@ -1,0 +1,1497 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "farmOS API",
+    "description": "REST API for farmOS, a web-based farm management platform. Built on Drupal's JSON:API module, it provides access to farm assets, logs, plans, and other resources using the JSON:API specification. All resources use UUIDs.",
+    "version": "2.0.0",
+    "x-jentic-source-url": "https://farmos.org/development/api/"
+  },
+  "servers": [
+    {
+      "url": "https://{host}",
+      "description": "farmOS instance",
+      "variables": {
+        "host": {
+          "default": "your-farm.farmos.net",
+          "description": "Your farmOS server hostname"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/api": {
+      "get": {
+        "operationId": "getApiRoot",
+        "summary": "Get API root information",
+        "description": "Returns meta information about the authenticated user and the farmOS server, including available resource types.",
+        "tags": [
+          "Meta"
+        ],
+        "responses": {
+          "200": {
+            "description": "API root metadata",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRoot"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/schema": {
+      "get": {
+        "operationId": "getApiSchema",
+        "summary": "Get API schema",
+        "description": "Returns a JSON Schema describing all available API resources, their fields, and relationships.",
+        "tags": [
+          "Meta"
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON Schema of available resources",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/log/{bundle}": {
+      "get": {
+        "operationId": "listLogs",
+        "summary": "List log entries",
+        "description": "Retrieve a list of log entries of the specified bundle type (e.g., activity, observation, harvest, seeding, input, maintenance).",
+        "tags": [
+          "Logs"
+        ],
+        "parameters": [
+          {
+            "name": "bundle",
+            "in": "path",
+            "required": true,
+            "description": "Log bundle type",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "activity",
+                "observation",
+                "harvest",
+                "seeding",
+                "input",
+                "maintenance",
+                "medical",
+                "transplanting"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/FilterParam"
+          },
+          {
+            "$ref": "#/components/parameters/SortParam"
+          },
+          {
+            "$ref": "#/components/parameters/PageLimit"
+          },
+          {
+            "$ref": "#/components/parameters/PageOffset"
+          },
+          {
+            "$ref": "#/components/parameters/Include"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of log entries",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonApiListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createLog",
+        "summary": "Create a log entry",
+        "description": "Create a new log entry of the specified bundle type.",
+        "tags": [
+          "Logs"
+        ],
+        "parameters": [
+          {
+            "name": "bundle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "activity",
+                "observation",
+                "harvest",
+                "seeding",
+                "input",
+                "maintenance",
+                "medical",
+                "transplanting"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/vnd.api+json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonApiCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Log entry created",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonApiSingleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/log/{bundle}/{uuid}": {
+      "get": {
+        "operationId": "getLog",
+        "summary": "Get a log entry",
+        "description": "Retrieve a single log entry by UUID.",
+        "tags": [
+          "Logs"
+        ],
+        "parameters": [
+          {
+            "name": "bundle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "description": "UUID of the log entry",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Include"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Log entry details",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonApiSingleResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateLog",
+        "summary": "Update a log entry",
+        "description": "Update an existing log entry.",
+        "tags": [
+          "Logs"
+        ],
+        "parameters": [
+          {
+            "name": "bundle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/vnd.api+json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonApiUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Log entry updated",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonApiSingleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteLog",
+        "summary": "Delete a log entry",
+        "description": "Delete a log entry by UUID.",
+        "tags": [
+          "Logs"
+        ],
+        "parameters": [
+          {
+            "name": "bundle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Log entry deleted"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/asset/{bundle}": {
+      "get": {
+        "operationId": "listAssets",
+        "summary": "List farm assets",
+        "description": "Retrieve a list of farm assets of the specified bundle type.",
+        "tags": [
+          "Assets"
+        ],
+        "parameters": [
+          {
+            "name": "bundle",
+            "in": "path",
+            "required": true,
+            "description": "Asset bundle type",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "land",
+                "plant",
+                "animal",
+                "equipment",
+                "structure",
+                "water",
+                "material",
+                "seed",
+                "sensor",
+                "compost",
+                "group"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/FilterParam"
+          },
+          {
+            "$ref": "#/components/parameters/SortParam"
+          },
+          {
+            "$ref": "#/components/parameters/PageLimit"
+          },
+          {
+            "$ref": "#/components/parameters/PageOffset"
+          },
+          {
+            "$ref": "#/components/parameters/Include"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of assets",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonApiListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createAsset",
+        "summary": "Create a farm asset",
+        "description": "Create a new farm asset of the specified bundle type.",
+        "tags": [
+          "Assets"
+        ],
+        "parameters": [
+          {
+            "name": "bundle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "land",
+                "plant",
+                "animal",
+                "equipment",
+                "structure",
+                "water",
+                "material",
+                "seed",
+                "sensor",
+                "compost",
+                "group"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/vnd.api+json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonApiCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Asset created",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonApiSingleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/asset/{bundle}/{uuid}": {
+      "get": {
+        "operationId": "getAsset",
+        "summary": "Get a farm asset",
+        "tags": [
+          "Assets"
+        ],
+        "parameters": [
+          {
+            "name": "bundle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Include"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Asset details",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonApiSingleResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateAsset",
+        "summary": "Update a farm asset",
+        "tags": [
+          "Assets"
+        ],
+        "parameters": [
+          {
+            "name": "bundle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/vnd.api+json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonApiUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Asset updated",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonApiSingleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteAsset",
+        "summary": "Delete a farm asset",
+        "tags": [
+          "Assets"
+        ],
+        "parameters": [
+          {
+            "name": "bundle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Asset deleted"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/plan/{bundle}": {
+      "get": {
+        "operationId": "listPlans",
+        "summary": "List farm plans",
+        "description": "Retrieve a list of farm plans of the specified bundle type.",
+        "tags": [
+          "Plans"
+        ],
+        "parameters": [
+          {
+            "name": "bundle",
+            "in": "path",
+            "required": true,
+            "description": "Plan bundle type",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/FilterParam"
+          },
+          {
+            "$ref": "#/components/parameters/SortParam"
+          },
+          {
+            "$ref": "#/components/parameters/PageLimit"
+          },
+          {
+            "$ref": "#/components/parameters/PageOffset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of plans",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonApiListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPlan",
+        "summary": "Create a farm plan",
+        "tags": [
+          "Plans"
+        ],
+        "parameters": [
+          {
+            "name": "bundle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/vnd.api+json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonApiCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Plan created",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonApiSingleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/plan/{bundle}/{uuid}": {
+      "get": {
+        "operationId": "getPlan",
+        "summary": "Get a farm plan",
+        "tags": [
+          "Plans"
+        ],
+        "parameters": [
+          {
+            "name": "bundle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plan details",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonApiSingleResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updatePlan",
+        "summary": "Update a farm plan",
+        "tags": [
+          "Plans"
+        ],
+        "parameters": [
+          {
+            "name": "bundle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/vnd.api+json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonApiUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Plan updated",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonApiSingleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deletePlan",
+        "summary": "Delete a farm plan",
+        "tags": [
+          "Plans"
+        ],
+        "parameters": [
+          {
+            "name": "bundle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Plan deleted"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/taxonomy_term/{bundle}": {
+      "get": {
+        "operationId": "listTaxonomyTerms",
+        "summary": "List taxonomy terms",
+        "description": "Retrieve taxonomy terms used for categorization (e.g., crop families, seasons, units).",
+        "tags": [
+          "Taxonomy"
+        ],
+        "parameters": [
+          {
+            "name": "bundle",
+            "in": "path",
+            "required": true,
+            "description": "Taxonomy vocabulary name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/FilterParam"
+          },
+          {
+            "$ref": "#/components/parameters/SortParam"
+          },
+          {
+            "$ref": "#/components/parameters/PageLimit"
+          },
+          {
+            "$ref": "#/components/parameters/PageOffset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of taxonomy terms",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonApiListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createTaxonomyTerm",
+        "summary": "Create a taxonomy term",
+        "tags": [
+          "Taxonomy"
+        ],
+        "parameters": [
+          {
+            "name": "bundle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/vnd.api+json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonApiCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Term created",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonApiSingleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/oauth/authorize": {
+      "get": {
+        "operationId": "oauthAuthorize",
+        "summary": "OAuth2 authorization endpoint",
+        "description": "Initiate the OAuth2 authorization code flow. Redirects the user to login and authorize the client application.",
+        "tags": [
+          "Authentication"
+        ],
+        "parameters": [
+          {
+            "name": "response_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "code"
+              ]
+            }
+          },
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": true,
+            "description": "Requested OAuth scopes",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "description": "CSRF protection token",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to login page or back to redirect_uri with authorization code"
+          },
+          "400": {
+            "description": "Invalid request parameters"
+          }
+        }
+      }
+    },
+    "/oauth/token": {
+      "post": {
+        "operationId": "oauthToken",
+        "summary": "OAuth2 token endpoint",
+        "description": "Exchange authorization code for access token, or refresh an existing token. Supports authorization_code, password, and refresh_token grant types.",
+        "tags": [
+          "Authentication"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "grant_type"
+                ],
+                "properties": {
+                  "grant_type": {
+                    "type": "string",
+                    "enum": [
+                      "authorization_code",
+                      "password",
+                      "refresh_token"
+                    ],
+                    "description": "OAuth2 grant type"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "Authorization code (for authorization_code grant)"
+                  },
+                  "client_id": {
+                    "type": "string"
+                  },
+                  "client_secret": {
+                    "type": "string"
+                  },
+                  "redirect_uri": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Must match the redirect_uri used in authorization (for authorization_code grant)"
+                  },
+                  "username": {
+                    "type": "string",
+                    "description": "Username (for password grant)"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "Password (for password grant)"
+                  },
+                  "refresh_token": {
+                    "type": "string",
+                    "description": "Refresh token (for refresh_token grant)"
+                  },
+                  "scope": {
+                    "type": "string",
+                    "description": "Requested scope"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid grant or request"
+          },
+          "401": {
+            "description": "Invalid client credentials"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "FilterParam": {
+        "name": "filter",
+        "in": "query",
+        "description": "JSON:API filter parameters. Use filter[field][condition][path], filter[field][condition][operator], filter[field][condition][value] format.",
+        "schema": {
+          "type": "object"
+        },
+        "style": "deepObject",
+        "explode": true
+      },
+      "SortParam": {
+        "name": "sort",
+        "in": "query",
+        "description": "Sort field(s). Prefix with '-' for descending (e.g., '-created')",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "PageLimit": {
+        "name": "page[limit]",
+        "in": "query",
+        "description": "Number of items per page",
+        "schema": {
+          "type": "integer",
+          "default": 50
+        }
+      },
+      "PageOffset": {
+        "name": "page[offset]",
+        "in": "query",
+        "description": "Offset for pagination",
+        "schema": {
+          "type": "integer",
+          "default": 0
+        }
+      },
+      "Include": {
+        "name": "include",
+        "in": "query",
+        "description": "Comma-separated list of relationship paths to include",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "ApiRoot": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "farm": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "version": {
+                    "type": "string"
+                  }
+                }
+              },
+              "user": {
+                "type": "object",
+                "properties": {
+                  "uid": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "links": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        }
+      },
+      "JsonApiListResponse": {
+        "type": "object",
+        "properties": {
+          "jsonapi": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "string",
+                "example": "1.0"
+              },
+              "meta": {
+                "type": "object"
+              }
+            }
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JsonApiResource"
+            }
+          },
+          "included": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JsonApiResource"
+            }
+          },
+          "links": {
+            "$ref": "#/components/schemas/JsonApiLinks"
+          }
+        }
+      },
+      "JsonApiSingleResponse": {
+        "type": "object",
+        "properties": {
+          "jsonapi": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "string"
+              }
+            }
+          },
+          "data": {
+            "$ref": "#/components/schemas/JsonApiResource"
+          },
+          "included": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JsonApiResource"
+            }
+          },
+          "links": {
+            "$ref": "#/components/schemas/JsonApiLinks"
+          }
+        }
+      },
+      "JsonApiResource": {
+        "type": "object",
+        "required": [
+          "type",
+          "id"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Resource type (e.g., log--activity, asset--plant)"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Resource UUID"
+          },
+          "attributes": {
+            "type": "object",
+            "description": "Resource attributes (varies by type)",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "notes": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "string"
+                  },
+                  "format": {
+                    "type": "string"
+                  }
+                }
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "created": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "changed": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "relationships": {
+            "type": "object",
+            "description": "Resource relationships",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/JsonApiResourceIdentifier"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/JsonApiResourceIdentifier"
+                      }
+                    }
+                  ]
+                },
+                "links": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "links": {
+            "type": "object",
+            "properties": {
+              "self": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        }
+      },
+      "JsonApiResourceIdentifier": {
+        "type": "object",
+        "required": [
+          "type",
+          "id"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "JsonApiCreateRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "type",
+              "attributes"
+            ],
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "attributes": {
+                "type": "object",
+                "description": "Resource attributes"
+              },
+              "relationships": {
+                "type": "object",
+                "description": "Resource relationships"
+              }
+            }
+          }
+        }
+      },
+      "JsonApiUpdateRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "type",
+              "id"
+            ],
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "attributes": {
+                "type": "object"
+              },
+              "relationships": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "JsonApiLinks": {
+        "type": "object",
+        "properties": {
+          "self": {
+            "type": "string",
+            "format": "uri"
+          },
+          "next": {
+            "type": "string",
+            "format": "uri"
+          },
+          "prev": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "OAuthTokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "refresh_token": {
+            "type": "string"
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Token lifetime in seconds"
+          },
+          "token_type": {
+            "type": "string",
+            "example": "Bearer"
+          },
+          "scope": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "description": "OAuth2 authentication",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "/oauth/authorize",
+            "tokenUrl": "/oauth/token",
+            "scopes": {}
+          },
+          "password": {
+            "tokenUrl": "/oauth/token",
+            "scopes": {}
+          }
+        }
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer token from OAuth2 token endpoint"
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2": []
+    },
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Meta",
+      "description": "API metadata and schema information"
+    },
+    {
+      "name": "Authentication",
+      "description": "OAuth2 authentication endpoints"
+    },
+    {
+      "name": "Logs",
+      "description": "Farm log entries (activities, observations, harvests, etc.)"
+    },
+    {
+      "name": "Assets",
+      "description": "Farm assets (land, plants, animals, equipment, etc.)"
+    },
+    {
+      "name": "Plans",
+      "description": "Farm plans"
+    },
+    {
+      "name": "Taxonomy",
+      "description": "Taxonomy terms for categorization"
+    }
+  ]
+}
