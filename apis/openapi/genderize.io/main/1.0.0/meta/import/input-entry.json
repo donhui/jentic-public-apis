@@ -1,0 +1,242 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Genderize API",
+    "description": "A simple API that predicts the gender of a person based on a first name. Returns the statistical probability of a name being male or female.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://genderize.io/documentation"
+  },
+  "servers": [
+    {
+      "url": "https://api.genderize.io",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "predictGender",
+        "summary": "Predict gender for a name",
+        "description": "Predicts the gender of a person based on their first name. Supports optional localization by country.",
+        "tags": [
+          "Gender Prediction"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "description": "The name to predict gender for. Recommended to use first name. Can also accept full names which will be parsed.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "peter"
+          },
+          {
+            "name": "name[]",
+            "in": "query",
+            "required": false,
+            "description": "Array of names for batch prediction (up to 10 names). Use this instead of 'name' for batch requests.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 10
+            },
+            "style": "form",
+            "explode": true
+          },
+          {
+            "name": "country_id",
+            "in": "query",
+            "required": false,
+            "description": "ISO 3166-1 alpha-2 country code to scope the prediction to a specific country for higher accuracy.",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 2
+            },
+            "example": "US"
+          },
+          {
+            "name": "apikey",
+            "in": "query",
+            "required": false,
+            "description": "API key for authenticated access. Required for more than 100 requests/day.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful gender prediction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/GenderPrediction"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/GenderPrediction"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Rate-Limit-Limit": {
+                "description": "Total amount of names available in the current time window",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Rate-Limit-Remaining": {
+                "description": "Remaining amount of names available in the current time window",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Rate-Limit-Reset": {
+                "description": "Seconds remaining until a new time window opens",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required - Subscription is not active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content - Missing or invalid name parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - Rate limit reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "apikey",
+        "description": "API key for authenticated access beyond the free tier (100 requests/day)"
+      }
+    },
+    "schemas": {
+      "GenderPrediction": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The processed name"
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female"
+            ],
+            "nullable": true,
+            "description": "Whether the predicted gender is male or female. Null if no prediction could be made."
+          },
+          "probability": {
+            "type": "number",
+            "format": "float",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "The certainty with which the gender was predicted"
+          },
+          "count": {
+            "type": "integer",
+            "description": "The amount of datapoints examined for the prediction"
+          },
+          "country_id": {
+            "type": "string",
+            "description": "The country_id used for the prediction, if provided"
+          }
+        },
+        "required": [
+          "name",
+          "gender",
+          "probability",
+          "count"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message describing the issue"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      }
+    }
+  },
+  "security": [
+    {},
+    {
+      "apiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Gender Prediction",
+      "description": "Endpoints for predicting gender from names"
+    }
+  ]
+}
