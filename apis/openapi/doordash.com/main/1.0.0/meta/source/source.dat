@@ -1,0 +1,2288 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "DoorDash Drive API",
+    "description": "DoorDash Drive is a delivery-as-a-service platform that allows businesses to request on-demand deliveries powered by DoorDash's Dasher network. The API enables creating deliveries, obtaining delivery quotes, managing businesses and stores, and receiving real-time delivery status updates via webhooks.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://developer.doordash.com/",
+    "contact": {
+      "name": "DoorDash Developer Support",
+      "url": "https://developer.doordash.com/en-US/docs/drive/support"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://openapi.doordash.com",
+      "description": "DoorDash Drive API production server"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Deliveries",
+      "description": "Create, retrieve, update, and cancel deliveries"
+    },
+    {
+      "name": "Quotes",
+      "description": "Validate delivery coverage and get pricing quotes before creating a delivery"
+    },
+    {
+      "name": "Businesses",
+      "description": "Manage business entities that own stores"
+    },
+    {
+      "name": "Stores",
+      "description": "Manage store locations under a business"
+    }
+  ],
+  "paths": {
+    "/drive/v2/deliveries": {
+      "post": {
+        "tags": ["Deliveries"],
+        "summary": "Create a delivery",
+        "description": "Creates a new delivery request. A Dasher will be assigned to pick up items from the pickup address and deliver them to the dropoff address. The external_delivery_id must be unique across all your deliveries.",
+        "operationId": "createDelivery",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDeliveryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Delivery created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Delivery"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - bad or expired JWT token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authorization failed - identity verified but operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - system state does not allow operation to proceed (e.g. duplicate external_delivery_id)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error - request is properly formatted but cannot be executed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Deliveries"],
+        "summary": "List deliveries",
+        "description": "Retrieves a list of deliveries. Results can be filtered by various query parameters.",
+        "operationId": "listDeliveries",
+        "parameters": [
+          {
+            "name": "pickup_external_business_id",
+            "in": "query",
+            "description": "Filter deliveries by the external business ID of the pickup location",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pickup_external_store_id",
+            "in": "query",
+            "description": "Filter deliveries by the external store ID of the pickup location",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "created_after",
+            "in": "query",
+            "description": "Filter deliveries created after this ISO-8601 UTC timestamp",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "created_before",
+            "in": "query",
+            "description": "Filter deliveries created before this ISO-8601 UTC timestamp",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of deliveries to return",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "continuation_token",
+            "in": "query",
+            "description": "Token for paginating through results",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of deliveries retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/drive/v2/deliveries/{external_delivery_id}": {
+      "get": {
+        "tags": ["Deliveries"],
+        "summary": "Get a delivery",
+        "description": "Retrieves the current status and details of an existing delivery by its external delivery ID.",
+        "operationId": "getDelivery",
+        "parameters": [
+          {
+            "name": "external_delivery_id",
+            "in": "path",
+            "description": "The unique external delivery identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delivery details retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Delivery"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Delivery not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Deliveries"],
+        "summary": "Update a delivery",
+        "description": "Updates an existing delivery. Only certain fields can be updated depending on the current delivery status. For example, you can update tip amount or dropoff details before the Dasher picks up.",
+        "operationId": "updateDelivery",
+        "parameters": [
+          {
+            "name": "external_delivery_id",
+            "in": "path",
+            "description": "The unique external delivery identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDeliveryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Delivery updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Delivery"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Delivery not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - delivery is in a state that does not allow this update",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/drive/v2/deliveries/{external_delivery_id}/cancel": {
+      "put": {
+        "tags": ["Deliveries"],
+        "summary": "Cancel a delivery",
+        "description": "Cancels an existing delivery. A delivery can only be cancelled if it has not yet been picked up by the Dasher. Cancellation fees may apply depending on the delivery status at the time of cancellation.",
+        "operationId": "cancelDelivery",
+        "parameters": [
+          {
+            "name": "external_delivery_id",
+            "in": "path",
+            "description": "The unique external delivery identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelDeliveryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Delivery cancelled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Delivery"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Delivery not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - delivery cannot be cancelled in its current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/drive/v2/quotes": {
+      "post": {
+        "tags": ["Quotes"],
+        "summary": "Create a delivery quote",
+        "description": "Creates a delivery quote to validate coverage and get estimated pricing before creating a delivery. The quote provides fee estimates and estimated pickup/dropoff times.",
+        "operationId": "createQuote",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateQuoteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Quote created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Quote"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error - e.g. delivery outside coverage area",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/drive/v2/quotes/{quote_id}/accept": {
+      "post": {
+        "tags": ["Quotes"],
+        "summary": "Accept a delivery quote",
+        "description": "Accepts a previously created delivery quote, which creates a delivery at the quoted price. The quote must not be expired.",
+        "operationId": "acceptQuote",
+        "parameters": [
+          {
+            "name": "quote_id",
+            "in": "path",
+            "description": "The unique identifier of the quote to accept",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptQuoteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Quote accepted and delivery created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Delivery"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Quote not found or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Quote has already been accepted or is expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/drive/v2/businesses": {
+      "post": {
+        "tags": ["Businesses"],
+        "summary": "Create a business",
+        "description": "Creates a new business entity. A business groups multiple stores and is used for invoice organization and portal access.",
+        "operationId": "createBusiness",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBusinessRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Business created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Business"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business with this external_business_id already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Businesses"],
+        "summary": "List businesses",
+        "description": "Retrieves a list of businesses associated with your developer account.",
+        "operationId": "listBusinesses",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of businesses to return",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "continuation_token",
+            "in": "query",
+            "description": "Token for paginating through results",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of businesses retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/drive/v2/businesses/{external_business_id}": {
+      "get": {
+        "tags": ["Businesses"],
+        "summary": "Get a business",
+        "description": "Retrieves the details of an existing business by its external business ID.",
+        "operationId": "getBusiness",
+        "parameters": [
+          {
+            "name": "external_business_id",
+            "in": "path",
+            "description": "The unique external business identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Business details retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Business"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Business not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Businesses"],
+        "summary": "Update a business",
+        "description": "Updates an existing business entity.",
+        "operationId": "updateBusiness",
+        "parameters": [
+          {
+            "name": "external_business_id",
+            "in": "path",
+            "description": "The unique external business identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBusinessRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Business updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Business"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Business not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/drive/v2/businesses/{external_business_id}/stores": {
+      "post": {
+        "tags": ["Stores"],
+        "summary": "Create a store",
+        "description": "Creates a new store under a business. A store represents an individual pickup location such as a restaurant or storefront.",
+        "operationId": "createStore",
+        "parameters": [
+          {
+            "name": "external_business_id",
+            "in": "path",
+            "description": "The external business ID that owns this store",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Store created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Store"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Business not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Store with this external_store_id already exists under this business",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Stores"],
+        "summary": "List stores",
+        "description": "Retrieves a list of stores under a business.",
+        "operationId": "listStores",
+        "parameters": [
+          {
+            "name": "external_business_id",
+            "in": "path",
+            "description": "The external business ID that owns the stores",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of stores to return",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "continuation_token",
+            "in": "query",
+            "description": "Token for paginating through results",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of stores retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Business not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/drive/v2/businesses/{external_business_id}/stores/{external_store_id}": {
+      "get": {
+        "tags": ["Stores"],
+        "summary": "Get a store",
+        "description": "Retrieves the details of an existing store by its external store ID under a given business.",
+        "operationId": "getStore",
+        "parameters": [
+          {
+            "name": "external_business_id",
+            "in": "path",
+            "description": "The external business ID that owns this store",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "external_store_id",
+            "in": "path",
+            "description": "The unique external store identifier within the business",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Store details retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Store"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Business or store not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Stores"],
+        "summary": "Update a store",
+        "description": "Updates an existing store under a business.",
+        "operationId": "updateStore",
+        "parameters": [
+          {
+            "name": "external_business_id",
+            "in": "path",
+            "description": "The external business ID that owns this store",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "external_store_id",
+            "in": "path",
+            "description": "The unique external store identifier within the business",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Store updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Store"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Business or store not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token signed with HS256 using your signing_secret. The JWT must include claims: aud (doordash), iss (developer_id), kid (key_id), exp (expiration timestamp), iat (issued-at timestamp), and header dd-ver: DD-JWT-V1. Tokens typically expire after 5 minutes."
+      }
+    },
+    "schemas": {
+      "CreateDeliveryRequest": {
+        "type": "object",
+        "required": [
+          "external_delivery_id",
+          "pickup_address",
+          "pickup_phone_number",
+          "dropoff_address",
+          "dropoff_phone_number",
+          "order_value"
+        ],
+        "properties": {
+          "external_delivery_id": {
+            "type": "string",
+            "description": "A unique identifier for this delivery in your system"
+          },
+          "pickup_address": {
+            "type": "string",
+            "description": "Full street address of the pickup location"
+          },
+          "pickup_business_name": {
+            "type": "string",
+            "description": "Business name at the pickup location"
+          },
+          "pickup_phone_number": {
+            "type": "string",
+            "description": "Phone number at the pickup location in E.164 format (e.g. +16505555555)"
+          },
+          "pickup_instructions": {
+            "type": "string",
+            "description": "Instructions for the Dasher at the pickup location"
+          },
+          "pickup_reference_tag": {
+            "type": "string",
+            "description": "Reference tag for the pickup (e.g. order number for the Dasher to give at pickup)"
+          },
+          "pickup_external_business_id": {
+            "type": "string",
+            "description": "External business ID for the pickup location. Omit to use default business."
+          },
+          "pickup_external_store_id": {
+            "type": "string",
+            "description": "External store ID for the pickup location. Omit to use default store."
+          },
+          "dropoff_address": {
+            "type": "string",
+            "description": "Full street address of the dropoff location"
+          },
+          "dropoff_business_name": {
+            "type": "string",
+            "description": "Business name at the dropoff location"
+          },
+          "dropoff_phone_number": {
+            "type": "string",
+            "description": "Phone number at the dropoff location in E.164 format"
+          },
+          "dropoff_instructions": {
+            "type": "string",
+            "description": "Instructions for the Dasher at the dropoff location"
+          },
+          "dropoff_contact_given_name": {
+            "type": "string",
+            "description": "First name of the recipient at the dropoff location"
+          },
+          "dropoff_contact_family_name": {
+            "type": "string",
+            "description": "Last name of the recipient at the dropoff location"
+          },
+          "dropoff_contact_send_notifications": {
+            "type": "boolean",
+            "description": "Whether DoorDash should send SMS notifications to the dropoff contact"
+          },
+          "order_value": {
+            "type": "integer",
+            "description": "Value of the order in cents (e.g. 1999 for $19.99)"
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 currency code (e.g. USD)",
+            "default": "USD"
+          },
+          "tip": {
+            "type": "integer",
+            "description": "Tip amount for the Dasher in cents"
+          },
+          "order_contains": {
+            "type": "object",
+            "description": "Flags indicating what the order contains",
+            "properties": {
+              "alcohol": {
+                "type": "boolean",
+                "description": "Whether the order contains alcohol"
+              },
+              "pharmacy_items": {
+                "type": "boolean",
+                "description": "Whether the order contains pharmacy items"
+              },
+              "age_restricted_pharmacy_items": {
+                "type": "boolean",
+                "description": "Whether the order contains age-restricted pharmacy items"
+              }
+            }
+          },
+          "pickup_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Requested pickup time in ISO-8601 UTC format. If not specified, delivery is ASAP."
+          },
+          "dropoff_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Requested dropoff time in ISO-8601 UTC format"
+          },
+          "pickup_window": {
+            "type": "object",
+            "description": "Time window for pickup",
+            "properties": {
+              "start_time": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Start of the pickup window in ISO-8601 UTC format"
+              },
+              "end_time": {
+                "type": "string",
+                "format": "date-time",
+                "description": "End of the pickup window in ISO-8601 UTC format"
+              }
+            }
+          },
+          "dropoff_window": {
+            "type": "object",
+            "description": "Time window for dropoff",
+            "properties": {
+              "start_time": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Start of the dropoff window in ISO-8601 UTC format"
+              },
+              "end_time": {
+                "type": "string",
+                "format": "date-time",
+                "description": "End of the dropoff window in ISO-8601 UTC format"
+              }
+            }
+          },
+          "contactless_dropoff": {
+            "type": "boolean",
+            "description": "Whether the delivery should be contactless"
+          },
+          "action_if_undeliverable": {
+            "type": "string",
+            "description": "Action to take if the delivery cannot be completed",
+            "enum": ["return_to_pickup", "dispose"]
+          },
+          "dropoff_requires_signature": {
+            "type": "boolean",
+            "description": "Whether the dropoff requires a recipient signature. Cannot be true if contactless_dropoff is true."
+          },
+          "promotion_id": {
+            "type": "string",
+            "description": "Promotion ID for any applicable promotional pricing"
+          },
+          "dropoff_cash_on_delivery": {
+            "type": "integer",
+            "description": "Cash on delivery amount to collect in cents"
+          },
+          "items": {
+            "type": "array",
+            "description": "List of items in the delivery",
+            "items": {
+              "$ref": "#/components/schemas/DeliveryItem"
+            }
+          },
+          "team_lift_required": {
+            "type": "boolean",
+            "description": "Whether the delivery requires team lift (heavy items)"
+          },
+          "barcode_scanning_required": {
+            "type": "boolean",
+            "description": "Whether barcode scanning is required at pickup/dropoff"
+          },
+          "force_batch_id": {
+            "type": "string",
+            "description": "ID to batch multiple deliveries together for the same Dasher"
+          }
+        }
+      },
+      "UpdateDeliveryRequest": {
+        "type": "object",
+        "properties": {
+          "pickup_address": {
+            "type": "string",
+            "description": "Updated pickup address"
+          },
+          "pickup_business_name": {
+            "type": "string",
+            "description": "Updated business name at pickup"
+          },
+          "pickup_phone_number": {
+            "type": "string",
+            "description": "Updated phone number at pickup"
+          },
+          "pickup_instructions": {
+            "type": "string",
+            "description": "Updated pickup instructions"
+          },
+          "dropoff_address": {
+            "type": "string",
+            "description": "Updated dropoff address"
+          },
+          "dropoff_business_name": {
+            "type": "string",
+            "description": "Updated business name at dropoff"
+          },
+          "dropoff_phone_number": {
+            "type": "string",
+            "description": "Updated phone number at dropoff"
+          },
+          "dropoff_instructions": {
+            "type": "string",
+            "description": "Updated dropoff instructions"
+          },
+          "dropoff_contact_given_name": {
+            "type": "string",
+            "description": "Updated first name of the recipient"
+          },
+          "dropoff_contact_family_name": {
+            "type": "string",
+            "description": "Updated last name of the recipient"
+          },
+          "dropoff_contact_send_notifications": {
+            "type": "boolean",
+            "description": "Whether to send SMS notifications to the dropoff contact"
+          },
+          "tip": {
+            "type": "integer",
+            "description": "Updated tip amount in cents"
+          },
+          "pickup_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Updated pickup time"
+          },
+          "dropoff_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Updated dropoff time"
+          }
+        }
+      },
+      "CancelDeliveryRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Reason for cancelling the delivery"
+          }
+        }
+      },
+      "Delivery": {
+        "type": "object",
+        "properties": {
+          "external_delivery_id": {
+            "type": "string",
+            "description": "The unique external delivery identifier"
+          },
+          "delivery_status": {
+            "type": "string",
+            "description": "Current status of the delivery",
+            "enum": [
+              "created",
+              "confirmed",
+              "enroute_to_pickup",
+              "arrived_at_pickup",
+              "picked_up",
+              "enroute_to_dropoff",
+              "arrived_at_dropoff",
+              "delivered",
+              "cancelled"
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 currency code"
+          },
+          "fee": {
+            "type": "integer",
+            "description": "Delivery fee in cents"
+          },
+          "tip": {
+            "type": "integer",
+            "description": "Tip amount in cents"
+          },
+          "order_value": {
+            "type": "integer",
+            "description": "Order value in cents"
+          },
+          "pickup_address": {
+            "type": "string",
+            "description": "Pickup street address"
+          },
+          "pickup_business_name": {
+            "type": "string",
+            "description": "Business name at pickup"
+          },
+          "pickup_phone_number": {
+            "type": "string",
+            "description": "Phone number at pickup"
+          },
+          "pickup_instructions": {
+            "type": "string",
+            "description": "Pickup instructions"
+          },
+          "pickup_reference_tag": {
+            "type": "string",
+            "description": "Pickup reference tag"
+          },
+          "pickup_external_business_id": {
+            "type": "string",
+            "description": "External business ID for pickup"
+          },
+          "pickup_external_store_id": {
+            "type": "string",
+            "description": "External store ID for pickup"
+          },
+          "dropoff_address": {
+            "type": "string",
+            "description": "Dropoff street address"
+          },
+          "dropoff_business_name": {
+            "type": "string",
+            "description": "Business name at dropoff"
+          },
+          "dropoff_phone_number": {
+            "type": "string",
+            "description": "Phone number at dropoff"
+          },
+          "dropoff_instructions": {
+            "type": "string",
+            "description": "Dropoff instructions"
+          },
+          "dropoff_contact_given_name": {
+            "type": "string",
+            "description": "First name of the recipient"
+          },
+          "dropoff_contact_family_name": {
+            "type": "string",
+            "description": "Last name of the recipient"
+          },
+          "dropoff_contact_send_notifications": {
+            "type": "boolean",
+            "description": "Whether SMS notifications are sent to the dropoff contact"
+          },
+          "contactless_dropoff": {
+            "type": "boolean",
+            "description": "Whether the delivery is contactless"
+          },
+          "action_if_undeliverable": {
+            "type": "string",
+            "description": "Action taken if undeliverable",
+            "enum": ["return_to_pickup", "dispose"]
+          },
+          "dropoff_requires_signature": {
+            "type": "boolean",
+            "description": "Whether dropoff requires a signature"
+          },
+          "tracking_url": {
+            "type": "string",
+            "description": "URL for tracking the delivery status in real time"
+          },
+          "support_reference": {
+            "type": "string",
+            "description": "Reference ID for DoorDash support inquiries"
+          },
+          "dasher_id": {
+            "type": "integer",
+            "description": "Unique identifier of the assigned Dasher",
+            "nullable": true
+          },
+          "dasher_name": {
+            "type": "string",
+            "description": "Name of the assigned Dasher",
+            "nullable": true
+          },
+          "dasher_dropoff_phone_number": {
+            "type": "string",
+            "description": "Dasher phone number for dropoff contact",
+            "nullable": true
+          },
+          "dasher_pickup_phone_number": {
+            "type": "string",
+            "description": "Dasher phone number for pickup contact",
+            "nullable": true
+          },
+          "dasher_location": {
+            "type": "object",
+            "nullable": true,
+            "description": "Current location of the Dasher",
+            "properties": {
+              "lat": {
+                "type": "number",
+                "format": "double",
+                "description": "Latitude"
+              },
+              "lng": {
+                "type": "number",
+                "format": "double",
+                "description": "Longitude"
+              }
+            }
+          },
+          "dasher_vehicle_make": {
+            "type": "string",
+            "description": "Vehicle make of the Dasher",
+            "nullable": true
+          },
+          "dasher_vehicle_model": {
+            "type": "string",
+            "description": "Vehicle model of the Dasher",
+            "nullable": true
+          },
+          "dasher_vehicle_year": {
+            "type": "string",
+            "description": "Vehicle year of the Dasher",
+            "nullable": true
+          },
+          "pickup_time_estimated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Estimated pickup time in ISO-8601 UTC format",
+            "nullable": true
+          },
+          "pickup_time_actual": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Actual pickup time in ISO-8601 UTC format",
+            "nullable": true
+          },
+          "dropoff_time_estimated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Estimated dropoff time in ISO-8601 UTC format",
+            "nullable": true
+          },
+          "dropoff_time_actual": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Actual dropoff time in ISO-8601 UTC format",
+            "nullable": true
+          },
+          "return_time_estimated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Estimated return time if applicable",
+            "nullable": true
+          },
+          "return_time_actual": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Actual return time if applicable",
+            "nullable": true
+          },
+          "return_address": {
+            "type": "string",
+            "description": "Return address if delivery is undeliverable",
+            "nullable": true
+          },
+          "dropoff_verification_image_url": {
+            "type": "string",
+            "description": "URL of the dropoff verification photo taken by the Dasher",
+            "nullable": true
+          },
+          "pickup_verification_image_url": {
+            "type": "string",
+            "description": "URL of the pickup verification photo",
+            "nullable": true
+          },
+          "dropoff_signature_image_url": {
+            "type": "string",
+            "description": "URL of the recipient signature image",
+            "nullable": true
+          },
+          "promotion_id": {
+            "type": "string",
+            "description": "Applied promotion ID",
+            "nullable": true
+          },
+          "dropoff_cash_on_delivery": {
+            "type": "integer",
+            "description": "Cash on delivery amount in cents",
+            "nullable": true
+          },
+          "cancellation_reason": {
+            "type": "string",
+            "description": "Reason for cancellation if the delivery was cancelled",
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the delivery was last updated in ISO-8601 UTC format"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the delivery was created in ISO-8601 UTC format"
+          },
+          "items": {
+            "type": "array",
+            "description": "List of items in the delivery",
+            "items": {
+              "$ref": "#/components/schemas/DeliveryItem"
+            }
+          },
+          "force_batch_id": {
+            "type": "string",
+            "description": "Batch ID if the delivery is part of a batch",
+            "nullable": true
+          },
+          "team_lift_required": {
+            "type": "boolean",
+            "description": "Whether team lift is required"
+          },
+          "barcode_scanning_required": {
+            "type": "boolean",
+            "description": "Whether barcode scanning is required"
+          }
+        }
+      },
+      "DeliveryItem": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the item"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the item"
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Quantity of the item"
+          },
+          "external_id": {
+            "type": "string",
+            "description": "External identifier for the item"
+          },
+          "price": {
+            "type": "integer",
+            "description": "Price of the item in cents"
+          },
+          "weight": {
+            "type": "number",
+            "format": "double",
+            "description": "Weight of the item in pounds"
+          },
+          "length": {
+            "type": "number",
+            "format": "double",
+            "description": "Length of the item in inches"
+          },
+          "width": {
+            "type": "number",
+            "format": "double",
+            "description": "Width of the item in inches"
+          },
+          "height": {
+            "type": "number",
+            "format": "double",
+            "description": "Height of the item in inches"
+          },
+          "barcode": {
+            "type": "string",
+            "description": "Barcode value for the item"
+          },
+          "substitution_preference": {
+            "type": "string",
+            "description": "Substitution preference for the item",
+            "enum": ["no_substitution", "contact", "best_available"]
+          }
+        }
+      },
+      "DeliveryListResponse": {
+        "type": "object",
+        "properties": {
+          "deliveries": {
+            "type": "array",
+            "description": "List of deliveries",
+            "items": {
+              "$ref": "#/components/schemas/Delivery"
+            }
+          },
+          "continuation_token": {
+            "type": "string",
+            "description": "Token to retrieve the next page of results",
+            "nullable": true
+          }
+        }
+      },
+      "CreateQuoteRequest": {
+        "type": "object",
+        "required": [
+          "external_delivery_id",
+          "pickup_address",
+          "dropoff_address",
+          "order_value"
+        ],
+        "properties": {
+          "external_delivery_id": {
+            "type": "string",
+            "description": "A unique identifier for this delivery quote in your system"
+          },
+          "pickup_address": {
+            "type": "string",
+            "description": "Full street address of the pickup location"
+          },
+          "pickup_business_name": {
+            "type": "string",
+            "description": "Business name at the pickup location"
+          },
+          "pickup_phone_number": {
+            "type": "string",
+            "description": "Phone number at the pickup location"
+          },
+          "pickup_external_business_id": {
+            "type": "string",
+            "description": "External business ID for the pickup location"
+          },
+          "pickup_external_store_id": {
+            "type": "string",
+            "description": "External store ID for the pickup location"
+          },
+          "dropoff_address": {
+            "type": "string",
+            "description": "Full street address of the dropoff location"
+          },
+          "dropoff_phone_number": {
+            "type": "string",
+            "description": "Phone number at the dropoff location"
+          },
+          "order_value": {
+            "type": "integer",
+            "description": "Value of the order in cents"
+          },
+          "pickup_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Requested pickup time in ISO-8601 UTC format"
+          },
+          "dropoff_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Requested dropoff time in ISO-8601 UTC format"
+          },
+          "pickup_window": {
+            "type": "object",
+            "description": "Time window for pickup",
+            "properties": {
+              "start_time": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "end_time": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "dropoff_window": {
+            "type": "object",
+            "description": "Time window for dropoff",
+            "properties": {
+              "start_time": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "end_time": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "order_contains": {
+            "type": "object",
+            "description": "Flags for order content types",
+            "properties": {
+              "alcohol": {
+                "type": "boolean"
+              },
+              "pharmacy_items": {
+                "type": "boolean"
+              },
+              "age_restricted_pharmacy_items": {
+                "type": "boolean"
+              }
+            }
+          },
+          "items": {
+            "type": "array",
+            "description": "List of items for accurate quoting",
+            "items": {
+              "$ref": "#/components/schemas/DeliveryItem"
+            }
+          }
+        }
+      },
+      "Quote": {
+        "type": "object",
+        "properties": {
+          "external_delivery_id": {
+            "type": "string",
+            "description": "The external delivery identifier from the request"
+          },
+          "quote_id": {
+            "type": "string",
+            "description": "Unique identifier for this quote, used to accept the quote"
+          },
+          "fee": {
+            "type": "integer",
+            "description": "Estimated delivery fee in cents"
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 currency code"
+          },
+          "pickup_time_estimated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Estimated pickup time in ISO-8601 UTC format"
+          },
+          "dropoff_time_estimated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Estimated dropoff time in ISO-8601 UTC format"
+          },
+          "delivery_distance": {
+            "type": "number",
+            "format": "double",
+            "description": "Estimated delivery distance in miles"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when this quote expires in ISO-8601 UTC format"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the quote was created"
+          }
+        }
+      },
+      "AcceptQuoteRequest": {
+        "type": "object",
+        "required": [
+          "dropoff_phone_number"
+        ],
+        "properties": {
+          "dropoff_phone_number": {
+            "type": "string",
+            "description": "Phone number at the dropoff location in E.164 format"
+          },
+          "dropoff_instructions": {
+            "type": "string",
+            "description": "Instructions for the Dasher at the dropoff"
+          },
+          "dropoff_business_name": {
+            "type": "string",
+            "description": "Business name at the dropoff"
+          },
+          "dropoff_contact_given_name": {
+            "type": "string",
+            "description": "First name of the recipient"
+          },
+          "dropoff_contact_family_name": {
+            "type": "string",
+            "description": "Last name of the recipient"
+          },
+          "dropoff_contact_send_notifications": {
+            "type": "boolean",
+            "description": "Whether to send SMS notifications to the dropoff contact"
+          },
+          "pickup_instructions": {
+            "type": "string",
+            "description": "Instructions for the Dasher at pickup"
+          },
+          "pickup_phone_number": {
+            "type": "string",
+            "description": "Phone number at the pickup location"
+          },
+          "tip": {
+            "type": "integer",
+            "description": "Tip amount for the Dasher in cents"
+          },
+          "order_value": {
+            "type": "integer",
+            "description": "Updated order value in cents"
+          },
+          "items": {
+            "type": "array",
+            "description": "List of items in the delivery",
+            "items": {
+              "$ref": "#/components/schemas/DeliveryItem"
+            }
+          },
+          "contactless_dropoff": {
+            "type": "boolean",
+            "description": "Whether the delivery should be contactless"
+          },
+          "action_if_undeliverable": {
+            "type": "string",
+            "enum": ["return_to_pickup", "dispose"],
+            "description": "Action to take if the delivery cannot be completed"
+          },
+          "dropoff_requires_signature": {
+            "type": "boolean",
+            "description": "Whether the dropoff requires a recipient signature"
+          }
+        }
+      },
+      "CreateBusinessRequest": {
+        "type": "object",
+        "required": [
+          "external_business_id",
+          "name"
+        ],
+        "properties": {
+          "external_business_id": {
+            "type": "string",
+            "description": "Unique external identifier for the business. Must match pattern: /^[A-Za-z0-9_-]{3,64}$/",
+            "pattern": "^[A-Za-z0-9_-]{3,64}$"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name of the business"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the business"
+          },
+          "activation_status": {
+            "type": "string",
+            "description": "Activation status of the business",
+            "enum": ["active", "inactive"]
+          }
+        }
+      },
+      "UpdateBusinessRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Updated display name of the business"
+          },
+          "description": {
+            "type": "string",
+            "description": "Updated description of the business"
+          },
+          "activation_status": {
+            "type": "string",
+            "description": "Updated activation status",
+            "enum": ["active", "inactive"]
+          }
+        }
+      },
+      "Business": {
+        "type": "object",
+        "properties": {
+          "external_business_id": {
+            "type": "string",
+            "description": "Unique external identifier for the business"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name of the business"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the business"
+          },
+          "activation_status": {
+            "type": "string",
+            "description": "Activation status of the business",
+            "enum": ["active", "inactive"]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the business was created"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the business was last updated"
+          }
+        }
+      },
+      "BusinessListResponse": {
+        "type": "object",
+        "properties": {
+          "businesses": {
+            "type": "array",
+            "description": "List of businesses",
+            "items": {
+              "$ref": "#/components/schemas/Business"
+            }
+          },
+          "continuation_token": {
+            "type": "string",
+            "description": "Token to retrieve the next page of results",
+            "nullable": true
+          }
+        }
+      },
+      "CreateStoreRequest": {
+        "type": "object",
+        "required": [
+          "external_store_id",
+          "name",
+          "address"
+        ],
+        "properties": {
+          "external_store_id": {
+            "type": "string",
+            "description": "Unique external identifier for the store within its business"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name of the store"
+          },
+          "address": {
+            "type": "string",
+            "description": "Full street address of the store"
+          },
+          "phone_number": {
+            "type": "string",
+            "description": "Phone number of the store in E.164 format"
+          },
+          "pickup_instructions": {
+            "type": "string",
+            "description": "Default pickup instructions for deliveries from this store"
+          },
+          "status": {
+            "type": "string",
+            "description": "Status of the store",
+            "enum": ["active", "inactive"]
+          },
+          "location": {
+            "type": "object",
+            "description": "Precise geographic coordinates for the store",
+            "properties": {
+              "lat": {
+                "type": "number",
+                "format": "double",
+                "description": "Latitude"
+              },
+              "lng": {
+                "type": "number",
+                "format": "double",
+                "description": "Longitude"
+              }
+            }
+          }
+        }
+      },
+      "UpdateStoreRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Updated display name of the store"
+          },
+          "address": {
+            "type": "string",
+            "description": "Updated street address of the store"
+          },
+          "phone_number": {
+            "type": "string",
+            "description": "Updated phone number of the store"
+          },
+          "pickup_instructions": {
+            "type": "string",
+            "description": "Updated default pickup instructions"
+          },
+          "status": {
+            "type": "string",
+            "description": "Updated status",
+            "enum": ["active", "inactive"]
+          },
+          "location": {
+            "type": "object",
+            "description": "Updated geographic coordinates",
+            "properties": {
+              "lat": {
+                "type": "number",
+                "format": "double"
+              },
+              "lng": {
+                "type": "number",
+                "format": "double"
+              }
+            }
+          }
+        }
+      },
+      "Store": {
+        "type": "object",
+        "properties": {
+          "external_store_id": {
+            "type": "string",
+            "description": "Unique external identifier for the store within its business"
+          },
+          "external_business_id": {
+            "type": "string",
+            "description": "External business ID that owns this store"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name of the store"
+          },
+          "address": {
+            "type": "string",
+            "description": "Full street address of the store"
+          },
+          "phone_number": {
+            "type": "string",
+            "description": "Phone number of the store"
+          },
+          "pickup_instructions": {
+            "type": "string",
+            "description": "Default pickup instructions"
+          },
+          "status": {
+            "type": "string",
+            "description": "Status of the store",
+            "enum": ["active", "inactive"]
+          },
+          "location": {
+            "type": "object",
+            "description": "Geographic coordinates of the store",
+            "properties": {
+              "lat": {
+                "type": "number",
+                "format": "double",
+                "description": "Latitude"
+              },
+              "lng": {
+                "type": "number",
+                "format": "double",
+                "description": "Longitude"
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the store was created"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the store was last updated"
+          }
+        }
+      },
+      "StoreListResponse": {
+        "type": "object",
+        "properties": {
+          "stores": {
+            "type": "array",
+            "description": "List of stores",
+            "items": {
+              "$ref": "#/components/schemas/Store"
+            }
+          },
+          "continuation_token": {
+            "type": "string",
+            "description": "Token to retrieve the next page of results",
+            "nullable": true
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Machine-readable error code (e.g. validation_error)"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message"
+          },
+          "field_errors": {
+            "type": "array",
+            "description": "Detailed field-level validation errors (present for 4xx validation errors)",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": ["code", "message"]
+      },
+      "FieldError": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "Name of the field that caused the error"
+          },
+          "error": {
+            "type": "string",
+            "description": "Description of the validation error for this field"
+          }
+        },
+        "required": ["field", "error"]
+      }
+    }
+  }
+}
