@@ -1,0 +1,418 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "InstaCharts API",
+    "description": "InstaCharts API allows you to generate chart images using customizable templates and retrieve your templates. Secured via OAuth 2.0 Authorization Code Grant.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://instacharts.io/docs/api/authentication/"
+  },
+  "servers": [
+    {
+      "url": "https://api.instacharts.io/v1",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/oauth/authorize": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "authorizeUser",
+        "summary": "Authorization request",
+        "description": "Redirect users to this endpoint to initiate the OAuth 2.0 authorization flow.",
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": true,
+            "description": "Your application's client ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "required": true,
+            "description": "URL to redirect back to after authorization",
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          {
+            "name": "response_type",
+            "in": "query",
+            "required": true,
+            "description": "Must be 'code'",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "code"
+              ]
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "description": "Requested permission scopes",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirects to redirect_uri with authorization code"
+          },
+          "400": {
+            "description": "Bad request - invalid parameters"
+          },
+          "401": {
+            "description": "Unauthorized - invalid client_id"
+          }
+        },
+        "security": []
+      }
+    },
+    "/oauth/token": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "exchangeToken",
+        "summary": "Exchange authorization code for access token",
+        "description": "Exchange the authorization code received from the authorize endpoint for an access token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Access token response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid code or parameters"
+          },
+          "401": {
+            "description": "Unauthorized - invalid client credentials"
+          }
+        },
+        "security": []
+      }
+    },
+    "/generate/image": {
+      "post": {
+        "tags": [
+          "Charts"
+        ],
+        "operationId": "generateChartImage",
+        "summary": "Generate chart image",
+        "description": "Generate chart images using customizable templates and data parameters.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateImageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Chart image generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateImageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters or missing required fields"
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing access token"
+          }
+        }
+      }
+    },
+    "/templates": {
+      "get": {
+        "tags": [
+          "Templates"
+        ],
+        "operationId": "listTemplates",
+        "summary": "List templates",
+        "description": "Retrieve a list of templates owned by the authenticated user. Every user has a default template with default chart settings.",
+        "responses": {
+          "200": {
+            "description": "List of templates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing access token"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://api.instacharts.io/v1/oauth/authorize",
+            "tokenUrl": "https://api.instacharts.io/v1/oauth/token",
+            "scopes": {}
+          }
+        }
+      }
+    },
+    "schemas": {
+      "TokenRequest": {
+        "type": "object",
+        "required": [
+          "grant_type",
+          "code",
+          "redirect_uri",
+          "client_id",
+          "client_secret"
+        ],
+        "properties": {
+          "grant_type": {
+            "type": "string",
+            "enum": [
+              "authorization_code"
+            ]
+          },
+          "code": {
+            "type": "string",
+            "description": "Authorization code received from authorize endpoint"
+          },
+          "redirect_uri": {
+            "type": "string",
+            "format": "uri",
+            "description": "Must match the redirect_uri used in the authorization request"
+          },
+          "client_id": {
+            "type": "string",
+            "description": "Your application's client ID"
+          },
+          "client_secret": {
+            "type": "string",
+            "description": "Your application's client secret"
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "description": "The access token to use for API requests"
+          },
+          "token_type": {
+            "type": "string",
+            "example": "Bearer"
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Token expiration time in seconds"
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "Token to refresh the access token"
+          }
+        }
+      },
+      "GenerateImageRequest": {
+        "type": "object",
+        "required": [
+          "templateId",
+          "x",
+          "y"
+        ],
+        "properties": {
+          "templateId": {
+            "type": "string",
+            "description": "Unique identifier of the chart template"
+          },
+          "chartType": {
+            "type": "string",
+            "description": "Type of chart",
+            "default": "stackedBar",
+            "enum": [
+              "line",
+              "groupedLine",
+              "bar",
+              "stackedBar",
+              "groupedBar",
+              "scatterplot",
+              "groupedScatterplot",
+              "area",
+              "groupedArea",
+              "pie",
+              "radar",
+              "heatmap",
+              "mekko"
+            ]
+          },
+          "x": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "X-axis data array"
+          },
+          "y": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Y-axis data array"
+          },
+          "z": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Breakdown axis data array (required for unaggregated data with breakdown)"
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SeriesItem"
+            },
+            "description": "Series data for multi-series charts"
+          },
+          "title": {
+            "type": "string",
+            "description": "Main chart title"
+          },
+          "subtitle": {
+            "type": "string",
+            "description": "Secondary chart title"
+          },
+          "xTitle": {
+            "type": "string",
+            "description": "X-Axis title"
+          },
+          "yTitle": {
+            "type": "string",
+            "description": "Y-Axis title"
+          },
+          "zTitle": {
+            "type": "string",
+            "description": "Breakdown axis title"
+          }
+        }
+      },
+      "SeriesItem": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "GenerateImageResponse": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the generated chart image"
+          },
+          "templateId": {
+            "type": "string"
+          }
+        }
+      },
+      "Template": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique template identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Template name"
+          },
+          "title": {
+            "type": "string",
+            "description": "Chart title"
+          },
+          "type": {
+            "type": "string",
+            "description": "Chart type"
+          }
+        }
+      },
+      "TemplateListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Template"
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "OAuth 2.0 authorization endpoints"
+    },
+    {
+      "name": "Charts",
+      "description": "Chart image generation"
+    },
+    {
+      "name": "Templates",
+      "description": "Chart template management"
+    }
+  ]
+}
