@@ -1,0 +1,4824 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Ellucian Ethos Integration API",
+    "version": "1.0.0",
+    "description": "Ellucian Ethos Integration is a cloud-based integration platform for higher education institutions. It provides a standardized RESTful API following the Ellucian Education Data Model (EEDM), enabling interoperability across student information systems (Banner, Colleague, PowerCampus), HR, finance, financial aid, and other campus applications. The API exposes 316+ EEDM-versioned resources covering the full spectrum of institutional data including persons, students, courses, sections, registrations, grades, academic programs, financial aid, employees, positions, and facilities. Authentication uses an API key exchanged for a JWT bearer token. Resource versioning is controlled via the Accept header using the application/vnd.hedtech.integration.v{version}+json media type.",
+    "contact": {
+      "name": "Ellucian Developer Support",
+      "url": "https://developer.ellucian.com/"
+    },
+    "license": {
+      "name": "Proprietary",
+      "url": "https://www.ellucian.com/legal"
+    },
+    "x-jentic-source-url": "https://developer.ellucian.com/"
+  },
+  "servers": [
+    {
+      "url": "https://integrate.elluciancloud.com",
+      "description": "Ellucian Ethos Integration production endpoint"
+    }
+  ],
+  "paths": {
+    "/auth": {
+      "post": {
+        "operationId": "createAuthToken",
+        "summary": "Exchange API key for JWT token",
+        "description": "Authenticates using an Ethos Integration API key and returns a JWT bearer token for subsequent API calls. The token has a limited lifetime and must be refreshed before expiry.",
+        "tags": [
+          "Authentication"
+        ],
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JWT token returned successfully",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "description": "JWT bearer token"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/publish": {
+      "post": {
+        "operationId": "publishChangeNotification",
+        "summary": "Publish a change notification",
+        "description": "Publishes a change notification message to the Ethos Integration message queue. Subscribers consuming notifications will receive these messages.",
+        "tags": [
+          "Change Notifications"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeNotification"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notification published successfully"
+          },
+          "400": {
+            "description": "Invalid notification payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/consume": {
+      "get": {
+        "operationId": "consumeChangeNotifications",
+        "summary": "Consume change notifications",
+        "description": "Retrieves available change notification messages from the Ethos Integration message queue using long-polling. Returns an array of change notification messages. If no messages are available, the request waits up to the specified timeout before returning an empty array.",
+        "tags": [
+          "Change Notifications"
+        ],
+        "parameters": [
+          {
+            "name": "lastProcessedID",
+            "in": "query",
+            "description": "The ID of the last successfully processed notification. Messages after this ID will be returned.",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of notifications to return.",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Change notifications retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChangeNotification"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/persons": {
+      "get": {
+        "operationId": "listPersons",
+        "summary": "List persons",
+        "description": "Returns a collection of person records. Supports pagination via offset and limit, and filtering via the criteria parameter.",
+        "tags": [
+          "Persons"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of persons",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              },
+              "X-Content-Restricted": {
+                "$ref": "#/components/headers/X-Content-Restricted"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Person"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPerson",
+        "summary": "Create a person",
+        "description": "Creates a new person record in the institution's system of record.",
+        "tags": [
+          "Persons"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Person"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Person created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Person"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/persons/{id}": {
+      "get": {
+        "operationId": "getPerson",
+        "summary": "Get a person by ID",
+        "description": "Returns a single person record by its globally unique identifier (GUID).",
+        "tags": [
+          "Persons"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Person record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Person"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updatePerson",
+        "summary": "Update a person",
+        "description": "Updates an existing person record identified by its GUID.",
+        "tags": [
+          "Persons"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Person"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Person updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Person"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/students": {
+      "get": {
+        "operationId": "listStudents",
+        "summary": "List students",
+        "description": "Returns a collection of student records with their associated person reference and student type information.",
+        "tags": [
+          "Students"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of students",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Student"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/students/{id}": {
+      "get": {
+        "operationId": "getStudent",
+        "summary": "Get a student by ID",
+        "description": "Returns a single student record by its GUID.",
+        "tags": [
+          "Students"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Student record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Student"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/courses": {
+      "get": {
+        "operationId": "listCourses",
+        "summary": "List courses",
+        "description": "Returns a collection of course catalog entries.",
+        "tags": [
+          "Courses"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of courses",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Course"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createCourse",
+        "summary": "Create a course",
+        "description": "Creates a new course catalog entry.",
+        "tags": [
+          "Courses"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Course"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Course created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Course"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/courses/{id}": {
+      "get": {
+        "operationId": "getCourse",
+        "summary": "Get a course by ID",
+        "description": "Returns a single course record by its GUID.",
+        "tags": [
+          "Courses"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Course record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Course"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateCourse",
+        "summary": "Update a course",
+        "description": "Updates an existing course catalog entry.",
+        "tags": [
+          "Courses"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Course"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Course updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Course"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/sections": {
+      "get": {
+        "operationId": "listSections",
+        "summary": "List sections",
+        "description": "Returns a collection of course section offerings.",
+        "tags": [
+          "Sections"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of sections",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Section"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createSection",
+        "summary": "Create a section",
+        "description": "Creates a new course section offering.",
+        "tags": [
+          "Sections"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Section"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Section created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Section"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/sections/{id}": {
+      "get": {
+        "operationId": "getSection",
+        "summary": "Get a section by ID",
+        "description": "Returns a single section record by its GUID.",
+        "tags": [
+          "Sections"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Section record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Section"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateSection",
+        "summary": "Update a section",
+        "description": "Updates an existing course section offering.",
+        "tags": [
+          "Sections"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Section"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Section updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Section"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/section-registrations": {
+      "get": {
+        "operationId": "listSectionRegistrations",
+        "summary": "List section registrations",
+        "description": "Returns a collection of student section registration records.",
+        "tags": [
+          "Section Registrations"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of section registrations",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SectionRegistration"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createSectionRegistration",
+        "summary": "Create a section registration",
+        "description": "Registers a student in a course section.",
+        "tags": [
+          "Section Registrations"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SectionRegistration"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registration created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SectionRegistration"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/section-registrations/{id}": {
+      "get": {
+        "operationId": "getSectionRegistration",
+        "summary": "Get a section registration by ID",
+        "description": "Returns a single section registration record by its GUID.",
+        "tags": [
+          "Section Registrations"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Section registration record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SectionRegistration"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateSectionRegistration",
+        "summary": "Update a section registration",
+        "description": "Updates an existing student section registration.",
+        "tags": [
+          "Section Registrations"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SectionRegistration"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registration updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SectionRegistration"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/grades": {
+      "get": {
+        "operationId": "listGrades",
+        "summary": "List grades",
+        "description": "Returns a collection of student grade records.",
+        "tags": [
+          "Grades"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of grades",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Grade"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/grades/{id}": {
+      "get": {
+        "operationId": "getGrade",
+        "summary": "Get a grade by ID",
+        "description": "Returns a single grade record by its GUID.",
+        "tags": [
+          "Grades"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grade record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Grade"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/grade-definitions": {
+      "get": {
+        "operationId": "listGradeDefinitions",
+        "summary": "List grade definitions",
+        "description": "Returns a collection of institutional grade scheme definitions.",
+        "tags": [
+          "Grade Definitions"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of grade definitions",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GradeDefinition"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/grade-definitions/{id}": {
+      "get": {
+        "operationId": "getGradeDefinition",
+        "summary": "Get a grade definition by ID",
+        "description": "Returns a single grade definition by its GUID.",
+        "tags": [
+          "Grade Definitions"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grade definition record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradeDefinition"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/academic-periods": {
+      "get": {
+        "operationId": "listAcademicPeriods",
+        "summary": "List academic periods",
+        "description": "Returns a collection of academic periods such as terms, semesters, and quarters.",
+        "tags": [
+          "Academic Periods"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of academic periods",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AcademicPeriod"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/academic-periods/{id}": {
+      "get": {
+        "operationId": "getAcademicPeriod",
+        "summary": "Get an academic period by ID",
+        "description": "Returns a single academic period record by its GUID.",
+        "tags": [
+          "Academic Periods"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Academic period record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcademicPeriod"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/academic-programs": {
+      "get": {
+        "operationId": "listAcademicPrograms",
+        "summary": "List academic programs",
+        "description": "Returns a collection of academic program definitions (degree programs, certificates, etc.).",
+        "tags": [
+          "Academic Programs"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of academic programs",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AcademicProgram"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/academic-programs/{id}": {
+      "get": {
+        "operationId": "getAcademicProgram",
+        "summary": "Get an academic program by ID",
+        "description": "Returns a single academic program record by its GUID.",
+        "tags": [
+          "Academic Programs"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Academic program record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcademicProgram"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/student-academic-credentials": {
+      "get": {
+        "operationId": "listStudentAcademicCredentials",
+        "summary": "List student academic credentials",
+        "description": "Returns a collection of student academic credentials (degrees, certificates awarded).",
+        "tags": [
+          "Student Academic Credentials"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of student academic credentials",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StudentAcademicCredential"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/student-academic-credentials/{id}": {
+      "get": {
+        "operationId": "getStudentAcademicCredential",
+        "summary": "Get a student academic credential by ID",
+        "description": "Returns a single student academic credential record by its GUID.",
+        "tags": [
+          "Student Academic Credentials"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Student academic credential record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentAcademicCredential"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/instructional-events": {
+      "get": {
+        "operationId": "listInstructionalEvents",
+        "summary": "List instructional events",
+        "description": "Returns a collection of instructional events (scheduled class meetings).",
+        "tags": [
+          "Instructional Events"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of instructional events",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InstructionalEvent"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/instructional-events/{id}": {
+      "get": {
+        "operationId": "getInstructionalEvent",
+        "summary": "Get an instructional event by ID",
+        "description": "Returns a single instructional event record by its GUID.",
+        "tags": [
+          "Instructional Events"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Instructional event record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructionalEvent"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/financial-aid-applications": {
+      "get": {
+        "operationId": "listFinancialAidApplications",
+        "summary": "List financial aid applications",
+        "description": "Returns a collection of financial aid application records (FAFSA, ISIR data).",
+        "tags": [
+          "Financial Aid Applications"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of financial aid applications",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FinancialAidApplication"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/financial-aid-applications/{id}": {
+      "get": {
+        "operationId": "getFinancialAidApplication",
+        "summary": "Get a financial aid application by ID",
+        "description": "Returns a single financial aid application record by its GUID.",
+        "tags": [
+          "Financial Aid Applications"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Financial aid application record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialAidApplication"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/financial-aid-awards": {
+      "get": {
+        "operationId": "listFinancialAidAwards",
+        "summary": "List financial aid awards",
+        "description": "Returns a collection of financial aid award records for students.",
+        "tags": [
+          "Financial Aid Awards"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of financial aid awards",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FinancialAidAward"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/financial-aid-awards/{id}": {
+      "get": {
+        "operationId": "getFinancialAidAward",
+        "summary": "Get a financial aid award by ID",
+        "description": "Returns a single financial aid award record by its GUID.",
+        "tags": [
+          "Financial Aid Awards"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Financial aid award record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialAidAward"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/financial-aid-funds": {
+      "get": {
+        "operationId": "listFinancialAidFunds",
+        "summary": "List financial aid funds",
+        "description": "Returns a collection of financial aid fund definitions.",
+        "tags": [
+          "Financial Aid Funds"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of financial aid funds",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FinancialAidFund"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/financial-aid-funds/{id}": {
+      "get": {
+        "operationId": "getFinancialAidFund",
+        "summary": "Get a financial aid fund by ID",
+        "description": "Returns a single financial aid fund definition by its GUID.",
+        "tags": [
+          "Financial Aid Funds"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Financial aid fund record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialAidFund"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/employees": {
+      "get": {
+        "operationId": "listEmployees",
+        "summary": "List employees",
+        "description": "Returns a collection of employee records.",
+        "tags": [
+          "Employees"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of employees",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Employee"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/employees/{id}": {
+      "get": {
+        "operationId": "getEmployee",
+        "summary": "Get an employee by ID",
+        "description": "Returns a single employee record by its GUID.",
+        "tags": [
+          "Employees"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Employee record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Employee"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/positions": {
+      "get": {
+        "operationId": "listPositions",
+        "summary": "List positions",
+        "description": "Returns a collection of institutional job position definitions.",
+        "tags": [
+          "Positions"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of positions",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Position"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/positions/{id}": {
+      "get": {
+        "operationId": "getPosition",
+        "summary": "Get a position by ID",
+        "description": "Returns a single position record by its GUID.",
+        "tags": [
+          "Positions"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Position record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Position"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/accounting-strings": {
+      "get": {
+        "operationId": "listAccountingStrings",
+        "summary": "List accounting strings",
+        "description": "Returns a collection of general ledger accounting string component records.",
+        "tags": [
+          "Accounting Strings"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of accounting strings",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AccountingString"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/accounting-strings/{id}": {
+      "get": {
+        "operationId": "getAccountingString",
+        "summary": "Get an accounting string by ID",
+        "description": "Returns a single accounting string record by its GUID.",
+        "tags": [
+          "Accounting Strings"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accounting string record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountingString"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/institutions": {
+      "get": {
+        "operationId": "listInstitutions",
+        "summary": "List institutions",
+        "description": "Returns a collection of higher education institution records.",
+        "tags": [
+          "Institutions"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of institutions",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Institution"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/institutions/{id}": {
+      "get": {
+        "operationId": "getInstitution",
+        "summary": "Get an institution by ID",
+        "description": "Returns a single institution record by its GUID.",
+        "tags": [
+          "Institutions"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Institution record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Institution"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/buildings": {
+      "get": {
+        "operationId": "listBuildings",
+        "summary": "List buildings",
+        "description": "Returns a collection of campus building records.",
+        "tags": [
+          "Buildings"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of buildings",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Building"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/buildings/{id}": {
+      "get": {
+        "operationId": "getBuilding",
+        "summary": "Get a building by ID",
+        "description": "Returns a single building record by its GUID.",
+        "tags": [
+          "Buildings"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Building record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Building"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/rooms": {
+      "get": {
+        "operationId": "listRooms",
+        "summary": "List rooms",
+        "description": "Returns a collection of room records within campus buildings.",
+        "tags": [
+          "Rooms"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/criteria"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of rooms",
+            "headers": {
+              "X-Total-Count": {
+                "$ref": "#/components/headers/X-Total-Count"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Room"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/rooms/{id}": {
+      "get": {
+        "operationId": "getRoom",
+        "summary": "Get a room by ID",
+        "description": "Returns a single room record by its GUID.",
+        "tags": [
+          "Rooms"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/acceptVersionHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Room record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Room"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token obtained from the /auth endpoint. Include as: Authorization: Bearer {token}"
+      },
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Ethos Integration API key used to obtain a JWT token via the /auth endpoint."
+      }
+    },
+    "parameters": {
+      "id": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Globally unique identifier (GUID) for the resource.",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "offset": {
+        "name": "offset",
+        "in": "query",
+        "description": "Zero-based pagination offset. Indicates the number of records to skip.",
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        }
+      },
+      "limit": {
+        "name": "limit",
+        "in": "query",
+        "description": "Maximum number of records to return per page.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500,
+          "default": 500
+        }
+      },
+      "criteria": {
+        "name": "criteria",
+        "in": "query",
+        "description": "JSON-formatted filter criteria for narrowing results. The structure depends on the resource type.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "acceptVersionHeader": {
+        "name": "Accept",
+        "in": "header",
+        "description": "EEDM versioned media type. Format: application/vnd.hedtech.integration.v{version}+json",
+        "schema": {
+          "type": "string",
+          "example": "application/vnd.hedtech.integration.v12+json"
+        }
+      }
+    },
+    "headers": {
+      "X-Total-Count": {
+        "description": "Total number of records matching the query (before pagination).",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "X-Content-Restricted": {
+        "description": "Indicates if the response content has been restricted due to data privacy rules.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request - invalid parameters or request body",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized - missing, invalid, or expired bearer token",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "description": "Standard error response returned by the Ethos Integration API.",
+        "properties": {
+          "severity": {
+            "type": "string",
+            "description": "Severity level of the error.",
+            "enum": [
+              "error",
+              "warning",
+              "information"
+            ]
+          },
+          "code": {
+            "type": "string",
+            "description": "Machine-readable error code."
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable error description."
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message."
+          },
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the error instance."
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "Identifier of the source system that generated the error."
+          }
+        }
+      },
+      "GuidReference": {
+        "type": "object",
+        "description": "A reference to another EEDM resource by GUID.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier of the referenced resource."
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "ChangeNotification": {
+        "type": "object",
+        "description": "A change notification message from the Ethos Integration message queue.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Sequential message ID."
+          },
+          "published": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the notification was published."
+          },
+          "resource": {
+            "type": "object",
+            "description": "The resource that changed.",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "EEDM resource name (e.g., persons, courses)."
+              },
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "GUID of the changed resource."
+              },
+              "version": {
+                "type": "string",
+                "description": "EEDM version of the resource representation."
+              }
+            }
+          },
+          "operation": {
+            "type": "string",
+            "description": "The type of change that occurred.",
+            "enum": [
+              "created",
+              "replaced",
+              "deleted"
+            ]
+          },
+          "contentType": {
+            "type": "string",
+            "description": "The media type of the content.",
+            "example": "application/vnd.hedtech.integration.v12+json"
+          },
+          "content": {
+            "type": "object",
+            "description": "The full resource representation after the change (not present for deletes).",
+            "additionalProperties": true
+          },
+          "publisher": {
+            "type": "object",
+            "description": "Information about the application that published the notification.",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "GUID of the publishing application."
+              },
+              "applicationName": {
+                "type": "string",
+                "description": "Name of the publishing application."
+              }
+            }
+          }
+        }
+      },
+      "Person": {
+        "type": "object",
+        "description": "A person record following the EEDM persons data model. Represents any individual known to the institution.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the person."
+          },
+          "names": {
+            "type": "array",
+            "description": "The names associated with this person.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "object",
+                  "description": "The type of name.",
+                  "properties": {
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "legal",
+                        "birth",
+                        "preferred",
+                        "personal",
+                        "favored"
+                      ],
+                      "description": "The name type category."
+                    }
+                  }
+                },
+                "fullName": {
+                  "type": "string",
+                  "description": "The full name of the person."
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Title or prefix (e.g., Mr., Dr., Ms.)."
+                },
+                "firstName": {
+                  "type": "string",
+                  "description": "The first or given name."
+                },
+                "middleName": {
+                  "type": "string",
+                  "description": "The middle name."
+                },
+                "lastNamePrefix": {
+                  "type": "string",
+                  "description": "Prefix to the last name (e.g., van, de)."
+                },
+                "lastName": {
+                  "type": "string",
+                  "description": "The last or family name."
+                },
+                "pedigree": {
+                  "type": "string",
+                  "description": "Pedigree or suffix (e.g., Jr., III)."
+                },
+                "preference": {
+                  "type": "string",
+                  "enum": [
+                    "preferred",
+                    "notPreferred"
+                  ],
+                  "description": "Indicates whether this is the preferred name."
+                }
+              }
+            }
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date",
+            "description": "Date of birth."
+          },
+          "dateDeceased": {
+            "type": "string",
+            "format": "date",
+            "description": "Date of death, if applicable."
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female",
+              "unknown"
+            ],
+            "description": "Gender of the person."
+          },
+          "maritalStatus": {
+            "type": "object",
+            "description": "Marital status.",
+            "properties": {
+              "maritalCategory": {
+                "type": "string",
+                "enum": [
+                  "single",
+                  "married",
+                  "divorced",
+                  "widowed",
+                  "separated"
+                ]
+              }
+            }
+          },
+          "citizenshipStatus": {
+            "type": "object",
+            "description": "Citizenship status.",
+            "properties": {
+              "category": {
+                "type": "string",
+                "enum": [
+                  "citizen",
+                  "nonCitizen"
+                ],
+                "description": "The citizenship category."
+              },
+              "detail": {
+                "$ref": "#/components/schemas/GuidReference"
+              }
+            }
+          },
+          "ethnicity": {
+            "type": "object",
+            "description": "Ethnicity information for US regulatory reporting.",
+            "properties": {
+              "ethnicGroup": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              },
+              "reporting": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "country": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "USA",
+                            "CAN",
+                            "GBR",
+                            "BRA"
+                          ],
+                          "description": "ISO 3166-1 alpha-3 country code."
+                        }
+                      }
+                    },
+                    "ethnicity": {
+                      "type": "object",
+                      "properties": {
+                        "category": {
+                          "type": "string",
+                          "enum": [
+                            "hispanicOrLatino",
+                            "nonHispanicOrLatino",
+                            "nonResident"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "races": {
+            "type": "array",
+            "description": "Race information for US regulatory reporting.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "race": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                },
+                "reporting": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "country": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "race": {
+                        "type": "object",
+                        "properties": {
+                          "category": {
+                            "type": "string",
+                            "enum": [
+                              "white",
+                              "blackOrAfricanAmerican",
+                              "asian",
+                              "americanIndianOrAlaskaNative",
+                              "nativeHawaiianOrOtherPacificIslander"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "credentials": {
+            "type": "array",
+            "description": "Identifiers and credentials for the person.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "bannerId",
+                    "colleaguePersonId",
+                    "ssn",
+                    "sin",
+                    "passportNumber",
+                    "driverLicense",
+                    "elevateId",
+                    "colleagueUserName",
+                    "bannerUserName",
+                    "bannerUdcId"
+                  ],
+                  "description": "The type of credential."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "The credential value."
+                }
+              }
+            }
+          },
+          "addresses": {
+            "type": "array",
+            "description": "Addresses associated with the person.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "object",
+                  "properties": {
+                    "addressType": {
+                      "type": "string",
+                      "enum": [
+                        "home",
+                        "school",
+                        "vacation",
+                        "billing",
+                        "shipping",
+                        "mailing",
+                        "business",
+                        "parent",
+                        "family",
+                        "poBox",
+                        "main",
+                        "branch",
+                        "region",
+                        "support",
+                        "matchingGifts"
+                      ]
+                    }
+                  }
+                },
+                "addressLines": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Address lines."
+                },
+                "place": {
+                  "type": "object",
+                  "description": "Geographic place components.",
+                  "properties": {
+                    "country": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "region": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "locality": {
+                      "type": "string"
+                    },
+                    "postalCode": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "startOn": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "Start date of the address."
+                },
+                "endOn": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "End date of the address."
+                },
+                "preference": {
+                  "type": "string",
+                  "enum": [
+                    "primary",
+                    "secondary"
+                  ]
+                }
+              }
+            }
+          },
+          "phones": {
+            "type": "array",
+            "description": "Phone numbers associated with the person.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "object",
+                  "properties": {
+                    "phoneType": {
+                      "type": "string",
+                      "enum": [
+                        "mobile",
+                        "home",
+                        "school",
+                        "vacation",
+                        "business",
+                        "fax",
+                        "parent",
+                        "tdd",
+                        "pager"
+                      ]
+                    }
+                  }
+                },
+                "countryCallingCode": {
+                  "type": "string"
+                },
+                "number": {
+                  "type": "string"
+                },
+                "extension": {
+                  "type": "string"
+                },
+                "preference": {
+                  "type": "string",
+                  "enum": [
+                    "primary",
+                    "secondary"
+                  ]
+                }
+              }
+            }
+          },
+          "emails": {
+            "type": "array",
+            "description": "Email addresses associated with the person.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "object",
+                  "properties": {
+                    "emailType": {
+                      "type": "string",
+                      "enum": [
+                        "personal",
+                        "school",
+                        "business",
+                        "parent",
+                        "family",
+                        "sales",
+                        "support",
+                        "general",
+                        "billing",
+                        "legal",
+                        "hr",
+                        "media"
+                      ]
+                    }
+                  }
+                },
+                "address": {
+                  "type": "string",
+                  "format": "email",
+                  "description": "The email address."
+                },
+                "preference": {
+                  "type": "string",
+                  "enum": [
+                    "primary",
+                    "secondary"
+                  ]
+                }
+              }
+            }
+          },
+          "roles": {
+            "type": "array",
+            "description": "Institutional roles held by the person.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "student",
+                    "instructor",
+                    "employee",
+                    "vendor",
+                    "alumni",
+                    "prospectiveStudent",
+                    "advisor"
+                  ],
+                  "description": "The role type."
+                },
+                "startOn": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "endOn": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "privacyStatus": {
+            "type": "object",
+            "description": "Privacy status indicator (FERPA, etc.).",
+            "properties": {
+              "privacyCategory": {
+                "type": "string",
+                "enum": [
+                  "unrestricted",
+                  "restricted"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "Student": {
+        "type": "object",
+        "description": "A student record representing an individual enrolled at the institution.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the student."
+          },
+          "person": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the associated person record."
+          },
+          "type": {
+            "type": "object",
+            "description": "The student type classification.",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "detail": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          },
+          "cohorts": {
+            "type": "array",
+            "description": "Student cohort memberships.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          },
+          "residency": {
+            "type": "object",
+            "description": "Residency classification for tuition purposes.",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          "measures": {
+            "type": "array",
+            "description": "Student measures such as admissions test scores.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Course": {
+        "type": "object",
+        "description": "A course catalog entry representing a curriculum offering.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the course."
+          },
+          "title": {
+            "type": "string",
+            "description": "The course title."
+          },
+          "description": {
+            "type": "string",
+            "description": "Full description of the course."
+          },
+          "subject": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the academic subject/department."
+          },
+          "number": {
+            "type": "string",
+            "description": "Course number (e.g., 101, 4500)."
+          },
+          "courseLevels": {
+            "type": "array",
+            "description": "Academic levels at which this course is offered.",
+            "items": {
+              "$ref": "#/components/schemas/GuidReference"
+            }
+          },
+          "academicLevels": {
+            "type": "array",
+            "description": "Academic levels for the course.",
+            "items": {
+              "$ref": "#/components/schemas/GuidReference"
+            }
+          },
+          "instructionalMethodDetails": {
+            "type": "array",
+            "description": "Instructional delivery methods.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "instructionalMethod": {
+                  "$ref": "#/components/schemas/GuidReference"
+                },
+                "instructionalDeliveryMethod": {
+                  "$ref": "#/components/schemas/GuidReference"
+                }
+              }
+            }
+          },
+          "credits": {
+            "type": "array",
+            "description": "Credit definitions for the course.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "creditCategory": {
+                  "type": "object",
+                  "properties": {
+                    "creditType": {
+                      "type": "string",
+                      "enum": [
+                        "institutional",
+                        "transfer",
+                        "continuingEducation"
+                      ],
+                      "description": "Category of credit."
+                    }
+                  }
+                },
+                "measure": {
+                  "type": "string",
+                  "enum": [
+                    "credit",
+                    "hour",
+                    "ceu"
+                  ],
+                  "description": "Unit of credit measure."
+                },
+                "minimum": {
+                  "type": "number",
+                  "description": "Minimum credits."
+                },
+                "maximum": {
+                  "type": "number",
+                  "description": "Maximum credits."
+                },
+                "increment": {
+                  "type": "number",
+                  "description": "Credit increment."
+                }
+              }
+            }
+          },
+          "effectiveStartDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Date from which the course is effective."
+          },
+          "effectiveEndDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Date after which the course is no longer effective."
+          },
+          "owningInstitutionUnits": {
+            "type": "array",
+            "description": "Departments or units owning this course.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "institutionUnit": {
+                  "$ref": "#/components/schemas/GuidReference"
+                },
+                "ownershipPercentage": {
+                  "type": "number",
+                  "description": "Percentage of ownership."
+                }
+              }
+            }
+          }
+        }
+      },
+      "Section": {
+        "type": "object",
+        "description": "A course section offering within a specific academic period.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the section."
+          },
+          "title": {
+            "type": "string",
+            "description": "Section title."
+          },
+          "description": {
+            "type": "string",
+            "description": "Section description."
+          },
+          "code": {
+            "type": "string",
+            "description": "Section code or number."
+          },
+          "number": {
+            "type": "string",
+            "description": "Section number within the course."
+          },
+          "course": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the parent course."
+          },
+          "academicPeriod": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the academic period."
+          },
+          "academicLevels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuidReference"
+            }
+          },
+          "site": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the campus site."
+          },
+          "status": {
+            "type": "object",
+            "description": "Section registration status.",
+            "properties": {
+              "category": {
+                "type": "string",
+                "enum": [
+                  "open",
+                  "closed",
+                  "pending",
+                  "cancelled"
+                ],
+                "description": "Status category."
+              }
+            }
+          },
+          "maxEnrollment": {
+            "type": "integer",
+            "description": "Maximum number of students allowed."
+          },
+          "currentEnrollment": {
+            "type": "integer",
+            "description": "Current number of enrolled students."
+          },
+          "waitlist": {
+            "type": "object",
+            "description": "Waitlist information.",
+            "properties": {
+              "maxWaitlist": {
+                "type": "integer"
+              },
+              "currentWaitlist": {
+                "type": "integer"
+              }
+            }
+          },
+          "credits": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "creditCategory": {
+                  "type": "object",
+                  "properties": {
+                    "creditType": {
+                      "type": "string",
+                      "enum": [
+                        "institutional",
+                        "transfer",
+                        "continuingEducation"
+                      ]
+                    }
+                  }
+                },
+                "measure": {
+                  "type": "string",
+                  "enum": [
+                    "credit",
+                    "hour",
+                    "ceu"
+                  ]
+                },
+                "minimum": {
+                  "type": "number"
+                },
+                "maximum": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "startOn": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Start date/time of the section."
+          },
+          "endOn": {
+            "type": "string",
+            "format": "date-time",
+            "description": "End date/time of the section."
+          },
+          "instructionalPlatform": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the instructional platform (e.g., LMS)."
+          },
+          "instructors": {
+            "type": "array",
+            "description": "Instructors assigned to this section.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "instructor": {
+                  "$ref": "#/components/schemas/GuidReference"
+                },
+                "instructorRole": {
+                  "type": "string",
+                  "enum": [
+                    "primary",
+                    "secondary"
+                  ],
+                  "description": "Role of the instructor in this section."
+                },
+                "workLoadPercentage": {
+                  "type": "number"
+                },
+                "responsibilityPercentage": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "owningInstitutionUnits": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "institutionUnit": {
+                  "$ref": "#/components/schemas/GuidReference"
+                },
+                "ownershipPercentage": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      },
+      "SectionRegistration": {
+        "type": "object",
+        "description": "A student's registration in a course section.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the registration."
+          },
+          "registrant": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the person (student) registered."
+          },
+          "section": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the section."
+          },
+          "status": {
+            "type": "object",
+            "description": "Registration status.",
+            "properties": {
+              "registrationStatus": {
+                "type": "string",
+                "enum": [
+                  "registered",
+                  "notRegistered"
+                ],
+                "description": "High-level registration status."
+              },
+              "sectionRegistrationStatusReason": {
+                "type": "string",
+                "enum": [
+                  "newRegistration",
+                  "dropped",
+                  "withdrawn",
+                  "canceled",
+                  "pending"
+                ],
+                "description": "Detailed reason for the status."
+              },
+              "detail": {
+                "$ref": "#/components/schemas/GuidReference"
+              }
+            }
+          },
+          "approvals": {
+            "type": "array",
+            "description": "Approval records for the registration.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "approvalType": {
+                  "type": "string",
+                  "enum": [
+                    "all"
+                  ],
+                  "description": "Type of approval."
+                },
+                "approvalEntity": {
+                  "type": "string",
+                  "enum": [
+                    "system",
+                    "user"
+                  ],
+                  "description": "Entity that approved the registration."
+                }
+              }
+            }
+          },
+          "credit": {
+            "type": "object",
+            "description": "Credit information for this registration.",
+            "properties": {
+              "creditCategory": {
+                "type": "object",
+                "properties": {
+                  "creditType": {
+                    "type": "string",
+                    "enum": [
+                      "institutional",
+                      "transfer",
+                      "continuingEducation"
+                    ]
+                  }
+                }
+              },
+              "measure": {
+                "type": "string",
+                "enum": [
+                  "credit",
+                  "hour",
+                  "ceu"
+                ]
+              },
+              "attemptedCredit": {
+                "type": "number",
+                "description": "Number of credits attempted."
+              },
+              "registrationCredit": {
+                "type": "number",
+                "description": "Number of credits registered."
+              }
+            }
+          },
+          "gradingOption": {
+            "type": "object",
+            "description": "The grading option for this registration.",
+            "properties": {
+              "gradeScheme": {
+                "$ref": "#/components/schemas/GuidReference"
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "standard",
+                  "passAudit",
+                  "audit",
+                  "passNoPass"
+                ],
+                "description": "The grading mode."
+              }
+            }
+          },
+          "originallyRegisteredOn": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Original registration date."
+          },
+          "involvement": {
+            "type": "object",
+            "description": "Attendance involvement.",
+            "properties": {
+              "startOn": {
+                "type": "string",
+                "format": "date"
+              },
+              "endOn": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          },
+          "academicLevel": {
+            "$ref": "#/components/schemas/GuidReference"
+          }
+        }
+      },
+      "Grade": {
+        "type": "object",
+        "description": "A student grade record for a section registration.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the grade."
+          },
+          "student": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the student (person)."
+          },
+          "sectionRegistration": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the section registration."
+          },
+          "grade": {
+            "type": "object",
+            "description": "The grade value.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "midterm",
+                  "final",
+                  "verified"
+                ],
+                "description": "The grade type."
+              },
+              "value": {
+                "type": "string",
+                "description": "The grade value (e.g., A, B+, 3.7)."
+              },
+              "gradeScheme": {
+                "$ref": "#/components/schemas/GuidReference"
+              },
+              "incompleteGrade": {
+                "type": "object",
+                "description": "Incomplete grade details.",
+                "properties": {
+                  "extensionDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "finalGrade": {
+                    "$ref": "#/components/schemas/GuidReference"
+                  }
+                }
+              }
+            }
+          },
+          "credit": {
+            "type": "object",
+            "description": "Credit earned information.",
+            "properties": {
+              "attemptedCredit": {
+                "type": "number"
+              },
+              "earnedCredit": {
+                "type": "number"
+              },
+              "qualityPoints": {
+                "type": "number"
+              }
+            }
+          },
+          "submittedBy": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the instructor who submitted the grade."
+          },
+          "submittedOn": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Date the grade was submitted."
+          }
+        }
+      },
+      "GradeDefinition": {
+        "type": "object",
+        "description": "An institutional grade definition within a grade scheme.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the grade definition."
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the grade (e.g., A, B+, Pass)."
+          },
+          "code": {
+            "type": "string",
+            "description": "Grade code."
+          },
+          "gradeScheme": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the parent grade scheme."
+          },
+          "grade": {
+            "type": "object",
+            "description": "Grade value details.",
+            "properties": {
+              "value": {
+                "type": "string",
+                "description": "The grade value."
+              },
+              "qualityPoints": {
+                "type": "number",
+                "description": "Quality (grade) points associated with this grade."
+              },
+              "qualityPointsPerCredit": {
+                "type": "number",
+                "description": "Quality points per credit hour."
+              },
+              "creditIncluded": {
+                "type": "boolean",
+                "description": "Whether credits count toward earned hours."
+              },
+              "gpaIncluded": {
+                "type": "boolean",
+                "description": "Whether this grade is included in GPA calculation."
+              }
+            }
+          }
+        }
+      },
+      "AcademicPeriod": {
+        "type": "object",
+        "description": "An academic time period such as a term, semester, or quarter.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the academic period."
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the academic period (e.g., Fall 2024)."
+          },
+          "code": {
+            "type": "string",
+            "description": "Institutional code for the academic period."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the academic period."
+          },
+          "category": {
+            "type": "object",
+            "description": "Category of the academic period.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "year",
+                  "term",
+                  "subterm"
+                ],
+                "description": "Type of period."
+              },
+              "parent": {
+                "$ref": "#/components/schemas/GuidReference",
+                "description": "Reference to the parent academic period."
+              }
+            }
+          },
+          "startOn": {
+            "type": "string",
+            "format": "date",
+            "description": "Start date of the academic period."
+          },
+          "endOn": {
+            "type": "string",
+            "format": "date",
+            "description": "End date of the academic period."
+          },
+          "registration": {
+            "type": "object",
+            "description": "Registration dates for this period.",
+            "properties": {
+              "registrationStatus": {
+                "type": "string",
+                "enum": [
+                  "open",
+                  "closed"
+                ],
+                "description": "Whether registration is open."
+              }
+            }
+          },
+          "censusDates": {
+            "type": "array",
+            "description": "Official census dates for enrollment reporting.",
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          "academicYear": {
+            "type": "string",
+            "description": "The academic year (e.g., 2024-2025)."
+          }
+        }
+      },
+      "AcademicProgram": {
+        "type": "object",
+        "description": "An academic program such as a degree or certificate program.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the academic program."
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the academic program."
+          },
+          "code": {
+            "type": "string",
+            "description": "Institutional code for the program."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the academic program."
+          },
+          "academicLevel": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the academic level (e.g., undergraduate, graduate)."
+          },
+          "credential": {
+            "type": "object",
+            "description": "Credential awarded upon completion.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "degree",
+                  "diploma",
+                  "certificate",
+                  "doctorate",
+                  "mastersDegree",
+                  "bachelorsDegree",
+                  "associatesDegree",
+                  "professionalDegree"
+                ],
+                "description": "Type of credential."
+              }
+            }
+          },
+          "disciplines": {
+            "type": "array",
+            "description": "Academic disciplines associated with this program.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "discipline": {
+                  "$ref": "#/components/schemas/GuidReference"
+                },
+                "administeringInstitutionUnit": {
+                  "$ref": "#/components/schemas/GuidReference"
+                }
+              }
+            }
+          },
+          "sites": {
+            "type": "array",
+            "description": "Campus sites where the program is offered.",
+            "items": {
+              "$ref": "#/components/schemas/GuidReference"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive"
+            ],
+            "description": "Whether the program is currently active."
+          },
+          "startOn": {
+            "type": "string",
+            "format": "date",
+            "description": "Date the program became effective."
+          },
+          "endOn": {
+            "type": "string",
+            "format": "date",
+            "description": "Date the program was discontinued."
+          }
+        }
+      },
+      "StudentAcademicCredential": {
+        "type": "object",
+        "description": "A credential (degree, certificate) awarded to a student.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the credential."
+          },
+          "student": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the student (person)."
+          },
+          "academicProgram": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the academic program."
+          },
+          "credential": {
+            "type": "object",
+            "description": "Credential type awarded.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "degree",
+                  "diploma",
+                  "certificate",
+                  "doctorate",
+                  "mastersDegree",
+                  "bachelorsDegree",
+                  "associatesDegree"
+                ]
+              }
+            }
+          },
+          "disciplines": {
+            "type": "array",
+            "description": "Academic disciplines (majors, minors, concentrations).",
+            "items": {
+              "type": "object",
+              "properties": {
+                "discipline": {
+                  "$ref": "#/components/schemas/GuidReference"
+                },
+                "subdiscipline": {
+                  "type": "string",
+                  "enum": [
+                    "major",
+                    "minor",
+                    "concentration",
+                    "specialization"
+                  ]
+                }
+              }
+            }
+          },
+          "recognitions": {
+            "type": "array",
+            "description": "Honors and recognitions (e.g., cum laude).",
+            "items": {
+              "$ref": "#/components/schemas/GuidReference"
+            }
+          },
+          "graduatedOn": {
+            "type": "string",
+            "format": "date",
+            "description": "Graduation date."
+          },
+          "graduationAcademicPeriod": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the graduation academic period."
+          },
+          "gradePointAverage": {
+            "type": "number",
+            "description": "Cumulative GPA at time of graduation."
+          },
+          "creditsEarned": {
+            "type": "number",
+            "description": "Total credits earned."
+          },
+          "thesisTitle": {
+            "type": "string",
+            "description": "Title of the student's thesis or dissertation."
+          }
+        }
+      },
+      "InstructionalEvent": {
+        "type": "object",
+        "description": "A scheduled instructional event (class meeting) for a section.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the instructional event."
+          },
+          "section": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the section."
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the instructional event."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the event."
+          },
+          "instructionalMethod": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the instructional method (lecture, lab, etc.)."
+          },
+          "workLoad": {
+            "type": "number",
+            "description": "Workload measure for the event."
+          },
+          "recurrence": {
+            "type": "object",
+            "description": "Recurrence pattern for the event.",
+            "properties": {
+              "timePeriod": {
+                "type": "object",
+                "properties": {
+                  "startOn": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Start date/time of the recurring period."
+                  },
+                  "endOn": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "End date/time of the recurring period."
+                  }
+                }
+              },
+              "repeatRule": {
+                "type": "object",
+                "description": "Rule defining the recurrence pattern.",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "weekly"
+                    ],
+                    "description": "Recurrence type."
+                  },
+                  "interval": {
+                    "type": "integer",
+                    "description": "Recurrence interval."
+                  },
+                  "daysOfWeek": {
+                    "type": "array",
+                    "description": "Days of the week for the recurrence.",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "sunday",
+                        "monday",
+                        "tuesday",
+                        "wednesday",
+                        "thursday",
+                        "friday",
+                        "saturday"
+                      ]
+                    }
+                  },
+                  "ends": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "repetitions": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "locations": {
+            "type": "array",
+            "description": "Locations where the event takes place.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "location": {
+                  "type": "object",
+                  "properties": {
+                    "room": {
+                      "$ref": "#/components/schemas/GuidReference"
+                    },
+                    "building": {
+                      "$ref": "#/components/schemas/GuidReference"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "instructors": {
+            "type": "array",
+            "description": "Instructors for this event.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "instructor": {
+                  "$ref": "#/components/schemas/GuidReference"
+                },
+                "instructorRole": {
+                  "type": "string",
+                  "enum": [
+                    "primary",
+                    "secondary"
+                  ]
+                },
+                "workLoadPercentage": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      },
+      "FinancialAidApplication": {
+        "type": "object",
+        "description": "A financial aid application record (FAFSA/ISIR data).",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the application."
+          },
+          "applicant": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the applicant (person)."
+          },
+          "aidYear": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the financial aid year."
+          },
+          "methodology": {
+            "type": "string",
+            "enum": [
+              "federal",
+              "institutional",
+              "institutionalQpc"
+            ],
+            "description": "The methodology used to calculate need."
+          },
+          "applicationOutcome": {
+            "type": "object",
+            "description": "Application outcome details.",
+            "properties": {
+              "expectedFamilyContribution": {
+                "type": "number",
+                "description": "Expected Family Contribution (EFC) / Student Aid Index (SAI)."
+              },
+              "totalIncome": {
+                "type": "number",
+                "description": "Total income reported."
+              },
+              "familySize": {
+                "type": "integer",
+                "description": "Household size."
+              },
+              "numberInCollege": {
+                "type": "integer",
+                "description": "Number of family members in college."
+              }
+            }
+          },
+          "dependency": {
+            "type": "string",
+            "enum": [
+              "dependent",
+              "independent"
+            ],
+            "description": "Dependency status."
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "selected",
+              "notSelected",
+              "verified",
+              "withoutDocumentation"
+            ],
+            "description": "Verification selection status."
+          },
+          "applicationSource": {
+            "type": "string",
+            "enum": [
+              "fafsa",
+              "isir",
+              "manualEntry"
+            ],
+            "description": "Source of the application."
+          }
+        }
+      },
+      "FinancialAidAward": {
+        "type": "object",
+        "description": "A financial aid award for a student.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the award."
+          },
+          "student": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the student (person)."
+          },
+          "aidYear": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the financial aid year."
+          },
+          "fundingSource": {
+            "type": "string",
+            "enum": [
+              "federal",
+              "state",
+              "institutional",
+              "other"
+            ],
+            "description": "Source of the funding."
+          },
+          "aidCategory": {
+            "type": "string",
+            "enum": [
+              "grant",
+              "scholarship",
+              "loan",
+              "workStudy"
+            ],
+            "description": "Category of financial aid."
+          },
+          "fund": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the financial aid fund."
+          },
+          "awardAmount": {
+            "type": "number",
+            "description": "Total award amount."
+          },
+          "awardPeriods": {
+            "type": "array",
+            "description": "Period-based breakdown of the award.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "academicPeriod": {
+                  "$ref": "#/components/schemas/GuidReference"
+                },
+                "offeredAmount": {
+                  "type": "number",
+                  "description": "Amount offered for this period."
+                },
+                "acceptedAmount": {
+                  "type": "number",
+                  "description": "Amount accepted for this period."
+                },
+                "paidAmount": {
+                  "type": "number",
+                  "description": "Amount paid for this period."
+                }
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "offered",
+              "accepted",
+              "declined",
+              "cancelled",
+              "pending"
+            ],
+            "description": "Current status of the award."
+          }
+        }
+      },
+      "FinancialAidFund": {
+        "type": "object",
+        "description": "A financial aid fund definition.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the fund."
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the fund."
+          },
+          "code": {
+            "type": "string",
+            "description": "Institutional code for the fund."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the fund."
+          },
+          "fundingSource": {
+            "type": "string",
+            "enum": [
+              "federal",
+              "state",
+              "institutional",
+              "other"
+            ],
+            "description": "Source of the funding."
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "grant",
+              "scholarship",
+              "loan",
+              "workStudy"
+            ],
+            "description": "Category of the fund."
+          },
+          "aidYears": {
+            "type": "array",
+            "description": "Aid years in which this fund is available.",
+            "items": {
+              "$ref": "#/components/schemas/GuidReference"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive"
+            ],
+            "description": "Whether the fund is currently active."
+          },
+          "budgetAmount": {
+            "type": "number",
+            "description": "Total budget amount for the fund."
+          }
+        }
+      },
+      "Employee": {
+        "type": "object",
+        "description": "An employee record for institutional staff or faculty.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the employee."
+          },
+          "person": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the associated person record."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "leave",
+              "terminated"
+            ],
+            "description": "Employment status."
+          },
+          "contract": {
+            "type": "object",
+            "description": "Employment contract details.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "fullTime",
+                  "partTime",
+                  "contractual"
+                ],
+                "description": "Type of employment contract."
+              },
+              "detail": {
+                "$ref": "#/components/schemas/GuidReference"
+              }
+            }
+          },
+          "startOn": {
+            "type": "string",
+            "format": "date",
+            "description": "Employment start date."
+          },
+          "endOn": {
+            "type": "string",
+            "format": "date",
+            "description": "Employment end date."
+          },
+          "rehireEligibility": {
+            "type": "object",
+            "description": "Rehire eligibility information.",
+            "properties": {
+              "eligible": {
+                "type": "boolean"
+              }
+            }
+          },
+          "department": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the employee's department."
+          },
+          "homeOrganization": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the employee's home organization."
+          }
+        }
+      },
+      "Position": {
+        "type": "object",
+        "description": "An institutional job position definition.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the position."
+          },
+          "title": {
+            "type": "string",
+            "description": "Position title."
+          },
+          "code": {
+            "type": "string",
+            "description": "Institutional position code."
+          },
+          "description": {
+            "type": "string",
+            "description": "Position description."
+          },
+          "department": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the department."
+          },
+          "classification": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the position classification."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "frozen",
+              "cancelled",
+              "inactive"
+            ],
+            "description": "Position status."
+          },
+          "employmentCategory": {
+            "type": "string",
+            "enum": [
+              "fullTime",
+              "partTime",
+              "contractual"
+            ],
+            "description": "Employment category."
+          },
+          "payClass": {
+            "type": "string",
+            "enum": [
+              "hourly",
+              "salary"
+            ],
+            "description": "Pay class for the position."
+          },
+          "payRate": {
+            "type": "object",
+            "description": "Pay rate information.",
+            "properties": {
+              "rateAmount": {
+                "type": "number",
+                "description": "Base pay rate amount."
+              },
+              "rateCurrency": {
+                "type": "string",
+                "description": "ISO 4217 currency code."
+              },
+              "ratePeriod": {
+                "type": "string",
+                "enum": [
+                  "hour",
+                  "day",
+                  "week",
+                  "month",
+                  "year",
+                  "contract"
+                ],
+                "description": "Pay period for the rate."
+              }
+            }
+          },
+          "supervisorPosition": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the supervising position."
+          },
+          "authorizedOn": {
+            "type": "string",
+            "format": "date",
+            "description": "Date the position was authorized."
+          },
+          "startOn": {
+            "type": "string",
+            "format": "date",
+            "description": "Position start date."
+          },
+          "endOn": {
+            "type": "string",
+            "format": "date",
+            "description": "Position end date."
+          },
+          "exemptionType": {
+            "type": "string",
+            "enum": [
+              "exempt",
+              "nonExempt"
+            ],
+            "description": "FLSA exemption type."
+          },
+          "reportsTo": {
+            "type": "array",
+            "description": "Reporting hierarchy.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "postionId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "positionTitle": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AccountingString": {
+        "type": "object",
+        "description": "A general ledger accounting string representation.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the accounting string."
+          },
+          "accountingString": {
+            "type": "string",
+            "description": "The full accounting string value (e.g., fund-org-account-program)."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the accounting string."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "asset",
+              "liability",
+              "fundBalance",
+              "revenue",
+              "expense"
+            ],
+            "description": "The accounting string type."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "unavailable"
+            ],
+            "description": "Whether the accounting string is available for use."
+          },
+          "components": {
+            "type": "array",
+            "description": "Individual components of the accounting string.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "fund",
+                    "organization",
+                    "account",
+                    "program",
+                    "activity",
+                    "location"
+                  ],
+                  "description": "Component type."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "Component value."
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Component description."
+                }
+              }
+            }
+          }
+        }
+      },
+      "Institution": {
+        "type": "object",
+        "description": "A higher education institution record.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the institution."
+          },
+          "title": {
+            "type": "string",
+            "description": "Name of the institution."
+          },
+          "code": {
+            "type": "string",
+            "description": "Institutional code (e.g., FICE, OPEID, IPEDS)."
+          },
+          "type": {
+            "type": "array",
+            "description": "Types of institution.",
+            "items": {
+              "type": "string",
+              "enum": [
+                "postSecondarySchool",
+                "secondarySchool",
+                "highSchool"
+              ]
+            }
+          },
+          "addresses": {
+            "type": "array",
+            "description": "Institution addresses.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "addressLines": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "place": {
+                  "type": "object",
+                  "properties": {
+                    "country": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "region": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "locality": {
+                      "type": "string"
+                    },
+                    "postalCode": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "phones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "number": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "object",
+                  "properties": {
+                    "phoneType": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Building": {
+        "type": "object",
+        "description": "A campus building record.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the building."
+          },
+          "title": {
+            "type": "string",
+            "description": "Name of the building."
+          },
+          "code": {
+            "type": "string",
+            "description": "Institutional code for the building."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the building."
+          },
+          "site": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the campus site."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive"
+            ],
+            "description": "Building status."
+          },
+          "address": {
+            "type": "object",
+            "description": "Building address.",
+            "properties": {
+              "addressLines": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "place": {
+                "type": "object",
+                "properties": {
+                  "country": {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "region": {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "locality": {
+                    "type": "string"
+                  },
+                  "postalCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "latitude": {
+            "type": "number",
+            "description": "Geographic latitude."
+          },
+          "longitude": {
+            "type": "number",
+            "description": "Geographic longitude."
+          }
+        }
+      },
+      "Room": {
+        "type": "object",
+        "description": "A room within a campus building.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique identifier for the room."
+          },
+          "title": {
+            "type": "string",
+            "description": "Room name or title."
+          },
+          "number": {
+            "type": "string",
+            "description": "Room number."
+          },
+          "description": {
+            "type": "string",
+            "description": "Room description."
+          },
+          "building": {
+            "$ref": "#/components/schemas/GuidReference",
+            "description": "Reference to the building containing this room."
+          },
+          "floor": {
+            "type": "string",
+            "description": "Floor on which the room is located."
+          },
+          "roomTypes": {
+            "type": "array",
+            "description": "Room type classifications.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "$ref": "#/components/schemas/GuidReference"
+                },
+                "roomTypesCategory": {
+                  "type": "string",
+                  "enum": [
+                    "classroom",
+                    "laboratory",
+                    "office",
+                    "residentialRoom",
+                    "studyRoom",
+                    "conferenceRoom",
+                    "lecturHall",
+                    "other"
+                  ],
+                  "description": "Room type category."
+                }
+              }
+            }
+          },
+          "occupancies": {
+            "type": "array",
+            "description": "Occupancy capacities for different uses.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "maxOccupancy": {
+                  "type": "integer",
+                  "description": "Maximum number of occupants."
+                },
+                "roomLayoutType": {
+                  "type": "string",
+                  "enum": [
+                    "default",
+                    "exam",
+                    "theater",
+                    "conference",
+                    "banquet"
+                  ],
+                  "description": "Room layout configuration."
+                }
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive"
+            ],
+            "description": "Room status."
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Exchange API key for JWT bearer token"
+    },
+    {
+      "name": "Change Notifications",
+      "description": "Publish and consume change notification messages"
+    },
+    {
+      "name": "Persons",
+      "description": "Person demographic and biographical records"
+    },
+    {
+      "name": "Students",
+      "description": "Student enrollment records"
+    },
+    {
+      "name": "Courses",
+      "description": "Course catalog entries"
+    },
+    {
+      "name": "Sections",
+      "description": "Course section offerings within academic periods"
+    },
+    {
+      "name": "Section Registrations",
+      "description": "Student registrations in course sections"
+    },
+    {
+      "name": "Grades",
+      "description": "Student grade records"
+    },
+    {
+      "name": "Grade Definitions",
+      "description": "Institutional grade scheme definitions"
+    },
+    {
+      "name": "Academic Periods",
+      "description": "Terms, semesters, and other academic time periods"
+    },
+    {
+      "name": "Academic Programs",
+      "description": "Degree programs and academic plans"
+    },
+    {
+      "name": "Student Academic Credentials",
+      "description": "Degrees, certificates, and other credentials awarded to students"
+    },
+    {
+      "name": "Instructional Events",
+      "description": "Scheduled class meetings and instructional activities"
+    },
+    {
+      "name": "Financial Aid Applications",
+      "description": "Student financial aid application records (FAFSA, ISIR)"
+    },
+    {
+      "name": "Financial Aid Awards",
+      "description": "Financial aid award packages for students"
+    },
+    {
+      "name": "Financial Aid Funds",
+      "description": "Financial aid fund definitions"
+    },
+    {
+      "name": "Employees",
+      "description": "Employee records for institutional staff and faculty"
+    },
+    {
+      "name": "Positions",
+      "description": "Institutional job position definitions"
+    },
+    {
+      "name": "Accounting Strings",
+      "description": "General ledger accounting string components"
+    },
+    {
+      "name": "Institutions",
+      "description": "Higher education institution records"
+    },
+    {
+      "name": "Buildings",
+      "description": "Campus building records"
+    },
+    {
+      "name": "Rooms",
+      "description": "Room records within campus buildings"
+    }
+  ]
+}
