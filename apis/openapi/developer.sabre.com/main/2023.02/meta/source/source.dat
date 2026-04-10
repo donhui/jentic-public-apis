@@ -1,0 +1,3038 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Sabre REST API",
+    "version": "2023.02",
+    "description": "Sabre is a leading technology provider to the global travel and tourism industry. The Sabre REST API provides programmatic access to Sabre's Global Distribution System (GDS), enabling travel agencies, airlines, hoteliers, and other travel companies to search, book, and manage travel content. This specification covers air shopping (including Bargain Finder Max and NDC-enabled offers), booking management (PNR creation and modification), ticketing, order management, hotel and car availability, utility/reference-data lookups, fare monitoring (FareNabber), and trip proposal workflows. Authentication uses OAuth 2.0 with both client_credentials and password grant types.",
+    "contact": {
+      "name": "Sabre Developer Support",
+      "url": "https://developer.sabre.com/"
+    },
+    "x-jentic-source-url": "https://developer.sabre.com/"
+  },
+  "servers": [
+    {
+      "url": "https://api.platform.sabre.com",
+      "description": "Production"
+    },
+    {
+      "url": "https://api.cert.platform.sabre.com",
+      "description": "Certification/Testing"
+    }
+  ],
+  "security": [
+    {
+      "oauth2": []
+    }
+  ],
+  "tags": [
+    { "name": "Authentication", "description": "OAuth 2.0 token endpoints for obtaining access tokens." },
+    { "name": "Air Intelligence", "description": "Historical fare and flight data for travel planning insights." },
+    { "name": "Air Shopping", "description": "Search and price air itineraries including Bargain Finder Max, InstaFlights, and NDC offers." },
+    { "name": "Air FareNabber", "description": "Subscribe to fare-watch alerts that notify when fares meet specified criteria." },
+    { "name": "Air Seats", "description": "Seat map retrieval and ancillary offer pricing." },
+    { "name": "Booking Management", "description": "Create, retrieve, modify, and cancel bookings and passenger name records (PNRs)." },
+    { "name": "Ticketing", "description": "Issue, exchange, and manage electronic tickets." },
+    { "name": "NDC Order Management", "description": "Create, view, change, and cancel NDC-based orders." },
+    { "name": "Hotels", "description": "Search hotel availability, view property details, and check rates." },
+    { "name": "Cars", "description": "Search vehicle rental availability." },
+    { "name": "Utility", "description": "Reference-data lookups for airlines, aircraft, airports, and geo locations." },
+    { "name": "Trip Proposals", "description": "Create, manage, search, refresh, and book trip proposals." }
+  ],
+  "paths": {
+    "/v2/auth/token": {
+      "post": {
+        "operationId": "createTokenV2",
+        "tags": ["Authentication"],
+        "summary": "Obtain OAuth token (client_credentials)",
+        "description": "Authenticates using the client_credentials grant type and returns an access token.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["grant_type", "client_id", "client_secret"],
+                "properties": {
+                  "grant_type": { "type": "string", "enum": ["client_credentials"], "description": "OAuth grant type." },
+                  "client_id": { "type": "string", "description": "Application client ID." },
+                  "client_secret": { "type": "string", "description": "Application client secret." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Access token issued successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v3/auth/token": {
+      "post": {
+        "operationId": "createTokenV3",
+        "tags": ["Authentication"],
+        "summary": "Obtain OAuth token with ClientID (password grant)",
+        "description": "Authenticates using the password grant type, returning an access token scoped to a specific user and pseudo-city code.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["grant_type", "client_id", "client_secret", "username", "password"],
+                "properties": {
+                  "grant_type": { "type": "string", "enum": ["password"], "description": "OAuth grant type." },
+                  "client_id": { "type": "string", "description": "Application client ID." },
+                  "client_secret": { "type": "string", "description": "Application client secret." },
+                  "username": { "type": "string", "description": "Sabre user identifier (EPR)." },
+                  "password": { "type": "string", "description": "User password or encoded credentials." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Access token issued successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/historical/flights/{origin}/seasonality": {
+      "get": {
+        "operationId": "getTravelSeasonality",
+        "tags": ["Air Intelligence"],
+        "summary": "Travel Seasonality",
+        "description": "Returns historical flight demand and fare seasonality data for a given origin.",
+        "parameters": [
+          {
+            "name": "origin",
+            "in": "path",
+            "required": true,
+            "description": "IATA airport or city code for the origin.",
+            "schema": { "type": "string", "minLength": 3, "maxLength": 3, "example": "ATL" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Seasonality data returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "OriginLocation": { "type": "string" },
+                    "SeasonalityData": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Month": { "type": "integer" },
+                          "Year": { "type": "integer" },
+                          "MedianFare": { "type": "number" },
+                          "DemandIndex": { "type": "number" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/historical/shop/flights/fares": {
+      "get": {
+        "operationId": "getLowFareHistory",
+        "tags": ["Air Intelligence"],
+        "summary": "Low Fare History",
+        "description": "Returns historical lowest fare data for a given origin-destination pair and travel dates.",
+        "parameters": [
+          { "name": "origin", "in": "query", "required": true, "schema": { "type": "string", "minLength": 3, "maxLength": 3 }, "description": "IATA origin airport/city code." },
+          { "name": "destination", "in": "query", "required": true, "schema": { "type": "string", "minLength": 3, "maxLength": 3 }, "description": "IATA destination airport/city code." },
+          { "name": "departuredate", "in": "query", "required": true, "schema": { "type": "string", "format": "date" }, "description": "Departure date (YYYY-MM-DD)." },
+          { "name": "returndate", "in": "query", "required": false, "schema": { "type": "string", "format": "date" }, "description": "Return date (YYYY-MM-DD)." },
+          { "name": "pointofsalecountry", "in": "query", "required": false, "schema": { "type": "string", "minLength": 2, "maxLength": 2 }, "description": "ISO 3166-1 alpha-2 country code for point of sale." }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historical fare data returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "OriginLocation": { "type": "string" },
+                    "DestinationLocation": { "type": "string" },
+                    "FareHistory": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/FlightOffer" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/shop/flights": {
+      "get": {
+        "operationId": "instaFlightsSearch",
+        "tags": ["Air Shopping"],
+        "summary": "InstaFlights Search",
+        "description": "Returns cached low-fare itineraries for a given origin-destination pair with optional sorting and pagination.",
+        "parameters": [
+          { "name": "origin", "in": "query", "required": true, "schema": { "type": "string", "minLength": 3, "maxLength": 3 }, "description": "IATA origin airport/city code." },
+          { "name": "destination", "in": "query", "required": true, "schema": { "type": "string", "minLength": 3, "maxLength": 3 }, "description": "IATA destination airport/city code." },
+          { "name": "departuredate", "in": "query", "required": true, "schema": { "type": "string", "format": "date" }, "description": "Departure date (YYYY-MM-DD)." },
+          { "name": "returndate", "in": "query", "required": false, "schema": { "type": "string", "format": "date" }, "description": "Return date (YYYY-MM-DD)." },
+          { "name": "onlineitinerariesonly", "in": "query", "required": false, "schema": { "type": "string", "enum": ["Y", "N"] }, "description": "Restrict to online (single-airline) itineraries." },
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "default": 50 }, "description": "Maximum number of results to return." },
+          { "name": "offset", "in": "query", "required": false, "schema": { "type": "integer", "default": 1 }, "description": "Starting position for results pagination." },
+          { "name": "sortby", "in": "query", "required": false, "schema": { "type": "string", "enum": ["totalfare", "departuredate", "arrivaldate"] }, "description": "Sort key for results." },
+          { "name": "order", "in": "query", "required": false, "schema": { "type": "string", "enum": ["asc", "desc"] }, "description": "Sort order." },
+          { "name": "pointofsalecountry", "in": "query", "required": false, "schema": { "type": "string", "minLength": 2, "maxLength": 2 }, "description": "ISO 3166-1 alpha-2 country code for point of sale." }
+        ],
+        "responses": {
+          "200": {
+            "description": "Flight itineraries returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "PricedItineraries": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/FlightOffer" }
+                    },
+                    "Links": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Link" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v2/shop/flights/fares": {
+      "get": {
+        "operationId": "destinationFinderLeadPriceCalendar",
+        "tags": ["Air Shopping"],
+        "summary": "Destination Finder / Lead Price Calendar",
+        "description": "Returns lowest available fares for one or many destinations, useful for flexible-date and destination-discovery searches.",
+        "parameters": [
+          { "name": "origin", "in": "query", "required": true, "schema": { "type": "string", "minLength": 3, "maxLength": 3 }, "description": "IATA origin airport/city code." },
+          { "name": "destination", "in": "query", "required": false, "schema": { "type": "string", "minLength": 3, "maxLength": 3 }, "description": "IATA destination airport/city code. Omit for multi-destination discovery." },
+          { "name": "departuredate", "in": "query", "required": false, "schema": { "type": "string", "format": "date" }, "description": "Departure date or month (YYYY-MM-DD or YYYY-MM)." },
+          { "name": "returndate", "in": "query", "required": false, "schema": { "type": "string", "format": "date" }, "description": "Return date (YYYY-MM-DD)." },
+          { "name": "lengthofstay", "in": "query", "required": false, "schema": { "type": "integer" }, "description": "Length of stay in days." },
+          { "name": "pointofsalecountry", "in": "query", "required": false, "schema": { "type": "string", "minLength": 2, "maxLength": 2 }, "description": "ISO 3166-1 alpha-2 country code for point of sale." }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lead-price fares returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "FareInfo": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/FlightOffer" }
+                    },
+                    "Links": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Link" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v2/offers/shop": {
+      "post": {
+        "operationId": "bargainFinderMaxV2",
+        "tags": ["Air Shopping"],
+        "summary": "Bargain Finder Max v2",
+        "description": "Performs a comprehensive air-shopping search using Sabre's Bargain Finder Max engine (version 2).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "OTA_AirLowFareSearchRQ": {
+                    "type": "object",
+                    "properties": {
+                      "OriginDestinationInformation": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "DepartureDateTime": { "type": "string", "format": "date-time" },
+                            "OriginLocation": { "type": "object", "properties": { "LocationCode": { "type": "string" } } },
+                            "DestinationLocation": { "type": "object", "properties": { "LocationCode": { "type": "string" } } }
+                          }
+                        }
+                      },
+                      "TravelPreferences": { "type": "object" },
+                      "TravelerInfoSummary": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shopping results returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "OTA_AirLowFareSearchRS": {
+                      "type": "object",
+                      "properties": {
+                        "PricedItineraries": {
+                          "type": "object",
+                          "properties": {
+                            "PricedItinerary": {
+                              "type": "array",
+                              "items": { "$ref": "#/components/schemas/FlightOffer" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v3/offers/shop": {
+      "post": {
+        "operationId": "bargainFinderMaxV3",
+        "tags": ["Air Shopping"],
+        "summary": "Bargain Finder Max v3 (NDC support)",
+        "description": "Performs an air-shopping search using Bargain Finder Max version 3 with NDC content support.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "OTA_AirLowFareSearchRQ": {
+                    "type": "object",
+                    "properties": {
+                      "OriginDestinationInformation": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "DepartureDateTime": { "type": "string", "format": "date-time" },
+                            "OriginLocation": { "type": "object", "properties": { "LocationCode": { "type": "string" } } },
+                            "DestinationLocation": { "type": "object", "properties": { "LocationCode": { "type": "string" } } }
+                          }
+                        }
+                      },
+                      "TravelPreferences": { "type": "object" },
+                      "TravelerInfoSummary": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shopping results with NDC content returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GroupedItineraryResponse": {
+                      "type": "object",
+                      "properties": {
+                        "Statistics": { "type": "object" },
+                        "ScheduleDescs": { "type": "array", "items": { "type": "object" } },
+                        "TaxDescs": { "type": "array", "items": { "type": "object" } },
+                        "FareComponentDescs": { "type": "array", "items": { "type": "object" } },
+                        "ItineraryGroups": { "type": "array", "items": { "$ref": "#/components/schemas/FlightOffer" } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v4/offers/shop": {
+      "post": {
+        "operationId": "bargainFinderMaxV4",
+        "tags": ["Air Shopping"],
+        "summary": "Bargain Finder Max v4",
+        "description": "Performs an air-shopping search using the latest Bargain Finder Max version 4 engine.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "OTA_AirLowFareSearchRQ": {
+                    "type": "object",
+                    "properties": {
+                      "OriginDestinationInformation": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "DepartureDateTime": { "type": "string", "format": "date-time" },
+                            "OriginLocation": { "type": "object", "properties": { "LocationCode": { "type": "string" } } },
+                            "DestinationLocation": { "type": "object", "properties": { "LocationCode": { "type": "string" } } }
+                          }
+                        }
+                      },
+                      "TravelPreferences": { "type": "object" },
+                      "TravelerInfoSummary": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shopping results returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GroupedItineraryResponse": {
+                      "type": "object",
+                      "properties": {
+                        "Statistics": { "type": "object" },
+                        "ItineraryGroups": { "type": "array", "items": { "$ref": "#/components/schemas/FlightOffer" } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v4.3.0/shop/flights": {
+      "post": {
+        "operationId": "shopFlightsV430",
+        "tags": ["Air Shopping"],
+        "summary": "Shop Flights v4.3.0",
+        "description": "Performs a stateful air-shopping request via Sabre's orchestrated shopping service.",
+        "parameters": [
+          { "name": "mode", "in": "query", "required": true, "schema": { "type": "string", "enum": ["live"] }, "description": "Processing mode." }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "OTA_AirLowFareSearchRQ": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shopping results returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "OTA_AirLowFareSearchRS": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v4.3.0/shop/flights/revalidate": {
+      "post": {
+        "operationId": "revalidateItineraryV430",
+        "tags": ["Air Shopping"],
+        "summary": "Revalidate Itinerary v4.3.0",
+        "description": "Revalidates a previously shopped itinerary to confirm current availability and pricing.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "OTA_AirLowFareSearchRQ": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Revalidation results returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "OTA_AirLowFareSearchRS": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v6.1.0/shop/altdates/flights": {
+      "post": {
+        "operationId": "alternateDateSearch",
+        "tags": ["Air Shopping"],
+        "summary": "Alternate Date Search",
+        "description": "Searches for flight options across a range of alternate departure and return dates.",
+        "parameters": [
+          { "name": "mode", "in": "query", "required": true, "schema": { "type": "string", "enum": ["live"] }, "description": "Processing mode." }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "OTA_AirLowFareSearchRQ": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Alternate-date results returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "OTA_AirLowFareSearchRS": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v6.1.0/shop/flights/revalidate": {
+      "post": {
+        "operationId": "revalidateItineraryV610",
+        "tags": ["Air Shopping"],
+        "summary": "Revalidate Itinerary v6.1.0",
+        "description": "Revalidates a previously shopped itinerary using the v6.1.0 engine.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "OTA_AirLowFareSearchRQ": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Revalidation results returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "OTA_AirLowFareSearchRS": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1.0/AirShopping/FareNabberSubscriptions": {
+      "post": {
+        "operationId": "createFareSubscription",
+        "tags": ["Air FareNabber"],
+        "summary": "Create Fare Subscription",
+        "description": "Creates a new FareNabber subscription to monitor fares for specified criteria and receive alerts.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/FareSubscriptionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Fare subscription created successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FareSubscription" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1.0/AirShopping/FareNabberSubscriptions/{subscriptionId}": {
+      "get": {
+        "operationId": "getFareSubscription",
+        "tags": ["Air FareNabber"],
+        "summary": "Get Fare Subscription",
+        "description": "Retrieves a specific FareNabber subscription by its identifier.",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "description": "Unique subscription identifier.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscription returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FareSubscription" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": {
+            "description": "Subscription not found.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/offers/getseats": {
+      "post": {
+        "operationId": "getSeatMap",
+        "tags": ["Air Seats"],
+        "summary": "Get Seat Map",
+        "description": "Returns the seat map for a given flight segment including seat availability and characteristics.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "EnhancedSeatMapRQ": {
+                    "type": "object",
+                    "properties": {
+                      "SeatMapQueryEnhanced": {
+                        "type": "object",
+                        "properties": {
+                          "RequestType": { "type": "string" },
+                          "Flight": {
+                            "type": "object",
+                            "properties": {
+                              "DepartureDate": { "type": "string", "format": "date" },
+                              "Departure": { "type": "object", "properties": { "AirportCode": { "type": "string" } } },
+                              "Arrival": { "type": "object", "properties": { "AirportCode": { "type": "string" } } },
+                              "Marketing": { "type": "object", "properties": { "AirlineCode": { "type": "string" }, "FlightNumber": { "type": "string" } } }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Seat map returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "EnhancedSeatMapRS": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/offers/price": {
+      "post": {
+        "operationId": "priceOffers",
+        "tags": ["Air Seats"],
+        "summary": "Price Offers",
+        "description": "Returns pricing details for ancillary offers such as seats, bags, and other extras.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "OfferPriceRQ": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Offer pricing returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "OfferPriceRS": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v2.4.0/passenger/records": {
+      "post": {
+        "operationId": "createPnr",
+        "tags": ["Booking Management"],
+        "summary": "Create PNR",
+        "description": "Creates a Passenger Name Record (PNR) in Sabre's reservation system.",
+        "parameters": [
+          { "name": "mode", "in": "query", "required": true, "schema": { "type": "string", "enum": ["create"] }, "description": "Operation mode." }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PassengerNameRecordRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "PNR created successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PassengerNameRecord" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1.1.0/passenger/records": {
+      "post": {
+        "operationId": "updatePnr",
+        "tags": ["Booking Management"],
+        "summary": "Update PNR",
+        "description": "Updates an existing Passenger Name Record (PNR) in Sabre's reservation system.",
+        "parameters": [
+          { "name": "mode", "in": "query", "required": true, "schema": { "type": "string", "enum": ["update"] }, "description": "Operation mode." }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PassengerNameRecordRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "PNR updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PassengerNameRecord" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/trip/orders/createBooking": {
+      "post": {
+        "operationId": "createBooking",
+        "tags": ["Booking Management"],
+        "summary": "Create Booking",
+        "description": "Creates a booking through Sabre's trip orders service, supporting air, hotel, and car segments.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "CreateBookingRequest": {
+                    "type": "object",
+                    "properties": {
+                      "FlightSegments": { "type": "array", "items": { "$ref": "#/components/schemas/FlightSegment" } },
+                      "Travelers": { "type": "array", "items": { "type": "object" } },
+                      "ContactInfo": { "type": "object" },
+                      "Payment": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Booking created successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Booking" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/trip/orders/getBooking": {
+      "post": {
+        "operationId": "getBooking",
+        "tags": ["Booking Management"],
+        "summary": "Get Booking",
+        "description": "Retrieves a booking by confirmation ID.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "GetBookingRequest": {
+                    "type": "object",
+                    "properties": {
+                      "ConfirmationId": { "type": "string", "description": "PNR locator or booking confirmation ID." }
+                    },
+                    "required": ["ConfirmationId"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Booking retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Booking" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/trip/orders/getBooking/graphql": {
+      "post": {
+        "operationId": "getBookingGraphql",
+        "tags": ["Booking Management"],
+        "summary": "Get Booking (GraphQL)",
+        "description": "Retrieves booking data using a GraphQL query for flexible field selection.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "query": { "type": "string", "description": "GraphQL query string." },
+                  "variables": { "type": "object", "description": "GraphQL query variables." }
+                },
+                "required": ["query"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Booking data returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "type": "object" },
+                    "errors": { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/trip/orders/modifyBooking": {
+      "post": {
+        "operationId": "modifyBooking",
+        "tags": ["Booking Management"],
+        "summary": "Modify Booking",
+        "description": "Modifies an existing booking (add/change segments, travelers, remarks, etc.).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ModifyBookingRequest": {
+                    "type": "object",
+                    "properties": {
+                      "ConfirmationId": { "type": "string" },
+                      "Modifications": { "type": "object" }
+                    },
+                    "required": ["ConfirmationId"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Booking modified successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Booking" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/trip/orders/cancelBooking": {
+      "post": {
+        "operationId": "cancelBooking",
+        "tags": ["Booking Management"],
+        "summary": "Cancel Booking",
+        "description": "Cancels an existing booking.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "CancelBookingRequest": {
+                    "type": "object",
+                    "properties": {
+                      "ConfirmationId": { "type": "string" },
+                      "CancelAll": { "type": "boolean", "default": true }
+                    },
+                    "required": ["ConfirmationId"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Booking cancelled successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "CancelBookingResponse": {
+                      "type": "object",
+                      "properties": {
+                        "ConfirmationId": { "type": "string" },
+                        "Status": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/trip/orders/checkFlightTickets": {
+      "post": {
+        "operationId": "checkFlightTickets",
+        "tags": ["Booking Management"],
+        "summary": "Check Flight Tickets",
+        "description": "Checks the ticketing status of flights within a booking.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "CheckFlightTicketsRequest": {
+                    "type": "object",
+                    "properties": {
+                      "ConfirmationId": { "type": "string" }
+                    },
+                    "required": ["ConfirmationId"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ticket status returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "CheckFlightTicketsResponse": {
+                      "type": "object",
+                      "properties": {
+                        "TicketingStatus": { "type": "string" },
+                        "Tickets": { "type": "array", "items": { "type": "object" } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/trip/orders/voidFlightTickets": {
+      "post": {
+        "operationId": "voidFlightTickets",
+        "tags": ["Booking Management"],
+        "summary": "Void Flight Tickets",
+        "description": "Voids previously issued flight tickets within a booking.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "VoidFlightTicketsRequest": {
+                    "type": "object",
+                    "properties": {
+                      "ConfirmationId": { "type": "string" },
+                      "TicketNumbers": { "type": "array", "items": { "type": "string" } }
+                    },
+                    "required": ["ConfirmationId"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tickets voided successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "VoidFlightTicketsResponse": {
+                      "type": "object",
+                      "properties": {
+                        "Status": { "type": "string" },
+                        "VoidedTickets": { "type": "array", "items": { "type": "string" } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/trip/orders/refundFlightTickets": {
+      "post": {
+        "operationId": "refundFlightTickets",
+        "tags": ["Booking Management"],
+        "summary": "Refund Flight Tickets",
+        "description": "Processes refunds for previously issued flight tickets.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "RefundFlightTicketsRequest": {
+                    "type": "object",
+                    "properties": {
+                      "ConfirmationId": { "type": "string" },
+                      "TicketNumbers": { "type": "array", "items": { "type": "string" } }
+                    },
+                    "required": ["ConfirmationId"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Refund processed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "RefundFlightTicketsResponse": {
+                      "type": "object",
+                      "properties": {
+                        "Status": { "type": "string" },
+                        "RefundAmount": { "type": "number" },
+                        "CurrencyCode": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1.2.1/air/ticket": {
+      "post": {
+        "operationId": "enhancedAirTicketV121",
+        "tags": ["Ticketing"],
+        "summary": "Enhanced Air Ticket v1.2.1",
+        "description": "Issues electronic tickets for booked air segments using the Enhanced Air Ticket service v1.2.1.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "AirTicketRQ": {
+                    "type": "object",
+                    "properties": {
+                      "DesignatePrinter": { "type": "object" },
+                      "Itinerary": { "type": "object", "properties": { "ID": { "type": "string" } } },
+                      "Ticketing": {
+                        "type": "object",
+                        "properties": {
+                          "PricingQualifiers": { "type": "object" },
+                          "MiscQualifiers": { "type": "object" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ticket issued successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "AirTicketRS": {
+                      "type": "object",
+                      "properties": {
+                        "Summary": { "type": "array", "items": { "type": "object" } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1.3.0/air/ticket": {
+      "post": {
+        "operationId": "enhancedAirTicketV130",
+        "tags": ["Ticketing"],
+        "summary": "Enhanced Air Ticket v1.3.0",
+        "description": "Issues electronic tickets for booked air segments using the Enhanced Air Ticket service v1.3.0.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "AirTicketRQ": {
+                    "type": "object",
+                    "properties": {
+                      "DesignatePrinter": { "type": "object" },
+                      "Itinerary": { "type": "object", "properties": { "ID": { "type": "string" } } },
+                      "Ticketing": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ticket issued successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "AirTicketRS": {
+                      "type": "object",
+                      "properties": {
+                        "Summary": { "type": "array", "items": { "type": "object" } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1.0.1/exchange/booking": {
+      "post": {
+        "operationId": "exchangeBooking",
+        "tags": ["Ticketing"],
+        "summary": "Exchange Booking",
+        "description": "Performs a ticket exchange for an existing booking, repricing and reissuing tickets.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ExchangeBookingRequest": {
+                    "type": "object",
+                    "properties": {
+                      "ConfirmationId": { "type": "string" },
+                      "NewItinerary": { "type": "object" },
+                      "OriginalTicketNumber": { "type": "string" }
+                    },
+                    "required": ["ConfirmationId"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Exchange completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ExchangeBookingResponse": {
+                      "type": "object",
+                      "properties": {
+                        "ConfirmationId": { "type": "string" },
+                        "NewTicketNumber": { "type": "string" },
+                        "ExchangePenalty": { "type": "number" },
+                        "AdditionalCollection": { "type": "number" },
+                        "CurrencyCode": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/orders/create": {
+      "post": {
+        "operationId": "createOrder",
+        "tags": ["NDC Order Management"],
+        "summary": "Create Order",
+        "description": "Creates an NDC order from a previously priced offer.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "CreateOrderRQ": {
+                    "type": "object",
+                    "properties": {
+                      "OfferId": { "type": "string" },
+                      "Travelers": { "type": "array", "items": { "type": "object" } },
+                      "Payments": { "type": "array", "items": { "type": "object" } },
+                      "ContactInfo": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order created successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/orders/view": {
+      "post": {
+        "operationId": "viewOrder",
+        "tags": ["NDC Order Management"],
+        "summary": "View Order",
+        "description": "Retrieves an existing NDC order by order ID.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ViewOrderRQ": {
+                    "type": "object",
+                    "properties": {
+                      "OrderId": { "type": "string" }
+                    },
+                    "required": ["OrderId"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/orders/change": {
+      "post": {
+        "operationId": "changeOrder",
+        "tags": ["NDC Order Management"],
+        "summary": "Change Order",
+        "description": "Modifies an existing NDC order (add/remove services, change itinerary, etc.).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ChangeOrderRQ": {
+                    "type": "object",
+                    "properties": {
+                      "OrderId": { "type": "string" },
+                      "Changes": { "type": "object" }
+                    },
+                    "required": ["OrderId"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order changed successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/orders/cancel": {
+      "post": {
+        "operationId": "cancelOrder",
+        "tags": ["NDC Order Management"],
+        "summary": "Cancel Order",
+        "description": "Cancels an existing NDC order.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "CancelOrderRQ": {
+                    "type": "object",
+                    "properties": {
+                      "OrderId": { "type": "string" }
+                    },
+                    "required": ["OrderId"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order cancelled successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "CancelOrderRS": {
+                      "type": "object",
+                      "properties": {
+                        "OrderId": { "type": "string" },
+                        "Status": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v3.0.0/get/hotelavail": {
+      "post": {
+        "operationId": "getHotelAvailability",
+        "tags": ["Hotels"],
+        "summary": "Get Hotel Availability",
+        "description": "Searches for available hotels based on location, dates, and guest criteria.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "GetHotelAvailRQ": {
+                    "type": "object",
+                    "properties": {
+                      "SearchCriteria": {
+                        "type": "object",
+                        "properties": {
+                          "HotelRef": {
+                            "type": "object",
+                            "properties": {
+                              "CityCode": { "type": "string" },
+                              "HotelCode": { "type": "string" },
+                              "Latitude": { "type": "number" },
+                              "Longitude": { "type": "number" }
+                            }
+                          },
+                          "RateInfoRef": { "type": "object" },
+                          "GuestCounts": { "type": "object" }
+                        }
+                      },
+                      "TimeSpan": {
+                        "type": "object",
+                        "properties": {
+                          "Start": { "type": "string", "format": "date" },
+                          "End": { "type": "string", "format": "date" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hotel availability returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HotelAvailability" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v2.0.0/get/hoteldetails": {
+      "post": {
+        "operationId": "getHotelDetails",
+        "tags": ["Hotels"],
+        "summary": "Get Hotel Details",
+        "description": "Retrieves detailed property information for a specific hotel.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "GetHotelDetailsRQ": {
+                    "type": "object",
+                    "properties": {
+                      "HotelRef": {
+                        "type": "object",
+                        "properties": {
+                          "HotelCode": { "type": "string" }
+                        },
+                        "required": ["HotelCode"]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hotel details returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HotelDetails" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v3.0.0/get/hotelrateinfo": {
+      "post": {
+        "operationId": "getHotelRateInfo",
+        "tags": ["Hotels"],
+        "summary": "Get Hotel Rate Info",
+        "description": "Retrieves detailed rate and room information for a specific hotel property.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "GetHotelRateInfoRQ": {
+                    "type": "object",
+                    "properties": {
+                      "HotelRef": { "type": "object", "properties": { "HotelCode": { "type": "string" } } },
+                      "TimeSpan": {
+                        "type": "object",
+                        "properties": {
+                          "Start": { "type": "string", "format": "date" },
+                          "End": { "type": "string", "format": "date" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hotel rate info returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HotelRateInfo" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v3.0.0/hotel/pricecheck": {
+      "post": {
+        "operationId": "hotelPriceCheck",
+        "tags": ["Hotels"],
+        "summary": "Hotel Price Check",
+        "description": "Confirms the current price and availability of a previously shopped hotel rate.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "HotelPriceCheckRQ": {
+                    "type": "object",
+                    "properties": {
+                      "HotelCode": { "type": "string" },
+                      "RatePlanCode": { "type": "string" },
+                      "RoomTypeCode": { "type": "string" },
+                      "TimeSpan": {
+                        "type": "object",
+                        "properties": {
+                          "Start": { "type": "string", "format": "date" },
+                          "End": { "type": "string", "format": "date" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Price check completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "HotelPriceCheckRS": {
+                      "type": "object",
+                      "properties": {
+                        "PriceChanged": { "type": "boolean" },
+                        "CurrentPrice": { "type": "number" },
+                        "CurrencyCode": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v2.0.0/get/vehavail": {
+      "post": {
+        "operationId": "getVehicleAvailability",
+        "tags": ["Cars"],
+        "summary": "Get Vehicle Availability",
+        "description": "Searches for available rental vehicles at a given location and date range.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "GetVehAvailRQ": {
+                    "type": "object",
+                    "properties": {
+                      "VehAvailRQCore": {
+                        "type": "object",
+                        "properties": {
+                          "PickUpLocation": { "type": "object", "properties": { "LocationCode": { "type": "string" } } },
+                          "ReturnLocation": { "type": "object", "properties": { "LocationCode": { "type": "string" } } },
+                          "PickUpDateTime": { "type": "string", "format": "date-time" },
+                          "ReturnDateTime": { "type": "string", "format": "date-time" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Vehicle availability returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/VehicleAvailability" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/lists/utilities/airlines": {
+      "get": {
+        "operationId": "airlineLookup",
+        "tags": ["Utility"],
+        "summary": "Airline Lookup",
+        "description": "Looks up airline information by IATA airline code.",
+        "parameters": [
+          { "name": "airlinecode", "in": "query", "required": true, "schema": { "type": "string", "minLength": 2, "maxLength": 3 }, "description": "IATA airline code." }
+        ],
+        "responses": {
+          "200": {
+            "description": "Airline information returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "AirlineInfo": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "AirlineCode": { "type": "string" },
+                          "AirlineName": { "type": "string" },
+                          "AllianceCode": { "type": "string" }
+                        }
+                      }
+                    },
+                    "Links": { "type": "array", "items": { "$ref": "#/components/schemas/Link" } }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/lists/utilities/airlines/alliances": {
+      "get": {
+        "operationId": "airlineAllianceLookup",
+        "tags": ["Utility"],
+        "summary": "Airline Alliance Lookup",
+        "description": "Looks up airline alliance information by alliance code.",
+        "parameters": [
+          { "name": "alliancecode", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Alliance code (e.g., *A for Star Alliance)." }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alliance information returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "AllianceInfo": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "AllianceCode": { "type": "string" },
+                          "AllianceName": { "type": "string" },
+                          "Members": { "type": "array", "items": { "type": "object", "properties": { "AirlineCode": { "type": "string" }, "AirlineName": { "type": "string" } } } }
+                        }
+                      }
+                    },
+                    "Links": { "type": "array", "items": { "$ref": "#/components/schemas/Link" } }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/lists/utilities/aircraft/equipment": {
+      "get": {
+        "operationId": "aircraftEquipmentLookup",
+        "tags": ["Utility"],
+        "summary": "Aircraft Equipment Lookup",
+        "description": "Looks up aircraft equipment information by IATA aircraft code.",
+        "parameters": [
+          { "name": "aircraftcode", "in": "query", "required": true, "schema": { "type": "string" }, "description": "IATA aircraft equipment code (e.g., 738 for Boeing 737-800)." }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aircraft equipment information returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "AircraftInfo": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "AircraftCode": { "type": "string" },
+                          "AircraftName": { "type": "string" },
+                          "WideBody": { "type": "boolean" }
+                        }
+                      }
+                    },
+                    "Links": { "type": "array", "items": { "$ref": "#/components/schemas/Link" } }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/lists/supported/cities/{cityCode}/airports": {
+      "get": {
+        "operationId": "airportsAtCities",
+        "tags": ["Utility"],
+        "summary": "Airports at Cities",
+        "description": "Lists all airports associated with a given city code.",
+        "parameters": [
+          {
+            "name": "cityCode",
+            "in": "path",
+            "required": true,
+            "description": "IATA city code.",
+            "schema": { "type": "string", "minLength": 3, "maxLength": 3, "example": "NYC" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Airport list returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Airports": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "AirportCode": { "type": "string" },
+                          "AirportName": { "type": "string" },
+                          "CityCode": { "type": "string" }
+                        }
+                      }
+                    },
+                    "Links": { "type": "array", "items": { "$ref": "#/components/schemas/Link" } }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1.0.0/lists/utilities/geosearch/locations": {
+      "post": {
+        "operationId": "geoSearch",
+        "tags": ["Utility"],
+        "summary": "Geo Search",
+        "description": "Searches for travel locations (airports, cities, points of interest) by geographic coordinates or keyword.",
+        "parameters": [
+          { "name": "mode", "in": "query", "required": true, "schema": { "type": "string", "enum": ["geosearch"] }, "description": "Operation mode." }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "GeoSearchRQ": {
+                    "type": "object",
+                    "properties": {
+                      "GeoRef": {
+                        "type": "object",
+                        "properties": {
+                          "GeoCode": {
+                            "type": "object",
+                            "properties": {
+                              "Latitude": { "type": "number" },
+                              "Longitude": { "type": "number" }
+                            }
+                          },
+                          "Radius": { "type": "number" },
+                          "UOM": { "type": "string", "enum": ["MI", "KM"] }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Location results returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GeoSearchRS": {
+                      "type": "object",
+                      "properties": {
+                        "Locations": { "type": "array", "items": { "type": "object" } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1.0.0/cabin/rbd": {
+      "post": {
+        "operationId": "getRbdForCabin",
+        "tags": ["Utility"],
+        "summary": "Get RBD for Cabin",
+        "description": "Returns the Reservation Booking Designators (RBDs) associated with a given cabin class for a specific airline.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "CabinRbdRQ": {
+                    "type": "object",
+                    "properties": {
+                      "AirlineCode": { "type": "string" },
+                      "CabinCode": { "type": "string", "description": "Cabin class code (e.g., Y, J, F, W)." }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "RBD mapping returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "CabinRbdRS": {
+                      "type": "object",
+                      "properties": {
+                        "CabinCode": { "type": "string" },
+                        "RBDs": { "type": "array", "items": { "type": "string" } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1.0.0/rbd/cabin": {
+      "post": {
+        "operationId": "getCabinForRbd",
+        "tags": ["Utility"],
+        "summary": "Get Cabin for RBD",
+        "description": "Returns the cabin class associated with a given Reservation Booking Designator (RBD) for a specific airline.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "RbdCabinRQ": {
+                    "type": "object",
+                    "properties": {
+                      "AirlineCode": { "type": "string" },
+                      "RBD": { "type": "string", "description": "Reservation Booking Designator (e.g., Y, B, M)." }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cabin mapping returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "RbdCabinRS": {
+                      "type": "object",
+                      "properties": {
+                        "RBD": { "type": "string" },
+                        "CabinCode": { "type": "string" },
+                        "CabinName": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/tripproposal/document": {
+      "post": {
+        "operationId": "createProposal",
+        "tags": ["Trip Proposals"],
+        "summary": "Create Proposal",
+        "description": "Creates a new trip proposal document containing travel options for a client.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TripProposalRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Proposal created successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TripProposal" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/tripproposal/document/{proposalId}": {
+      "get": {
+        "operationId": "readProposal",
+        "tags": ["Trip Proposals"],
+        "summary": "Read Proposal",
+        "description": "Retrieves an existing trip proposal by its identifier.",
+        "parameters": [
+          {
+            "name": "proposalId",
+            "in": "path",
+            "required": true,
+            "description": "Unique proposal identifier.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Proposal returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TripProposal" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": {
+            "description": "Proposal not found.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      },
+      "put": {
+        "operationId": "updateProposal",
+        "tags": ["Trip Proposals"],
+        "summary": "Update Proposal",
+        "description": "Updates an existing trip proposal.",
+        "parameters": [
+          {
+            "name": "proposalId",
+            "in": "path",
+            "required": true,
+            "description": "Unique proposal identifier.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TripProposalRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Proposal updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TripProposal" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": {
+            "description": "Proposal not found.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteProposal",
+        "tags": ["Trip Proposals"],
+        "summary": "Delete Proposal",
+        "description": "Deletes an existing trip proposal.",
+        "parameters": [
+          {
+            "name": "proposalId",
+            "in": "path",
+            "required": true,
+            "description": "Unique proposal identifier.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Proposal deleted successfully." },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": {
+            "description": "Proposal not found.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/tripproposal/search": {
+      "post": {
+        "operationId": "searchProposals",
+        "tags": ["Trip Proposals"],
+        "summary": "Search Proposals",
+        "description": "Searches for trip proposals matching specified criteria.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "SearchCriteria": {
+                    "type": "object",
+                    "properties": {
+                      "ClientName": { "type": "string" },
+                      "Status": { "type": "string" },
+                      "CreatedAfter": { "type": "string", "format": "date-time" },
+                      "CreatedBefore": { "type": "string", "format": "date-time" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Search results returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Proposals": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/TripProposal" }
+                    },
+                    "TotalCount": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/tripproposal/refresh": {
+      "post": {
+        "operationId": "refreshProposal",
+        "tags": ["Trip Proposals"],
+        "summary": "Refresh Proposal",
+        "description": "Refreshes pricing and availability for all options within a trip proposal.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ProposalId": { "type": "string" }
+                },
+                "required": ["ProposalId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Proposal refreshed successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TripProposal" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/v1/tripproposal/book": {
+      "post": {
+        "operationId": "bookProposal",
+        "tags": ["Trip Proposals"],
+        "summary": "Book Proposal",
+        "description": "Books the selected option from a trip proposal, creating a reservation.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ProposalId": { "type": "string" },
+                  "SelectedOptionId": { "type": "string" },
+                  "TravelerInfo": { "type": "object" },
+                  "Payment": { "type": "object" }
+                },
+                "required": ["ProposalId", "SelectedOptionId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Proposal booked successfully.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Booking" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "description": "Sabre OAuth 2.0 authentication supporting client_credentials and password grant types.",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://api.platform.sabre.com/v2/auth/token",
+            "scopes": {}
+          },
+          "password": {
+            "tokenUrl": "https://api.platform.sabre.com/v3/auth/token",
+            "scopes": {}
+          }
+        }
+      }
+    },
+    "schemas": {
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": { "type": "string", "description": "Bearer token for authenticating subsequent API requests." },
+          "token_type": { "type": "string", "example": "bearer" },
+          "expires_in": { "type": "integer", "description": "Token lifetime in seconds." }
+        }
+      },
+      "FlightOffer": {
+        "type": "object",
+        "description": "Represents a priced air itinerary or fare offer.",
+        "properties": {
+          "OfferId": { "type": "string", "description": "Unique offer identifier." },
+          "Source": { "type": "string", "description": "Content source (e.g., ATPCO, NDC)." },
+          "TotalFare": {
+            "type": "object",
+            "properties": {
+              "Amount": { "type": "number", "description": "Total fare amount including taxes." },
+              "CurrencyCode": { "type": "string", "description": "ISO 4217 currency code." }
+            }
+          },
+          "BaseFare": {
+            "type": "object",
+            "properties": {
+              "Amount": { "type": "number" },
+              "CurrencyCode": { "type": "string" }
+            }
+          },
+          "Taxes": {
+            "type": "object",
+            "properties": {
+              "Amount": { "type": "number" },
+              "CurrencyCode": { "type": "string" },
+              "TaxBreakdown": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "TaxCode": { "type": "string" },
+                    "Amount": { "type": "number" }
+                  }
+                }
+              }
+            }
+          },
+          "OriginDestinationOptions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "FlightSegments": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/FlightSegment" }
+                },
+                "ElapsedTime": { "type": "integer", "description": "Total elapsed time in minutes." }
+              }
+            }
+          },
+          "BaggageAllowance": {
+            "type": "object",
+            "properties": {
+              "Pieces": { "type": "integer" },
+              "Weight": { "type": "number" },
+              "WeightUnit": { "type": "string", "enum": ["KG", "LB"] }
+            }
+          },
+          "FareRules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "Category": { "type": "string" },
+                "Text": { "type": "string" }
+              }
+            }
+          },
+          "LastTicketingDate": { "type": "string", "format": "date" },
+          "ValidatingAirlineCode": { "type": "string" }
+        }
+      },
+      "FlightSegment": {
+        "type": "object",
+        "description": "A single flight leg between two airports.",
+        "properties": {
+          "DepartureAirport": { "type": "string", "description": "IATA departure airport code." },
+          "ArrivalAirport": { "type": "string", "description": "IATA arrival airport code." },
+          "DepartureDateTime": { "type": "string", "format": "date-time" },
+          "ArrivalDateTime": { "type": "string", "format": "date-time" },
+          "MarketingAirline": { "type": "string", "description": "IATA marketing carrier code." },
+          "OperatingAirline": { "type": "string", "description": "IATA operating carrier code." },
+          "FlightNumber": { "type": "string" },
+          "Equipment": { "type": "string", "description": "IATA aircraft equipment code." },
+          "CabinClass": { "type": "string", "description": "Cabin class (Economy, Premium Economy, Business, First)." },
+          "BookingCode": { "type": "string", "description": "Reservation Booking Designator (RBD)." },
+          "Duration": { "type": "integer", "description": "Segment duration in minutes." },
+          "NumberOfStops": { "type": "integer" },
+          "ConnectionTime": { "type": "integer", "description": "Connection time in minutes to the next segment." }
+        }
+      },
+      "HotelAvailability": {
+        "type": "object",
+        "description": "Hotel availability search response.",
+        "properties": {
+          "GetHotelAvailRS": {
+            "type": "object",
+            "properties": {
+              "HotelAvailInfos": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "HotelCode": { "type": "string" },
+                    "HotelName": { "type": "string" },
+                    "ChainCode": { "type": "string" },
+                    "StarRating": { "type": "number" },
+                    "Address": {
+                      "type": "object",
+                      "properties": {
+                        "AddressLine": { "type": "string" },
+                        "CityName": { "type": "string" },
+                        "CountryCode": { "type": "string" },
+                        "PostalCode": { "type": "string" }
+                      }
+                    },
+                    "GeoCode": {
+                      "type": "object",
+                      "properties": {
+                        "Latitude": { "type": "number" },
+                        "Longitude": { "type": "number" }
+                      }
+                    },
+                    "LowestRate": {
+                      "type": "object",
+                      "properties": {
+                        "Amount": { "type": "number" },
+                        "CurrencyCode": { "type": "string" }
+                      }
+                    },
+                    "RoomTypes": { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "HotelDetails": {
+        "type": "object",
+        "description": "Detailed hotel property information.",
+        "properties": {
+          "GetHotelDetailsRS": {
+            "type": "object",
+            "properties": {
+              "HotelCode": { "type": "string" },
+              "HotelName": { "type": "string" },
+              "ChainCode": { "type": "string" },
+              "ChainName": { "type": "string" },
+              "StarRating": { "type": "number" },
+              "Description": { "type": "string" },
+              "Address": {
+                "type": "object",
+                "properties": {
+                  "AddressLine": { "type": "string" },
+                  "CityName": { "type": "string" },
+                  "StateProv": { "type": "string" },
+                  "CountryCode": { "type": "string" },
+                  "PostalCode": { "type": "string" }
+                }
+              },
+              "GeoCode": {
+                "type": "object",
+                "properties": {
+                  "Latitude": { "type": "number" },
+                  "Longitude": { "type": "number" }
+                }
+              },
+              "ContactInfo": {
+                "type": "object",
+                "properties": {
+                  "Phone": { "type": "string" },
+                  "Fax": { "type": "string" },
+                  "Email": { "type": "string" },
+                  "Website": { "type": "string" }
+                }
+              },
+              "Amenities": { "type": "array", "items": { "type": "object", "properties": { "Code": { "type": "string" }, "Description": { "type": "string" } } } },
+              "Images": { "type": "array", "items": { "type": "object", "properties": { "Url": { "type": "string" }, "Category": { "type": "string" } } } },
+              "CheckInTime": { "type": "string" },
+              "CheckOutTime": { "type": "string" }
+            }
+          }
+        }
+      },
+      "HotelRateInfo": {
+        "type": "object",
+        "description": "Detailed hotel rate and room information.",
+        "properties": {
+          "GetHotelRateInfoRS": {
+            "type": "object",
+            "properties": {
+              "HotelCode": { "type": "string" },
+              "HotelName": { "type": "string" },
+              "RoomRates": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "RoomTypeCode": { "type": "string" },
+                    "RatePlanCode": { "type": "string" },
+                    "RoomDescription": { "type": "string" },
+                    "Rate": {
+                      "type": "object",
+                      "properties": {
+                        "Amount": { "type": "number" },
+                        "CurrencyCode": { "type": "string" },
+                        "RateTimeUnit": { "type": "string", "enum": ["Night", "Stay"] }
+                      }
+                    },
+                    "TotalPrice": {
+                      "type": "object",
+                      "properties": {
+                        "Amount": { "type": "number" },
+                        "CurrencyCode": { "type": "string" }
+                      }
+                    },
+                    "CancelPolicy": { "type": "object" },
+                    "MealPlan": { "type": "string" },
+                    "GuaranteeRequired": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "VehicleAvailability": {
+        "type": "object",
+        "description": "Vehicle rental availability response.",
+        "properties": {
+          "GetVehAvailRS": {
+            "type": "object",
+            "properties": {
+              "VehicleOptions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "VendorCode": { "type": "string" },
+                    "VendorName": { "type": "string" },
+                    "VehicleType": { "type": "string" },
+                    "VehicleClass": { "type": "string" },
+                    "Description": { "type": "string" },
+                    "TransmissionType": { "type": "string", "enum": ["Automatic", "Manual"] },
+                    "AirConditioning": { "type": "boolean" },
+                    "PassengerCapacity": { "type": "integer" },
+                    "BaggageCapacity": { "type": "integer" },
+                    "DoorCount": { "type": "integer" },
+                    "Rate": {
+                      "type": "object",
+                      "properties": {
+                        "DailyRate": { "type": "number" },
+                        "TotalEstimate": { "type": "number" },
+                        "CurrencyCode": { "type": "string" }
+                      }
+                    },
+                    "PickUpLocation": { "type": "string" },
+                    "ReturnLocation": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "PassengerNameRecordRequest": {
+        "type": "object",
+        "description": "Request payload for creating or updating a Passenger Name Record.",
+        "properties": {
+          "CreatePassengerNameRecordRQ": {
+            "type": "object",
+            "properties": {
+              "TravelItineraryAddInfo": {
+                "type": "object",
+                "properties": {
+                  "AgencyInfo": { "type": "object" },
+                  "CustomerInfo": {
+                    "type": "object",
+                    "properties": {
+                      "PersonName": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "GivenName": { "type": "string" },
+                            "Surname": { "type": "string" },
+                            "NameNumber": { "type": "string" }
+                          }
+                        }
+                      },
+                      "ContactNumbers": { "type": "array", "items": { "type": "object" } },
+                      "Email": { "type": "array", "items": { "type": "object" } }
+                    }
+                  }
+                }
+              },
+              "AirBook": { "type": "object" },
+              "AirPrice": { "type": "object" },
+              "HotelBook": { "type": "object" },
+              "PostProcessing": { "type": "object" }
+            }
+          }
+        }
+      },
+      "PassengerNameRecord": {
+        "type": "object",
+        "description": "A Sabre Passenger Name Record (PNR).",
+        "properties": {
+          "CreatePassengerNameRecordRS": {
+            "type": "object",
+            "properties": {
+              "ItineraryRef": {
+                "type": "object",
+                "properties": {
+                  "ID": { "type": "string", "description": "PNR locator (record locator)." }
+                }
+              },
+              "AirBook": { "type": "object" },
+              "AirPrice": { "type": "array", "items": { "type": "object" } },
+              "TravelItineraryRead": {
+                "type": "object",
+                "properties": {
+                  "TravelItinerary": {
+                    "type": "object",
+                    "properties": {
+                      "CustomerInfo": { "type": "object" },
+                      "ItineraryInfo": { "type": "object" },
+                      "ItineraryRef": { "type": "object" },
+                      "AccountingInfo": { "type": "object" }
+                    }
+                  }
+                }
+              },
+              "ApplicationResults": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "string" },
+                  "Success": { "type": "array", "items": { "type": "object" } },
+                  "Warning": { "type": "array", "items": { "type": "object" } }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Booking": {
+        "type": "object",
+        "description": "A travel booking managed through the trip orders service.",
+        "properties": {
+          "ConfirmationId": { "type": "string", "description": "PNR locator or booking confirmation ID." },
+          "Status": { "type": "string", "description": "Booking status." },
+          "Travelers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "GivenName": { "type": "string" },
+                "Surname": { "type": "string" },
+                "DateOfBirth": { "type": "string", "format": "date" },
+                "PassengerType": { "type": "string" }
+              }
+            }
+          },
+          "FlightSegments": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/FlightSegment" }
+          },
+          "HotelSegments": { "type": "array", "items": { "type": "object" } },
+          "VehicleSegments": { "type": "array", "items": { "type": "object" } },
+          "Pricing": {
+            "type": "object",
+            "properties": {
+              "TotalAmount": { "type": "number" },
+              "CurrencyCode": { "type": "string" }
+            }
+          },
+          "Tickets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "TicketNumber": { "type": "string" },
+                "Status": { "type": "string" }
+              }
+            }
+          },
+          "ContactInfo": { "type": "object" },
+          "Remarks": { "type": "array", "items": { "type": "object" } },
+          "CreatedAt": { "type": "string", "format": "date-time" },
+          "ModifiedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "description": "An NDC-based order.",
+        "properties": {
+          "OrderId": { "type": "string", "description": "Unique NDC order identifier." },
+          "Status": { "type": "string", "description": "Order status (e.g., Created, Confirmed, Ticketed, Cancelled)." },
+          "Owner": { "type": "string", "description": "Airline owner of the order." },
+          "OrderItems": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "OrderItemId": { "type": "string" },
+                "FlightSegments": { "type": "array", "items": { "$ref": "#/components/schemas/FlightSegment" } },
+                "Services": { "type": "array", "items": { "type": "object" } },
+                "Price": {
+                  "type": "object",
+                  "properties": {
+                    "TotalAmount": { "type": "number" },
+                    "CurrencyCode": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "Travelers": { "type": "array", "items": { "type": "object" } },
+          "Payments": { "type": "array", "items": { "type": "object" } },
+          "TicketDocuments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "TicketNumber": { "type": "string" },
+                "Type": { "type": "string" },
+                "Status": { "type": "string" }
+              }
+            }
+          },
+          "CreatedAt": { "type": "string", "format": "date-time" },
+          "ModifiedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "FareSubscriptionRequest": {
+        "type": "object",
+        "description": "Request payload for creating a FareNabber subscription.",
+        "properties": {
+          "Origin": { "type": "string", "description": "IATA origin airport/city code." },
+          "Destination": { "type": "string", "description": "IATA destination airport/city code." },
+          "DepartureDate": { "type": "string", "format": "date" },
+          "ReturnDate": { "type": "string", "format": "date" },
+          "MaxFare": { "type": "number", "description": "Maximum fare threshold for alerts." },
+          "CurrencyCode": { "type": "string" },
+          "CabinPreference": { "type": "string", "enum": ["Economy", "PremiumEconomy", "Business", "First"] },
+          "NotificationEmail": { "type": "string", "format": "email" },
+          "PassengerCount": { "type": "integer", "default": 1 }
+        }
+      },
+      "FareSubscription": {
+        "type": "object",
+        "description": "A FareNabber fare-watch subscription.",
+        "properties": {
+          "SubscriptionId": { "type": "string", "description": "Unique subscription identifier." },
+          "Origin": { "type": "string" },
+          "Destination": { "type": "string" },
+          "DepartureDate": { "type": "string", "format": "date" },
+          "ReturnDate": { "type": "string", "format": "date" },
+          "MaxFare": { "type": "number" },
+          "CurrencyCode": { "type": "string" },
+          "CabinPreference": { "type": "string" },
+          "NotificationEmail": { "type": "string", "format": "email" },
+          "Status": { "type": "string", "enum": ["Active", "Expired", "Triggered", "Cancelled"] },
+          "CurrentLowestFare": { "type": "number" },
+          "CreatedAt": { "type": "string", "format": "date-time" },
+          "ExpiresAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TripProposalRequest": {
+        "type": "object",
+        "description": "Request payload for creating or updating a trip proposal.",
+        "properties": {
+          "Title": { "type": "string" },
+          "ClientName": { "type": "string" },
+          "ClientEmail": { "type": "string", "format": "email" },
+          "Description": { "type": "string" },
+          "Options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "OptionName": { "type": "string" },
+                "FlightOffers": { "type": "array", "items": { "$ref": "#/components/schemas/FlightOffer" } },
+                "HotelOptions": { "type": "array", "items": { "type": "object" } },
+                "VehicleOptions": { "type": "array", "items": { "type": "object" } },
+                "TotalEstimate": { "type": "number" },
+                "CurrencyCode": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "TripProposal": {
+        "type": "object",
+        "description": "A trip proposal document containing travel options for a client.",
+        "properties": {
+          "ProposalId": { "type": "string", "description": "Unique proposal identifier." },
+          "Title": { "type": "string" },
+          "ClientName": { "type": "string" },
+          "ClientEmail": { "type": "string", "format": "email" },
+          "Description": { "type": "string" },
+          "Status": { "type": "string", "enum": ["Draft", "Sent", "Viewed", "Accepted", "Booked", "Expired"] },
+          "Options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "OptionId": { "type": "string" },
+                "OptionName": { "type": "string" },
+                "FlightOffers": { "type": "array", "items": { "$ref": "#/components/schemas/FlightOffer" } },
+                "HotelOptions": { "type": "array", "items": { "type": "object" } },
+                "VehicleOptions": { "type": "array", "items": { "type": "object" } },
+                "TotalEstimate": { "type": "number" },
+                "CurrencyCode": { "type": "string" },
+                "PriceValid": { "type": "boolean" }
+              }
+            }
+          },
+          "CreatedAt": { "type": "string", "format": "date-time" },
+          "ModifiedAt": { "type": "string", "format": "date-time" },
+          "ExpiresAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Link": {
+        "type": "object",
+        "description": "HATEOAS link for pagination or related resources.",
+        "properties": {
+          "rel": { "type": "string" },
+          "href": { "type": "string" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "description": "Standard error response returned for 4xx and 5xx status codes.",
+        "properties": {
+          "status": { "type": "string", "description": "Error status (e.g., NotProcessed, Incomplete)." },
+          "errorCode": { "type": "string", "description": "Machine-readable error code." },
+          "message": { "type": "string", "description": "Human-readable error message." },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": { "type": "string" },
+                "issue": { "type": "string" }
+              }
+            },
+            "description": "Detailed field-level validation errors, if applicable."
+          },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "The request was invalid or malformed.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Authentication failed or token is expired.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "An unexpected server error occurred.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      }
+    }
+  }
+}
