@@ -1,0 +1,507 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Help Scout Mailbox API",
+    "version": "2.0.0",
+    "description": "The Help Scout Mailbox API provides access to conversations, customers, inboxes, tags, teams, users, webhooks, workflows, organizations, reports, and more. This is an HTTPS-only API with OAuth 2 authentication and CORS support.",
+    "x-jentic-source-url": "https://developer.helpscout.com/mailbox-api/"
+  },
+  "servers": [
+    {
+      "url": "https://api.helpscout.net/v2"
+    }
+  ],
+  "paths": {
+    "/conversations": {
+      "get": {
+        "operationId": "listConversations",
+        "summary": "List conversations",
+        "description": "List and filter conversations. By default only active conversations are listed sorted by createdAt (newest to oldest).",
+        "tags": ["Conversations"],
+        "parameters": [
+          { "name": "mailbox", "in": "query", "description": "Filter by inbox id(s), comma-separated.", "schema": { "type": "string" } },
+          { "name": "folder", "in": "query", "description": "Filter by folder id.", "schema": { "type": "integer" } },
+          { "name": "status", "in": "query", "description": "Filter by status.", "schema": { "type": "string", "enum": ["active", "closed", "open", "pending", "spam", "all"] } },
+          { "name": "tag", "in": "query", "description": "Filter by tag.", "schema": { "type": "string" } },
+          { "name": "assigned_to", "in": "query", "description": "Filter by assigned user id.", "schema": { "type": "integer" } },
+          { "name": "modifiedSince", "in": "query", "description": "Return only conversations modified since date (ISO 8601).", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "sortField", "in": "query", "schema": { "type": "string", "enum": ["createdAt", "customerEmail", "mailboxid", "modifiedAt", "number", "score", "status", "subject"] } },
+          { "name": "sortOrder", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"] } },
+          { "name": "query", "in": "query", "description": "Advanced search query.", "schema": { "type": "string" } },
+          { "name": "embed", "in": "query", "description": "Embed sub-entities (e.g., threads).", "schema": { "type": "string", "enum": ["threads"] } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Paginated list of conversations", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConversationList" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      },
+      "post": {
+        "operationId": "createConversation",
+        "summary": "Create conversation",
+        "description": "Create a new conversation.",
+        "tags": ["Conversations"],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConversationCreate" } } } },
+        "responses": {
+          "201": { "description": "Conversation created", "headers": { "Location": { "schema": { "type": "string" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/conversations/{conversationId}": {
+      "get": {
+        "operationId": "getConversation",
+        "summary": "Get conversation",
+        "description": "Retrieve a single conversation by ID.",
+        "tags": ["Conversations"],
+        "parameters": [
+          { "name": "conversationId", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "embed", "in": "query", "schema": { "type": "string", "enum": ["threads"] } }
+        ],
+        "responses": {
+          "200": { "description": "Conversation details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Conversation" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "404": { "description": "Not found" }
+        }
+      },
+      "patch": {
+        "operationId": "updateConversation",
+        "summary": "Update conversation",
+        "description": "Update a conversation.",
+        "tags": ["Conversations"],
+        "parameters": [ { "name": "conversationId", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "204": { "description": "Conversation updated" },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      },
+      "delete": {
+        "operationId": "deleteConversation",
+        "summary": "Delete conversation",
+        "description": "Delete a conversation.",
+        "tags": ["Conversations"],
+        "parameters": [ { "name": "conversationId", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "responses": {
+          "204": { "description": "Conversation deleted" },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/conversations/{conversationId}/threads": {
+      "get": {
+        "operationId": "listThreads",
+        "summary": "List threads",
+        "description": "List threads for a conversation.",
+        "tags": ["Threads"],
+        "parameters": [ { "name": "conversationId", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "responses": {
+          "200": { "description": "List of threads", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/conversations/{conversationId}/reply": {
+      "post": {
+        "operationId": "createReplyThread",
+        "summary": "Create reply thread",
+        "description": "Reply to a conversation.",
+        "tags": ["Threads"],
+        "parameters": [ { "name": "conversationId", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "customer": { "type": "object", "properties": { "id": { "type": "integer" } } }, "text": { "type": "string" } }, "required": ["text"] } } } },
+        "responses": {
+          "201": { "description": "Reply created" },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/conversations/{conversationId}/notes": {
+      "post": {
+        "operationId": "createNote",
+        "summary": "Create note",
+        "description": "Add a note to a conversation.",
+        "tags": ["Threads"],
+        "parameters": [ { "name": "conversationId", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "text": { "type": "string" } }, "required": ["text"] } } } },
+        "responses": {
+          "201": { "description": "Note created" },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/conversations/{conversationId}/customer": {
+      "post": {
+        "operationId": "createCustomerThread",
+        "summary": "Create customer thread",
+        "description": "Create a customer thread on a conversation.",
+        "tags": ["Threads"],
+        "parameters": [ { "name": "conversationId", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "201": { "description": "Customer thread created" },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/conversations/{conversationId}/tags": {
+      "put": {
+        "operationId": "updateConversationTags",
+        "summary": "Update conversation tags",
+        "description": "Update tags on a conversation.",
+        "tags": ["Conversations"],
+        "parameters": [ { "name": "conversationId", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "tags": { "type": "array", "items": { "type": "string" } } } } } } },
+        "responses": {
+          "204": { "description": "Tags updated" },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/customers": {
+      "get": {
+        "operationId": "listCustomers",
+        "summary": "List customers",
+        "description": "List customers.",
+        "tags": ["Customers"],
+        "parameters": [
+          { "name": "firstName", "in": "query", "schema": { "type": "string" } },
+          { "name": "lastName", "in": "query", "schema": { "type": "string" } },
+          { "name": "email", "in": "query", "schema": { "type": "string" } },
+          { "name": "query", "in": "query", "schema": { "type": "string" } },
+          { "name": "sortField", "in": "query", "schema": { "type": "string" } },
+          { "name": "sortOrder", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"] } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "List of customers", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      },
+      "post": {
+        "operationId": "createCustomer",
+        "summary": "Create customer",
+        "description": "Create a new customer.",
+        "tags": ["Customers"],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "201": { "description": "Customer created" },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/customers/{customerId}": {
+      "get": {
+        "operationId": "getCustomer",
+        "summary": "Get customer",
+        "description": "Retrieve a customer by ID.",
+        "tags": ["Customers"],
+        "parameters": [ { "name": "customerId", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "responses": {
+          "200": { "description": "Customer details", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "404": { "description": "Not found" }
+        }
+      },
+      "put": {
+        "operationId": "updateCustomer",
+        "summary": "Update customer",
+        "description": "Update a customer.",
+        "tags": ["Customers"],
+        "parameters": [ { "name": "customerId", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "204": { "description": "Customer updated" },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCustomer",
+        "summary": "Delete customer",
+        "description": "Delete a customer.",
+        "tags": ["Customers"],
+        "parameters": [ { "name": "customerId", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "responses": {
+          "204": { "description": "Customer deleted" },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/mailboxes": {
+      "get": {
+        "operationId": "listInboxes",
+        "summary": "List inboxes",
+        "description": "List all inboxes.",
+        "tags": ["Inboxes"],
+        "parameters": [ { "name": "page", "in": "query", "schema": { "type": "integer" } } ],
+        "responses": {
+          "200": { "description": "List of inboxes", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/mailboxes/{mailboxId}": {
+      "get": {
+        "operationId": "getInbox",
+        "summary": "Get inbox",
+        "description": "Retrieve an inbox by ID.",
+        "tags": ["Inboxes"],
+        "parameters": [ { "name": "mailboxId", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "responses": {
+          "200": { "description": "Inbox details", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/mailboxes/{mailboxId}/folders": {
+      "get": {
+        "operationId": "listInboxFolders",
+        "summary": "List inbox folders",
+        "description": "List folders for an inbox.",
+        "tags": ["Inboxes"],
+        "parameters": [ { "name": "mailboxId", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "responses": {
+          "200": { "description": "List of folders", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/tags": {
+      "get": {
+        "operationId": "listTags",
+        "summary": "List tags",
+        "description": "List all tags.",
+        "tags": ["Tags"],
+        "responses": {
+          "200": { "description": "List of tags", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/teams": {
+      "get": {
+        "operationId": "listTeams",
+        "summary": "List teams",
+        "description": "List all teams.",
+        "tags": ["Teams"],
+        "responses": {
+          "200": { "description": "List of teams", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/teams/{teamId}/members": {
+      "get": {
+        "operationId": "listTeamMembers",
+        "summary": "List team members",
+        "description": "List members of a team.",
+        "tags": ["Teams"],
+        "parameters": [ { "name": "teamId", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "responses": {
+          "200": { "description": "List of team members", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "operationId": "listUsers",
+        "summary": "List users",
+        "description": "List all users.",
+        "tags": ["Users"],
+        "parameters": [ { "name": "page", "in": "query", "schema": { "type": "integer" } } ],
+        "responses": {
+          "200": { "description": "List of users", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/users/{userId}": {
+      "get": {
+        "operationId": "getUser",
+        "summary": "Get user",
+        "description": "Retrieve a user by ID.",
+        "tags": ["Users"],
+        "parameters": [ { "name": "userId", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "responses": {
+          "200": { "description": "User details", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      },
+      "delete": {
+        "operationId": "deleteUser",
+        "summary": "Delete user",
+        "description": "Delete a user.",
+        "tags": ["Users"],
+        "parameters": [ { "name": "userId", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "responses": {
+          "204": { "description": "User deleted" },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "operationId": "getResourceOwner",
+        "summary": "Get resource owner",
+        "description": "Retrieve the currently authenticated user.",
+        "tags": ["Users"],
+        "responses": {
+          "200": { "description": "Current user details", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/webhooks": {
+      "get": {
+        "operationId": "listWebhooks",
+        "summary": "List webhooks",
+        "description": "List all webhooks.",
+        "tags": ["Webhooks"],
+        "responses": {
+          "200": { "description": "List of webhooks", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      },
+      "post": {
+        "operationId": "createWebhook",
+        "summary": "Create webhook",
+        "description": "Create a new webhook.",
+        "tags": ["Webhooks"],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "201": { "description": "Webhook created" },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/webhooks/{webhookId}": {
+      "get": {
+        "operationId": "getWebhook",
+        "summary": "Get webhook",
+        "description": "Retrieve a webhook by ID.",
+        "tags": ["Webhooks"],
+        "parameters": [ { "name": "webhookId", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "responses": {
+          "200": { "description": "Webhook details", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      },
+      "put": {
+        "operationId": "updateWebhook",
+        "summary": "Update webhook",
+        "description": "Update a webhook.",
+        "tags": ["Webhooks"],
+        "parameters": [ { "name": "webhookId", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "200": { "description": "Webhook updated" },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      },
+      "delete": {
+        "operationId": "deleteWebhook",
+        "summary": "Delete webhook",
+        "description": "Delete a webhook.",
+        "tags": ["Webhooks"],
+        "parameters": [ { "name": "webhookId", "in": "path", "required": true, "schema": { "type": "integer" } } ],
+        "responses": {
+          "204": { "description": "Webhook deleted" },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/workflows": {
+      "get": {
+        "operationId": "listWorkflows",
+        "summary": "List workflows",
+        "description": "List all workflows.",
+        "tags": ["Workflows"],
+        "responses": {
+          "200": { "description": "List of workflows", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/ratings": {
+      "get": {
+        "operationId": "getSatisfactionRating",
+        "summary": "Get satisfaction rating",
+        "description": "Get the satisfaction rating.",
+        "tags": ["Ratings"],
+        "responses": {
+          "200": { "description": "Satisfaction rating", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Conversation": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "number": { "type": "integer" },
+          "subject": { "type": "string" },
+          "status": { "type": "string" },
+          "type": { "type": "string" },
+          "mailboxId": { "type": "integer" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "closedAt": { "type": "string", "format": "date-time" },
+          "userUpdatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ConversationCreate": {
+        "type": "object",
+        "required": ["subject", "type", "mailboxId", "customer", "threads"],
+        "properties": {
+          "subject": { "type": "string" },
+          "type": { "type": "string", "enum": ["email", "phone", "chat"] },
+          "mailboxId": { "type": "integer" },
+          "customer": { "type": "object", "properties": { "id": { "type": "integer" }, "email": { "type": "string" } } },
+          "threads": { "type": "array", "items": { "type": "object" } },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "ConversationList": {
+        "type": "object",
+        "properties": {
+          "_embedded": { "type": "object", "properties": { "conversations": { "type": "array", "items": { "$ref": "#/components/schemas/Conversation" } } } },
+          "page": { "type": "object", "properties": { "size": { "type": "integer" }, "totalElements": { "type": "integer" }, "totalPages": { "type": "integer" }, "number": { "type": "integer" } } }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "integer" },
+          "error": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    },
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "description": "OAuth 2.0 authentication",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://secure.helpscout.net/authentication/authorizeClientApplication",
+            "tokenUrl": "https://api.helpscout.net/v2/oauth2/token",
+            "scopes": {}
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2": []
+    }
+  ]
+}
