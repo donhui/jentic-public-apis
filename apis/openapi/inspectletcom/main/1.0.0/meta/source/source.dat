@@ -1,0 +1,495 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Inspectlet API",
+    "description": "The Inspectlet API provides access to website session recording data. It allows you to list websites in your account, search session recordings with various filters, and retrieve individual session details.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://apidocs.inspectlet.com"
+  },
+  "servers": [
+    {
+      "url": "https://api.inspectlet.com/v1",
+      "description": "Production API"
+    }
+  ],
+  "paths": {
+    "/websites": {
+      "get": {
+        "operationId": "listWebsites",
+        "summary": "List all websites",
+        "description": "Retrieve all websites configured in your Inspectlet account.",
+        "tags": ["Websites"],
+        "responses": {
+          "200": {
+            "description": "Successful response with list of websites",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Website"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/websites/{wid}/sessions": {
+      "post": {
+        "operationId": "searchSessions",
+        "summary": "Search and list sessions",
+        "description": "Search and retrieve session recordings for a specific website. Supports various filter criteria including visitor details, geography, browser, device, date ranges, session duration, page URLs, and traffic source.",
+        "tags": ["Sessions"],
+        "parameters": [
+          {
+            "name": "wid",
+            "in": "path",
+            "required": true,
+            "description": "Website ID obtained from the listWebsites endpoint",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionSearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response with matching sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Session"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid search parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited - too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/websites/{wid}/sessions/{sid}": {
+      "get": {
+        "operationId": "getSessionDetails",
+        "summary": "Get session details",
+        "description": "Retrieve detailed information about a specific session recording including visitor info, pages visited, tags, and traffic source.",
+        "tags": ["Sessions"],
+        "parameters": [
+          {
+            "name": "wid",
+            "in": "path",
+            "required": true,
+            "description": "Website ID",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "description": "Session ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with session details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid session or website ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "HTTP Basic Authentication using your email and API token (email:apitoken). API token is available from the dashboard under API Credentials."
+      }
+    },
+    "schemas": {
+      "Website": {
+        "type": "object",
+        "properties": {
+          "wid": {
+            "type": "integer",
+            "description": "Unique website identifier"
+          },
+          "site_name": {
+            "type": "string",
+            "description": "Display name of the website"
+          },
+          "date_added": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Date and time the website was added to the account"
+          }
+        }
+      },
+      "SessionSearchRequest": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "type": "object",
+            "description": "Search criteria object with various filter fields",
+            "properties": {
+              "displayname": {
+                "type": "string",
+                "description": "Filter by visitor display name"
+              },
+              "country": {
+                "type": "string",
+                "description": "Filter by visitor country"
+              },
+              "newold": {
+                "type": "string",
+                "description": "Filter by visitor type: new or returning"
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Filter by session tags"
+              },
+              "ipaddress": {
+                "type": "string",
+                "description": "Filter by visitor IP address"
+              },
+              "showstarredonly": {
+                "type": "boolean",
+                "description": "If true, show only starred/bookmarked sessions"
+              },
+              "browser": {
+                "type": "string",
+                "description": "Filter by browser name"
+              },
+              "devices": {
+                "type": "string",
+                "description": "Filter by device type (desktop, mobile, tablet)"
+              },
+              "daterange": {
+                "type": "string",
+                "description": "Predefined date range filter (e.g., today, last7days)"
+              },
+              "daterangecustom": {
+                "type": "object",
+                "description": "Custom date range for filtering",
+                "properties": {
+                  "start": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Start date (YYYY-MM-DD)"
+                  },
+                  "end": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "End date (YYYY-MM-DD)"
+                  }
+                }
+              },
+              "seslength_start": {
+                "type": "integer",
+                "description": "Minimum session length in seconds"
+              },
+              "seslength_end": {
+                "type": "integer",
+                "description": "Maximum session length in seconds"
+              },
+              "sestime_start": {
+                "type": "string",
+                "description": "Session time of day filter start (HH:MM)"
+              },
+              "sestime_end": {
+                "type": "string",
+                "description": "Session time of day filter end (HH:MM)"
+              },
+              "startpage": {
+                "type": "string",
+                "description": "Filter by entry/landing page URL"
+              },
+              "visitedpage": {
+                "type": "string",
+                "description": "Filter by any visited page URL"
+              },
+              "exitpage": {
+                "type": "string",
+                "description": "Filter by exit page URL"
+              },
+              "trafficsource": {
+                "type": "string",
+                "description": "Filter by traffic source/referrer"
+              }
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Number of results per response",
+            "default": 10,
+            "minimum": 1,
+            "maximum": 100
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number for pagination",
+            "default": 1,
+            "minimum": 1
+          }
+        }
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "sid": {
+            "type": "integer",
+            "description": "Unique session identifier"
+          },
+          "wid": {
+            "type": "integer",
+            "description": "Website ID this session belongs to"
+          },
+          "displayname": {
+            "type": "string",
+            "description": "Visitor display name"
+          },
+          "country": {
+            "type": "string",
+            "description": "Visitor country"
+          },
+          "browser": {
+            "type": "string",
+            "description": "Browser used during the session"
+          },
+          "device": {
+            "type": "string",
+            "description": "Device type (desktop, mobile, tablet)"
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Session duration in seconds"
+          },
+          "pages_viewed": {
+            "type": "integer",
+            "description": "Number of pages viewed during the session"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Session start date and time"
+          }
+        }
+      },
+      "SessionDetail": {
+        "type": "object",
+        "properties": {
+          "sid": {
+            "type": "integer",
+            "description": "Unique session identifier"
+          },
+          "wid": {
+            "type": "integer",
+            "description": "Website ID"
+          },
+          "uid": {
+            "type": "string",
+            "description": "Visitor unique identifier"
+          },
+          "displayname": {
+            "type": "string",
+            "description": "Visitor display name"
+          },
+          "country": {
+            "type": "string",
+            "description": "Visitor country"
+          },
+          "browser": {
+            "type": "string",
+            "description": "Browser used"
+          },
+          "device": {
+            "type": "string",
+            "description": "Device type"
+          },
+          "os": {
+            "type": "string",
+            "description": "Operating system"
+          },
+          "ip": {
+            "type": "string",
+            "description": "Visitor IP address"
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Session duration in seconds"
+          },
+          "pages_viewed": {
+            "type": "integer",
+            "description": "Number of pages viewed"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Session start date and time"
+          },
+          "start_page": {
+            "type": "string",
+            "description": "Entry/landing page URL"
+          },
+          "exit_page": {
+            "type": "string",
+            "description": "Exit page URL"
+          },
+          "traffic_source": {
+            "type": "string",
+            "description": "Traffic source/referrer URL"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Tags applied to this session"
+          },
+          "starred": {
+            "type": "boolean",
+            "description": "Whether the session is starred/bookmarked"
+          },
+          "is_new_visitor": {
+            "type": "boolean",
+            "description": "Whether this is a first-time visitor"
+          },
+          "pages": {
+            "type": "array",
+            "description": "Array of pages visited during the session",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "description": "Page URL"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Page title"
+                },
+                "duration": {
+                  "type": "integer",
+                  "description": "Time spent on page in seconds"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message"
+          },
+          "code": {
+            "type": "integer",
+            "description": "Numeric error code"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "basicAuth": []
+    }
+  ]
+}
