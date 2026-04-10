@@ -1,0 +1,1044 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Fastly API",
+    "description": "The Fastly API provides programmatic access to Fastly CDN services including service management, purging, and real-time analytics.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://www.fastly.com/documentation/reference/api/"
+  },
+  "servers": [
+    {
+      "url": "https://api.fastly.com",
+      "description": "Fastly API server"
+    },
+    {
+      "url": "https://rt.fastly.com",
+      "description": "Fastly Real-time stats server"
+    }
+  ],
+  "security": [
+    {
+      "ApiTokenAuth": []
+    }
+  ],
+  "tags": [
+    { "name": "Services", "description": "Manage Fastly services" },
+    { "name": "Purging", "description": "Purge cached content" },
+    { "name": "Historical Stats", "description": "Retrieve historical statistics" },
+    { "name": "Real-time Stats", "description": "Retrieve real-time analytics data" }
+  ],
+  "paths": {
+    "/service": {
+      "get": {
+        "operationId": "listServices",
+        "summary": "List services",
+        "description": "Retrieve all services associated with the authenticated account.",
+        "tags": ["Services"],
+        "parameters": [
+          {
+            "name": "direction",
+            "in": "query",
+            "description": "Sort direction (ascend or descend).",
+            "schema": { "type": "string", "enum": ["ascend", "descend"] }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination.",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Number of results per page.",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Field to sort by.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of services",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Service" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createService",
+        "summary": "Create a service",
+        "description": "Create a new Fastly service.",
+        "tags": ["Services"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "description": "Name of the service." },
+                  "type": { "type": "string", "description": "Type of service (vcl or wasm).", "enum": ["vcl", "wasm"] },
+                  "comment": { "type": "string", "description": "A comment about the service." }
+                },
+                "required": ["name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created service",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Service" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/service/{service_id}": {
+      "get": {
+        "operationId": "getService",
+        "summary": "Get a service",
+        "description": "Retrieve a specific service by its ID.",
+        "tags": ["Services"],
+        "parameters": [
+          {
+            "name": "service_id",
+            "in": "path",
+            "required": true,
+            "description": "Alphanumeric string identifying the service.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Service details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Service" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateService",
+        "summary": "Update a service",
+        "description": "Modify the configuration of a service.",
+        "tags": ["Services"],
+        "parameters": [
+          {
+            "name": "service_id",
+            "in": "path",
+            "required": true,
+            "description": "Alphanumeric string identifying the service.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "comment": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated service",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Service" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteService",
+        "summary": "Delete a service",
+        "description": "Remove a service.",
+        "tags": ["Services"],
+        "parameters": [
+          {
+            "name": "service_id",
+            "in": "path",
+            "required": true,
+            "description": "Alphanumeric string identifying the service.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deletion confirmation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/service/{service_id}/details": {
+      "get": {
+        "operationId": "getServiceDetails",
+        "summary": "Get service details",
+        "description": "List detailed information on a specified service.",
+        "tags": ["Services"],
+        "parameters": [
+          {
+            "name": "service_id",
+            "in": "path",
+            "required": true,
+            "description": "Alphanumeric string identifying the service.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "description": "Specific version number to retrieve.",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Service details with nested configuration",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ServiceDetail" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/service/search": {
+      "get": {
+        "operationId": "searchService",
+        "summary": "Search for a service by name",
+        "description": "Locate a service using its name.",
+        "tags": ["Services"],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "description": "The name of the service to search for.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching service",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Service" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/service/{service_id}/domain": {
+      "get": {
+        "operationId": "listServiceDomains",
+        "summary": "List service domains",
+        "description": "List the domains within a service.",
+        "tags": ["Services"],
+        "parameters": [
+          {
+            "name": "service_id",
+            "in": "path",
+            "required": true,
+            "description": "Alphanumeric string identifying the service.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of domains",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Domain" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/purge/{cached_url}": {
+      "post": {
+        "operationId": "purgeUrl",
+        "summary": "Purge a URL",
+        "description": "Instant Purge an individual URL.",
+        "tags": ["Purging"],
+        "parameters": [
+          {
+            "name": "cached_url",
+            "in": "path",
+            "required": true,
+            "description": "The URL of the cached object to purge.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "fastly-soft-purge",
+            "in": "header",
+            "description": "Set to 1 to trigger a soft purge.",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Purge result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PurgeResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/service/{service_id}/purge_all": {
+      "post": {
+        "operationId": "purgeAll",
+        "summary": "Purge everything from a service",
+        "description": "Instantly removes all cached content from a service.",
+        "tags": ["Purging"],
+        "parameters": [
+          {
+            "name": "service_id",
+            "in": "path",
+            "required": true,
+            "description": "Alphanumeric string identifying the service.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Purge result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PurgeResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/service/{service_id}/purge/{surrogate_key}": {
+      "post": {
+        "operationId": "purgeBySurrogateKey",
+        "summary": "Purge by surrogate key tag",
+        "description": "Removes cached items tagged with a single surrogate key from a service.",
+        "tags": ["Purging"],
+        "parameters": [
+          {
+            "name": "service_id",
+            "in": "path",
+            "required": true,
+            "description": "Alphanumeric string identifying the service.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "surrogate_key",
+            "in": "path",
+            "required": true,
+            "description": "Surrogate key tag for grouped related assets.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "fastly-soft-purge",
+            "in": "header",
+            "description": "Set to 1 to trigger a soft purge.",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Purge result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PurgeResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/service/{service_id}/purge": {
+      "post": {
+        "operationId": "purgeMultipleSurrogateKeys",
+        "summary": "Purge multiple surrogate key tags",
+        "description": "Removes cached items tagged with up to 256 surrogate keys in one batch.",
+        "tags": ["Purging"],
+        "parameters": [
+          {
+            "name": "service_id",
+            "in": "path",
+            "required": true,
+            "description": "Alphanumeric string identifying the service.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "fastly-soft-purge",
+            "in": "header",
+            "description": "Set to 1 to trigger a soft purge.",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "surrogate_keys": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "List of surrogate keys to purge."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Purge result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats": {
+      "get": {
+        "operationId": "getHistoricalStats",
+        "summary": "Get historical stats",
+        "description": "Fetches historical stats for each of your Fastly services and groups the results by service ID.",
+        "tags": ["Historical Stats"],
+        "parameters": [
+          {
+            "name": "by",
+            "in": "query",
+            "description": "Sample window duration (hour, minute, or day).",
+            "schema": { "type": "string", "enum": ["hour", "minute", "day"] }
+          },
+          {
+            "name": "datacenter",
+            "in": "query",
+            "description": "Comma-separated list of POP codes to filter by.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Start timestamp (Unix or natural language).",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "End timestamp.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "description": "Geographic region filter.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "services",
+            "in": "query",
+            "description": "Comma-separated list of service IDs.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historical stats grouped by service",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HistoricalStatsResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats/field/{field}": {
+      "get": {
+        "operationId": "getHistoricalStatsField",
+        "summary": "Get historical stats for a single field",
+        "description": "Retrieves a specific metric field across all services, grouped by service ID.",
+        "tags": ["Historical Stats"],
+        "parameters": [
+          {
+            "name": "field",
+            "in": "path",
+            "required": true,
+            "description": "The metric field name to retrieve.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "by",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["hour", "minute", "day"] }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "datacenter",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stats for the specified field",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HistoricalStatsResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats/aggregate": {
+      "get": {
+        "operationId": "getHistoricalStatsAggregate",
+        "summary": "Get aggregated historical stats",
+        "description": "Fetches historical stats information aggregated across all of your Fastly services.",
+        "tags": ["Historical Stats"],
+        "parameters": [
+          {
+            "name": "by",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["hour", "minute", "day"] }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aggregated stats",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HistoricalStatsResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats/service/{service_id}": {
+      "get": {
+        "operationId": "getHistoricalStatsForService",
+        "summary": "Get historical stats for a single service",
+        "description": "Retrieves complete historical metrics for a specified service.",
+        "tags": ["Historical Stats"],
+        "parameters": [
+          {
+            "name": "service_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "by",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["hour", "minute", "day"] }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "datacenter",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stats for the service",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HistoricalStatsResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats/service/{service_id}/field/{field}": {
+      "get": {
+        "operationId": "getHistoricalStatsForServiceField",
+        "summary": "Get historical stats for a service and field",
+        "description": "Extracts a single metric field for a specific service over a time period.",
+        "tags": ["Historical Stats"],
+        "parameters": [
+          {
+            "name": "service_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "field",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "by",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["hour", "minute", "day"] }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "datacenter",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stats for the service and field",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HistoricalStatsResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats/usage": {
+      "get": {
+        "operationId": "getUsageStats",
+        "summary": "Get usage statistics",
+        "description": "Returns usage information aggregated across all Fastly services and grouped by region.",
+        "tags": ["Historical Stats"],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage statistics",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UsageResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats/usage_by_service": {
+      "get": {
+        "operationId": "getUsageStatsByService",
+        "summary": "Get usage statistics per service",
+        "description": "Provides usage metrics aggregated by individual service and region.",
+        "tags": ["Historical Stats"],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage statistics per service",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UsageResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats/usage_by_month": {
+      "get": {
+        "operationId": "getUsageStatsByMonth",
+        "summary": "Get month-to-date usage statistics",
+        "description": "Returns month-to-date usage details for a given month and year.",
+        "tags": ["Historical Stats"],
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "description": "Two-digit month value.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "description": "Four-digit year value.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "billable_units",
+            "in": "query",
+            "description": "If true, converts bandwidth to GB and normalizes requests.",
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Month-to-date usage",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UsageResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats/regions": {
+      "get": {
+        "operationId": "getRegions",
+        "summary": "Get region codes",
+        "description": "Fetches the list of codes for regions that are covered by the Fastly CDN service.",
+        "tags": ["Historical Stats"],
+        "responses": {
+          "200": {
+            "description": "Region codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/channel/{service_id}/ts/{timestamp_in_seconds}": {
+      "get": {
+        "operationId": "getRealtimeStats",
+        "summary": "Get real-time data from specified time",
+        "description": "Retrieves real-time analytics for a specific reporting period. Using 0 as the timestamp returns data for the most recent complete second.",
+        "tags": ["Real-time Stats"],
+        "servers": [{ "url": "https://rt.fastly.com" }],
+        "parameters": [
+          {
+            "name": "service_id",
+            "in": "path",
+            "required": true,
+            "description": "Alphanumeric string identifying the service.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "timestamp_in_seconds",
+            "in": "path",
+            "required": true,
+            "description": "Unix epoch timestamp in seconds. Use 0 for most recent.",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Real-time stats data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RealtimeResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/channel/{service_id}/ts/h": {
+      "get": {
+        "operationId": "getRealtimeStatsLast120",
+        "summary": "Get real-time data for last 120 seconds",
+        "description": "Retrieves analytics data covering the 120-second period preceding the latest available timestamp.",
+        "tags": ["Real-time Stats"],
+        "servers": [{ "url": "https://rt.fastly.com" }],
+        "parameters": [
+          {
+            "name": "service_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Real-time stats data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RealtimeResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/channel/{service_id}/ts/h/limit/{max_entries}": {
+      "get": {
+        "operationId": "getRealtimeStatsLimited",
+        "summary": "Get limited real-time data entries",
+        "description": "Retrieves analytics data from the preceding 120 seconds, restricted to a maximum number of entries.",
+        "tags": ["Real-time Stats"],
+        "servers": [{ "url": "https://rt.fastly.com" }],
+        "parameters": [
+          {
+            "name": "service_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "max_entries",
+            "in": "path",
+            "required": true,
+            "description": "Maximum number of results to return.",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Real-time stats data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RealtimeResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiTokenAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Fastly-Key",
+        "description": "API token for authentication."
+      }
+    },
+    "schemas": {
+      "Service": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "Unique service identifier." },
+          "name": { "type": "string", "description": "Name of the service." },
+          "type": { "type": "string", "description": "Type of service (vcl or wasm)." },
+          "comment": { "type": "string" },
+          "customer_id": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" },
+          "deleted_at": { "type": "string", "format": "date-time", "nullable": true },
+          "active_version": { "type": "integer" }
+        }
+      },
+      "ServiceDetail": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Service" },
+          {
+            "type": "object",
+            "properties": {
+              "versions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "number": { "type": "integer" },
+                    "active": { "type": "boolean" },
+                    "locked": { "type": "boolean" },
+                    "created_at": { "type": "string", "format": "date-time" }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "Domain": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "The domain name." },
+          "comment": { "type": "string" },
+          "service_id": { "type": "string" },
+          "version": { "type": "integer" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PurgeResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "description": "Status of the purge operation." },
+          "id": { "type": "string", "description": "Unique identifier of the purge request." }
+        }
+      },
+      "HistoricalStatsResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "to": { "type": "string" },
+              "from": { "type": "string" },
+              "by": { "type": "string" },
+              "region": { "type": "string" }
+            }
+          },
+          "msg": { "type": "string", "nullable": true },
+          "data": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      },
+      "UsageResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" },
+          "data": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "RealtimeResponse": {
+        "type": "object",
+        "properties": {
+          "AggregateDelay": { "type": "integer", "description": "Offset of recorded data in seconds." },
+          "Data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "datacenter": { "type": "object", "additionalProperties": true },
+                "aggregated": { "type": "object", "additionalProperties": true },
+                "recorded": { "type": "integer" }
+              }
+            }
+          },
+          "Timestamp": { "type": "integer", "description": "Value to use for the next request timestamp." }
+        }
+      }
+    }
+  }
+}
