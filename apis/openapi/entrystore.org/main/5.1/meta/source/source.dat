@@ -1,0 +1,2486 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "version": "5.1",
+    "title": "EntryStore",
+    "description": "This is the structured documentation of the EntryStore API. You can find out more about EntryStore (including a more verbose documentation of the API) at <a href=\"http://entrystore.org\">http://entrystore.org</a>.",
+    "contact": {
+      "name": "MetaSolutions AB",
+      "url": "http://metasolutions.se",
+      "email": "info@metasolutions.se"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "x-jentic-source-url": "https://entrystore.org/api/swagger.json"
+  },
+  "servers": [
+    {
+      "url": "https://sub.domain.tld/store"
+    }
+  ],
+  "paths": {
+    "/management/status": {
+      "get": {
+        "summary": "Repository status",
+        "operationId": "managementStatus",
+        "tags": [
+          "management"
+        ],
+        "parameters": [
+          {
+            "name": "extended",
+            "in": "query",
+            "description": "Authenticated users get access to the extended information in JSON",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "includeStats",
+            "in": "query",
+            "description": "Includes statistical information, requires parameter \"extended\"",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          },
+          "403": {
+            "description": "Insufficient rights for requested information"
+          }
+        }
+      }
+    },
+    "/management/solr": {
+      "post": {
+        "summary": "Manages the Solr index",
+        "operationId": "managementSolr",
+        "tags": [
+          "management"
+        ],
+        "parameters": [
+          {
+            "name": "command",
+            "in": "query",
+            "description": "Action to be performed on the Solr index",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "reindex"
+              ]
+            }
+          },
+          {
+            "name": "context",
+            "in": "query",
+            "description": "URI of the context to be reindexed. If empty, the whole repository will be reindexed",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Command is accepted and being processed"
+          },
+          "400": {
+            "description": "Invalid parameters"
+          },
+          "403": {
+            "description": "Insufficient rights for requested information"
+          },
+          "404": {
+            "description": "This EntryStore instance is not configured with Solr"
+          },
+          "423": {
+            "description": "The context or repository is currently being reindexed and additional reindexing requests are denied"
+          }
+        }
+      }
+    },
+    "/search": {
+      "get": {
+        "summary": "Searches the repository and returns entries",
+        "operationId": "search",
+        "tags": [
+          "search"
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Specifies which search backend to use",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "solr"
+              ]
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "description": "A Solr-query string, see the Knowledge Base at entrystore.org for detailed information about available parameters",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Solr-style sorting",
+            "schema": {
+              "type": "string",
+              "default": "score+desc,modified+desc"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum amount of returned entries",
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Offset (number of items, not page) to be used for pagination",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid query, e.g. too short or invalid parameters"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/sparql": {
+      "get": {
+        "summary": "Global SPARQL interface",
+        "description": "Includes only public information.",
+        "operationId": "sparqlGet",
+        "tags": [
+          "search"
+        ],
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Requested response format, overrides content negotiation",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "application/xml",
+                "application/json"
+              ]
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "description": "SPARQL query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "400": {
+            "description": "Missing parameters"
+          },
+          "500": {
+            "description": "Internal error"
+          },
+          "501": {
+            "description": "Server does not support SPARQL requests"
+          }
+        }
+      },
+      "post": {
+        "summary": "SPARQL interface for contexts",
+        "operationId": "sparqlPost",
+        "tags": [
+          "context"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "output": {
+                    "type": "string",
+                    "enum": [
+                      "json",
+                      "xml"
+                    ],
+                    "default": "json",
+                    "description": "Requested response format"
+                  },
+                  "query": {
+                    "type": "string",
+                    "description": "SPARQL query"
+                  }
+                },
+                "required": [
+                  "query"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "400": {
+            "description": "Missing parameters"
+          },
+          "500": {
+            "description": "Internal error"
+          },
+          "501": {
+            "description": "Server does not support SPARQL requests"
+          }
+        }
+      }
+    },
+    "/proxy": {
+      "get": {
+        "summary": "Proxies requests to external hosts",
+        "operationId": "proxy",
+        "tags": [
+          "proxy"
+        ],
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "description": "The URL to be fetched, redirects are followed",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fromFormat",
+            "in": "query",
+            "description": "Source format to be converted to RDF, see Knowledge Base for a list of supported formats",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid request, no URL provided or unable to fetch remote resource"
+          },
+          "403": {
+            "description": "Forbidden, i.e., user not logged in"
+          }
+        }
+      }
+    },
+    "/auth/user": {
+      "get": {
+        "summary": "Returns information about the currently logged in user",
+        "operationId": "user",
+        "tags": [
+          "auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/user"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/cookie": {
+      "post": {
+        "summary": "Cookie-based login",
+        "description": "On successful login a cookie is set.",
+        "operationId": "loginCookie",
+        "tags": [
+          "auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "auth_username": {
+                    "type": "string",
+                    "description": "Username"
+                  },
+                  "auth_password": {
+                    "type": "string",
+                    "description": "Password"
+                  },
+                  "auth_maxage": {
+                    "type": "integer",
+                    "default": 86400,
+                    "description": "Maximum age of returned login cookie in seconds"
+                  }
+                },
+                "required": [
+                  "auth_username",
+                  "auth_password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful"
+          },
+          "400": {
+            "description": "Incomplete request"
+          },
+          "401": {
+            "description": "Login failed"
+          }
+        }
+      }
+    },
+    "/auth/basic": {
+      "get": {
+        "summary": "HTTP Basic authentication",
+        "description": "Triggers a HTTP Basic login challenge and returns information about the currently logged in user",
+        "operationId": "loginBasic",
+        "tags": [
+          "auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/user"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "get": {
+        "summary": "Returns a basic HTML-form for login",
+        "description": "It is recommended to use any of the other login-resources. Performs a cookie-based login and should only be used for testing purposes, does not really belong to the API.",
+        "operationId": "loginHTML",
+        "tags": [
+          "auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "get": {
+        "summary": "Performs a logout of the currently logged in user",
+        "operationId": "logout",
+        "tags": [
+          "auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "User successfully logged out"
+          }
+        }
+      }
+    },
+    "/auth/signup": {
+      "get": {
+        "summary": "Confirms account signup using a token",
+        "description": "An HTML signup-form is returned if no confirmation token is sent.",
+        "operationId": "signupConfirm",
+        "tags": [
+          "auth"
+        ],
+        "parameters": [
+          {
+            "name": "confirm",
+            "in": "query",
+            "description": "Confirmation token",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "User created"
+          },
+          "400": {
+            "description": "No confirmation token provided"
+          },
+          "409": {
+            "description": "Username is already taken"
+          },
+          "500": {
+            "description": "Internal error"
+          }
+        }
+      },
+      "post": {
+        "summary": "Initiates account signup",
+        "operationId": "signupInit",
+        "tags": [
+          "auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "firstname": {
+                    "type": "string",
+                    "description": "First name"
+                  },
+                  "lastname": {
+                    "type": "string",
+                    "description": "Last name"
+                  },
+                  "email": {
+                    "type": "string",
+                    "description": "E-mail address"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "Password"
+                  },
+                  "g-recaptcha-response": {
+                    "type": "string",
+                    "description": "reCaptcha response field. Required if backend is configured to use reCaptcha."
+                  },
+                  "urlfailure": {
+                    "type": "string",
+                    "description": "URL to redirect to upon failure"
+                  },
+                  "urlsuccess": {
+                    "type": "string",
+                    "description": "URL to redirect to upon success"
+                  }
+                },
+                "required": [
+                  "firstname",
+                  "lastname",
+                  "email",
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signup request accepted"
+          },
+          "400": {
+            "description": "Information missing"
+          }
+        }
+      }
+    },
+    "/auth/signup/whitelist": {
+      "get": {
+        "summary": "Returns list of whitelisted domains",
+        "description": "Returns a JSON array with all email domains that are whitelisted for sign-up. An empty array means that it is possible to perform a sign-up with any domain.",
+        "operationId": "signupWhitelist",
+        "tags": [
+          "auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful"
+          }
+        }
+      }
+    },
+    "/auth/pwreset": {
+      "get": {
+        "summary": "Confirms password reset using a token",
+        "description": "An HTML-form is returned if no confirmation token is sent.",
+        "operationId": "pwresetConfirm",
+        "tags": [
+          "auth"
+        ],
+        "parameters": [
+          {
+            "name": "confirm",
+            "in": "query",
+            "description": "Confirmation token",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Password has been reset"
+          },
+          "400": {
+            "description": "No confirmation token provided"
+          },
+          "404": {
+            "description": "User does not exist"
+          }
+        }
+      },
+      "post": {
+        "summary": "Initiates a password-reset",
+        "operationId": "pwresetInit",
+        "tags": [
+          "auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "description": "E-mail address"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "New password to be set"
+                  },
+                  "recaptcha_challenge_field": {
+                    "type": "string",
+                    "description": "reCaptcha challenge field. Required if backend is configured to use reCaptcha."
+                  },
+                  "recaptcha_response_field": {
+                    "type": "string",
+                    "description": "reCaptcha response field. Required if backend is configured to use reCaptcha."
+                  },
+                  "urlfailure": {
+                    "type": "string",
+                    "description": "URL to redirect to upon failure"
+                  },
+                  "urlsuccess": {
+                    "type": "string",
+                    "description": "URL to redirect to upon success"
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reset request accepted"
+          },
+          "400": {
+            "description": "Information missing"
+          }
+        }
+      }
+    },
+    "/auth/openid/{provider}/{signup}": {
+      "get": {
+        "summary": "Performs a login through an external OpenID service.",
+        "operationId": "openid",
+        "tags": [
+          "auth"
+        ],
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "description": "OpenID provider",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "google",
+                "yahoo"
+              ]
+            }
+          },
+          {
+            "name": "signup",
+            "in": "path",
+            "description": "Perform signup",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "signup",
+                ""
+              ]
+            }
+          },
+          {
+            "name": "redirectOnSuccess",
+            "in": "query",
+            "description": "URL to redirect to upon successful login",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "redirectOnFailure",
+            "in": "query",
+            "description": "URL to redirect to upon failed login",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User successfully logged in"
+          },
+          "401": {
+            "description": "Login not possible"
+          }
+        }
+      }
+    },
+    "/{context-id}": {
+      "get": {
+        "summary": "Returns an array of IDs of a context's entries",
+        "operationId": "contextGet",
+        "tags": [
+          "context"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "404": {
+            "description": "Context not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Creates a new entry inside the given context",
+        "operationId": "contextPost",
+        "tags": [
+          "context"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Manually assigned entry ID if an auto-generated ID should be avoided",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entrytype",
+            "in": "query",
+            "description": "Entry Type",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "local",
+                "link",
+                "reference",
+                "linkreference"
+              ],
+              "default": "local"
+            }
+          },
+          {
+            "name": "graphtype",
+            "in": "query",
+            "description": "Graph Type, see Knowledge Base for a list",
+            "schema": {
+              "type": "string",
+              "default": "none"
+            }
+          },
+          {
+            "name": "resource",
+            "in": "query",
+            "description": "Resource URI. Required for entry types link, reference and linkreference.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "list",
+            "in": "query",
+            "description": "URI of list to which new entry should be added",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Cached external metadata",
+            "in": "query",
+            "description": "URI of cached external metadata",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "informationresource",
+            "in": "query",
+            "description": "Resource Type",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "template",
+            "in": "query",
+            "description": "URI of template entry, see Knowledge Base for details ",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/json"
+              }
+            }
+          },
+          "description": "Resource content if graph type is different from \"none\", see Knowledge Base for details."
+        },
+        "responses": {
+          "201": {
+            "description": "Entry created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/contextNewEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parameters missing"
+          },
+          "404": {
+            "description": "Context not found"
+          },
+          "409": {
+            "description": "Entry ID exists already (if parameter \"id\" was provided)"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Deletes context",
+        "operationId": "contextDelete",
+        "tags": [
+          "context"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Context deleted"
+          },
+          "404": {
+            "description": "Context not found"
+          },
+          "500": {
+            "description": "Internal error"
+          }
+        }
+      }
+    },
+    "/{context-id}/sparql": {
+      "get": {
+        "summary": "SPARQL interface for contexts",
+        "operationId": "sparqlGet",
+        "tags": [
+          "context"
+        ],
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Requested response format, overrides content negotiation",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "application/rdf+xml",
+                "application/json"
+              ]
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "description": "SPARQL query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "400": {
+            "description": "Missing parameters"
+          },
+          "500": {
+            "description": "Internal error"
+          },
+          "501": {
+            "description": "Server does not support SPARQL requests"
+          }
+        }
+      },
+      "post": {
+        "summary": "SPARQL interface for contexts",
+        "operationId": "sparqlPost",
+        "tags": [
+          "context"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "output": {
+                    "type": "string",
+                    "enum": [
+                      "json",
+                      "xml"
+                    ],
+                    "default": "json",
+                    "description": "Requested response format"
+                  },
+                  "query": {
+                    "type": "string",
+                    "description": "SPARQL query"
+                  }
+                },
+                "required": [
+                  "query"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "400": {
+            "description": "Missing parameters"
+          },
+          "500": {
+            "description": "Internal error"
+          },
+          "501": {
+            "description": "Server does not support SPARQL requests"
+          }
+        }
+      }
+    },
+    "/{context-id}/export": {
+      "get": {
+        "summary": "Exports a context",
+        "operationId": "export",
+        "tags": [
+          "context"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "404": {
+            "description": "Context not found"
+          },
+          "500": {
+            "description": "Internal error"
+          }
+        }
+      }
+    },
+    "/{context-id}/import": {
+      "post": {
+        "summary": "Import of single contexts",
+        "operationId": "import",
+        "tags": [
+          "context"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/binary"
+              }
+            }
+          },
+          "required": true,
+          "description": "Context-data to be imported, see Knowledge Base for format description."
+        },
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "400": {
+            "description": "Received invalid data"
+          },
+          "500": {
+            "description": "Internal error while processing import"
+          }
+        }
+      }
+    },
+    "/{context-id}/merge": {
+      "post": {
+        "summary": "Imports RDF into a context by splitting the graph into several entries",
+        "operationId": "merge",
+        "tags": [
+          "context"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/rdf"
+              }
+            }
+          },
+          "required": true,
+          "description": "Metadata graph in RDF"
+        },
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "400": {
+            "description": "Unable to import provided RDF"
+          },
+          "404": {
+            "description": "Context not found"
+          }
+        }
+      }
+    },
+    "/{context-id}/entry/{entry-id}": {
+      "get": {
+        "summary": "Returns the entry information.",
+        "description": "Returns an RDF graph unless application/json is requested in which case the JSON-structure as specified in the response body is used.",
+        "operationId": "entryGet",
+        "tags": [
+          "entry"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entry-id",
+            "in": "path",
+            "description": "Entry ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeAll",
+            "in": "query",
+            "description": "Depending on the entry type this parameter includes metadata, resource and children in the response. Only used with application/json.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful; the entry information is returned in the response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/entry"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Context or entry not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Sets the entry information",
+        "operationId": "entryPut",
+        "tags": [
+          "entry"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entry-id",
+            "in": "path",
+            "description": "Entry ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/rdf"
+              }
+            }
+          },
+          "required": true,
+          "description": "Entry information"
+        },
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "404": {
+            "description": "Context or entry not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Fallback for PUT and DELETE",
+        "operationId": "entryPost",
+        "tags": [
+          "entry"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entry-id",
+            "in": "path",
+            "description": "Entry ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "method",
+            "in": "query",
+            "description": "Method to be executed, case insensitive. Fallback for situations where PUT or DELETE cannot be used.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "put",
+                "delete"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/rdf"
+              }
+            }
+          },
+          "description": "Entry information; only used if method=put"
+        },
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "404": {
+            "description": "Context or entry not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Deletes an entry",
+        "operationId": "entryDelete",
+        "tags": [
+          "entry"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entry-id",
+            "in": "path",
+            "description": "Entry ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "404": {
+            "description": "Context or entry not found"
+          }
+        }
+      }
+    },
+    "/{context-id}/entry/{entry-id}/name": {
+      "get": {
+        "summary": "Returns the entry's name (alias)",
+        "operationId": "nameGet",
+        "tags": [
+          "entry"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entry-id",
+            "in": "path",
+            "description": "Entry ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/name"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Context or entry not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Sets the entry's name (alias)",
+        "operationId": "namePut",
+        "tags": [
+          "entry"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entry-id",
+            "in": "path",
+            "description": "Entry ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/name"
+              }
+            }
+          },
+          "required": true,
+          "description": "Name to be set"
+        },
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "404": {
+            "description": "Context or entry not found"
+          },
+          "409": {
+            "description": "Name is already assigned to another entry"
+          }
+        }
+      }
+    },
+    "/{context-id}/resource/{entry-id}": {
+      "get": {
+        "summary": "Returns a resource",
+        "description": "Depending on the entry's character the resource may be binary, JSON or RDF. See Knowledge Base for details.",
+        "operationId": "resourceGet",
+        "tags": [
+          "resource"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entry-id",
+            "in": "path",
+            "description": "Entry ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful; the resource is returned in the response body"
+          },
+          "404": {
+            "description": "Context or entry not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Sets a resource",
+        "operationId": "resourcePut",
+        "tags": [
+          "resource"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entry-id",
+            "in": "path",
+            "description": "Entry ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/json"
+              }
+            }
+          },
+          "required": true,
+          "description": "Depending on the entry's character the resource may be binary, JSON or RDF. See Knowledge Base for details."
+        },
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "404": {
+            "description": "Entry or its metadata not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Modifies a resource",
+        "description": "Among other functionality, fallback if PUT and DELETE cannot be used by the client",
+        "operationId": "resourcePost",
+        "tags": [
+          "resource"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entry-id",
+            "in": "path",
+            "description": "Entry ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "method",
+            "in": "query",
+            "description": "Method to be executed, case insensitive",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "put",
+                "delete"
+              ]
+            }
+          },
+          {
+            "name": "import",
+            "in": "query",
+            "description": "Imports entries into a list. Requires the entry to be a list and the request body to be application/zip",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "moveEntry",
+            "in": "query",
+            "description": "Moves moveEntry to the list-entry that is posted to. To be used with fromList and removeAll.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fromList",
+            "in": "query",
+            "description": "Removes the given entry from fromList. To be used with fromList and removeAll.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "removeAll",
+            "in": "query",
+            "description": "Indicates that the moved entry is to be removed from all other lists. To be used with fromList and removeAll.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "404": {
+            "description": "Entry or its metadata not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Deletes a resource",
+        "operationId": "resourceDelete",
+        "tags": [
+          "resource"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entry-id",
+            "in": "path",
+            "description": "Entry ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "404": {
+            "description": "Entry or its metadata not found"
+          }
+        }
+      }
+    },
+    "/_principals/groups": {
+      "post": {
+        "summary": "Creates a group with a linked home context. A helper resource for non-admins.",
+        "description": "A special resource that is only available if this feature is configured in the backend",
+        "operationId": "createGroupWithContext",
+        "tags": [
+          "entry"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "The name of the to be created group and context",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Group and context successfully created. Contains the group's URI in the HTTP location header"
+          },
+          "403": {
+            "description": "The requesting user must be logged in"
+          },
+          "409": {
+            "description": "A group or context with the provided name exists already"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/{context-id}/{metadata-type}/{entry-id}": {
+      "get": {
+        "summary": "Returns an entry's metadata graph",
+        "operationId": "metadataGet",
+        "tags": [
+          "metadata"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "metadata-type",
+            "in": "path",
+            "description": "Type of metadata graph",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "metadata",
+                "cached-external-metadata"
+              ]
+            }
+          },
+          {
+            "name": "entry-id",
+            "in": "path",
+            "description": "Entry ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Overrides content negotiation",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "application/json",
+                "application/rdf+xml",
+                "application/ld+json",
+                "application/rdf+json",
+                "application/trix",
+                "application/x-trig",
+                "text/n3",
+                "text/turtle",
+                "text/n-triples"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rdf"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Entry or its metadata not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Sets an entry's metadata graph",
+        "operationId": "metadataPut",
+        "tags": [
+          "metadata"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "metadata-type",
+            "in": "path",
+            "description": "Type of metadata graph",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "metadata",
+                "cached-external-metadata"
+              ]
+            }
+          },
+          {
+            "name": "entry-id",
+            "in": "path",
+            "description": "Entry ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Overrides content negotiation",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "application/json",
+                "application/rdf+xml",
+                "application/ld+json",
+                "application/rdf+json",
+                "application/trix",
+                "application/x-trig",
+                "text/n3",
+                "text/turtle",
+                "text/n-triples"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/rdf"
+              }
+            }
+          },
+          "required": true,
+          "description": "Metadata graph in RDF"
+        },
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "404": {
+            "description": "Entry or its metadata not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Sets or deletes an entry's metadata graph",
+        "description": "Fallback if PUT and DELETE cannot be used by the client",
+        "operationId": "metadataPost",
+        "tags": [
+          "metadata"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "metadata-type",
+            "in": "path",
+            "description": "Type of metadata graph",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "metadata",
+                "cached-external-metadata"
+              ]
+            }
+          },
+          {
+            "name": "entry-id",
+            "in": "path",
+            "description": "Entry ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "method",
+            "in": "query",
+            "description": "Method to be executed, case insensitive",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "put",
+                "delete"
+              ]
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Overrides content negotiation",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "application/json",
+                "application/rdf+xml",
+                "application/ld+json",
+                "application/rdf+json",
+                "application/trix",
+                "application/x-trig",
+                "text/n3",
+                "text/turtle",
+                "text/n-triples"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/rdf"
+              }
+            }
+          },
+          "required": true,
+          "description": "Metadata graph in RDF"
+        },
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "404": {
+            "description": "Entry or its metadata not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Deletes an entry's metadata graph",
+        "operationId": "metadataDelete",
+        "tags": [
+          "metadata"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "metadata-type",
+            "in": "path",
+            "description": "Type of metadata graph",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "metadata",
+                "cached-external-metadata"
+              ]
+            }
+          },
+          {
+            "name": "entry-id",
+            "in": "path",
+            "description": "Entry ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "404": {
+            "description": "Entry or its metadata not found"
+          }
+        }
+      }
+    },
+    "/{context-id}/harvester": {
+      "get": {
+        "summary": "Returns information about a harvester",
+        "operationId": "harvesterGet",
+        "tags": [
+          "context"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/harvester"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Context or harvester not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Configures a harvester",
+        "operationId": "harvesterPost",
+        "tags": [
+          "context"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/harvester"
+              }
+            }
+          },
+          "required": true,
+          "description": "Harvesting configuration"
+        },
+        "responses": {
+          "201": {
+            "description": "Harvester created"
+          },
+          "400": {
+            "description": "Received invalid configuration or harvester type unknown"
+          },
+          "404": {
+            "description": "Context not found"
+          },
+          "409": {
+            "description": "A harvester is already configured for this context"
+          },
+          "500": {
+            "description": "Internal error while processing harvester configuration"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Removes a harvester from context",
+        "operationId": "harvesterDelete",
+        "tags": [
+          "context"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Harvester deleted"
+          },
+          "404": {
+            "description": "Context or harvester not found"
+          }
+        }
+      }
+    },
+    "/{context-id}/relation/{entry-id}": {
+      "get": {
+        "summary": "Returns an RDF-graph with an entry's relations with other entries",
+        "operationId": "relation",
+        "tags": [
+          "entry"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entry-id",
+            "in": "path",
+            "description": "Entry ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rdf"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Context or entry not found"
+          }
+        }
+      }
+    },
+    "/{context-id}/quota": {
+      "get": {
+        "summary": "Returns the context's quota information",
+        "operationId": "quotaGet",
+        "tags": [
+          "quota"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/quotaRead"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Context not found"
+          },
+          "501": {
+            "description": "Quotas are not enabled for this instance"
+          }
+        }
+      },
+      "put": {
+        "summary": "Sets the context's quota",
+        "operationId": "quotaPut",
+        "tags": [
+          "quota"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/quotaWrite"
+              }
+            }
+          },
+          "required": true,
+          "description": "Quota to be set in bytes"
+        },
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "404": {
+            "description": "Context not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Resets the quota to system default",
+        "operationId": "quotaDelete",
+        "tags": [
+          "quota"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "403": {
+            "description": "Insufficient rights for resetting quota"
+          },
+          "404": {
+            "description": "Quotas not active for instance"
+          }
+        }
+      }
+    },
+    "/{context-id}/lookup": {
+      "get": {
+        "summary": "Performs a lookup based on the resource URI and returns metadata about the resource.",
+        "operationId": "lookup",
+        "tags": [
+          "context"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "uri",
+            "in": "query",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "local",
+                "external"
+              ],
+              "default": "all"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful"
+          },
+          "400": {
+            "description": "Missing request parameters"
+          },
+          "404": {
+            "description": "No metadata found for resource"
+          }
+        }
+      }
+    },
+    "/{context-id}/execute": {
+      "post": {
+        "summary": "Executes pipelines",
+        "operationId": "execute",
+        "tags": [
+          "context"
+        ],
+        "parameters": [
+          {
+            "name": "context-id",
+            "in": "path",
+            "description": "Context ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/execution"
+              }
+            }
+          },
+          "required": true,
+          "description": "Information about the pipeline to be executed"
+        },
+        "responses": {
+          "201": {
+            "description": "Entries created during pipeline execution"
+          },
+          "400": {
+            "description": "Pipeline and source have to be located in the same context"
+          },
+          "409": {
+            "description": "The pipeline has wrong state"
+          },
+          "415": {
+            "description": "Request body is in wrong format"
+          },
+          "422": {
+            "description": "Unable to process the request"
+          },
+          "500": {
+            "description": "Internal error while processing pipeline"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "user": {
+        "type": "object",
+        "description": "Administrative information about a user",
+        "required": [
+          "user",
+          "id",
+          "uri"
+        ],
+        "properties": {
+          "user": {
+            "type": "string",
+            "description": "Username (alias)"
+          },
+          "id": {
+            "type": "string",
+            "description": "Internal ID"
+          },
+          "uri": {
+            "type": "string",
+            "description": "URI"
+          },
+          "homecontext": {
+            "type": "string",
+            "description": "Home context"
+          },
+          "language": {
+            "type": "string",
+            "description": "Preferred language"
+          },
+          "authTokenExpires": {
+            "type": "string",
+            "description": "Date and time when authentication token expires (read-only)"
+          }
+        }
+      },
+      "quotaRead": {
+        "type": "object",
+        "description": "Quota information",
+        "required": [
+          "quota",
+          "fillLevel",
+          "hasDefaultQuota"
+        ],
+        "properties": {
+          "quota": {
+            "type": "integer"
+          },
+          "fillLevel": {
+            "type": "integer"
+          },
+          "hasDefaultQuota": {
+            "type": "boolean"
+          }
+        }
+      },
+      "quotaWrite": {
+        "type": "object",
+        "description": "Quota information",
+        "required": [
+          "quota"
+        ],
+        "properties": {
+          "quota": {
+            "type": "integer"
+          }
+        }
+      },
+      "rdf": {
+        "type": "object",
+        "description": "RDF graph"
+      },
+      "binary": {
+        "type": "object",
+        "description": "Binary"
+      },
+      "json": {
+        "type": "object",
+        "description": "Binary"
+      },
+      "execution": {
+        "type": "object",
+        "description": "Execution information",
+        "required": [
+          "pipeline",
+          "source"
+        ],
+        "properties": {
+          "pipeline": {
+            "type": "string",
+            "description": "Pipeline entry URI"
+          },
+          "source": {
+            "type": "string",
+            "description": "Data source entry URI"
+          }
+        }
+      },
+      "name": {
+        "type": "object",
+        "description": "Name (alias)",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "contextNewEntry": {
+        "type": "object",
+        "description": "Entry created response",
+        "required": [
+          "entryId"
+        ],
+        "properties": {
+          "entryId": {
+            "type": "string",
+            "description": "ID of the newly created entry"
+          }
+        }
+      },
+      "harvester": {
+        "type": "object",
+        "description": "Harvester",
+        "required": [
+          "timeRegularExpression",
+          "target",
+          "metadataType",
+          "harvesterType"
+        ],
+        "properties": {
+          "timeRegularExpression": {
+            "type": "string",
+            "description": "Time expression (cron)"
+          },
+          "target": {
+            "type": "string",
+            "description": "Harvesting target URL"
+          },
+          "metadataType": {
+            "type": "string",
+            "description": "Metadata-format to be harvested"
+          },
+          "harvesterType": {
+            "type": "string",
+            "description": "Harvester type"
+          },
+          "from": {
+            "type": "string",
+            "description": "Time/date expression to harvest all resources after a specific date"
+          },
+          "until": {
+            "type": "string",
+            "description": "Time/date expression to harvest all resources before a specific date"
+          },
+          "set": {
+            "type": "string",
+            "description": "Which OAI-set to harvest"
+          }
+        }
+      },
+      "entry": {
+        "type": "object",
+        "description": "Entry information, only to be used for application/json bodies",
+        "required": [
+          "entryId",
+          "info"
+        ],
+        "properties": {
+          "entryId": {
+            "type": "string",
+            "description": "Entry ID"
+          },
+          "quota": {
+            "type": "string",
+            "description": "Quota object if the entry is a context"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name (alias) if the entry is a user, group or context"
+          },
+          "homecontext": {
+            "type": "string",
+            "description": "Home context if the entry is a user"
+          },
+          "language": {
+            "type": "string",
+            "description": "Preferred language if the entry is a user"
+          },
+          "info": {
+            "type": "string",
+            "description": "Entry information as RDF/JSON"
+          },
+          "cached-external-metadata": {
+            "type": "string",
+            "description": "Cached external metadata as RDF/JSON. Requires parameter \"includeAll\""
+          },
+          "metadata": {
+            "type": "string",
+            "description": "Metadata as RDF/JSON. Requires parameter \"includeAll\""
+          },
+          "relation": {
+            "type": "string",
+            "description": "Relations as RDF/JSON. Requires parameter \"includeAll\""
+          },
+          "rights": {
+            "type": "string",
+            "description": "ACL. Requires parameter \"includeAll\""
+          },
+          "resource": {
+            "type": "string",
+            "description": "Resource, only for certain entry types. Requires parameter \"includeAll\""
+          }
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "description": "EntryStore official documentation site.",
+    "url": "http://entrystore.org"
+  }
+}
