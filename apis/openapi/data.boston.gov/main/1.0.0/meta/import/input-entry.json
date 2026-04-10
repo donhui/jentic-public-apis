@@ -1,0 +1,514 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Boston Open Data SODA API",
+    "description": "Socrata Open Data API (SODA) for the City of Boston open data portal. Provides programmatic access to datasets published on data.boston.gov.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://data.boston.gov"
+  },
+  "servers": [
+    {
+      "url": "https://data.boston.gov",
+      "description": "Boston Open Data Portal"
+    }
+  ],
+  "paths": {
+    "/resource/{dataset_id}.json": {
+      "get": {
+        "operationId": "querydataset",
+        "summary": "Query a dataset",
+        "description": "Returns rows from the specified dataset with optional filtering, sorting, and pagination using SoQL (Socrata Query Language).",
+        "tags": [
+          "Datasets"
+        ],
+        "parameters": [
+          {
+            "name": "dataset_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier (4x4) of the dataset",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]{4}-[a-z0-9]{4}$"
+            }
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "description": "Columns to return, similar to SQL SELECT",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "$where",
+            "in": "query",
+            "description": "Filter rows with SoQL expressions, similar to SQL WHERE",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "$order",
+            "in": "query",
+            "description": "Column to order results by, with optional ASC or DESC",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "$group",
+            "in": "query",
+            "description": "Column to group results by for aggregate queries",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "$having",
+            "in": "query",
+            "description": "Filter on aggregate values, similar to SQL HAVING",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "$limit",
+            "in": "query",
+            "description": "Maximum number of rows to return (default 1000, max 50000)",
+            "schema": {
+              "type": "integer",
+              "default": 1000,
+              "maximum": 50000
+            }
+          },
+          {
+            "name": "$offset",
+            "in": "query",
+            "description": "Number of rows to skip for pagination",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "$q",
+            "in": "query",
+            "description": "Full-text search query across all text fields",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "$$exclude_system_fields",
+            "in": "query",
+            "description": "Whether to exclude system fields like :id and :created_at",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful query response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DatasetRow"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid query syntax",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing app token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Dataset not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/resource/{dataset_id}/{row_id}.json": {
+      "get": {
+        "operationId": "getdatasetrow",
+        "summary": "Get a single row by ID",
+        "description": "Returns a single row from a dataset by its row identifier.",
+        "tags": [
+          "Datasets"
+        ],
+        "parameters": [
+          {
+            "name": "dataset_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier (4x4) of the dataset",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]{4}-[a-z0-9]{4}$"
+            }
+          },
+          {
+            "name": "row_id",
+            "in": "path",
+            "required": true,
+            "description": "The row identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with row data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatasetRow"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Row or dataset not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/views.json": {
+      "get": {
+        "operationId": "listdatasets",
+        "summary": "List available datasets",
+        "description": "Returns metadata about available datasets on the portal.",
+        "tags": [
+          "Metadata"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of results per page",
+            "schema": {
+              "type": "integer",
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of dataset metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DatasetMetadata"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/views/{dataset_id}.json": {
+      "get": {
+        "operationId": "getdatasetmetadata",
+        "summary": "Get dataset metadata",
+        "description": "Returns metadata for a specific dataset including columns, description, and update frequency.",
+        "tags": [
+          "Metadata"
+        ],
+        "parameters": [
+          {
+            "name": "dataset_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier (4x4) of the dataset",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]{4}-[a-z0-9]{4}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dataset metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatasetMetadata"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Dataset not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DatasetRow": {
+        "type": "object",
+        "description": "A row from a dataset. Properties vary by dataset.",
+        "additionalProperties": true
+      },
+      "DatasetMetadata": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique 4x4 identifier of the dataset"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable name of the dataset"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the dataset"
+          },
+          "category": {
+            "type": "string",
+            "description": "Category the dataset belongs to"
+          },
+          "attribution": {
+            "type": "string",
+            "description": "Data source attribution"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Column"
+            },
+            "description": "List of columns in the dataset"
+          },
+          "rowsUpdatedAt": {
+            "type": "integer",
+            "description": "Unix timestamp of last row update"
+          },
+          "createdAt": {
+            "type": "integer",
+            "description": "Unix timestamp of dataset creation"
+          },
+          "viewCount": {
+            "type": "integer",
+            "description": "Number of times the dataset has been viewed"
+          },
+          "downloadCount": {
+            "type": "integer",
+            "description": "Number of times the dataset has been downloaded"
+          }
+        }
+      },
+      "Column": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Column ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Column name"
+          },
+          "fieldName": {
+            "type": "string",
+            "description": "API field name for the column"
+          },
+          "dataTypeName": {
+            "type": "string",
+            "description": "Data type of the column (e.g., text, number, calendar_date)"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the column"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Error code"
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "description": "Error message"
+              },
+              "code": {
+                "type": "string",
+                "description": "Error code"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "appToken": {
+        "type": "apiKey",
+        "name": "$$app_token",
+        "in": "query",
+        "description": "Socrata application token for higher rate limits"
+      },
+      "appTokenHeader": {
+        "type": "apiKey",
+        "name": "X-App-Token",
+        "in": "header",
+        "description": "Socrata application token passed via header"
+      }
+    }
+  },
+  "security": [
+    {
+      "appToken": []
+    },
+    {
+      "appTokenHeader": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Datasets",
+      "description": "Operations related to Datasets"
+    },
+    {
+      "name": "Metadata",
+      "description": "Operations related to Metadata"
+    }
+  ]
+}
