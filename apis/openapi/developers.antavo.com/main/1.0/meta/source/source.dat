@@ -1,0 +1,874 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Antavo Events API",
+    "version": "1.0",
+    "description": "Antavo Events API for submitting loyalty program events. Supports synchronous processing of individual and bulk events. All server-to-server calls must comply with API security protocol and signing procedure. Rate limits apply per the API documentation standards.",
+    "x-jentic-source-url": "https://developers.antavo.com/reference"
+  },
+  "servers": [
+    {
+      "url": "https://api.antavo.com",
+      "description": "Production server"
+    }
+  ],
+  "security": [
+    {
+      "apiKeyAuth": []
+    },
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Events",
+      "description": "Submit and manage Antavo loyalty events"
+    },
+    {
+      "name": "Customers",
+      "description": "Customer account management and search"
+    },
+    {
+      "name": "Authentication",
+      "description": "Authentication and token management"
+    },
+    {
+      "name": "Activities",
+      "description": "Customer activities and transactions"
+    },
+    {
+      "name": "Rewards",
+      "description": "Rewards and claims management"
+    }
+  ],
+  "paths": {
+    "/events": {
+      "post": {
+        "tags": ["Events"],
+        "summary": "Submit an Antavo event",
+        "description": "Submit a single loyalty program event for immediate synchronous processing. Use for low to moderate event volumes where immediate confirmation is needed.",
+        "operationId": "submitEvent",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Event"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Event processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request - malformed event data"
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing authentication"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/v1/auth/token": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Generate access token",
+        "description": "Generate an access token for API authentication",
+        "operationId": "generateAccessToken",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Access token generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Unauthorized - invalid credentials"
+          }
+        }
+      }
+    },
+    "/customers": {
+      "get": {
+        "tags": ["Customers"],
+        "summary": "Search customers",
+        "description": "Search for customers in the database using various filters",
+        "operationId": "searchCustomers",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "email"
+            },
+            "description": "Filter by customer email"
+          },
+          {
+            "name": "customer_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by customer ID"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            },
+            "description": "Number of results to return"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "description": "Number of results to skip"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "customers": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Customer"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing authentication"
+          }
+        }
+      }
+    },
+    "/customers/{customer_id}": {
+      "get": {
+        "tags": ["Customers"],
+        "summary": "Get customer details",
+        "description": "Retrieve detailed customer data by customer ID",
+        "operationId": "getCustomerById",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Customer identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer details retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing authentication"
+          },
+          "404": {
+            "description": "Customer not found"
+          }
+        }
+      }
+    },
+    "/customers/{customer_id}/merge": {
+      "post": {
+        "tags": ["Customers"],
+        "summary": "Merge customer accounts",
+        "description": "Merge two customer accounts into one",
+        "operationId": "mergeCustomers",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Target customer ID to merge into"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["source_customer_id"],
+                "properties": {
+                  "source_customer_id": {
+                    "type": "string",
+                    "description": "Source customer ID to merge from"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Customers merged successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing authentication"
+          },
+          "404": {
+            "description": "Customer not found"
+          }
+        }
+      }
+    },
+    "/customers/count": {
+      "get": {
+        "tags": ["Customers"],
+        "summary": "Get active customer count",
+        "description": "Retrieve the count of active customers in the loyalty program",
+        "operationId": "getCustomerCount",
+        "responses": {
+          "200": {
+            "description": "Customer count retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer",
+                      "description": "Total number of active customers"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing authentication"
+          }
+        }
+      }
+    },
+    "/customers/{customer_id}/activities": {
+      "get": {
+        "tags": ["Activities"],
+        "summary": "List customer activities",
+        "description": "Retrieve all activities for a specific customer",
+        "operationId": "getCustomerActivities",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Customer identifier"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["earn", "spend", "all"]
+            },
+            "description": "Filter by activity type"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer activities retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "activities": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Activity"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing authentication"
+          },
+          "404": {
+            "description": "Customer not found"
+          }
+        }
+      }
+    },
+    "/customers/{customer_id}/rewards": {
+      "get": {
+        "tags": ["Rewards"],
+        "summary": "Get available rewards",
+        "description": "Retrieve available rewards for a customer",
+        "operationId": "getCustomerRewards",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Customer identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Available rewards retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "rewards": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Reward"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing authentication"
+          },
+          "404": {
+            "description": "Customer not found"
+          }
+        }
+      }
+    },
+    "/customers/{customer_id}/activities/rewards/{reward_id}/claim": {
+      "post": {
+        "tags": ["Rewards"],
+        "summary": "Claim reward",
+        "description": "Claim a specific reward for a customer",
+        "operationId": "claimReward",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Customer identifier"
+          },
+          {
+            "name": "reward_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Reward identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reward claimed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["success", "error"]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "claim_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing authentication"
+          },
+          "404": {
+            "description": "Customer or reward not found"
+          }
+        }
+      }
+    },
+    "/customers/{customer_id}/transactions": {
+      "get": {
+        "tags": ["Activities"],
+        "summary": "Get customer transactions",
+        "description": "Retrieve transaction history for a customer",
+        "operationId": "getCustomerTransactions",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Customer identifier"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction history retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "transactions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Transaction"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing authentication"
+          },
+          "404": {
+            "description": "Customer not found"
+          }
+        }
+      }
+    },
+    "/bulk-events": {
+      "post": {
+        "tags": ["Events"],
+        "summary": "Submit multiple Antavo events",
+        "description": "Submit multiple loyalty program events in a single request for immediate synchronous processing. Accepts up to 50 events per request. Use for moderate event volumes where batch processing and immediate confirmation are needed.",
+        "operationId": "submitBulkEvents",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkEventsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bulk events processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkEventsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request - malformed event data or exceeds 50 events limit"
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing authentication"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API Key authentication for server-to-server calls"
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "HTTP Bearer token authentication"
+      }
+    },
+    "schemas": {
+      "Event": {
+        "type": "object",
+        "required": ["customer", "action", "data"],
+        "properties": {
+          "customer": {
+            "type": "string",
+            "description": "Customer identifier (email, customer ID, or other unique identifier)"
+          },
+          "action": {
+            "type": "string",
+            "description": "Event action type (e.g., 'purchase', 'registration', 'referral')"
+          },
+          "data": {
+            "type": "object",
+            "description": "Event-specific data payload",
+            "additionalProperties": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Event timestamp (ISO 8601 format)"
+          },
+          "transaction_id": {
+            "type": "string",
+            "description": "Optional transaction identifier for tracking"
+          }
+        }
+      },
+      "EventResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["success", "error"],
+            "description": "Processing status"
+          },
+          "message": {
+            "type": "string",
+            "description": "Response message"
+          },
+          "event_id": {
+            "type": "string",
+            "description": "Unique identifier for the processed event"
+          },
+          "customer_id": {
+            "type": "string",
+            "description": "Customer identifier from the event"
+          },
+          "points_awarded": {
+            "type": "integer",
+            "description": "Points awarded for this event (if applicable)"
+          }
+        }
+      },
+      "BulkEventsRequest": {
+        "type": "object",
+        "required": ["events"],
+        "properties": {
+          "events": {
+            "type": "array",
+            "description": "Array of events to process (maximum 50 events)",
+            "maxItems": 50,
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            }
+          }
+        }
+      },
+      "BulkEventsResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["success", "partial_success", "error"],
+            "description": "Overall processing status"
+          },
+          "total": {
+            "type": "integer",
+            "description": "Total number of events submitted"
+          },
+          "successful": {
+            "type": "integer",
+            "description": "Number of successfully processed events"
+          },
+          "failed": {
+            "type": "integer",
+            "description": "Number of failed events"
+          },
+          "results": {
+            "type": "array",
+            "description": "Individual results for each event",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "description": "Index of the event in the original request array"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": ["success", "error"]
+                },
+                "message": {
+                  "type": "string"
+                },
+                "event_id": {
+                  "type": "string"
+                },
+                "error_code": {
+                  "type": "string",
+                  "description": "Error code if processing failed"
+                }
+              }
+            }
+          }
+        }
+      },
+      "TokenRequest": {
+        "type": "object",
+        "required": ["api_key", "api_secret"],
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "description": "API key"
+          },
+          "api_secret": {
+            "type": "string",
+            "description": "API secret"
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "description": "JWT access token"
+          },
+          "token_type": {
+            "type": "string",
+            "description": "Token type (usually 'Bearer')"
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Token expiration time in seconds"
+          }
+        }
+      },
+      "Customer": {
+        "type": "object",
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "description": "Unique customer identifier"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Customer email"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "points_balance": {
+            "type": "integer",
+            "description": "Current loyalty points balance"
+          },
+          "tier": {
+            "type": "string",
+            "description": "Customer loyalty tier"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Activity": {
+        "type": "object",
+        "properties": {
+          "activity_id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["earn", "spend"]
+          },
+          "action": {
+            "type": "string",
+            "description": "Action that triggered the activity"
+          },
+          "points": {
+            "type": "integer",
+            "description": "Points earned or spent"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "Reward": {
+        "type": "object",
+        "properties": {
+          "reward_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "points_required": {
+            "type": "integer"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "image_url": {
+            "type": "string"
+          }
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "transaction_id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["purchase", "refund", "adjustment"]
+          },
+          "amount": {
+            "type": "number",
+            "format": "float"
+          },
+          "points_earned": {
+            "type": "integer"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["completed", "pending", "cancelled"]
+          }
+        }
+      }
+    }
+  }
+}
