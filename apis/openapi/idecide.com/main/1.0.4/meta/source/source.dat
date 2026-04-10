@@ -1,0 +1,749 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "iDecide - Backoffice API for Zapier",
+    "version": "1.0.4",
+    "description": "The iDecide Backoffice API provides the functionality required by the iDecide Zapier app. The iDecide Zapier app allows a user to access back-office specific functionality such as creating iDecide URLs, registering for REST hook callbacks, etc.\n\nAuthorization is performed by providing an \"access token\" (obtained by calling /user/authenticate) to each operation in the 'Authorization' header (with a \"Bearer \" prefix).\n",
+    "contact": {
+      "email": "kevin@idecide.com"
+    },
+    "x-jentic-source-url": "https://integration.idecide.com/documentation"
+  },
+  "servers": [
+    {
+      "url": "https://integration.idecide.com/api"
+    }
+  ],
+  "tags": [
+    {
+      "name": "users",
+      "description": "operations for iDecide user authentication and information"
+    },
+    {
+      "name": "triggers",
+      "description": "operations for Zapier trigger management"
+    },
+    {
+      "name": "idecides",
+      "description": "operations for iDecide presentation URLs"
+    },
+    {
+      "name": "presentations",
+      "description": "operations for iDecide presentations"
+    },
+    {
+      "name": "sessions",
+      "description": "operations for iDecide presentation view sessions"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "token"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/user/authenticate": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "security": [],
+        "summary": "Authenticate on behalf of an iDecide user.",
+        "description": "Authenticate on behalf of an iDecide user using user-supplied credentials. Returns a long-lived security token that allows other back-office operations.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "description": "User-supplied email address"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "User-supplied password"
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": {
+                      "type": "string",
+                      "example": "dac9ce67c53b4299aae3fb0932057e1e"
+                    },
+                    "emailAddress": {
+                      "type": "string",
+                      "example": "demo@idecide.com"
+                    },
+                    "firstName": {
+                      "type": "string",
+                      "example": "Jane"
+                    },
+                    "lastName": {
+                      "type": "string",
+                      "example": "Jones"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid username/password supplied"
+          }
+        }
+      }
+    },
+    "/user/testCredentials": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Verify an iDecide Token.",
+        "description": "Verify an iDecide-issued security token is valid and not expired.",
+        "responses": {
+          "200": {
+            "description": "Token is valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired security token"
+          }
+        }
+      }
+    },
+    "/user/": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Get authenticated user's details.",
+        "description": "Get user details for a security token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "description": "User-supplied email address"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "User-supplied password"
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": {
+                      "type": "string",
+                      "example": "dac9ce67c53b4299aae3fb0932057e1e"
+                    },
+                    "emailAddress": {
+                      "type": "string",
+                      "example": "demo@idecide.com"
+                    },
+                    "firstName": {
+                      "type": "string",
+                      "example": "Jane"
+                    },
+                    "lastName": {
+                      "type": "string",
+                      "example": "Jones"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired security token"
+          }
+        }
+      }
+    },
+    "/backoffice/idecides/triggers/started": {
+      "post": {
+        "tags": [
+          "triggers"
+        ],
+        "summary": "Subscribe to a presentation 'started' event.",
+        "description": "Subscribe to a 'started' event for a specific iDecide presentation by registering a REST hook URL.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "hookUrl": {
+                    "type": "string",
+                    "description": "REST hook URL that will be called on event"
+                  },
+                  "iDecideId": {
+                    "type": "string",
+                    "description": "ID of iDecide presentation"
+                  }
+                },
+                "required": [
+                  "hookUrl",
+                  "iDecideId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful trigger subscription",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean",
+                  "example": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid iDecide presentation referenced"
+          },
+          "401": {
+            "description": "Invalid or expired security token"
+          }
+        }
+      }
+    },
+    "/backoffice/idecides/triggers/completed": {
+      "post": {
+        "tags": [
+          "triggers"
+        ],
+        "summary": "Subscribe to a presentation 'complete' event.",
+        "description": "Subscribe to a 'complete' event for a specific iDecide presentation by registering a REST hook URL.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "hookUrl": {
+                    "type": "string",
+                    "description": "REST hook URL that will be called on event"
+                  },
+                  "iDecideId": {
+                    "type": "string",
+                    "description": "ID of iDecide presentation"
+                  }
+                },
+                "required": [
+                  "hookUrl",
+                  "iDecideId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful trigger subscription",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean",
+                  "example": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid iDecide presentation referenced"
+          },
+          "401": {
+            "description": "Invalid or expired security token"
+          }
+        }
+      }
+    },
+    "/backoffice/idecides/triggers/": {
+      "delete": {
+        "tags": [
+          "triggers"
+        ],
+        "summary": "Unsubscribe to an event.",
+        "description": "Remove an existing event subscription.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "hookUrl": {
+                    "type": "string",
+                    "description": "existing REST hook URL"
+                  }
+                },
+                "required": [
+                  "hookUrl"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful trigger subscription",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean",
+                  "example": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid REST hook URL supplied"
+          },
+          "401": {
+            "description": "Invalid or expired security token"
+          }
+        }
+      }
+    },
+    "/backoffice/idecides/personalized": {
+      "post": {
+        "tags": [
+          "idecides"
+        ],
+        "summary": "Create a personalized iDecide URL.",
+        "description": "Create a presentation-specific URL for the user, personalized for a viewer's details.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "iDecideId": {
+                    "type": "string",
+                    "description": "ID of iDecide presentation",
+                    "example": "c65a7368-a65e-4de5-a227-a2cf4c2f690f"
+                  },
+                  "toCrmId": {
+                    "type": "string",
+                    "description": "optional string-based ID for CRM integration (an ID used by a CRM to address a contact/customer)",
+                    "example": "crm-id-1234"
+                  },
+                  "toName": {
+                    "type": "string",
+                    "description": "viewer's name (partial or full)",
+                    "example": "Jeff Viewer"
+                  },
+                  "toEmailAddress": {
+                    "type": "string",
+                    "description": "viewer's email address",
+                    "example": "viewer-demo@idecide.com"
+                  },
+                  "toPhoneNumber": {
+                    "type": "string",
+                    "description": "viewer's phone number",
+                    "example": "555-123-1234"
+                  }
+                },
+                "required": [
+                  "iDecideId",
+                  "toName"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "iDecide URL Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "example": "https://umustsee.net/UVX3OR"
+                    },
+                    "iDecideName": {
+                      "type": "string",
+                      "example": "iDecide Demo"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid iDecide presentation referenced"
+          },
+          "401": {
+            "description": "Invalid or expired security token"
+          }
+        }
+      }
+    },
+    "/backoffice/idecides/postalink": {
+      "post": {
+        "tags": [
+          "idecides"
+        ],
+        "summary": "Create a Post-A-Link iDecide URL.",
+        "description": "Create a presentation-specific URL for the user, for multiple viewers.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "iDecideId": {
+                    "type": "string",
+                    "description": "ID of iDecide presentation",
+                    "example": "c65a7368-a65e-4de5-a227-a2cf4c2f690f"
+                  }
+                },
+                "required": [
+                  "iDecideId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "iDecide URL Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "example": "https://umustsee.net/JOW3NW"
+                    },
+                    "iDecideName": {
+                      "type": "string",
+                      "example": "iDecide Demo"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid iDecide presentation referenced"
+          },
+          "401": {
+            "description": "Invalid or expired security token"
+          }
+        }
+      }
+    },
+    "/backoffice/idecides/": {
+      "get": {
+        "tags": [
+          "presentations"
+        ],
+        "summary": "Get user presentations.",
+        "description": "Get a list of iDecide presentations a user has access to.",
+        "responses": {
+          "200": {
+            "description": "List of user's presentations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "iDecideId": {
+                        "type": "string",
+                        "example": "c65a7368-a65e-4de5-a227-a2cf4c2f690f"
+                      },
+                      "isMyIDecide": {
+                        "type": "boolean",
+                        "example": "false"
+                      },
+                      "name": {
+                        "type": "string",
+                        "example": "iDecide Demo"
+                      },
+                      "type": {
+                        "type": "string",
+                        "example": "Elite"
+                      },
+                      "packageName": {
+                        "type": "string",
+                        "example": "Demo Presentations"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired security token"
+          }
+        }
+      }
+    },
+    "/backoffice/idecides/sessions/completed": {
+      "get": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Get latest completed sessions.",
+        "description": "Get latest completed iDecide view sessions.",
+        "parameters": [
+          {
+            "name": "iDecideId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the iDecide presentation to query sessions for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of completed iDecide view sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "sessionId": {
+                        "type": "string",
+                        "example": "4392164f2e564d95ba5bcdb643a6a173"
+                      },
+                      "iDecideId": {
+                        "type": "string",
+                        "example": "2aa5298c-522c-4cf7-a89a-77c1484968a4"
+                      },
+                      "iDecideName": {
+                        "type": "string",
+                        "example": "iDecide Demo"
+                      },
+                      "dateStarted": {
+                        "type": "string",
+                        "example": "2024-12-15T19:48:39.116Z"
+                      },
+                      "postALink": {
+                        "type": "boolean",
+                        "example": true
+                      },
+                      "viewerCrmId": {
+                        "type": "string",
+                        "example": null
+                      },
+                      "viewerName": {
+                        "type": "string",
+                        "example": "Jane Viewer"
+                      },
+                      "viewerFirstName": {
+                        "type": "string",
+                        "example": "Jane"
+                      },
+                      "viewerLastName": {
+                        "type": "string",
+                        "example": "Viewer"
+                      },
+                      "viewerEmail": {
+                        "type": "string",
+                        "example": "viewer@idecide.com"
+                      },
+                      "viewerPhone": {
+                        "type": "string",
+                        "example": ""
+                      },
+                      "finished": {
+                        "type": "boolean",
+                        "example": true
+                      },
+                      "choices": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "example": [
+                          "choice_1"
+                        ]
+                      },
+                      "slides": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "example": []
+                      },
+                      "outcome": {
+                        "type": "string",
+                        "example": "PURCHASE PRODUCT"
+                      },
+                      "outcomeNotification": {
+                        "type": "string",
+                        "example": "Jane Viewer just selected PURCHASE PRODUCT. Go ahead and give them a call."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid iDecide presentation referenced"
+          },
+          "401": {
+            "description": "Invalid or expired security token"
+          }
+        }
+      }
+    },
+    "/backoffice/idecides/sessions/started": {
+      "get": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Get latest started sessions.",
+        "description": "Get latest started iDecide view sessions. Includes finished and unfinished sessions.",
+        "parameters": [
+          {
+            "name": "iDecideId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the iDecide presentation to query sessions for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of latest started iDecide view sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "sessionId": {
+                        "type": "string",
+                        "example": "4392164f2e564d95ba5bcdb643a6a173"
+                      },
+                      "iDecideId": {
+                        "type": "string",
+                        "example": "2aa5298c-522c-4cf7-a89a-77c1484968a4"
+                      },
+                      "iDecideName": {
+                        "type": "string",
+                        "example": "iDecide Demo"
+                      },
+                      "dateStarted": {
+                        "type": "string",
+                        "example": "2024-12-15T19:48:39.116Z"
+                      },
+                      "postALink": {
+                        "type": "boolean",
+                        "example": "true"
+                      },
+                      "viewerCrmId": {
+                        "type": "string",
+                        "example": null
+                      },
+                      "viewerName": {
+                        "type": "string",
+                        "example": "Jane Viewer"
+                      },
+                      "viewerFirstName": {
+                        "type": "string",
+                        "example": "Jane"
+                      },
+                      "viewerLastName": {
+                        "type": "string",
+                        "example": "Viewer"
+                      },
+                      "viewerEmail": {
+                        "type": "string",
+                        "example": "viewer@idecide.com"
+                      },
+                      "viewerPhone": {
+                        "type": "string",
+                        "example": ""
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid iDecide presentation referenced"
+          },
+          "401": {
+            "description": "Invalid or expired security token"
+          }
+        }
+      }
+    }
+  }
+}
