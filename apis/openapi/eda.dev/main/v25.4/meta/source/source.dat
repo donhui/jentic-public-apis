@@ -1,0 +1,305 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "EDA API",
+    "description": "Nokia EDA (Event-Driven Automation) REST API for managing network automation resources, authentication via OpenID Connect, and accessing OpenAPI specifications.",
+    "version": "v25.4",
+    "x-jentic-source-url": "https://docs.eda.dev/25.4/development/api/"
+  },
+  "servers": [
+    {
+      "url": "https://{edaUrl}",
+      "variables": {
+        "edaUrl": {
+          "default": "eda.example.com",
+          "description": "EDA instance hostname"
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "OpenID Connect token operations"
+    },
+    {
+      "name": "OpenAPI",
+      "description": "OpenAPI specification discovery and retrieval"
+    }
+  ],
+  "paths": {
+    "/core/httpproxy/v1/keycloak/realms/eda/protocol/openid-connect/token": {
+      "post": {
+        "operationId": "getAuthToken",
+        "summary": "Obtain an access token via OpenID Connect",
+        "description": "Authenticates using direct access grant flow and returns JWT access, refresh, and ID tokens.",
+        "tags": ["Authentication"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["client_id", "grant_type", "scope", "username", "password", "client_secret"],
+                "properties": {
+                  "client_id": {
+                    "type": "string",
+                    "description": "Client identifier",
+                    "example": "eda"
+                  },
+                  "grant_type": {
+                    "type": "string",
+                    "description": "OAuth grant type",
+                    "example": "password"
+                  },
+                  "scope": {
+                    "type": "string",
+                    "description": "Requested scope",
+                    "example": "openid"
+                  },
+                  "username": {
+                    "type": "string",
+                    "description": "User's username"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "User's password"
+                  },
+                  "client_secret": {
+                    "type": "string",
+                    "description": "Client secret"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi/v3": {
+      "get": {
+        "operationId": "listOpenApiSpecs",
+        "summary": "List available OpenAPI specifications",
+        "description": "Returns a JSON object listing all available API specification paths and their URLs.",
+        "tags": ["OpenAPI"],
+        "responses": {
+          "200": {
+            "description": "List of available OpenAPI specifications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenApiSpecList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi/v3/apps/{appName}/{version}": {
+      "get": {
+        "operationId": "getOpenApiSpec",
+        "summary": "Fetch a specific OpenAPI specification",
+        "description": "Retrieves the OpenAPI v3 specification for a specific application and version.",
+        "tags": ["OpenAPI"],
+        "parameters": [
+          {
+            "name": "appName",
+            "in": "path",
+            "required": true,
+            "description": "Application name (e.g., connect.eda.nokia.com)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "description": "API version (e.g., v1alpha1)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OpenAPI specification document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenApiSpecDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token obtained via OpenID Connect authentication"
+      }
+    },
+    "schemas": {
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "description": "JWT access token"
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "Refresh token"
+          },
+          "id_token": {
+            "type": "string",
+            "description": "OpenID Connect ID token"
+          },
+          "token_type": {
+            "type": "string",
+            "description": "Token type",
+            "example": "Bearer"
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Token lifetime in seconds"
+          },
+          "refresh_expires_in": {
+            "type": "integer",
+            "description": "Refresh token lifetime in seconds"
+          },
+          "scope": {
+            "type": "string",
+            "description": "Granted scopes"
+          }
+        }
+      },
+      "OpenApiSpecList": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "object",
+          "properties": {
+            "serverRelativeURL": {
+              "type": "string",
+              "description": "Relative URL to the specification"
+            }
+          }
+        },
+        "description": "Map of API group paths to their specification URLs"
+      },
+      "OpenApiSpecDocument": {
+        "type": "object",
+        "description": "An OpenAPI v3 specification document",
+        "properties": {
+          "openapi": {
+            "type": "string"
+          },
+          "info": {
+            "type": "object"
+          },
+          "paths": {
+            "type": "object"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error code"
+          },
+          "error_description": {
+            "type": "string",
+            "description": "Human-readable error description"
+          }
+        }
+      }
+    }
+  }
+}
