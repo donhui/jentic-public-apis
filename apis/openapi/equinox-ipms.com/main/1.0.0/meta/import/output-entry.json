@@ -1,0 +1,1608 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Equinox IPMS API",
+    "description": "Equinox is an efficient IP portfolio management system that helps you manage trademarks, patents, registered designs and more. The API provides access to matters, documents, tasks, reports, correspondence, and user management.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://help.equinox-ipms.com/support/solutions/articles/8000106087-equinox-api"
+  },
+  "servers": [
+    {
+      "url": "https://{region}.workanyware.co.uk/products/api",
+      "description": "Equinox API Server (UK/Regional)",
+      "variables": {
+        "region": {
+          "default": "www",
+          "description": "Regional hostname prefix (e.g., www, ca, pacific)",
+          "enum": [
+            "www",
+            "ca",
+            "pacific"
+          ]
+        }
+      }
+    },
+    {
+      "url": "https://central-us.equinox-ipms.com/products/api",
+      "description": "Equinox API Server (US Central)"
+    }
+  ],
+  "paths": {
+    "/key/new": {
+      "post": {
+        "operationId": "createApiKey",
+        "summary": "Create a new API key",
+        "description": "Creates a new API key. Requires password-based basic auth (email:md5(password)).",
+        "tags": [
+          "Authentication"
+        ],
+        "security": [
+          {
+            "passwordAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "User-friendly reference name for the key"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Key created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/key/validate": {
+      "post": {
+        "operationId": "validateApiKey",
+        "summary": "Validate an API key",
+        "description": "Validates the provided API key credentials. Returns 'true' on success.",
+        "tags": [
+          "Authentication"
+        ],
+        "responses": {
+          "200": {
+            "description": "Key validation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/all": {
+      "get": {
+        "operationId": "getAllUsers",
+        "summary": "Get all users",
+        "description": "Returns a list of all users in the system",
+        "tags": [
+          "Users"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/get-signature": {
+      "get": {
+        "operationId": "getUserSignature",
+        "summary": "Get user signature",
+        "description": "Returns the user's signature as an embedded image if available",
+        "tags": [
+          "Users"
+        ],
+        "responses": {
+          "200": {
+            "description": "Signature image",
+            "content": {
+              "image/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matter/{matterId}": {
+      "get": {
+        "operationId": "getMatterById",
+        "summary": "Get matter by ID",
+        "description": "Returns comprehensive matter details by internal Equinox ID",
+        "tags": [
+          "Matters"
+        ],
+        "parameters": [
+          {
+            "name": "matterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Equinox internal reference for the matter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Matter"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matter/get-by-mattercode/{matterCode}": {
+      "get": {
+        "operationId": "getMatterByMattercode",
+        "summary": "Get matter by mattercode",
+        "description": "Returns matter details by reference code. Special characters must be replaced: \\ with {BACKSLASH}, / with {FORWARDSLASH}, . with {DOTPERIOD}",
+        "tags": [
+          "Matters"
+        ],
+        "parameters": [
+          {
+            "name": "matterCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Reference code for the matter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Matter"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matter/search-by-mattercode/{searchTerm}/{matterCount}": {
+      "get": {
+        "operationId": "searchMatterByMattercode",
+        "summary": "Search for matters by mattercode",
+        "description": "Searches for matters matching the given search term",
+        "tags": [
+          "Matters"
+        ],
+        "parameters": [
+          {
+            "name": "searchTerm",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search string"
+          },
+          {
+            "name": "matterCount",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Number of results to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Matter"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matter/get-contacts/{matterId}": {
+      "get": {
+        "operationId": "getMatterContacts",
+        "summary": "Get contacts for a matter",
+        "description": "Returns all contact information associated with a case, organized by role",
+        "tags": [
+          "Matters"
+        ],
+        "parameters": [
+          {
+            "name": "matterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Equinox internal reference for the matter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatterContacts"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/document-classifications": {
+      "get": {
+        "operationId": "getPrimaryClassifications",
+        "summary": "Get primary document classifications",
+        "description": "Returns all primary classifications for the organisation",
+        "tags": [
+          "Documents"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incoming-correspondence/new": {
+      "post": {
+        "operationId": "createIncomingCorrespondence",
+        "summary": "Create incoming correspondence",
+        "description": "Creates a new incoming correspondence record with optional document attachments",
+        "tags": [
+          "IncomingCorrespondence"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCorrespondenceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Correspondence created, returns new ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "description": "ID of the newly created correspondence"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/task/next/{count}": {
+      "get": {
+        "operationId": "getTasksDueToday",
+        "summary": "Get tasks due today",
+        "description": "Returns the next N tasks that are due today",
+        "tags": [
+          "Tasks"
+        ],
+        "parameters": [
+          {
+            "name": "count",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Number of tasks to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Task"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/task/new": {
+      "post": {
+        "operationId": "createTask",
+        "summary": "Create a new task",
+        "description": "Creates a new task for a specified matter",
+        "tags": [
+          "Tasks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Task"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/task/edit/{taskId}": {
+      "post": {
+        "operationId": "editTask",
+        "summary": "Edit a task",
+        "description": "Updates an existing task",
+        "tags": [
+          "Tasks"
+        ],
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Internal ID of the task"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/EditTaskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Task"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/task/complete": {
+      "post": {
+        "operationId": "markTaskComplete",
+        "summary": "Mark a task as complete",
+        "description": "Marks a task as complete. Returns the task state prior to completion.",
+        "tags": [
+          "Tasks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "taskId"
+                ],
+                "properties": {
+                  "taskId": {
+                    "type": "integer",
+                    "description": "ID of the task to complete"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task marked as complete",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/task/delete/{taskId}": {
+      "post": {
+        "operationId": "deleteTask",
+        "summary": "Delete a task",
+        "description": "Deletes a task by its internal ID",
+        "tags": [
+          "Tasks"
+        ],
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Internal ID of the task"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Task successfully deleted"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/report/{reportId}": {
+      "get": {
+        "operationId": "getReportById",
+        "summary": "Get report by ID",
+        "description": "Returns report data by report ID",
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Report ID to return"
+          },
+          {
+            "name": "show_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ]
+            },
+            "description": "Include entity IDs as a column (1=yes, 0=no)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matter/invoice/merge": {
+      "post": {
+        "operationId": "createInvoiceFromTemplate",
+        "summary": "Create invoice from master template",
+        "description": "Creates and merges an invoice from a master template. Only for subscribers using Scheduled Invoicing.",
+        "tags": [
+          "Finance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInvoiceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Merged invoice document",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Basic authentication using email and API key (Base64 encoded email:key)"
+      },
+      "passwordAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Password-based basic auth for key creation (Base64 encoded email:md5(password))"
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiKeyResponse": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "The newly created API key"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "oldId": {
+            "type": "integer"
+          },
+          "subscriberId": {
+            "type": "integer"
+          },
+          "username": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "secondaryEmail": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "secondName": {
+            "type": "string"
+          },
+          "subscriberRef": {
+            "type": "string"
+          },
+          "clientSQL": {
+            "type": "string",
+            "nullable": true
+          },
+          "loginCount": {
+            "type": "integer"
+          },
+          "lastLogin": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          },
+          "initials": {
+            "type": "string"
+          },
+          "legalEntity": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "Matter": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "matterCode": {
+            "type": "string"
+          },
+          "shortTitle": {
+            "type": "string"
+          },
+          "longTitle": {
+            "type": "string"
+          },
+          "formalTitle": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "subCategory": {
+            "type": "string"
+          },
+          "typeId": {
+            "type": "integer"
+          },
+          "clientId": {
+            "type": "integer"
+          },
+          "familyId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "openDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "expiryDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "applicants": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "inventors": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "licensees": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "customFields": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "Contact": {
+        "type": "object",
+        "properties": {
+          "mcid": {
+            "type": "integer"
+          },
+          "cid": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "formalname": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "nationality": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "cc": {
+            "type": "string",
+            "nullable": true
+          },
+          "entity": {
+            "type": "string"
+          }
+        }
+      },
+      "MatterContacts": {
+        "type": "object",
+        "properties": {
+          "applicant": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contact"
+            }
+          },
+          "inventor": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contact"
+            }
+          },
+          "licensee": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contact"
+            }
+          },
+          "client_correspondence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contact"
+            }
+          },
+          "client_billing": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contact"
+            }
+          },
+          "client_renewal_correspondence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contact"
+            }
+          },
+          "client_renewal_billing": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contact"
+            }
+          },
+          "associate": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contact"
+            }
+          },
+          "otherside_solicitor": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contact"
+            }
+          },
+          "otherside_client": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contact"
+            }
+          }
+        }
+      },
+      "CreateCorrespondenceRequest": {
+        "type": "object",
+        "required": [
+          "title",
+          "date"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Correspondence name"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Correspondence date"
+          },
+          "source": {
+            "type": "integer",
+            "description": "Source identifier"
+          },
+          "urgent": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "description": "Urgency flag"
+          },
+          "assignedTo": {
+            "type": "integer",
+            "description": "User ID for assignment"
+          },
+          "batchNumber": {
+            "type": "integer",
+            "description": "Batch identifier"
+          },
+          "physicallyRouted": {
+            "type": "integer",
+            "description": "Physical routing status"
+          },
+          "primary-classification": {
+            "type": "integer",
+            "description": "Primary classification ID"
+          },
+          "secondary-classification": {
+            "type": "integer",
+            "description": "Secondary classification ID"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "matterId": {
+            "type": "integer",
+            "description": "Associated matter ID"
+          },
+          "documentInfoDocumentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "documents[]": {
+            "type": "string",
+            "format": "binary",
+            "description": "Document file"
+          },
+          "documents_name[]": {
+            "type": "string",
+            "description": "Document filename"
+          },
+          "documents_date[]": {
+            "type": "string",
+            "format": "date"
+          },
+          "documents_class[]": {
+            "type": "integer",
+            "description": "Document primary classification ID"
+          },
+          "documents_secclass[]": {
+            "type": "integer",
+            "description": "Document secondary classification ID"
+          },
+          "documents_notes[]": {
+            "type": "string"
+          }
+        }
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "description": {
+            "type": "string"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "doneDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "matterId": {
+            "type": "integer"
+          },
+          "matterCode": {
+            "type": "string"
+          },
+          "client": {
+            "type": "string"
+          },
+          "clientId": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "statusName": {
+            "type": "string"
+          },
+          "importance": {
+            "type": "integer"
+          },
+          "importanceName": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/TaskUser"
+          },
+          "type": {
+            "type": "integer",
+            "nullable": true
+          },
+          "typeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "setupDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "parentTaskId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "linkedDocuments": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "invoiceId": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "TaskUser": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateTaskRequest": {
+        "type": "object",
+        "required": [
+          "matter",
+          "due-date",
+          "description"
+        ],
+        "properties": {
+          "matter": {
+            "type": "integer",
+            "description": "Internal ID of the matter"
+          },
+          "due-date": {
+            "type": "string",
+            "format": "date",
+            "description": "Task due date"
+          },
+          "description": {
+            "type": "string",
+            "description": "Task description"
+          },
+          "user": {
+            "type": "string",
+            "description": "User ID or username"
+          },
+          "importance": {
+            "type": "string",
+            "description": "Task importance ID or name"
+          },
+          "type": {
+            "type": "string",
+            "description": "Task type ID or name"
+          },
+          "template": {
+            "type": "integer",
+            "description": "Correspondence template ID"
+          },
+          "custom-fields": {
+            "type": "string",
+            "description": "JSON array of custom field key-value pairs"
+          }
+        }
+      },
+      "EditTaskRequest": {
+        "type": "object",
+        "properties": {
+          "due-date": {
+            "type": "string",
+            "format": "date",
+            "description": "Task due date"
+          },
+          "task": {
+            "type": "string",
+            "description": "Task title/description"
+          },
+          "user": {
+            "type": "string",
+            "description": "User ID or username"
+          },
+          "importance": {
+            "type": "string",
+            "description": "Task importance ID or name"
+          },
+          "type": {
+            "type": "string",
+            "description": "Task type ID or name"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Additional notes"
+          },
+          "custom-fields": {
+            "type": "string",
+            "description": "JSON array of custom field key-value pairs"
+          }
+        }
+      },
+      "ReportResponse": {
+        "type": "object",
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Column names for the report"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "Report data rows"
+          }
+        }
+      },
+      "CreateInvoiceRequest": {
+        "type": "object",
+        "required": [
+          "master-template",
+          "matterId"
+        ],
+        "properties": {
+          "master-template": {
+            "type": "string",
+            "format": "binary",
+            "description": "Master template file"
+          },
+          "matterId": {
+            "type": "integer",
+            "description": "Matter ID"
+          },
+          "contactId": {
+            "type": "integer",
+            "description": "Contact ID for invoice addressee"
+          },
+          "siteId": {
+            "type": "integer",
+            "description": "Address ID for invoice addressee"
+          },
+          "taskId": {
+            "type": "integer",
+            "description": "Associated task ID"
+          },
+          "template-header": {
+            "type": "string",
+            "description": "Header HTML to merge"
+          },
+          "template-content": {
+            "type": "string",
+            "description": "Content HTML to merge"
+          },
+          "template-sign-off": {
+            "type": "string",
+            "description": "Sign-off HTML to merge"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "basicAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "API key management"
+    },
+    {
+      "name": "Users",
+      "description": "User management operations"
+    },
+    {
+      "name": "Matters",
+      "description": "IP matter management"
+    },
+    {
+      "name": "Documents",
+      "description": "Document classification operations"
+    },
+    {
+      "name": "IncomingCorrespondence",
+      "description": "Incoming correspondence management"
+    },
+    {
+      "name": "Tasks",
+      "description": "Task management"
+    },
+    {
+      "name": "Reports",
+      "description": "Report operations"
+    },
+    {
+      "name": "Finance",
+      "description": "Invoice and finance operations"
+    }
+  ]
+}
