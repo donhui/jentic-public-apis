@@ -1,0 +1,282 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ECB Data Portal API",
+    "version": "1.0.0",
+    "description": "The European Central Bank (ECB) Data Portal API provides access to ECB statistical data using SDMX-compliant REST queries. Supports filtering by time period, data detail level, and multiple output formats including CSV, JSON, and XML. No authentication required.",
+    "x-jentic-source-url": "https://data.ecb.europa.eu/help/api/data"
+  },
+  "servers": [
+    {
+      "url": "https://data-api.ecb.europa.eu/service",
+      "description": "ECB Data API"
+    }
+  ],
+  "paths": {
+    "/data/{flowRef}/{key}": {
+      "get": {
+        "operationId": "getData",
+        "summary": "Retrieve statistical data",
+        "description": "Retrieves statistical data from the ECB Data Portal using SDMX-compliant dimension combinations. Supports wildcarding (omitting dimension values) and OR operators (using + between values).",
+        "tags": ["Data"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "flowRef",
+            "in": "path",
+            "required": true,
+            "description": "Dataflow reference. Can be just the flow ID (e.g., EXR) or in format AGENCY_ID,FLOW_ID,VERSION.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "description": "Series key combining dimension values with dots (e.g., D.USD.EUR.SP00.A). Use + for OR operator, omit values for wildcarding.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startPeriod",
+            "in": "query",
+            "description": "Start date filter in ISO 8601 format (e.g., 2013-01-01)",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endPeriod",
+            "in": "query",
+            "description": "End date filter in ISO 8601 format",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "updatedAfter",
+            "in": "query",
+            "description": "Only return data updated after this timestamp (percent-encoded ISO 8601)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "detail",
+            "in": "query",
+            "description": "Level of detail in the response",
+            "schema": {
+              "type": "string",
+              "enum": ["full", "dataonly", "serieskeysonly", "nodata"],
+              "default": "full"
+            }
+          },
+          {
+            "name": "firstNObservations",
+            "in": "query",
+            "description": "Limit results to first N observations per series",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "lastNObservations",
+            "in": "query",
+            "description": "Limit results to last N observations per series",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "includeHistory",
+            "in": "query",
+            "description": "Include historical revisions of data",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Response format",
+            "schema": {
+              "type": "string",
+              "enum": ["csvdata", "jsondata", "structurespecificdata", "genericdata"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistical data returned successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataResponse"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid query syntax"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/dataflow": {
+      "get": {
+        "operationId": "listDataflows",
+        "summary": "List available dataflows",
+        "description": "Lists dataflows available in the ECB Data Portal.",
+        "tags": ["Metadata"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "List of available dataflows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataflowList"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DataResponse": {
+        "type": "object",
+        "properties": {
+          "header": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "prepared": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "sender": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "dataSets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DataSet"
+            }
+          },
+          "structure": {
+            "type": "object",
+            "description": "Structure metadata for the response"
+          }
+        }
+      },
+      "DataSet": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "series": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "attributes": {
+                  "type": "array",
+                  "items": {}
+                },
+                "observations": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "DataflowList": {
+        "type": "object",
+        "properties": {
+          "dataflows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Dataflow"
+            }
+          }
+        }
+      },
+      "Dataflow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "agencyId": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "noAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "No authentication required. This is a public API."
+      }
+    }
+  },
+  "security": []
+}
