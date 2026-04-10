@@ -1,0 +1,420 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "imgproxy Image Processing API",
+    "description": "imgproxy is a fast and secure standalone server for resizing, processing, and converting images. It uses URL-based parameters to define processing operations on source images.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://docs.imgproxy.net"
+  },
+  "servers": [
+    {
+      "url": "https://{host}",
+      "description": "imgproxy server instance",
+      "variables": {
+        "host": {
+          "default": "imgproxy.example.com",
+          "description": "Your imgproxy server hostname"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/{signature}/{processing_options}/plain/{source_url}@{extension}": {
+      "get": {
+        "operationId": "processImagePlainUrl",
+        "summary": "Process an image using a plain source URL",
+        "description": "Fetches the source image from the given URL and applies the specified processing options. The source URL is provided in plain text (percent-encode special characters).",
+        "tags": [
+          "Image Processing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Signature"
+          },
+          {
+            "$ref": "#/components/parameters/ProcessingOptions"
+          },
+          {
+            "name": "source_url",
+            "in": "path",
+            "required": true,
+            "description": "Plain source image URL (percent-encode special characters)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "extension",
+            "in": "path",
+            "required": true,
+            "description": "Output image format extension (e.g., jpg, png, webp)",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "jpg",
+                "png",
+                "webp",
+                "avif",
+                "gif",
+                "ico",
+                "svg",
+                "bmp",
+                "tiff"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Processed image",
+            "content": {
+              "image/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid processing options or source URL",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid signature",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source image not found or URL expired",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{signature}/{processing_options}/{encoded_source_url}.{extension}": {
+      "get": {
+        "operationId": "processImageEncodedUrl",
+        "summary": "Process an image using a Base64-encoded source URL",
+        "description": "Fetches the source image from the Base64-encoded URL and applies the specified processing options.",
+        "tags": [
+          "Image Processing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Signature"
+          },
+          {
+            "$ref": "#/components/parameters/ProcessingOptions"
+          },
+          {
+            "name": "encoded_source_url",
+            "in": "path",
+            "required": true,
+            "description": "Base64-encoded source image URL",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "extension",
+            "in": "path",
+            "required": true,
+            "description": "Output image format extension",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "jpg",
+                "png",
+                "webp",
+                "avif",
+                "gif",
+                "ico",
+                "svg",
+                "bmp",
+                "tiff"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Processed image",
+            "content": {
+              "image/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid signature",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "healthCheck",
+        "summary": "Health check endpoint",
+        "description": "Returns the health status of the imgproxy server. The health check path can be customized via IMGPROXY_HEALTH_CHECK_PATH.",
+        "tags": [
+          "Health"
+        ],
+        "responses": {
+          "200": {
+            "description": "Server is healthy",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "imgproxy is running"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Server is not healthy"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "Signature": {
+        "name": "signature",
+        "in": "path",
+        "required": true,
+        "description": "URL signature for security. Use 'unsafe' prefix if signing is disabled (not recommended for production). The signature is a URL-safe Base64 encoded HMAC digest of the rest of the path.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "ProcessingOptions": {
+        "name": "processing_options",
+        "in": "path",
+        "required": true,
+        "description": "Processing options as URL path segments separated by slashes. Each option format is option_name:arg1:arg2:...:argN. Available options include: resize, size, resizing_type (fit|fill|fill-down|force|auto), width, height, min_width, min_height, zoom, dpr, enlarge, extend, gravity, crop, rotate (0|90|180|270), flip, trim, blur, sharpen, pixelate, brightness, contrast, saturation, background, watermark, quality, format, max_bytes, strip_metadata, preset, cache_buster, expires, raw, page, pages.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "ProcessingOptions": {
+        "type": "object",
+        "description": "Image processing options (represented as URL path segments)",
+        "properties": {
+          "resize": {
+            "type": "string",
+            "description": "Meta-option: resizing_type:width:height:enlarge:extend"
+          },
+          "size": {
+            "type": "string",
+            "description": "width:height:enlarge:extend"
+          },
+          "resizing_type": {
+            "type": "string",
+            "enum": [
+              "fit",
+              "fill",
+              "fill-down",
+              "force",
+              "auto"
+            ],
+            "description": "How to handle aspect ratio during resize"
+          },
+          "width": {
+            "type": "integer",
+            "description": "Result image width. 0 to calculate from height."
+          },
+          "height": {
+            "type": "integer",
+            "description": "Result image height. 0 to calculate from width."
+          },
+          "min_width": {
+            "type": "integer",
+            "description": "Minimum result image width"
+          },
+          "min_height": {
+            "type": "integer",
+            "description": "Minimum result image height"
+          },
+          "zoom": {
+            "type": "string",
+            "description": "zoom_x:zoom_y - multiply dimensions by given factors"
+          },
+          "dpr": {
+            "type": "number",
+            "description": "Device pixel ratio multiplier (>0)"
+          },
+          "enlarge": {
+            "type": "boolean",
+            "description": "Allow enlargement of images smaller than target"
+          },
+          "extend": {
+            "type": "string",
+            "description": "extend:gravity:x_offset:y_offset"
+          },
+          "gravity": {
+            "type": "string",
+            "description": "Gravity type for cropping. Values: no, so, ea, we, noea, nowe, soea, sowe, ce, sm (smart), fp (focus point)"
+          },
+          "crop": {
+            "type": "string",
+            "description": "width:height:gravity - define crop area before resize"
+          },
+          "rotate": {
+            "type": "integer",
+            "enum": [
+              0,
+              90,
+              180,
+              270
+            ],
+            "description": "Rotation angle in degrees"
+          },
+          "blur": {
+            "type": "number",
+            "description": "Gaussian blur sigma value"
+          },
+          "sharpen": {
+            "type": "number",
+            "description": "Sharpen sigma value"
+          },
+          "pixelate": {
+            "type": "integer",
+            "description": "Pixelate block size in pixels"
+          },
+          "brightness": {
+            "type": "integer",
+            "minimum": -255,
+            "maximum": 255,
+            "description": "Brightness adjustment (Pro feature)"
+          },
+          "contrast": {
+            "type": "number",
+            "description": "Contrast multiplier (Pro feature)"
+          },
+          "saturation": {
+            "type": "number",
+            "description": "Saturation multiplier (Pro feature)"
+          },
+          "background": {
+            "type": "string",
+            "description": "Background color as R:G:B or hex"
+          },
+          "quality": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Output quality percentage"
+          },
+          "max_bytes": {
+            "type": "integer",
+            "description": "Maximum output file size in bytes"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "jpg",
+              "png",
+              "webp",
+              "avif",
+              "gif",
+              "ico",
+              "svg",
+              "bmp",
+              "tiff"
+            ],
+            "description": "Output format"
+          },
+          "strip_metadata": {
+            "type": "boolean",
+            "description": "Remove EXIF/IPTC metadata"
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number for multi-page images (PDF, GIF)"
+          },
+          "preset": {
+            "type": "string",
+            "description": "Named processing preset(s)"
+          },
+          "cache_buster": {
+            "type": "string",
+            "description": "Cache bypass string"
+          },
+          "expires": {
+            "type": "integer",
+            "description": "Unix timestamp after which the URL returns 404"
+          },
+          "raw": {
+            "type": "boolean",
+            "description": "Stream source image unprocessed"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "urlSignature": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "signature",
+        "description": "URL signature using HMAC with SHA256. The signature is embedded in the URL path. Configure via IMGPROXY_KEY and IMGPROXY_SALT environment variables."
+      }
+    }
+  },
+  "security": [
+    {
+      "urlSignature": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Image Processing",
+      "description": "Image resizing, cropping, and processing endpoints"
+    },
+    {
+      "name": "Health",
+      "description": "Server health monitoring"
+    }
+  ]
+}
