@@ -1,0 +1,353 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "EngageLab Push API",
+    "version": "v4",
+    "description": "EngageLab Push API for sending push notifications and in-app messages to devices across Android, iOS, and HarmonyOS platforms. Supports broadcast, targeted, and scheduled push campaigns with flexible targeting by tags, aliases, registration IDs, and segments.",
+    "x-jentic-source-url": "https://www.engagelab.com/docs/app-push/developer-guide/rest-api/create-push-api"
+  },
+  "servers": [
+    {
+      "url": "https://api.engagelab.cc",
+      "description": "Production API endpoint"
+    }
+  ],
+  "security": [
+    {
+      "basicAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Push",
+      "description": "Push notification and message operations"
+    }
+  ],
+  "paths": {
+    "/v4/push": {
+      "post": {
+        "operationId": "createPush",
+        "summary": "Create Push Notification",
+        "description": "Push a notification or message to a single device or a list of devices. Supports broadcast to all devices, targeting by tags, aliases, registration IDs, or segments. Rate limit: 500 requests per second (standard), higher limits available for paid subscribers.",
+        "tags": [
+          "Push"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Push notification created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "HTTP Basic Authentication using base64-encoded credentials"
+      }
+    },
+    "schemas": {
+      "PushRequest": {
+        "type": "object",
+        "required": [
+          "to",
+          "body",
+          "platform"
+        ],
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "Service sender identifier"
+          },
+          "to": {
+            "oneOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "all"
+                ],
+                "description": "Broadcast to all devices"
+              },
+              {
+                "$ref": "#/components/schemas/TargetObject"
+              }
+            ],
+            "description": "Push target specification: 'all' for broadcast, or object with tag, tag_and, alias, registration_id, or seg"
+          },
+          "body": {
+            "type": "object",
+            "description": "Push content container",
+            "required": [
+              "platform"
+            ],
+            "properties": {
+              "platform": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "android",
+                      "ios",
+                      "hmos",
+                      "all"
+                    ]
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "android",
+                        "ios",
+                        "hmos"
+                      ]
+                    }
+                  }
+                ],
+                "description": "Target platform(s)"
+              },
+              "notification": {
+                "$ref": "#/components/schemas/NotificationContent",
+                "description": "Notification content (mutually exclusive with message)"
+              },
+              "message": {
+                "$ref": "#/components/schemas/MessageContent",
+                "description": "In-app message content (mutually exclusive with notification)"
+              },
+              "options": {
+                "$ref": "#/components/schemas/PushOptions",
+                "description": "Push configuration options"
+              }
+            }
+          },
+          "platform": {
+            "oneOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "android",
+                  "ios",
+                  "hmos",
+                  "all"
+                ]
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "android",
+                    "ios",
+                    "hmos"
+                  ]
+                }
+              }
+            ],
+            "description": "Target platform(s)"
+          },
+          "notification": {
+            "$ref": "#/components/schemas/NotificationContent"
+          },
+          "message": {
+            "$ref": "#/components/schemas/MessageContent"
+          },
+          "options": {
+            "$ref": "#/components/schemas/PushOptions"
+          },
+          "request_id": {
+            "type": "string",
+            "description": "Client-defined tracking ID for this push request"
+          },
+          "custom_args": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Custom arguments returned to the customer on callback"
+          }
+        }
+      },
+      "TargetObject": {
+        "type": "object",
+        "properties": {
+          "tag": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Target devices with any of these tags (OR logic)"
+          },
+          "tag_and": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Target devices with all of these tags (AND logic)"
+          },
+          "alias": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Target devices with these aliases"
+          },
+          "registration_id": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Target specific registration IDs"
+          },
+          "seg": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Segment identifier"
+              }
+            },
+            "description": "Target a specific segment"
+          }
+        }
+      },
+      "NotificationContent": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Notification title"
+          },
+          "alert": {
+            "type": "string",
+            "description": "Notification body text"
+          },
+          "badge": {
+            "type": "integer",
+            "description": "Badge count for iOS"
+          },
+          "sound": {
+            "type": "string",
+            "description": "Sound file to play"
+          },
+          "extras": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Additional custom data"
+          }
+        }
+      },
+      "MessageContent": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "Message content"
+          },
+          "title": {
+            "type": "string",
+            "description": "Message title"
+          },
+          "extras": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Additional custom data"
+          }
+        }
+      },
+      "PushOptions": {
+        "type": "object",
+        "properties": {
+          "time_to_live": {
+            "type": "integer",
+            "description": "Time to live in seconds for offline messages"
+          },
+          "apns_production": {
+            "type": "boolean",
+            "description": "Use APNs production environment (iOS)"
+          },
+          "schedule_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Scheduled delivery time"
+          }
+        }
+      },
+      "PushResponse": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "description": "Client-provided or generated request ID"
+          },
+          "msg_id": {
+            "type": "string",
+            "description": "Unique message identifier assigned by EngageLab"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "integer",
+                "description": "Error code"
+              },
+              "message": {
+                "type": "string",
+                "description": "Error message"
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid request parameters",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Authentication failed or invalid credentials",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+}
