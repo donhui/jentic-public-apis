@@ -1,0 +1,650 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Fakturownia Invoicing API",
+    "version": "1.0.0",
+    "description": "Fakturownia (InvoiceOcean) REST API for managing invoices, recurring invoices, clients, products, categories, warehouses, departments, payments, and warehouse documents.",
+    "x-jentic-source-url": "https://github.com/fakturownia/api"
+  },
+  "servers": [
+    {
+      "url": "https://{domain}.fakturownia.pl",
+      "description": "Fakturownia tenant",
+      "variables": {
+        "domain": {
+          "default": "app",
+          "description": "Your Fakturownia account subdomain"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/invoices.json": {
+      "get": {
+        "operationId": "listInvoices",
+        "summary": "List invoices",
+        "description": "Retrieve a list of invoices with optional filtering by date, client, and status.",
+        "tags": ["Invoices"],
+        "parameters": [
+          { "$ref": "#/components/parameters/ApiToken" },
+          { "name": "page", "in": "query", "schema": { "type": "integer" }, "description": "Page number" },
+          { "name": "period", "in": "query", "schema": { "type": "string", "enum": ["this_month", "last_month", "this_year", "last_year", "more"] }, "description": "Date period filter" },
+          { "name": "date_from", "in": "query", "schema": { "type": "string", "format": "date" }, "description": "Start date filter (YYYY-MM-DD)" },
+          { "name": "date_to", "in": "query", "schema": { "type": "string", "format": "date" }, "description": "End date filter (YYYY-MM-DD)" },
+          { "name": "client_id", "in": "query", "schema": { "type": "integer" }, "description": "Filter by client ID" },
+          { "name": "kind", "in": "query", "schema": { "type": "string" }, "description": "Invoice kind (vat, proforma, etc.)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of invoices",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Invoice" } } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createInvoice",
+        "summary": "Create a new invoice",
+        "tags": ["Invoices"],
+        "parameters": [ { "$ref": "#/components/parameters/ApiToken" } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InvoiceCreateRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Invoice created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Invoice" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/invoices/{id}.json": {
+      "get": {
+        "operationId": "getInvoice",
+        "summary": "Get invoice by ID",
+        "tags": ["Invoices"],
+        "parameters": [
+          { "$ref": "#/components/parameters/ApiToken" },
+          { "$ref": "#/components/parameters/ResourceId" }
+        ],
+        "responses": {
+          "200": { "description": "Invoice details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Invoice" } } } },
+          "404": { "description": "Invoice not found" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateInvoice",
+        "summary": "Update an invoice",
+        "tags": ["Invoices"],
+        "parameters": [
+          { "$ref": "#/components/parameters/ApiToken" },
+          { "$ref": "#/components/parameters/ResourceId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InvoiceCreateRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Invoice updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Invoice" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteInvoice",
+        "summary": "Delete an invoice",
+        "tags": ["Invoices"],
+        "parameters": [
+          { "$ref": "#/components/parameters/ApiToken" },
+          { "$ref": "#/components/parameters/ResourceId" }
+        ],
+        "responses": {
+          "200": { "description": "Invoice deleted" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/invoices/{id}.pdf": {
+      "get": {
+        "operationId": "getInvoicePdf",
+        "summary": "Download invoice as PDF",
+        "tags": ["Invoices"],
+        "parameters": [
+          { "$ref": "#/components/parameters/ApiToken" },
+          { "$ref": "#/components/parameters/ResourceId" }
+        ],
+        "responses": {
+          "200": { "description": "PDF file", "content": { "application/pdf": { "schema": { "type": "string", "format": "binary" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/invoices/{id}/send_by_email.json": {
+      "post": {
+        "operationId": "sendInvoiceByEmail",
+        "summary": "Send invoice by email",
+        "tags": ["Invoices"],
+        "parameters": [
+          { "$ref": "#/components/parameters/ApiToken" },
+          { "$ref": "#/components/parameters/ResourceId" }
+        ],
+        "responses": {
+          "200": { "description": "Email sent" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/invoices/{id}/change_status.json": {
+      "post": {
+        "operationId": "changeInvoiceStatus",
+        "summary": "Change invoice status",
+        "tags": ["Invoices"],
+        "parameters": [
+          { "$ref": "#/components/parameters/ApiToken" },
+          { "$ref": "#/components/parameters/ResourceId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "string" } }, "required": ["status"] } } }
+        },
+        "responses": {
+          "200": { "description": "Status changed" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/invoices/{id}/mark_as_paid.json": {
+      "post": {
+        "operationId": "markInvoiceAsPaid",
+        "summary": "Mark invoice as paid",
+        "tags": ["Invoices"],
+        "parameters": [
+          { "$ref": "#/components/parameters/ApiToken" },
+          { "$ref": "#/components/parameters/ResourceId" }
+        ],
+        "responses": {
+          "200": { "description": "Invoice marked as paid" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/invoices/recurring.json": {
+      "get": {
+        "operationId": "listRecurringInvoices",
+        "summary": "List recurring invoice definitions",
+        "tags": ["Recurring Invoices"],
+        "parameters": [ { "$ref": "#/components/parameters/ApiToken" } ],
+        "responses": {
+          "200": { "description": "List of recurring invoices", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/RecurringInvoice" } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createRecurringInvoice",
+        "summary": "Create a recurring invoice",
+        "tags": ["Recurring Invoices"],
+        "parameters": [ { "$ref": "#/components/parameters/ApiToken" } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecurringInvoiceRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Recurring invoice created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecurringInvoice" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/clients.json": {
+      "get": {
+        "operationId": "listClients",
+        "summary": "List all clients",
+        "tags": ["Clients"],
+        "parameters": [
+          { "$ref": "#/components/parameters/ApiToken" },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "List of clients", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Client" } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createClient",
+        "summary": "Create a client",
+        "tags": ["Clients"],
+        "parameters": [ { "$ref": "#/components/parameters/ApiToken" } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ClientCreateRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Client created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Client" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/clients/{id}.json": {
+      "get": {
+        "operationId": "getClient",
+        "summary": "Get client by ID",
+        "tags": ["Clients"],
+        "parameters": [
+          { "$ref": "#/components/parameters/ApiToken" },
+          { "$ref": "#/components/parameters/ResourceId" }
+        ],
+        "responses": {
+          "200": { "description": "Client details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Client" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateClient",
+        "summary": "Update a client",
+        "tags": ["Clients"],
+        "parameters": [
+          { "$ref": "#/components/parameters/ApiToken" },
+          { "$ref": "#/components/parameters/ResourceId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ClientCreateRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Client updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Client" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteClient",
+        "summary": "Delete a client",
+        "tags": ["Clients"],
+        "parameters": [
+          { "$ref": "#/components/parameters/ApiToken" },
+          { "$ref": "#/components/parameters/ResourceId" }
+        ],
+        "responses": {
+          "200": { "description": "Client deleted" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/products.json": {
+      "get": {
+        "operationId": "listProducts",
+        "summary": "List products",
+        "tags": ["Products"],
+        "parameters": [
+          { "$ref": "#/components/parameters/ApiToken" },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "List of products", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Product" } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createProduct",
+        "summary": "Create a product",
+        "tags": ["Products"],
+        "parameters": [ { "$ref": "#/components/parameters/ApiToken" } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProductCreateRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Product created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Product" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/products/{id}.json": {
+      "get": {
+        "operationId": "getProduct",
+        "summary": "Get product by ID",
+        "tags": ["Products"],
+        "parameters": [
+          { "$ref": "#/components/parameters/ApiToken" },
+          { "$ref": "#/components/parameters/ResourceId" }
+        ],
+        "responses": {
+          "200": { "description": "Product details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Product" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateProduct",
+        "summary": "Update a product",
+        "tags": ["Products"],
+        "parameters": [
+          { "$ref": "#/components/parameters/ApiToken" },
+          { "$ref": "#/components/parameters/ResourceId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProductCreateRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Product updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Product" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/payments.json": {
+      "get": {
+        "operationId": "listPayments",
+        "summary": "List payments",
+        "tags": ["Payments"],
+        "parameters": [
+          { "$ref": "#/components/parameters/ApiToken" },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "List of payments", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Payment" } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createPayment",
+        "summary": "Create a payment",
+        "tags": ["Payments"],
+        "parameters": [ { "$ref": "#/components/parameters/ApiToken" } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaymentCreateRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Payment created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Payment" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/categories.json": {
+      "get": {
+        "operationId": "listCategories",
+        "summary": "List categories",
+        "tags": ["Categories"],
+        "parameters": [ { "$ref": "#/components/parameters/ApiToken" } ],
+        "responses": {
+          "200": { "description": "List of categories", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Category" } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/warehouse_documents.json": {
+      "get": {
+        "operationId": "listWarehouseDocuments",
+        "summary": "List warehouse documents",
+        "tags": ["Warehouse"],
+        "parameters": [
+          { "$ref": "#/components/parameters/ApiToken" },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "List of warehouse documents", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/WarehouseDocument" } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createWarehouseDocument",
+        "summary": "Create a warehouse document",
+        "tags": ["Warehouse"],
+        "parameters": [ { "$ref": "#/components/parameters/ApiToken" } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WarehouseDocumentCreateRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Document created" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "ApiToken": {
+        "name": "api_token",
+        "in": "query",
+        "required": true,
+        "schema": { "type": "string" },
+        "description": "API authentication token"
+      },
+      "ResourceId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" },
+        "description": "Resource ID"
+      }
+    },
+    "schemas": {
+      "Invoice": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "number": { "type": "string" },
+          "kind": { "type": "string", "description": "Invoice type (vat, proforma, estimate, etc.)" },
+          "status": { "type": "string" },
+          "issue_date": { "type": "string", "format": "date" },
+          "sell_date": { "type": "string", "format": "date" },
+          "payment_to": { "type": "string", "format": "date" },
+          "seller_name": { "type": "string" },
+          "buyer_name": { "type": "string" },
+          "buyer_tax_no": { "type": "string" },
+          "client_id": { "type": "integer" },
+          "total_price_gross": { "type": "string" },
+          "total_price_net": { "type": "string" },
+          "tax_amount": { "type": "string" },
+          "currency": { "type": "string" },
+          "positions": { "type": "array", "items": { "$ref": "#/components/schemas/InvoicePosition" } },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "InvoicePosition": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "quantity": { "type": "number" },
+          "tax": { "type": "string" },
+          "total_price_gross": { "type": "string" },
+          "total_price_net": { "type": "string" },
+          "unit_price_gross": { "type": "string" },
+          "unit_price_net": { "type": "string" }
+        }
+      },
+      "InvoiceCreateRequest": {
+        "type": "object",
+        "properties": {
+          "invoice": {
+            "type": "object",
+            "properties": {
+              "kind": { "type": "string" },
+              "number": { "type": "string" },
+              "sell_date": { "type": "string", "format": "date" },
+              "issue_date": { "type": "string", "format": "date" },
+              "payment_to": { "type": "string", "format": "date" },
+              "seller_name": { "type": "string" },
+              "buyer_name": { "type": "string" },
+              "buyer_tax_no": { "type": "string" },
+              "client_id": { "type": "integer" },
+              "positions": { "type": "array", "items": { "$ref": "#/components/schemas/InvoicePosition" } }
+            },
+            "required": ["kind", "buyer_name"]
+          },
+          "api_token": { "type": "string" }
+        }
+      },
+      "RecurringInvoice": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "invoice_pattern": { "type": "object" },
+          "start_date": { "type": "string", "format": "date" },
+          "every": { "type": "string" },
+          "client_id": { "type": "integer" }
+        }
+      },
+      "RecurringInvoiceRequest": {
+        "type": "object",
+        "properties": {
+          "recurring": { "type": "object" },
+          "api_token": { "type": "string" }
+        }
+      },
+      "Client": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "tax_no": { "type": "string" },
+          "post_code": { "type": "string" },
+          "city": { "type": "string" },
+          "street": { "type": "string" },
+          "country": { "type": "string" },
+          "email": { "type": "string" },
+          "phone": { "type": "string" },
+          "bank": { "type": "string" },
+          "bank_account": { "type": "string" }
+        }
+      },
+      "ClientCreateRequest": {
+        "type": "object",
+        "properties": {
+          "client": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "tax_no": { "type": "string" },
+              "post_code": { "type": "string" },
+              "city": { "type": "string" },
+              "street": { "type": "string" },
+              "country": { "type": "string" },
+              "email": { "type": "string" },
+              "phone": { "type": "string" }
+            },
+            "required": ["name"]
+          },
+          "api_token": { "type": "string" }
+        }
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "code": { "type": "string" },
+          "price_net": { "type": "string" },
+          "price_gross": { "type": "string" },
+          "tax": { "type": "string" },
+          "quantity": { "type": "number" },
+          "description": { "type": "string" }
+        }
+      },
+      "ProductCreateRequest": {
+        "type": "object",
+        "properties": {
+          "product": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "code": { "type": "string" },
+              "price_net": { "type": "string" },
+              "price_gross": { "type": "string" },
+              "tax": { "type": "string" }
+            },
+            "required": ["name"]
+          },
+          "api_token": { "type": "string" }
+        }
+      },
+      "Payment": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "price": { "type": "string" },
+          "invoice_id": { "type": "integer" },
+          "paid_date": { "type": "string", "format": "date" },
+          "comment": { "type": "string" }
+        }
+      },
+      "PaymentCreateRequest": {
+        "type": "object",
+        "properties": {
+          "payment": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "price": { "type": "string" },
+              "invoice_id": { "type": "integer" },
+              "paid_date": { "type": "string", "format": "date" }
+            },
+            "required": ["name", "price", "invoice_id"]
+          },
+          "api_token": { "type": "string" }
+        }
+      },
+      "Category": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      },
+      "WarehouseDocument": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "kind": { "type": "string" },
+          "number": { "type": "string" },
+          "issue_date": { "type": "string", "format": "date" },
+          "warehouse_id": { "type": "integer" }
+        }
+      },
+      "WarehouseDocumentCreateRequest": {
+        "type": "object",
+        "properties": {
+          "warehouse_document": { "type": "object" },
+          "api_token": { "type": "string" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiToken": {
+        "type": "apiKey",
+        "name": "api_token",
+        "in": "query",
+        "description": "API token for authentication, available in account settings"
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized - invalid or missing API token",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      }
+    }
+  },
+  "security": [
+    { "apiToken": [] }
+  ]
+}
