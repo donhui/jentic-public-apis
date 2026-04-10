@@ -1,0 +1,320 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Drone CI API",
+    "version": "v1",
+    "description": "Drone CI provides a comprehensive REST API for managing builds, repositories, secrets, cron jobs, templates, and users in your continuous integration pipeline.",
+    "x-jentic-source-url": "https://docs.drone.io/api/overview/"
+  },
+  "servers": [
+    {
+      "url": "https://{server}",
+      "description": "Drone CI server",
+      "variables": {
+        "server": {
+          "default": "drone.example.com",
+          "description": "Your Drone CI server hostname"
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    { "name": "Builds", "description": "Build management" },
+    { "name": "Repos", "description": "Repository management" },
+    { "name": "Secrets", "description": "Repository secret management" },
+    { "name": "User", "description": "Current user operations" }
+  ],
+  "paths": {
+    "/api/repos/{owner}/{repo}/builds": {
+      "get": {
+        "operationId": "listBuilds",
+        "summary": "List Builds",
+        "description": "Returns recent builds for the repository. Requires read access.",
+        "tags": ["Builds"],
+        "parameters": [
+          { "name": "owner", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Repository owner" },
+          { "name": "repo", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Repository name" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of builds",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Build" } }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createBuild",
+        "summary": "Create Build",
+        "description": "Trigger a new build for the repository. Builds created via API receive event type 'custom'.",
+        "tags": ["Builds"],
+        "parameters": [
+          { "name": "owner", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "repo", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "branch", "in": "query", "schema": { "type": "string" }, "description": "Target branch (defaults to default branch)" },
+          { "name": "commit", "in": "query", "schema": { "type": "string" }, "description": "Specific commit SHA" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Build created",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Build" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/repos/{owner}/{repo}/builds/{build}": {
+      "get": {
+        "operationId": "getBuild",
+        "summary": "Get Build",
+        "description": "Returns the specified repository build. The build parameter is the build number, not the build ID.",
+        "tags": ["Builds"],
+        "parameters": [
+          { "name": "owner", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "repo", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "build", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "Build number (not build ID)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Build details",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Build" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "stopBuild",
+        "summary": "Stop Build",
+        "description": "Cancel a running build. Requires admin access.",
+        "tags": ["Builds"],
+        "parameters": [
+          { "name": "owner", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "repo", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "build", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "Build number" }
+        ],
+        "responses": {
+          "204": { "description": "Build stopped" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/repos/{owner}/{repo}": {
+      "get": {
+        "operationId": "getRepo",
+        "summary": "Get Repository",
+        "description": "Returns information about a specific repository. Requires read access.",
+        "tags": ["Repos"],
+        "parameters": [
+          { "name": "owner", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "repo", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Repository details",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Repo" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/user/repos": {
+      "get": {
+        "operationId": "listUserRepos",
+        "summary": "List User Repositories",
+        "description": "Returns repositories which are registered to Drone for the authenticated user.",
+        "tags": ["User"],
+        "responses": {
+          "200": {
+            "description": "List of repositories",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Repo" } } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/repos/{owner}/{repo}/secrets": {
+      "get": {
+        "operationId": "listSecrets",
+        "summary": "List Secrets",
+        "description": "Returns all secrets for the specified repository. Requires write access.",
+        "tags": ["Secrets"],
+        "parameters": [
+          { "name": "owner", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "repo", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of secrets",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Secret" } } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createSecret",
+        "summary": "Create Secret",
+        "description": "Create a new secret for the specified repository. Requires write access.",
+        "tags": ["Secrets"],
+        "parameters": [
+          { "name": "owner", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "repo", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SecretInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Secret created",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Secret" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Access token for Drone CI API"
+      }
+    },
+    "schemas": {
+      "Build": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "repo_id": { "type": "integer" },
+          "number": { "type": "integer" },
+          "status": { "type": "string" },
+          "event": { "type": "string" },
+          "action": { "type": "string" },
+          "link": { "type": "string" },
+          "message": { "type": "string" },
+          "before": { "type": "string" },
+          "after": { "type": "string" },
+          "ref": { "type": "string" },
+          "source_repo": { "type": "string" },
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "author_login": { "type": "string" },
+          "author_name": { "type": "string" },
+          "author_email": { "type": "string" },
+          "author_avatar": { "type": "string" },
+          "sender": { "type": "string" },
+          "started": { "type": "integer" },
+          "finished": { "type": "integer" },
+          "created": { "type": "integer" },
+          "updated": { "type": "integer" },
+          "version": { "type": "integer" },
+          "stages": { "type": "array", "items": { "$ref": "#/components/schemas/Stage" } }
+        }
+      },
+      "Stage": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "build_id": { "type": "integer" },
+          "number": { "type": "integer" },
+          "name": { "type": "string" },
+          "kind": { "type": "string" },
+          "type": { "type": "string" },
+          "status": { "type": "string" },
+          "os": { "type": "string" },
+          "arch": { "type": "string" },
+          "started": { "type": "integer" },
+          "stopped": { "type": "integer" }
+        }
+      },
+      "Repo": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "uid": { "type": "string" },
+          "user_id": { "type": "integer" },
+          "namespace": { "type": "string" },
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "scm": { "type": "string" },
+          "git_http_url": { "type": "string" },
+          "git_ssh_url": { "type": "string" },
+          "link": { "type": "string" },
+          "default_branch": { "type": "string" },
+          "private": { "type": "boolean" },
+          "visibility": { "type": "string" },
+          "active": { "type": "boolean" },
+          "config_path": { "type": "string" },
+          "trusted": { "type": "boolean" },
+          "protected": { "type": "boolean" },
+          "ignore_forks": { "type": "boolean" },
+          "ignore_pull_requests": { "type": "boolean" },
+          "timeout": { "type": "integer" },
+          "counter": { "type": "integer" },
+          "synced": { "type": "integer" },
+          "created": { "type": "integer" },
+          "updated": { "type": "integer" },
+          "version": { "type": "integer" },
+          "permissions": { "type": "object", "properties": { "read": { "type": "boolean" }, "write": { "type": "boolean" }, "admin": { "type": "boolean" } } }
+        }
+      },
+      "Secret": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "repo_id": { "type": "integer" },
+          "name": { "type": "string" },
+          "data": { "type": "string" },
+          "pull_request": { "type": "boolean" }
+        }
+      },
+      "SecretInput": {
+        "type": "object",
+        "required": ["name", "data"],
+        "properties": {
+          "name": { "type": "string" },
+          "data": { "type": "string" },
+          "pull_request": { "type": "boolean" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid request",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "Unauthorized": {
+        "description": "Authentication required",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      }
+    }
+  }
+}
