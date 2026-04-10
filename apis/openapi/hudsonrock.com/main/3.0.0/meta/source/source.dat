@@ -1,0 +1,2693 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Cavalier API",
+    "version": "3.0.0",
+    "description": "API for searching stealer data with various filters and parameters.\n\n## Categories:\n- End User Protection: Search for individual compromises by email, username, IP, or stealer\n- Domain Intelligence: Search for domain-wide compromises and intelligence\n",
+    "contact": {
+      "email": "support@hudsonrock.com"
+    },
+    "x-jentic-source-url": "https://api.hudsonrock.com/openapi.json"
+  },
+  "servers": [
+    {
+      "url": "https://api.hudsonrock.com/json/v3",
+      "description": "Production server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "api-key"
+      }
+    },
+    "responses": {
+      "SearchResponse": {
+        "description": "Successful search",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SearchResponse"
+            }
+          }
+        }
+      },
+      "AssessmentResponse": {
+        "description": "Successful assessment",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentResponse"
+            }
+          }
+        }
+      },
+      "DiscoveryResponse": {
+        "description": "Successful discovery",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/DiscoveryResponse"
+            }
+          }
+        }
+      },
+      "KeywordResponse": {
+        "description": "Successful keyword search",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/KeywordResponse"
+            }
+          }
+        }
+      },
+      "KeywordUrlsResponse": {
+        "description": "Successful keyword URLs search",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/KeywordUrlsResponse"
+            }
+          }
+        }
+      },
+      "FileResponse": {
+        "description": "Successful file search",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/FileResponse"
+            }
+          }
+        }
+      },
+      "TermResponse": {
+        "description": "Successful term search",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/TermResponse"
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "Validation error - the request or request body was invalid",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized - the server could not authenticate the request",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Forbidden - the server authenticated the request but refuses to process it because of insufficient permissions",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Not found - the server could not find the requested resource",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "RequestTimeout": {
+        "description": "Timeout - the server timed out while waiting for a response (90 seconds)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "RateLimit": {
+        "description": "Rate limit exceeded - the server has received too many requests in a short period of time",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Internal server error - the server encountered an unexpected condition that prevented it from fulfilling the request",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Request error",
+            "description": "Indicates the type of error"
+          },
+          "message": {
+            "type": "string",
+            "example": "Insufficient permissions, please contact support at support@hudsonrock.com",
+            "description": "Error message"
+          }
+        }
+      },
+      "CommonParameters": {
+        "type": "object",
+        "properties": {
+          "sort_by": {
+            "type": "string",
+            "enum": [
+              "date_compromised",
+              "date_uploaded"
+            ],
+            "example": "date_compromised",
+            "default": "date_compromised",
+            "description": "Field to sort results by. 'date_compromised' sorts by when the infection occurred, while 'date_uploaded' sorts by when the data was integrated into our platform."
+          },
+          "sort_direction": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "example": "desc",
+            "default": "desc",
+            "description": "Direction to sort results. 'desc' returns newest records first (recommended for monitoring), while 'asc' returns oldest records first (useful for historical analysis)."
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "employees",
+                "users",
+                "third_parties"
+              ],
+              "example": "employees"
+            },
+            "description": "Filter results by credential type. 'employees' returns corporate email credentials (@company.com), 'users' returns consumer credentials, and 'third_parties' returns credentials from related domains (only available when 'domains' parameter is provided)."
+          },
+          "domains": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^(((?!-))(xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\\.)*",
+              "example": "hpe.com"
+            },
+            "default": [],
+            "description": "List of domains to filter results by. Accepts root domains (example.com) and will match all subdomains. Maximum 50 domains per request. Required for 'third_parties' type filtering."
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "auth",
+              "login"
+            ],
+            "description": "Filter results to URLs containing specified keywords. Useful for finding credentials for specific services (e.g., ['vpn', 'admin', 'portal']). Case-insensitive matching. Maximum 10 keywords per request."
+          },
+          "keywords_match": {
+            "type": "string",
+            "enum": [
+              "any",
+              "all"
+            ],
+            "default": "any",
+            "example": "any",
+            "description": "Determines how multiple keywords are matched. 'any' returns results matching at least one keyword (broader results), while 'all' requires all keywords to match (narrower, more specific results)."
+          },
+          "filter_credentials": {
+            "type": "boolean",
+            "default": true,
+            "example": true,
+            "description": "Controls credential filtering in results. When true, returns only credentials matching the search criteria. When false, returns all credentials from matching stealers, which may include credentials for unrelated domains/services."
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Base64 encoded pagination cursor for retrieving the next set of results. Obtained from the 'nextCursor' field in the previous response. Provides more reliable pagination than offset-based approaches."
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter results from this date/time onward. Applies to the field specified in 'sort_by'. Useful for incremental data retrieval and monitoring."
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter results up to this date/time. Applies to the field specified in 'sort_by'. Useful for historical analysis and limiting result timeframes."
+          },
+          "additional_fields": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "search_data",
+                "installed_software",
+                "employee_session_cookies",
+                "password_strength",
+                "sensitive_applications",
+                "dir_tree"
+              ]
+            },
+            "default": [],
+            "description": "Optional additional data to include in results. 'search_data' adds information about the search terms found in the browsing history search engine results from infected devices. 'installed_software' adds information about software installed on compromised machines, useful for vulnerability assessment and attack surface analysis. 'employee_session_cookies' adds session cookies from employee credentials, useful for identifying active sessions and potential unauthorized access. May increase response size and processing time. 'password_strength' adds password strength analysis for each password in the results. 'sensitive_applications' adds information about sensitive applications within the compromised URL structure, based on a predefined list of sensitive apps. 'dir_tree' adds information about the directory tree of the compromised machine, which can help identify potential attack vectors."
+          }
+        }
+      },
+      "SearchResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StealerData"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Cursor for the next page of results"
+          }
+        }
+      },
+      "StealerData": {
+        "type": "object",
+        "properties": {
+          "stealer": {
+            "type": "string"
+          },
+          "employeeAt": {
+            "type": "string"
+          },
+          "clientAt": {
+            "type": "string"
+          },
+          "date_compromised": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "date_uploaded": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stealer_family": {
+            "type": "string"
+          },
+          "ip": {
+            "type": "string"
+          },
+          "computer_name": {
+            "type": "string"
+          },
+          "operating_system": {
+            "type": "string"
+          },
+          "malware_path": {
+            "type": "string"
+          },
+          "credentials": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "domain": {
+                  "type": "string"
+                },
+                "username": {
+                  "type": "string"
+                },
+                "password": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "employee",
+                    "user",
+                    "third_party"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "AssessmentResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "employee_urls": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "url": {
+                        "type": "string"
+                      },
+                      "domain": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "example": "employee",
+                        "default": "employee"
+                      },
+                      "last_uploaded_date": {
+                        "type": "string"
+                      },
+                      "occurrence": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                },
+                "third_party_urls": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "url": {
+                        "type": "string"
+                      },
+                      "domain": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "example": "third_party",
+                        "default": "third_party"
+                      },
+                      "last_uploaded_date": {
+                        "type": "string"
+                      },
+                      "occurrence": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                },
+                "user_urls": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "url": {
+                        "type": "string"
+                      },
+                      "domain": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "example": "user",
+                        "default": "user"
+                      },
+                      "last_uploaded_date": {
+                        "type": "string"
+                      },
+                      "occurrence": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "DiscoveryData": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "employee",
+              "user"
+            ]
+          },
+          "last_uploaded_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "occurrence": {
+            "type": "integer"
+          }
+        }
+      },
+      "DiscoveryResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiscoveryData"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Cursor for the next page of results"
+          }
+        }
+      },
+      "KeywordResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KeywordData"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Cursor for the next page of results"
+          }
+        }
+      },
+      "KeywordUrlsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KeywordUrlsData"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Cursor for the next page of results"
+          }
+        }
+      },
+      "KeywordUrlsData": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string"
+          },
+          "urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "occurrence": {
+            "type": "integer"
+          }
+        }
+      },
+      "KeywordData": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "keyword": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "compromised_employees": {
+            "type": "integer"
+          },
+          "compromised_users": {
+            "type": "integer"
+          },
+          "last_employee_compromised": {
+            "type": "string"
+          },
+          "last_user_compromised": {
+            "type": "string"
+          },
+          "last_employee_uploaded": {
+            "type": "string"
+          },
+          "last_user_uploaded": {
+            "type": "string"
+          }
+        }
+      },
+      "FileResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileData"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Cursor for the next page of results"
+          }
+        }
+      },
+      "FileData": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "stealer": {
+            "type": "string"
+          },
+          "ip": {
+            "type": "string"
+          },
+          "date_compromised": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "date_uploaded": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "matching_paths": {
+            "type": "array"
+          },
+          "matching_items": {
+            "type": "array"
+          }
+        }
+      },
+      "TermResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TermData"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Cursor for the next page of results"
+          }
+        }
+      },
+      "TermData": {
+        "type": "object",
+        "properties": {
+          "search_query": {
+            "type": "string"
+          },
+          "search_engine": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account Management",
+      "description": "Endpoints for managing user account information",
+      "x-displayName": "Account Management"
+    },
+    {
+      "name": "End User Protection",
+      "description": "Endpoints for searching and monitoring end user compromises",
+      "x-displayName": "End User Protection"
+    },
+    {
+      "name": "Domain Intelligence",
+      "description": "Endpoints for domain-wide intelligence and monitoring",
+      "x-displayName": "Domain Intelligence"
+    },
+    {
+      "name": "Investigations",
+      "description": "Endpoints for investigating compromised computers",
+      "x-displayName": "Investigations"
+    }
+  ],
+  "x-tagGroups": [
+    {
+      "name": "Account Management",
+      "tags": [
+        "Account Management"
+      ]
+    },
+    {
+      "name": "End User Protection",
+      "tags": [
+        "End User Protection"
+      ]
+    },
+    {
+      "name": "Domain Intelligence",
+      "tags": [
+        "Domain Intelligence"
+      ]
+    },
+    {
+      "name": "Investigations",
+      "tags": [
+        "Investigations"
+      ]
+    }
+  ],
+  "paths": {
+    "/search-by-login/emails": {
+      "post": {
+        "tags": [
+          "End User Protection"
+        ],
+        "summary": "Search by Emails",
+        "description": "Search for compromised credentials by email addresses",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "logins"
+                    ],
+                    "properties": {
+                      "logins": {
+                        "description": "Array of email addresses to search for.",
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "example": "bla@gmail.com",
+                          "description": "Email address to search for.",
+                          "pattern": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+                        },
+                        "minItems": 1,
+                        "maxItems": 50,
+                        "example": [
+                          "bla@gmail.com"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "$ref": "#/components/schemas/CommonParameters"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SearchResponse"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/search-by-login/usernames": {
+      "post": {
+        "tags": [
+          "End User Protection"
+        ],
+        "summary": "Search by Usernames",
+        "description": "Search for compromised credentials by usernames",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "logins"
+                    ],
+                    "properties": {
+                      "logins": {
+                        "description": "Array of usernames to search for.",
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "description": "Username to search for.",
+                          "example": "ninja"
+                        },
+                        "minItems": 1,
+                        "maxItems": 50,
+                        "example": [
+                          "ninja"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "$ref": "#/components/schemas/CommonParameters"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SearchResponse"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/search-by-ip": {
+      "post": {
+        "tags": [
+          "End User Protection"
+        ],
+        "summary": "Search by IP/CIDR",
+        "description": "Search for compromises by IP address or CIDR range",
+        "operationId": "searchByIp",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "oneOf": [
+                      {
+                        "title": "IP Addresses",
+                        "required": [
+                          "ips"
+                        ],
+                        "properties": {
+                          "ips": {
+                            "description": "Array of IP addresses to search for (IPv4 or IPv6).",
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$|^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$"
+                            },
+                            "minItems": 1,
+                            "maxItems": 50,
+                            "example": [
+                              "186.18.216.186",
+                              "0400:1a00:b090:1c47:4e2:3b62:8e86:ecf6"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "title": "CIDR Range",
+                        "required": [
+                          "cidr"
+                        ],
+                        "properties": {
+                          "cidr": {
+                            "type": "string",
+                            "description": "CIDR range to search for.",
+                            "pattern": "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}/(?:2[1-9]|3[0-2])$",
+                            "example": "45.166.26.62/28"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "$ref": "#/components/schemas/CommonParameters"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SearchResponse"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/search-by-stealer": {
+      "post": {
+        "tags": [
+          "End User Protection"
+        ],
+        "summary": "Search by Stealer",
+        "description": "Search for compromises by stealer ID",
+        "operationId": "searchByStealer",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "stealers"
+                    ],
+                    "properties": {
+                      "stealers": {
+                        "type": "array",
+                        "description": "Array of stealer IDs to search for.",
+                        "items": {
+                          "type": "string",
+                          "description": "Stealer ID to search for.",
+                          "example": "EG_196.158.196.83"
+                        },
+                        "minItems": 1,
+                        "maxItems": 50,
+                        "example": [
+                          "EG_196.158.196.83"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "$ref": "#/components/schemas/CommonParameters"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SearchResponse"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/search-by-pc": {
+      "post": {
+        "tags": [
+          "End User Protection"
+        ],
+        "summary": "Search by PC Name",
+        "description": "Search for compromises by computer name",
+        "operationId": "searchByPc",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "pcs"
+                    ],
+                    "properties": {
+                      "pcs": {
+                        "type": "array",
+                        "description": "Array of computer names to search for.",
+                        "items": {
+                          "type": "string",
+                          "description": "Computer name to search for.",
+                          "example": "ADMIN"
+                        },
+                        "minItems": 1,
+                        "maxItems": 50,
+                        "example": [
+                          "ADMIN"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "$ref": "#/components/schemas/CommonParameters"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SearchResponse"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/search-by-stealer/infection-analysis": {
+      "post": {
+        "tags": [
+          "Investigations"
+        ],
+        "summary": "Infection Analysis (NEW)",
+        "description": "Get infection analysis for a stealer. This endpoint analyzes browser history to identify the likely infection source and infection flow. Currently only supported for stealers where we collect and store browsing history (mainly Lumma).",
+        "operationId": "getInfectionAnalysis",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "stealer": {
+                    "type": "string",
+                    "description": "Stealer ID to get infection analysis for. Currently only supports stealers where we collect browsing history (mainly Lumma stealer)",
+                    "example": "[IN]175.101.37.65"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "likely_infection_url": {
+                          "type": "string",
+                          "description": "URL identified as the most likely infection source",
+                          "example": "https://www.mediafire.com/file_premium/psx65h6kf34z9lr/Adobe.Premiere.Pro.2025.v28.3.1.rar/file"
+                        },
+                        "infection_confidence": {
+                          "type": "number",
+                          "format": "float",
+                          "description": "Confidence score for the infection analysis (0-1)",
+                          "example": 0.95
+                        },
+                        "infection_reasoning": {
+                          "type": "string",
+                          "description": "Explanation of why the URL was identified as the infection source",
+                          "example": "The URL is related to downloading movies and matches a pattern often associated with distributing pirated content, which is known for bundling malware."
+                        },
+                        "infection_flow": {
+                          "type": "array",
+                          "description": "Chronological sequence of URLs visited that led to the infection",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "timestamp": {
+                                "type": "string",
+                                "format": "date-time",
+                                "description": "Timestamp of the infection event"
+                              },
+                              "url": {
+                                "type": "string",
+                                "description": "URL visited during the infection flow"
+                              },
+                              "notes": {
+                                "type": "string",
+                                "description": "Analysis notes about this specific URL in the infection chain"
+                              }
+                            }
+                          }
+                        },
+                        "analyst_summary": {
+                          "type": "string",
+                          "description": "Concise summary of the infection analysis",
+                          "example": "The user likely got infected by visiting 'vegamovies.af', a known site for pirated movie downloads."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/search-by-domain": {
+      "post": {
+        "tags": [
+          "Domain Intelligence"
+        ],
+        "summary": "Search by Domains",
+        "description": "Search for domain-wide compromises and intelligence",
+        "operationId": "searchByDomain",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "title": "Domains",
+                    "description": "Search for domain-wide compromises and intelligence",
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "domains"
+                        ],
+                        "properties": {
+                          "domains": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^(((?!-))(xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\\.)*",
+                              "example": "hpe.com"
+                            },
+                            "minItems": 1,
+                            "maxItems": 50,
+                            "example": [
+                              "hpe.com"
+                            ]
+                          },
+                          "subdomains": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "example": "auth"
+                            },
+                            "maxItems": 5,
+                            "description": "\ud83d\udd0d Subdomain filters to match against subdomains in the URL field. Maximum 5 items allowed. \u26a0\ufe0f Cannot be used together with 'keywords' or 'keywords_match' parameters - these are mutually exclusive filtering options."
+                          }
+                        }
+                      },
+                      {
+                        "$ref": "#/components/schemas/CommonParameters"
+                      }
+                    ]
+                  },
+                  {
+                    "title": "External Domains (for users with whitelisted domains)",
+                    "description": "Search for domains outside of your whitelisted domains",
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "external_domains"
+                        ],
+                        "properties": {
+                          "external_domains": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^(((?!-))(xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\\.)*",
+                              "example": "hpe.salesforce.com"
+                            },
+                            "minItems": 1,
+                            "maxItems": 50,
+                            "example": [
+                              "hpe.salesforce.com"
+                            ],
+                            "description": "List of third-party domains associated with your organization to search for. Ideal for SaaS platforms (company.salesforce.com), cloud services, or other external services your organization uses. Limited to 50 domains per request for performance reasons."
+                          },
+                          "sort_by": {
+                            "type": "string",
+                            "enum": [
+                              "date_compromised",
+                              "date_uploaded"
+                            ],
+                            "example": "date_compromised",
+                            "default": "date_compromised",
+                            "description": "Field to sort external domain results by. 'date_compromised' sorts by when the infection occurred (best for threat timeline analysis), while 'date_uploaded' sorts by when the data was integrated into our platform (best for monitoring new additions)."
+                          },
+                          "sort_direction": {
+                            "type": "string",
+                            "enum": [
+                              "asc",
+                              "desc"
+                            ],
+                            "example": "desc",
+                            "default": "desc",
+                            "description": "Direction to sort external domain results. 'desc' returns newest records first (recommended for monitoring third-party risks), while 'asc' returns oldest records first (useful for establishing breach timelines)."
+                          },
+                          "filter_credentials": {
+                            "type": "boolean",
+                            "default": true,
+                            "example": true,
+                            "description": "Controls credential filtering for external domains. When true, returns only credentials matching the external domains. When false, returns all credentials from matching stealers, which may reveal additional third-party relationships and shadow IT usage."
+                          },
+                          "cursor": {
+                            "type": "string",
+                            "description": "Base64 encoded pagination cursor for retrieving the next set of external domain results. Obtained from the 'nextCursor' field in the previous response. Essential for processing results from popular SaaS platforms with many compromises."
+                          },
+                          "start_date": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter external domain results from this date/time onward. Applies to the field specified in 'sort_by'. Useful for monitoring third-party risks since a specific date."
+                          },
+                          "end_date": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter external domain results up to this date/time. Applies to the field specified in 'sort_by'. Useful for analyzing historical third-party exposures within specific timeframes."
+                          },
+                          "additional_fields": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "search_data",
+                                "installed_software",
+                                "employee_session_cookies",
+                                "password_strength",
+                                "sensitive_applications",
+                                "dir_tree"
+                              ]
+                            },
+                            "default": [],
+                            "description": "Optional additional data to include in external domain results. 'search_data' adds information about the search terms found in the browsing history search engine results from infected devices. 'installed_software' adds information about software installed on compromised machines, which can help identify vulnerable third-party applications and potential attack vectors. 'employee_session_cookies' adds session cookies from employee credentials, which can help identify active sessions and potential unauthorized access. 'password_strength' adds password strength analysis for each password in the results. 'sensitive_applications' adds information about sensitive applications within the compromised URL structure, based on a predefined list of sensitive apps. 'dir_tree' adds information about the directory tree of the compromised machine, which can help identify potential attack vectors."
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SearchResponse"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/search-by-company": {
+      "post": {
+        "tags": [
+          "Domain Intelligence"
+        ],
+        "summary": "Search by Company",
+        "description": "Search for compromises within a specific company's digital assets (domains, APKs, and external domains)",
+        "operationId": "searchByCompany",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "company_id"
+                    ],
+                    "properties": {
+                      "company_id": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{24}$",
+                        "description": "MongoDB ObjectId of the company to search within",
+                        "example": "695cebd77ef1529e2862efea"
+                      },
+                      "company_asset_types": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "domains",
+                            "apks",
+                            "external_domains"
+                          ]
+                        },
+                        "minItems": 1,
+                        "description": "\ud83c\udfaf **Asset Type Filter**: Specify which types of company assets to search. If not provided, searches ALL company assets (domains + apks + external_domains). **\u26a0\ufe0f Important**: When searching all assets (default), the 'types' parameter cannot be used due to external_domains having different search logic.",
+                        "example": [
+                          "domains",
+                          "apks"
+                        ]
+                      },
+                      "subdomains": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "maxItems": 5,
+                        "description": "Filter by specific subdomains within company domains",
+                        "example": [
+                          "auth",
+                          "admin"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "$ref": "#/components/schemas/CommonParameters"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SearchResponse"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/search-by-domain/overview": {
+      "post": {
+        "tags": [
+          "Domain Intelligence"
+        ],
+        "summary": "Domains Overview",
+        "description": "Get overview about domain-wide compromises and intelligence",
+        "operationId": "getDomainOverview",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "domains": {
+                    "description": "List of domains to retrieve compromise overview statistics for. Accepts root domains (example.com) and will aggregate data across all subdomains. Between 1-500 domains can be specified per request.",
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^(((?!-))(xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\\.)*"
+                    },
+                    "minItems": 1,
+                    "maxItems": 500,
+                    "example": [
+                      "hpe.com"
+                    ]
+                  },
+                  "min_employees_compromised": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 10,
+                    "description": "Minimum threshold for employee compromises. Returns only domains with at least this many compromised employee accounts. Useful for filtering out domains with negligible compromise counts."
+                  },
+                  "max_employees_compromised": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 100,
+                    "description": "Maximum threshold for employee compromises. Returns only domains with no more than this many compromised employee accounts. Useful for focusing on organizations within specific size ranges."
+                  },
+                  "min_users_compromised": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 5,
+                    "description": "Minimum threshold for user compromises. Returns only domains with at least this many compromised user accounts. Helps identify domains with significant consumer impact."
+                  },
+                  "max_users_compromised": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 50,
+                    "description": "Maximum threshold for user compromises. Returns only domains with no more than this many compromised user accounts. Helps focus on domains with specific consumer impact ranges."
+                  },
+                  "last_employee_compromised": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter for domains with employee compromises after this date. Identifies domains with recent corporate breaches."
+                  },
+                  "last_user_compromised": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter for domains with user compromises after this date. Identifies domains with recent consumer-facing breaches."
+                  },
+                  "last_employee_uploaded": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter for domains with employee data uploaded after this date. Reflects when the data became available in our system."
+                  },
+                  "last_user_uploaded": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter for domains with user data uploaded after this date. Reflects when the data became available in our system."
+                  },
+                  "sort_by": {
+                    "type": "string",
+                    "enum": [
+                      "last_employee_compromised",
+                      "last_user_compromised",
+                      "last_employee_uploaded",
+                      "last_user_uploaded",
+                      "compromised_employees",
+                      "compromised_users"
+                    ],
+                    "default": "last_employee_compromised",
+                    "description": "Field to sort overview results by. Time-based sorting helps identify recent breaches, while count-based sorting identifies the most severely affected domains."
+                  },
+                  "sort_direction": {
+                    "type": "string",
+                    "enum": [
+                      "asc",
+                      "desc"
+                    ],
+                    "default": "desc",
+                    "description": "Direction to sort overview results. 'desc' prioritizes recent breaches or highest compromise counts (recommended for threat monitoring), while 'asc' shows oldest breaches or lowest counts first."
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "description": "Base64 encoded pagination cursor for retrieving the next set of overview results. Obtained from the 'nextCursor' field in the previous response. Essential for processing large domain lists."
+                  }
+                },
+                "required": [
+                  "domains"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "string",
+                            "description": "Unique identifier for the domain"
+                          },
+                          "domain": {
+                            "type": "string",
+                            "description": "Domain"
+                          },
+                          "compromised_employees": {
+                            "type": "number",
+                            "description": "Number of compromised employees",
+                            "example": 25
+                          },
+                          "compromised_users": {
+                            "type": "number",
+                            "description": "Number of compromised users",
+                            "example": 120
+                          },
+                          "last_employee_compromised": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Last employee compromised date"
+                          },
+                          "last_user_compromised": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Last user compromised date"
+                          },
+                          "last_employee_uploaded": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Last employee uploaded date"
+                          },
+                          "last_user_uploaded": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Last user uploaded date"
+                          },
+                          "sensitive_applications": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Identifies sensitive applications within the compromised URL structure, based on a predefined list of sensitive apps."
+                          }
+                        }
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "description": "Base64 encoded cursor for the next page"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/search-by-domain/discovery": {
+      "post": {
+        "tags": [
+          "Domain Intelligence"
+        ],
+        "summary": "Assets Discovery",
+        "description": "Perform a discovery search to identify potential compromises.",
+        "operationId": "discovery",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "domains": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^(((?!-))(xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\\.)*"
+                    },
+                    "minItems": 1,
+                    "maxItems": 500,
+                    "example": [
+                      "hpe.com"
+                    ],
+                    "description": "List of domains to perform discovery on. Accepts root domains (example.com) and will match all subdomains. Between 1-500 domains can be specified per request. For large organizations, consider batching domains across multiple requests."
+                  },
+                  "types": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "employees",
+                        "users"
+                      ]
+                    },
+                    "default": [
+                      "employees",
+                      "users"
+                    ],
+                    "description": "Types of compromises to discover. 'employees' finds corporate email credentials (@company.com), while 'users' finds consumer credentials. Default includes both types for comprehensive discovery."
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "description": "Base64 encoded pagination cursor for retrieving the next set of results. Obtained from the 'nextCursor' field in the previous response. Essential for processing large discovery results that span multiple pages."
+                  },
+                  "keywords": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Optional keywords to narrow discovery results to specific services or applications. Examples include ['vpn', 'admin', 'portal'] for critical infrastructure or ['salesforce', 'workday', 'office365'] for SaaS applications."
+                  },
+                  "keywords_match": {
+                    "type": "string",
+                    "enum": [
+                      "any",
+                      "all"
+                    ],
+                    "example": "any",
+                    "description": "Determines how multiple keywords are matched during discovery. 'any' returns results matching at least one keyword (broader discovery), while 'all' requires all keywords to match (targeted discovery for specific services)."
+                  }
+                },
+                "required": [
+                  "domains"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/DiscoveryResponse"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/search-by-domain/assessment": {
+      "post": {
+        "tags": [
+          "Domain Intelligence"
+        ],
+        "summary": "Third Party Risk Assessment",
+        "description": "Perform an assessment search to evaluate potential risks.",
+        "operationId": "assessment",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "domain": {
+                    "type": "string",
+                    "description": "Domain to search for",
+                    "pattern": "^(((?!-))(xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\\.)*"
+                  }
+                },
+                "required": [
+                  "domain"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AssessmentResponse"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/search-by-password": {
+      "post": {
+        "tags": [
+          "Password Search"
+        ],
+        "summary": "Search by Password",
+        "description": "Search for credentials based on passwords.",
+        "operationId": "searchByPassword",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "passwords": {
+                        "description": "List of passwords to search for",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "minItems": 1,
+                        "maxItems": 50,
+                        "example": [
+                          "password123",
+                          "qwerty"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "passwords"
+                    ]
+                  },
+                  {
+                    "$ref": "#/components/schemas/CommonParameters"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SearchResponse"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/search-by-keyword": {
+      "post": {
+        "tags": [
+          "Keyword Search"
+        ],
+        "summary": "Search by Keyword",
+        "description": "Search for domains based on keywords.",
+        "operationId": "searchByKeyword",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "keywords": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "example": "webmail"
+                    },
+                    "minItems": 1,
+                    "maxItems": 10,
+                    "example": [
+                      "webmail"
+                    ],
+                    "description": "List of keywords to search for in URLs and domains. Useful for discovering compromises related to specific services (e.g., ['vpn', 'admin', 'portal']). Case-insensitive matching. Between 1-10 keywords required per request."
+                  },
+                  "min_employees_compromised": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 10,
+                    "description": "Minimum number of compromised employees required for results. Useful for filtering out domains with low compromise counts and focusing on significant breaches. Set to 0 to include all results regardless of count."
+                  },
+                  "max_employees_compromised": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 100,
+                    "description": "Maximum number of compromised employees for results. Useful for excluding extremely large breaches or focusing on organizations of specific sizes. Set to 0 to remove upper limit."
+                  },
+                  "min_users_compromised": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 5,
+                    "description": "Minimum number of compromised users (non-employees) required for results. Helps identify services with significant user impact. Set to 0 to include all results regardless of count."
+                  },
+                  "max_users_compromised": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 50,
+                    "description": "Maximum number of compromised users (non-employees) for results. Helps focus on services with specific user impact ranges. Set to 0 to remove upper limit."
+                  },
+                  "last_employee_compromised": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter for domains with employee compromises after this date. Useful for monitoring recent corporate breaches and active campaigns."
+                  },
+                  "last_user_compromised": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter for domains with user compromises after this date. Useful for monitoring recent consumer-facing breaches and active campaigns."
+                  },
+                  "last_employee_uploaded": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter for domains with employee data uploaded after this date. Reflects when the data became available in our system rather than infection time."
+                  },
+                  "last_user_uploaded": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter for domains with user data uploaded after this date. Reflects when the data became available in our system rather than infection time."
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "description": "Base64 encoded pagination cursor for retrieving the next set of results. Obtained from the 'nextCursor' field in the previous response. Enables efficient pagination through large result sets without data loss."
+                  }
+                },
+                "required": [
+                  "keywords"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/KeywordResponse"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/search-by-keyword/urls": {
+      "post": {
+        "tags": [
+          "Keyword Search"
+        ],
+        "summary": "URLs by Keyword",
+        "description": "Search for URLs based on keywords.",
+        "operationId": "searchByKeywordUrls",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "keyword": {
+                    "type": "string",
+                    "example": "rdweb",
+                    "description": "Keyword to search for in URLs. Case-insensitive. Examples include 'rdweb', 'citrix', 'webmail', etc."
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "description": "Base64 encoded pagination cursor for retrieving the next set of results. Obtained from the 'nextCursor' field in the previous response. Enables efficient pagination through large result sets without data loss."
+                  },
+                  "sort_direction": {
+                    "type": "string",
+                    "default": "desc",
+                    "enum": [
+                      "asc",
+                      "desc"
+                    ],
+                    "description": "Direction to sort results. 'desc' returns newest file exposures first (recommended for threat monitoring), while 'asc' returns oldest exposures first (useful for forensic analysis and incident timelines)."
+                  }
+                },
+                "required": [
+                  "keyword"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/KeywordUrlsResponse"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/search-by-file": {
+      "post": {
+        "tags": [
+          "Investigations"
+        ],
+        "summary": "Search by File",
+        "description": "Search for credentials based on file names.",
+        "operationId": "searchByFile",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file_name": {
+                    "type": "string",
+                    "example": "aws key",
+                    "description": "Name or partial name of files to search for. Supports both exact matches and partial matches. Case-insensitive. Examples include configuration files ('config.json'), credential files ('credentials.yml'), or key files ('id_rsa')."
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "description": "Base64 encoded pagination cursor for retrieving the next set of results. Obtained from the 'nextCursor' field in the previous response. Enables efficient pagination through large result sets without skipping or duplicating records."
+                  },
+                  "start_date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2023-01-01T00:00:00Z",
+                    "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter results from this date/time onward. Applies to the field specified in 'sort_by'. Useful for monitoring new file exposures since a specific date."
+                  },
+                  "end_date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2023-12-31T23:59:59Z",
+                    "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter results up to this date/time. Applies to the field specified in 'sort_by'. Useful for analyzing historical file exposures within a specific timeframe."
+                  },
+                  "sort_by": {
+                    "type": "string",
+                    "description": "Field to sort results by. 'date_compromised' sorts by when the file was captured during infection, while 'date_uploaded' sorts by when the file data was integrated into our platform.",
+                    "example": "date_compromised",
+                    "enum": [
+                      "date_compromised",
+                      "date_uploaded"
+                    ]
+                  },
+                  "sort_direction": {
+                    "type": "string",
+                    "enum": [
+                      "asc",
+                      "desc"
+                    ],
+                    "default": "desc",
+                    "description": "Direction to sort results. 'desc' returns newest file exposures first (recommended for threat monitoring), while 'asc' returns oldest exposures first (useful for forensic analysis and incident timelines).",
+                    "example": "desc"
+                  }
+                },
+                "required": [
+                  "file_name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/FileResponse"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/search-by-term": {
+      "post": {
+        "tags": [
+          "Investigations"
+        ],
+        "summary": "Search by Term",
+        "description": "Search for terms found in browsing history search engine results from infected devices.",
+        "operationId": "searchByTerm",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "search_terms": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "example": "how to hack"
+                    },
+                    "minItems": 1,
+                    "maxItems": 10,
+                    "example": [
+                      "how to hack"
+                    ],
+                    "description": "List of terms to search for in the browsing history. Between 1-10 terms required per request."
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "description": "Base64 encoded pagination cursor for retrieving the next set of results. Obtained from the 'nextCursor' field in the previous response. Enables efficient pagination through large result sets without data loss."
+                  },
+                  "start_date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2023-01-01T00:00:00Z",
+                    "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter results from this date/time onward. Applies to the field specified in 'sort_by'. Useful for monitoring new file exposures since a specific date."
+                  },
+                  "end_date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2023-12-31T23:59:59Z",
+                    "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter results up to this date/time. Applies to the field specified in 'sort_by'. Useful for analyzing historical file exposures within a specific timeframe."
+                  },
+                  "sort_by": {
+                    "type": "string",
+                    "description": "Field to sort results by. 'date_compromised' sorts by when the file was captured during infection, while 'date_uploaded' sorts by when the file data was integrated into our platform.",
+                    "example": "date_compromised",
+                    "enum": [
+                      "date_compromised",
+                      "date_uploaded"
+                    ]
+                  },
+                  "sort_direction": {
+                    "type": "string",
+                    "enum": [
+                      "asc",
+                      "desc"
+                    ],
+                    "default": "desc",
+                    "description": "Direction to sort results. 'desc' returns newest file exposures first (recommended for threat monitoring), while 'asc' returns oldest exposures first (useful for forensic analysis and incident timelines).",
+                    "example": "desc"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/TermResponse"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/advanced-search": {
+      "post": {
+        "tags": [
+          "Advanced Search"
+        ],
+        "summary": "Advanced Search",
+        "description": "Perform an advanced search to identify potential compromises with multiple filters (domains, employees, users, last compromised, last uploaded, company size, industry, country).",
+        "operationId": "advancedSearch",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "domains": {
+                    "description": "List of domains to search for. Accepts root domains (example.com) and will aggregate data across all subdomains. Between 1-500 domains can be specified per request.",
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^(((?!-))(xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\\.)*"
+                    },
+                    "minItems": 1,
+                    "maxItems": 500,
+                    "example": [
+                      "hpe.com"
+                    ]
+                  },
+                  "min_employees_compromised": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 10,
+                    "description": "Minimum threshold for employee compromises. Returns only domains with at least this many compromised employee accounts. Useful for filtering out domains with negligible compromise counts."
+                  },
+                  "max_employees_compromised": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 100,
+                    "description": "Maximum threshold for employee compromises. Returns only domains with no more than this many compromised employee accounts. Useful for focusing on organizations within specific size ranges."
+                  },
+                  "min_users_compromised": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 5,
+                    "description": "Minimum threshold for user compromises. Returns only domains with at least this many compromised user accounts. Helps identify domains with significant consumer impact."
+                  },
+                  "max_users_compromised": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 50,
+                    "description": "Maximum threshold for user compromises. Returns only domains with no more than this many compromised user accounts. Helps focus on domains with specific consumer impact ranges."
+                  },
+                  "last_employee_compromised": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter for domains with employee compromises after this date. Identifies domains with recent corporate breaches."
+                  },
+                  "last_user_compromised": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter for domains with user compromises after this date. Identifies domains with recent consumer-facing breaches."
+                  },
+                  "last_employee_uploaded": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter for domains with employee data uploaded after this date. Reflects when the data became available in our system."
+                  },
+                  "last_user_uploaded": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "ISO 8601 formatted timestamp (YYYY-MM-DDThh:mm:ssZ) to filter for domains with user data uploaded after this date. Reflects when the data became available in our system."
+                  },
+                  "company_sizes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "List of company sizes to filter for. Accepts 1-10, 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5001-10000, 10001+."
+                  },
+                  "industries": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "List of industries to filter for. Accepts 147 industries - list can be found at https://api.hudsonrock.com/company-filters.json"
+                  },
+                  "countries": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "List of countries to filter for. Accepts 247 countries - list can be found at https://api.hudsonrock.com/company-filters.json"
+                  },
+                  "usa_regions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "List of USA regions to filter for. Accepts 57 regions - list can be found at https://api.hudsonrock.com/company-filters.json"
+                  },
+                  "sort_by": {
+                    "type": "string",
+                    "enum": [
+                      "last_employee_compromised",
+                      "last_user_compromised",
+                      "last_employee_uploaded",
+                      "last_user_uploaded",
+                      "compromised_employees",
+                      "compromised_users"
+                    ],
+                    "default": "last_employee_compromised",
+                    "description": "Field to sort overview results by. Time-based sorting helps identify recent breaches, while count-based sorting identifies the most severely affected domains."
+                  },
+                  "sort_direction": {
+                    "type": "string",
+                    "enum": [
+                      "asc",
+                      "desc"
+                    ],
+                    "default": "desc",
+                    "description": "Direction to sort overview results. 'desc' prioritizes recent breaches or highest compromise counts (recommended for threat monitoring), while 'asc' shows oldest breaches or lowest counts first."
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "description": "Base64 encoded pagination cursor for retrieving the next set of overview results. Obtained from the 'nextCursor' field in the previous response. Essential for processing large domain lists."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "string",
+                            "description": "Unique identifier for the domain"
+                          },
+                          "domain": {
+                            "type": "string",
+                            "description": "Domain"
+                          },
+                          "compromised_employees": {
+                            "type": "number",
+                            "description": "Number of compromised employees",
+                            "example": 25
+                          },
+                          "compromised_users": {
+                            "type": "number",
+                            "description": "Number of compromised users",
+                            "example": 120
+                          },
+                          "last_employee_compromised": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Last employee compromised date"
+                          },
+                          "last_user_compromised": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Last user compromised date"
+                          },
+                          "last_employee_uploaded": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Last employee uploaded date"
+                          },
+                          "last_user_uploaded": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Last user uploaded date"
+                          },
+                          "company_size": {
+                            "type": "string",
+                            "description": "Company size"
+                          },
+                          "industry": {
+                            "type": "string",
+                            "description": "Industry"
+                          },
+                          "country": {
+                            "type": "string",
+                            "description": "Country"
+                          },
+                          "sensitive_applications": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Identifies sensitive applications within the compromised URL structure, based on a predefined list of sensitive apps."
+                          }
+                        }
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "description": "Base64 encoded cursor for the next page"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/my-account": {
+      "get": {
+        "tags": [
+          "Account Management"
+        ],
+        "summary": "Get Account Information",
+        "description": "Retrieve current user's account information based on API key authentication",
+        "operationId": "getMyAccount",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "User's full name",
+                      "example": "John Doe"
+                    },
+                    "email": {
+                      "type": "string",
+                      "format": "email",
+                      "description": "User's email address",
+                      "example": "john.doe@company.com"
+                    },
+                    "companies": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "List of companies (only present if user has companies configured)"
+                    },
+                    "domains": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "List of domains (only present if user doesn't have companies)"
+                    },
+                    "external_domains": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "List of external domains (only present if user doesn't have companies)"
+                    },
+                    "apps": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "List of apps (only present if user doesn't have companies)"
+                    },
+                    "alert_emails": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "email"
+                      },
+                      "description": "List of email addresses for alerts"
+                    },
+                    "date_created": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "Account creation date"
+                    },
+                    "permissions": {
+                      "type": "object",
+                      "description": "User's API permissions organized by category",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "label": {
+                              "type": "string",
+                              "example": "Data Access Permissions"
+                            },
+                            "permissions": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  },
+                                  "description": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "search": {
+                          "type": "object",
+                          "properties": {
+                            "label": {
+                              "type": "string",
+                              "example": "Search Endpoint Permissions"
+                            },
+                            "permissions": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  },
+                                  "description": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "visibility": {
+                          "type": "object",
+                          "properties": {
+                            "label": {
+                              "type": "string",
+                              "example": "Field Visibility Permissions"
+                            },
+                            "permissions": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Array of field names the user can access"
+                            }
+                          }
+                        },
+                        "filtering": {
+                          "type": "object",
+                          "properties": {
+                            "label": {
+                              "type": "string",
+                              "example": "Filtering & Scope Controls"
+                            },
+                            "permissions": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  },
+                                  "description": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "email",
+                    "alert_emails",
+                    "date_created"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    }
+  }
+}
