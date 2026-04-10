@@ -1,0 +1,1095 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "EasyCron API",
+    "version": "1.0",
+    "description": "EasyCron REST API for managing cron jobs. Note: This API is deprecated; migration to EasyCron API v1 is recommended.",
+    "x-jentic-source-url": "https://www.easycron.com/rest"
+  },
+  "servers": [
+    {
+      "url": "https://www.easycron.com/rest"
+    }
+  ],
+  "paths": {
+    "/list": {
+      "get": {
+        "operationId": "listCronJobs",
+        "summary": "List all cron jobs",
+        "tags": [
+          "Cron Jobs"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Token"
+          },
+          {
+            "name": "group_id",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Group ID to filter cron jobs. 0 means ungrouped jobs."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number for pagination"
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "Max number of cron jobs per page"
+          },
+          {
+            "name": "sortby",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cronId",
+                "name",
+                "url",
+                "epdsOccupied",
+                "totalSuccesses",
+                "totalFailures",
+                "failedTime"
+              ],
+              "default": "cronId"
+            },
+            "description": "Sort attribute"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "desc",
+                "asc"
+              ],
+              "default": "desc"
+            },
+            "description": "Sort direction"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of cron jobs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "cron_jobs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CronJob"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid API token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/add": {
+      "get": {
+        "operationId": "addCronJob",
+        "summary": "Create a new cron job",
+        "tags": [
+          "Cron Jobs"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Token"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            },
+            "description": "Cron job destination URL"
+          },
+          {
+            "name": "cron_expression",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Cron schedule expression"
+          },
+          {
+            "name": "cron_job_name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "Job name"
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            },
+            "description": "Job description"
+          },
+          {
+            "name": "timezone_from",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                1,
+                2
+              ],
+              "default": 1
+            },
+            "description": "1=account timezone, 2=job-specific timezone"
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "IANA timezone (required if timezone_from=2)"
+          },
+          {
+            "name": "auth_user",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "HTTP basic auth username"
+          },
+          {
+            "name": "auth_pw",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "HTTP basic auth password"
+          },
+          {
+            "name": "custom_timeout",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "description": "Max execution time in seconds"
+          },
+          {
+            "name": "http_method",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "GET",
+                "POST",
+                "PUT",
+                "PATCH",
+                "DELETE",
+                "HEAD",
+                "CONNECT",
+                "OPTIONS",
+                "TRACE"
+              ],
+              "default": "GET"
+            },
+            "description": "HTTP method for the cron job request"
+          },
+          {
+            "name": "http_headers",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Custom HTTP headers"
+          },
+          {
+            "name": "http_message_body",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            },
+            "description": "Request body for POST/PUT/PATCH"
+          },
+          {
+            "name": "criterion",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                1,
+                2,
+                3
+              ],
+              "default": 1
+            },
+            "description": "Success criteria: 1=HTTP 2xx, 2=regex match, 3=failure regex"
+          },
+          {
+            "name": "success_regexp",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            },
+            "description": "Success regex for criterion=2"
+          },
+          {
+            "name": "failure_regexp",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            },
+            "description": "Failure regex for criterion=3"
+          },
+          {
+            "name": "email_me",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ],
+              "default": 0
+            },
+            "description": "Email notifications: 0=disabled, 1=on failure"
+          },
+          {
+            "name": "sensitivity",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5,
+              "default": 1
+            },
+            "description": "Failure threshold before alerting"
+          },
+          {
+            "name": "group_id",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "description": "Group assignment (0=no group)"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ],
+              "default": 1
+            },
+            "description": "0=disabled, 1=enabled"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cron job created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "cron_job_id": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid API token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/detail": {
+      "get": {
+        "operationId": "getCronJobDetail",
+        "summary": "Get details of a specific cron job",
+        "tags": [
+          "Cron Jobs"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Token"
+          },
+          {
+            "$ref": "#/components/parameters/CronJobId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cron job details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "cron_job": {
+                      "$ref": "#/components/schemas/CronJob"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid API token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/edit": {
+      "get": {
+        "operationId": "editCronJob",
+        "summary": "Edit an existing cron job",
+        "tags": [
+          "Cron Jobs"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Token"
+          },
+          {
+            "$ref": "#/components/parameters/CronJobId"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            },
+            "description": "Cron job destination URL"
+          },
+          {
+            "name": "cron_expression",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Cron schedule expression"
+          },
+          {
+            "name": "cron_job_name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "Job name"
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            },
+            "description": "Job description"
+          },
+          {
+            "name": "timezone_from",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                1,
+                2
+              ]
+            },
+            "description": "1=account timezone, 2=job-specific"
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "IANA timezone"
+          },
+          {
+            "name": "http_method",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "GET",
+                "POST",
+                "PUT",
+                "PATCH",
+                "DELETE",
+                "HEAD",
+                "CONNECT",
+                "OPTIONS",
+                "TRACE"
+              ]
+            },
+            "description": "HTTP method"
+          },
+          {
+            "name": "http_headers",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Custom HTTP headers"
+          },
+          {
+            "name": "http_message_body",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            },
+            "description": "Request body"
+          },
+          {
+            "name": "criterion",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                1,
+                2,
+                3
+              ]
+            },
+            "description": "Success criteria"
+          },
+          {
+            "name": "email_me",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ]
+            },
+            "description": "Email on failure"
+          },
+          {
+            "name": "sensitivity",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "description": "Failure threshold"
+          },
+          {
+            "name": "group_id",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Group assignment"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ]
+            },
+            "description": "0=disabled, 1=enabled"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cron job updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "cron_job_id": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid API token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enable": {
+      "get": {
+        "operationId": "enableCronJob",
+        "summary": "Enable a cron job",
+        "tags": [
+          "Cron Jobs"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Token"
+          },
+          {
+            "$ref": "#/components/parameters/CronJobId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cron job enabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid API token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/disable": {
+      "get": {
+        "operationId": "disableCronJob",
+        "summary": "Disable a cron job",
+        "tags": [
+          "Cron Jobs"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Token"
+          },
+          {
+            "$ref": "#/components/parameters/CronJobId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cron job disabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid API token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/delete": {
+      "get": {
+        "operationId": "deleteCronJob",
+        "summary": "Delete a cron job",
+        "tags": [
+          "Cron Jobs"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Token"
+          },
+          {
+            "$ref": "#/components/parameters/CronJobId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cron job deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid API token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logs": {
+      "get": {
+        "operationId": "getCronJobLogs",
+        "summary": "Get logs for a cron job",
+        "tags": [
+          "Logs"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Token"
+          },
+          {
+            "$ref": "#/components/parameters/CronJobId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cron job logs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "logs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/LogEntry"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid API token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/timezone": {
+      "get": {
+        "operationId": "getTimezone",
+        "summary": "Get account timezone",
+        "tags": [
+          "Account"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Token"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account timezone",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "timezone": {
+                      "type": "string",
+                      "example": "Asia/Hong_Kong"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid API token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "Token": {
+        "name": "token",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "API authentication token"
+      },
+      "CronJobId": {
+        "name": "id",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        },
+        "description": "Cron job ID"
+      }
+    },
+    "securitySchemes": {
+      "apiToken": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "token",
+        "description": "API token passed as query parameter"
+      }
+    },
+    "schemas": {
+      "CronJob": {
+        "type": "object",
+        "properties": {
+          "cron_job_id": {
+            "type": "integer"
+          },
+          "cron_job_name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "integer"
+          },
+          "url": {
+            "type": "string"
+          },
+          "auth_user": {
+            "type": "string"
+          },
+          "auth_pw": {
+            "type": "string"
+          },
+          "cron_expression": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "timezone_from": {
+            "type": "integer"
+          },
+          "http_method": {
+            "type": "string"
+          },
+          "http_headers": {
+            "type": "string"
+          },
+          "http_message_body": {
+            "type": "string"
+          },
+          "custom_timeout": {
+            "type": "integer"
+          },
+          "criterion": {
+            "type": "integer"
+          },
+          "success_regexp": {
+            "type": "string"
+          },
+          "failure_regexp": {
+            "type": "string"
+          },
+          "total_successes": {
+            "type": "integer"
+          },
+          "total_failures": {
+            "type": "integer"
+          },
+          "number_failed_time": {
+            "type": "integer"
+          },
+          "email_me": {
+            "type": "integer",
+            "description": "0=never, 1=on failure, 2=always"
+          },
+          "sensitivity": {
+            "type": "integer"
+          },
+          "group_id": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "integer",
+            "description": "0=disabled, 1=enabled, 2=failed"
+          }
+        }
+      },
+      "LogEntry": {
+        "type": "object",
+        "properties": {
+          "cron_job_id": {
+            "type": "string"
+          },
+          "scheduled_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fire_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "done_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "execute_time": {
+            "type": "string"
+          },
+          "http_code": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "total_time": {
+            "type": "string"
+          },
+          "log_id": {
+            "type": "string"
+          }
+        }
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "success"
+          },
+          "cron_job_id": {
+            "type": "integer"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "error"
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "integer"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "apiToken": []
+    }
+  ]
+}
