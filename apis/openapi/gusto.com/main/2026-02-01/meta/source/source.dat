@@ -1,0 +1,1254 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Gusto Embedded Payroll API",
+    "version": "2026-02-01",
+    "description": "Gusto Embedded Payroll API enables partners to integrate payroll processing, employee management, contractor payments, and company administration into their applications.",
+    "x-jentic-source-url": "https://docs.gusto.com/embedded-payroll/reference"
+  },
+  "servers": [
+    {
+      "url": "https://api.gusto-demo.com",
+      "description": "Demo environment"
+    },
+    {
+      "url": "https://api.gusto.com",
+      "description": "Production environment"
+    }
+  ],
+  "paths": {
+    "/v1/token": {
+      "post": {
+        "operationId": "createAccessToken",
+        "summary": "Create access token",
+        "description": "Create a System Access Token or refresh an existing Access Token.",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "client_id": {
+                    "type": "string",
+                    "description": "OAuth client ID"
+                  },
+                  "client_secret": {
+                    "type": "string",
+                    "description": "OAuth client secret"
+                  },
+                  "grant_type": {
+                    "type": "string",
+                    "enum": ["authorization_code", "refresh_token"],
+                    "description": "OAuth grant type"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "Authorization code (for authorization_code grant)"
+                  },
+                  "refresh_token": {
+                    "type": "string",
+                    "description": "Refresh token (for refresh_token grant)"
+                  },
+                  "redirect_uri": {
+                    "type": "string",
+                    "description": "Redirect URI used in the authorization request"
+                  }
+                },
+                "required": ["client_id", "client_secret", "grant_type"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Access token created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessToken"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/v1/token-info": {
+      "get": {
+        "operationId": "getTokenInfo",
+        "summary": "Get token info",
+        "description": "Retrieve current access token details.",
+        "tags": ["Authentication"],
+        "security": [{"BearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "Token info retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "string"
+                    },
+                    "resource_owner": {
+                      "type": "object",
+                      "properties": {
+                        "type": {"type": "string"},
+                        "uuid": {"type": "string"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/v1/partner-managed-companies": {
+      "post": {
+        "operationId": "createPartnerManagedCompany",
+        "summary": "Create a partner-managed company",
+        "description": "Create a new company under partner management.",
+        "tags": ["Companies"],
+        "security": [{"BearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user": {
+                    "type": "object",
+                    "properties": {
+                      "first_name": {"type": "string"},
+                      "last_name": {"type": "string"},
+                      "email": {"type": "string", "format": "email"}
+                    },
+                    "required": ["first_name", "last_name", "email"]
+                  },
+                  "company": {
+                    "type": "object",
+                    "properties": {
+                      "name": {"type": "string"},
+                      "ein": {"type": "string"},
+                      "trade_name": {"type": "string"}
+                    },
+                    "required": ["name"]
+                  }
+                },
+                "required": ["user", "company"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Company created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"},
+          "422": {"description": "Unprocessable entity"}
+        }
+      }
+    },
+    "/v1/companies/{company_id}": {
+      "get": {
+        "operationId": "getCompany",
+        "summary": "Get a company",
+        "description": "Retrieve company information by ID.",
+        "tags": ["Companies"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Company retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"},
+          "404": {"description": "Company not found"}
+        }
+      },
+      "put": {
+        "operationId": "updateCompany",
+        "summary": "Update a company",
+        "description": "Modify company data.",
+        "tags": ["Companies"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Company updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"},
+          "422": {"description": "Unprocessable entity"}
+        }
+      }
+    },
+    "/v1/partner-managed-companies/{company_id}/migrate": {
+      "put": {
+        "operationId": "migrateCompany",
+        "summary": "Migrate company to embedded payroll",
+        "description": "Migrate a company to embedded payroll.",
+        "tags": ["Companies"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Migration initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {"type": "boolean"},
+                    "warnings": {
+                      "type": "array",
+                      "items": {"type": "string"}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"},
+          "422": {"description": "Unprocessable entity"}
+        }
+      }
+    },
+    "/v1/partner-managed-companies/{company_id}/migration_readiness": {
+      "get": {
+        "operationId": "checkMigrationReadiness",
+        "summary": "Check company migration readiness",
+        "description": "Check if a company is ready for migration to embedded payroll.",
+        "tags": ["Companies"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Readiness status retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ready": {"type": "boolean"},
+                    "blockers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {"type": "string"},
+                          "message": {"type": "string"}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      }
+    },
+    "/v1/companies/{company_id}/bank-accounts": {
+      "get": {
+        "operationId": "listCompanyBankAccounts",
+        "summary": "List company bank accounts",
+        "description": "List all bank accounts for a company.",
+        "tags": ["Companies"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bank accounts retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BankAccount"
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      },
+      "post": {
+        "operationId": "createCompanyBankAccount",
+        "summary": "Create a company bank account",
+        "description": "Add a bank account to a company.",
+        "tags": ["Companies"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankAccountCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Bank account created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAccount"
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"},
+          "422": {"description": "Unprocessable entity"}
+        }
+      }
+    },
+    "/v1/companies/{company_id}/employees": {
+      "get": {
+        "operationId": "listEmployees",
+        "summary": "List employees",
+        "description": "Retrieve all employees for a company.",
+        "tags": ["Employees"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {"type": "integer", "default": 1}
+          },
+          {
+            "name": "per",
+            "in": "query",
+            "schema": {"type": "integer", "default": 25}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Employees retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Employee"
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      },
+      "post": {
+        "operationId": "createEmployee",
+        "summary": "Create an employee",
+        "description": "Create a new employee for a company.",
+        "tags": ["Employees"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmployeeCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Employee created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Employee"
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"},
+          "422": {"description": "Unprocessable entity"}
+        }
+      }
+    },
+    "/v1/employees/{employee_id}": {
+      "get": {
+        "operationId": "getEmployee",
+        "summary": "Get an employee",
+        "description": "Retrieve employee details by ID.",
+        "tags": ["Employees"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "employee_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Employee retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Employee"
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"},
+          "404": {"description": "Employee not found"}
+        }
+      },
+      "put": {
+        "operationId": "updateEmployee",
+        "summary": "Update an employee",
+        "description": "Modify employee information.",
+        "tags": ["Employees"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "employee_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmployeeUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Employee updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Employee"
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"},
+          "422": {"description": "Unprocessable entity"}
+        }
+      },
+      "delete": {
+        "operationId": "deleteEmployee",
+        "summary": "Delete an onboarding employee",
+        "description": "Remove an onboarding employee.",
+        "tags": ["Employees"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "employee_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "204": {"description": "Employee deleted"},
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"},
+          "404": {"description": "Employee not found"}
+        }
+      }
+    },
+    "/v1/companies/{company_id}/payrolls": {
+      "get": {
+        "operationId": "listPayrolls",
+        "summary": "List company payrolls",
+        "description": "Retrieve all payrolls for a company.",
+        "tags": ["Payroll"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "processing_statuses",
+            "in": "query",
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "payroll_types",
+            "in": "query",
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "schema": {"type": "string", "format": "date"}
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "schema": {"type": "string", "format": "date"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payrolls retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Payroll"
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      },
+      "post": {
+        "operationId": "createOffCyclePayroll",
+        "summary": "Create an off-cycle payroll",
+        "description": "Create an off-cycle payroll for a company.",
+        "tags": ["Payroll"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "off_cycle": {"type": "boolean"},
+                  "off_cycle_reason": {"type": "string"},
+                  "start_date": {"type": "string", "format": "date"},
+                  "end_date": {"type": "string", "format": "date"},
+                  "check_date": {"type": "string", "format": "date"},
+                  "employee_ids": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                  }
+                },
+                "required": ["off_cycle", "check_date"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Payroll created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payroll"
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"},
+          "422": {"description": "Unprocessable entity"}
+        }
+      }
+    },
+    "/v1/companies/{company_id}/payrolls/{payroll_id}": {
+      "get": {
+        "operationId": "getPayroll",
+        "summary": "Get a payroll",
+        "description": "Retrieve a payroll by ID.",
+        "tags": ["Payroll"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "payroll_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payroll retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payroll"
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"},
+          "404": {"description": "Payroll not found"}
+        }
+      },
+      "put": {
+        "operationId": "updatePayroll",
+        "summary": "Update a payroll",
+        "description": "Update a payroll by ID.",
+        "tags": ["Payroll"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "payroll_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "employee_compensations": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "employee_id": {"type": "string"},
+                        "fixed_compensations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {"type": "string"},
+                              "amount": {"type": "string"},
+                              "job_id": {"type": "string"}
+                            }
+                          }
+                        },
+                        "hourly_compensations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {"type": "string"},
+                              "hours": {"type": "string"},
+                              "job_id": {"type": "string"}
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payroll updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payroll"
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"},
+          "422": {"description": "Unprocessable entity"}
+        }
+      }
+    },
+    "/v1/companies/{company_id}/payrolls/{payroll_id}/calculate": {
+      "put": {
+        "operationId": "calculatePayroll",
+        "summary": "Calculate a payroll",
+        "description": "Calculate payroll amounts including taxes and deductions.",
+        "tags": ["Payroll"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "payroll_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payroll calculated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payroll"
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"},
+          "422": {"description": "Unprocessable entity"}
+        }
+      }
+    },
+    "/v1/companies/{company_id}/payrolls/{payroll_id}/submit": {
+      "put": {
+        "operationId": "submitPayroll",
+        "summary": "Submit a payroll",
+        "description": "Submit a payroll for processing.",
+        "tags": ["Payroll"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "payroll_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payroll submitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payroll"
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"},
+          "422": {"description": "Unprocessable entity"}
+        }
+      }
+    },
+    "/v1/companies/{company_id}/contractors": {
+      "get": {
+        "operationId": "listContractors",
+        "summary": "List company contractors",
+        "description": "List all contractors for a company.",
+        "tags": ["Contractors"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contractors retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Contractor"
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      },
+      "post": {
+        "operationId": "createContractor",
+        "summary": "Create a contractor",
+        "description": "Add a contractor to a company.",
+        "tags": ["Contractors"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContractorCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Contractor created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contractor"
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"},
+          "422": {"description": "Unprocessable entity"}
+        }
+      }
+    },
+    "/v1/companies/{company_id}/contractor-payments": {
+      "get": {
+        "operationId": "listContractorPayments",
+        "summary": "List contractor payments",
+        "description": "List all contractor payments for a company.",
+        "tags": ["Contractors"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "schema": {"type": "string", "format": "date"}
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "schema": {"type": "string", "format": "date"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contractor payments retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContractorPayment"
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      },
+      "post": {
+        "operationId": "createContractorPayment",
+        "summary": "Create a contractor payment",
+        "description": "Create a payment to a contractor.",
+        "tags": ["Contractors"],
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "contractor_id": {"type": "string"},
+                  "date": {"type": "string", "format": "date"},
+                  "wage": {"type": "string"},
+                  "hours": {"type": "string"},
+                  "bonus": {"type": "string"},
+                  "reimbursement": {"type": "string"}
+                },
+                "required": ["contractor_id", "date"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Contractor payment created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractorPayment"
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"},
+          "422": {"description": "Unprocessable entity"}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "OAuth 2.0 Bearer token"
+      }
+    },
+    "schemas": {
+      "AccessToken": {
+        "type": "object",
+        "properties": {
+          "access_token": {"type": "string"},
+          "token_type": {"type": "string"},
+          "expires_in": {"type": "integer"},
+          "refresh_token": {"type": "string"},
+          "scope": {"type": "string"},
+          "created_at": {"type": "integer"}
+        }
+      },
+      "Company": {
+        "type": "object",
+        "properties": {
+          "uuid": {"type": "string"},
+          "name": {"type": "string"},
+          "trade_name": {"type": "string"},
+          "ein": {"type": "string"},
+          "entity_type": {"type": "string"},
+          "company_status": {"type": "string"},
+          "is_suspended": {"type": "boolean"},
+          "primary_signatory": {
+            "type": "object",
+            "properties": {
+              "first_name": {"type": "string"},
+              "last_name": {"type": "string"},
+              "email": {"type": "string"}
+            }
+          },
+          "primary_payroll_admin": {
+            "type": "object",
+            "properties": {
+              "first_name": {"type": "string"},
+              "last_name": {"type": "string"},
+              "email": {"type": "string"}
+            }
+          }
+        }
+      },
+      "CompanyUpdate": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "trade_name": {"type": "string"},
+          "ein": {"type": "string"},
+          "entity_type": {"type": "string"}
+        }
+      },
+      "BankAccount": {
+        "type": "object",
+        "properties": {
+          "uuid": {"type": "string"},
+          "company_uuid": {"type": "string"},
+          "routing_number": {"type": "string"},
+          "account_number": {"type": "string"},
+          "account_type": {"type": "string"},
+          "verification_status": {"type": "string"},
+          "name": {"type": "string"}
+        }
+      },
+      "BankAccountCreate": {
+        "type": "object",
+        "properties": {
+          "routing_number": {"type": "string"},
+          "account_number": {"type": "string"},
+          "account_type": {"type": "string", "enum": ["Checking", "Savings"]}
+        },
+        "required": ["routing_number", "account_number", "account_type"]
+      },
+      "Employee": {
+        "type": "object",
+        "properties": {
+          "uuid": {"type": "string"},
+          "first_name": {"type": "string"},
+          "middle_initial": {"type": "string"},
+          "last_name": {"type": "string"},
+          "email": {"type": "string"},
+          "date_of_birth": {"type": "string", "format": "date"},
+          "ssn": {"type": "string"},
+          "onboarded": {"type": "boolean"},
+          "terminated": {"type": "boolean"},
+          "company_uuid": {"type": "string"},
+          "current_employment_status": {"type": "string"}
+        }
+      },
+      "EmployeeCreate": {
+        "type": "object",
+        "properties": {
+          "first_name": {"type": "string"},
+          "middle_initial": {"type": "string"},
+          "last_name": {"type": "string"},
+          "email": {"type": "string", "format": "email"},
+          "date_of_birth": {"type": "string", "format": "date"},
+          "ssn": {"type": "string"}
+        },
+        "required": ["first_name", "last_name"]
+      },
+      "EmployeeUpdate": {
+        "type": "object",
+        "properties": {
+          "first_name": {"type": "string"},
+          "middle_initial": {"type": "string"},
+          "last_name": {"type": "string"},
+          "email": {"type": "string"},
+          "date_of_birth": {"type": "string", "format": "date"},
+          "ssn": {"type": "string"},
+          "version": {"type": "string"}
+        }
+      },
+      "Payroll": {
+        "type": "object",
+        "properties": {
+          "payroll_uuid": {"type": "string"},
+          "company_uuid": {"type": "string"},
+          "pay_period": {
+            "type": "object",
+            "properties": {
+              "start_date": {"type": "string", "format": "date"},
+              "end_date": {"type": "string", "format": "date"},
+              "pay_schedule_uuid": {"type": "string"}
+            }
+          },
+          "check_date": {"type": "string", "format": "date"},
+          "payroll_deadline": {"type": "string", "format": "date-time"},
+          "processed": {"type": "boolean"},
+          "processing_status": {"type": "string"},
+          "calculated_at": {"type": "string", "format": "date-time"},
+          "totals": {
+            "type": "object",
+            "properties": {
+              "company_debit": {"type": "string"},
+              "net_pay": {"type": "string"},
+              "employer_taxes": {"type": "string"},
+              "employee_taxes": {"type": "string"},
+              "reimbursements": {"type": "string"},
+              "benefits": {"type": "string"}
+            }
+          },
+          "employee_compensations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "employee_uuid": {"type": "string"},
+                "gross_pay": {"type": "string"},
+                "net_pay": {"type": "string"}
+              }
+            }
+          }
+        }
+      },
+      "Contractor": {
+        "type": "object",
+        "properties": {
+          "uuid": {"type": "string"},
+          "company_uuid": {"type": "string"},
+          "first_name": {"type": "string"},
+          "last_name": {"type": "string"},
+          "business_name": {"type": "string"},
+          "email": {"type": "string"},
+          "type": {"type": "string", "enum": ["Individual", "Business"]},
+          "wage_type": {"type": "string", "enum": ["Fixed", "Hourly"]},
+          "is_active": {"type": "boolean"},
+          "onboarded": {"type": "boolean"}
+        }
+      },
+      "ContractorCreate": {
+        "type": "object",
+        "properties": {
+          "first_name": {"type": "string"},
+          "last_name": {"type": "string"},
+          "business_name": {"type": "string"},
+          "email": {"type": "string", "format": "email"},
+          "type": {"type": "string", "enum": ["Individual", "Business"]},
+          "wage_type": {"type": "string", "enum": ["Fixed", "Hourly"]},
+          "start_date": {"type": "string", "format": "date"}
+        },
+        "required": ["type", "wage_type"]
+      },
+      "ContractorPayment": {
+        "type": "object",
+        "properties": {
+          "uuid": {"type": "string"},
+          "contractor_uuid": {"type": "string"},
+          "date": {"type": "string", "format": "date"},
+          "wage": {"type": "string"},
+          "hours": {"type": "string"},
+          "bonus": {"type": "string"},
+          "reimbursement": {"type": "string"},
+          "status": {"type": "string"}
+        }
+      }
+    }
+  },
+  "security": [
+    {"BearerAuth": []}
+  ]
+}
