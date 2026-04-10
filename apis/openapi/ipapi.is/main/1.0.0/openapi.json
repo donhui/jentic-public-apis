@@ -1,0 +1,526 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "IP Geolocation API",
+    "version": "1.0.0",
+    "description": "ipapi.is IP geolocation and threat intelligence API. Provides IP address geolocation, ASN lookup, VPN/proxy/Tor detection, hosting detection, abuse scoring, and company information. Supports single and bulk lookups with multiple output formats.",
+    "x-jentic-source-url": "https://ipapi.is/"
+  },
+  "servers": [
+    {
+      "url": "https://api.ipapi.is",
+      "description": "Primary API server"
+    },
+    {
+      "url": "https://de.ipapi.is",
+      "description": "Central Europe (Germany)"
+    },
+    {
+      "url": "https://us.ipapi.is",
+      "description": "US East"
+    },
+    {
+      "url": "https://sg.ipapi.is",
+      "description": "Singapore (Asia)"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "lookupIp",
+        "summary": "Lookup an IP address or ASN",
+        "description": "Returns geolocation, threat intelligence, and network information for a given IP address or ASN.",
+        "tags": [
+          "IP Lookup"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "IP address (IPv4/IPv6) or ASN (e.g., AS12345) to query. Omit to lookup the requester's own IP."
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "API key for authenticated access (higher rate limits)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful lookup",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IpLookupResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid IP or ASN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "bulkLookupIps",
+        "summary": "Bulk IP lookup",
+        "description": "Lookup multiple IP addresses in a single request. Standard plans support up to 100 IPs, premium up to 1,000.",
+        "tags": [
+          "IP Lookup"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkLookupRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bulk lookup results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/IpLookupResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/html": {
+      "get": {
+        "operationId": "lookupIpHtml",
+        "summary": "Lookup IP with HTML output",
+        "description": "Returns geolocation data formatted as an HTML table.",
+        "tags": [
+          "IP Lookup"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "IP address or ASN to query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML formatted lookup result",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/csv": {
+      "get": {
+        "operationId": "lookupIpCsv",
+        "summary": "Lookup IP with CSV output",
+        "description": "Returns geolocation data in CSV format.",
+        "tags": [
+          "IP Lookup"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "IP address or ASN to query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV formatted lookup result",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/text": {
+      "get": {
+        "operationId": "lookupIpText",
+        "summary": "Lookup IP with plain text output",
+        "description": "Returns geolocation data as plain text key-value pairs.",
+        "tags": [
+          "IP Lookup"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "IP address or ASN to query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plain text formatted lookup result",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "IpLookupResponse": {
+        "type": "object",
+        "properties": {
+          "ip": {
+            "type": "string",
+            "description": "Queried IP address"
+          },
+          "rir": {
+            "type": "string",
+            "description": "Regional Internet Registry"
+          },
+          "is_bogon": {
+            "type": "boolean",
+            "description": "Non-routable address"
+          },
+          "is_mobile": {
+            "type": "boolean",
+            "description": "Mobile ISP"
+          },
+          "is_satellite": {
+            "type": "boolean",
+            "description": "Satellite ISP"
+          },
+          "is_crawler": {
+            "description": "Crawler type or false",
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "is_datacenter": {
+            "type": "boolean",
+            "description": "Hosting provider"
+          },
+          "is_tor": {
+            "type": "boolean",
+            "description": "TOR exit node"
+          },
+          "is_proxy": {
+            "type": "boolean",
+            "description": "Proxy server"
+          },
+          "is_vpn": {
+            "type": "boolean",
+            "description": "VPN exit node"
+          },
+          "is_abuser": {
+            "type": "boolean",
+            "description": "Abusive activity history"
+          },
+          "elapsed_ms": {
+            "type": "number",
+            "description": "Processing time in milliseconds"
+          },
+          "datacenter": {
+            "$ref": "#/components/schemas/Datacenter"
+          },
+          "company": {
+            "$ref": "#/components/schemas/Company"
+          },
+          "abuse": {
+            "$ref": "#/components/schemas/Abuse"
+          },
+          "asn": {
+            "$ref": "#/components/schemas/Asn"
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "vpn": {
+            "$ref": "#/components/schemas/Vpn"
+          }
+        }
+      },
+      "Datacenter": {
+        "type": "object",
+        "properties": {
+          "datacenter": {
+            "type": "string"
+          },
+          "network": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "service": {
+            "type": "string"
+          }
+        }
+      },
+      "Company": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "network": {
+            "type": "string"
+          },
+          "abusescore": {
+            "type": "number"
+          }
+        }
+      },
+      "Abuse": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          }
+        }
+      },
+      "Asn": {
+        "type": "object",
+        "properties": {
+          "asn": {
+            "type": "integer"
+          },
+          "org": {
+            "type": "string"
+          },
+          "route": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          }
+        }
+      },
+      "Location": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "type": "string"
+          },
+          "country_code": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "local_time": {
+            "type": "string"
+          },
+          "zip": {
+            "type": "string"
+          }
+        }
+      },
+      "Vpn": {
+        "type": "object",
+        "properties": {
+          "service": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "last_seen": {
+            "type": "string"
+          }
+        }
+      },
+      "BulkLookupRequest": {
+        "type": "object",
+        "properties": {
+          "ips": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of IP addresses to lookup (max 100 standard, 1000 premium)"
+          },
+          "key": {
+            "type": "string",
+            "description": "API key for authentication"
+          }
+        },
+        "required": [
+          "ips"
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiKeyQuery": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "key",
+        "description": "API key passed as query parameter. Free tier: 1,000 requests/day without key."
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKeyQuery": []
+    }
+  ]
+}
