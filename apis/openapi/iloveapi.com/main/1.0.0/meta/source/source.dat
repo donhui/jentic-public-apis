@@ -1,0 +1,788 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "iLoveAPI - PDF & Image Processing API",
+    "description": "REST API for PDF and image file processing, including conversion, compression, merging, splitting, digital signatures, and more.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://www.iloveapi.com/docs/api-reference"
+  },
+  "servers": [
+    {
+      "url": "https://api.iloveapi.com",
+      "description": "iLoveAPI main server"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "tags": [
+    { "name": "Authentication", "description": "Obtain JWT tokens for API access" },
+    { "name": "Tasks", "description": "Task lifecycle management" },
+    { "name": "Files", "description": "File upload and download" },
+    { "name": "Processing", "description": "File processing operations" },
+    { "name": "Signatures", "description": "Digital signature operations" }
+  ],
+  "paths": {
+    "/v1/auth": {
+      "post": {
+        "operationId": "authenticate",
+        "summary": "Authenticate and get JWT token",
+        "description": "Request a signed JWT token for API authentication using your public key.",
+        "tags": ["Authentication"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["public_key"],
+                "properties": {
+                  "public_key": {
+                    "type": "string",
+                    "description": "Your API public key."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JWT token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": { "type": "string", "description": "Signed JWT token." }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/start/{tool}/{region}": {
+      "get": {
+        "operationId": "startTask",
+        "summary": "Start a new task",
+        "description": "Retrieve an assigned processing server and task ID for file processing.",
+        "tags": ["Tasks"],
+        "parameters": [
+          {
+            "name": "tool",
+            "in": "path",
+            "required": true,
+            "description": "PDF or image tool name (e.g., merge, split, compress, pdftoword).",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "region",
+            "in": "path",
+            "required": true,
+            "description": "Processing jurisdiction.",
+            "schema": { "type": "string", "enum": ["eu", "us", "fr", "de", "pl"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task information with assigned server",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "server": { "type": "string", "description": "Assigned processing server hostname." },
+                    "task": { "type": "string", "description": "Unique task identifier." },
+                    "remaining_credits": { "type": "integer", "description": "Remaining API credits." }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/upload": {
+      "post": {
+        "operationId": "uploadFile",
+        "summary": "Upload a file for processing",
+        "description": "Upload files to the assigned processing server. The server URL is obtained from the start task response.",
+        "tags": ["Files"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["task", "file"],
+                "properties": {
+                  "task": { "type": "string", "description": "Task identifier from start endpoint." },
+                  "file": { "type": "string", "format": "binary", "description": "The file to upload." },
+                  "cloud_file": { "type": "string", "description": "URL of a cloud-hosted file (alternative to file upload)." },
+                  "chunk": { "type": "integer", "description": "Current chunk number for large file uploads." },
+                  "chunks": { "type": "integer", "description": "Total number of chunks for large file uploads." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Upload result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "server_filename": { "type": "string", "description": "Server-assigned filename for the uploaded file." }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/upload/{task}/{server_filename}": {
+      "delete": {
+        "operationId": "deleteUploadedFile",
+        "summary": "Delete an uploaded file",
+        "description": "Remove a previously uploaded file from the server.",
+        "tags": ["Files"],
+        "parameters": [
+          {
+            "name": "task",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "server_filename",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File deleted successfully"
+          }
+        }
+      }
+    },
+    "/v1/process": {
+      "post": {
+        "operationId": "processFiles",
+        "summary": "Process uploaded files",
+        "description": "Initiate file processing with the specified tool on the assigned server.",
+        "tags": ["Processing"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["task", "tool", "files"],
+                "properties": {
+                  "task": { "type": "string", "description": "Task identifier." },
+                  "tool": { "type": "string", "description": "Processing tool name." },
+                  "files": {
+                    "type": "array",
+                    "description": "Array of file objects with metadata.",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "server_filename": { "type": "string" },
+                        "filename": { "type": "string" },
+                        "rotate": { "type": "integer" },
+                        "password": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Processing result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "download_filename": { "type": "string" },
+                    "filesize": { "type": "integer" },
+                    "output_filesize": { "type": "integer" },
+                    "output_filenumber": { "type": "integer" },
+                    "output_extensions": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "status": { "type": "string" },
+                    "timer": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/download/{task}": {
+      "get": {
+        "operationId": "downloadResult",
+        "summary": "Download processed files",
+        "description": "Download the processed output files or ZIP archive from the assigned server.",
+        "tags": ["Files"],
+        "parameters": [
+          {
+            "name": "task",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Processed file content",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/task": {
+      "get": {
+        "operationId": "listTasks",
+        "summary": "List all tasks",
+        "description": "List and filter all tasks associated with the account.",
+        "tags": ["Tasks"],
+        "parameters": [
+          {
+            "name": "secret_key",
+            "in": "query",
+            "description": "API secret key for task listing.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "tool",
+            "in": "query",
+            "description": "Filter by tool name.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by task status.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "custom_int",
+            "in": "query",
+            "description": "Filter by custom integer.",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of tasks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Task" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/task/{task}": {
+      "delete": {
+        "operationId": "deleteTask",
+        "summary": "Delete a task",
+        "description": "Delete a task and its related files immediately.",
+        "tags": ["Tasks"],
+        "parameters": [
+          {
+            "name": "task",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task deleted"
+          }
+        }
+      }
+    },
+    "/v1/task/next": {
+      "post": {
+        "operationId": "createConnectedTask",
+        "summary": "Create a connected task",
+        "description": "Create a connected task for sequential tool operations using output from a previous task.",
+        "tags": ["Tasks"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["task", "tool"],
+                "properties": {
+                  "task": { "type": "string", "description": "Previous task identifier." },
+                  "tool": { "type": "string", "description": "Next tool to apply." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Connected task created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "server": { "type": "string" },
+                    "task": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/signature": {
+      "post": {
+        "operationId": "createSignatureRequest",
+        "summary": "Create a signature request",
+        "description": "Create an e-signature request for one or more documents.",
+        "tags": ["Signatures"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SignatureRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signature request created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SignatureResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/signature/list": {
+      "get": {
+        "operationId": "listSignatureRequests",
+        "summary": "List signature requests",
+        "description": "List all signature requests.",
+        "tags": ["Signatures"],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "per-page",
+            "in": "query",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of signature requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/SignatureResponse" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/signature/requesterview/{token_requester}": {
+      "get": {
+        "operationId": "getSignatureRequestStatus",
+        "summary": "Get signature request status",
+        "description": "Retrieve the status of a signature request.",
+        "tags": ["Signatures"],
+        "parameters": [
+          {
+            "name": "token_requester",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signature request status",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SignatureResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/signature/receiver/info/{receiver_token_requester}": {
+      "get": {
+        "operationId": "getSignatureReceiverInfo",
+        "summary": "Get receiver/signer details",
+        "description": "Get details about a specific receiver or signer.",
+        "tags": ["Signatures"],
+        "parameters": [
+          {
+            "name": "receiver_token_requester",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Receiver details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "email": { "type": "string" },
+                    "phone": { "type": "string" },
+                    "status": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/signature/{token_requester}/download-audit": {
+      "get": {
+        "operationId": "downloadSignatureAudit",
+        "summary": "Download audit PDF",
+        "description": "Download the audit trail PDF for a signature request.",
+        "tags": ["Signatures"],
+        "parameters": [
+          {
+            "name": "token_requester",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit PDF",
+            "content": {
+              "application/pdf": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/signature/{token_requester}/download-original": {
+      "get": {
+        "operationId": "downloadSignatureOriginal",
+        "summary": "Download original files",
+        "description": "Download the original uploaded files for a signature request.",
+        "tags": ["Signatures"],
+        "parameters": [
+          {
+            "name": "token_requester",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Original files",
+            "content": {
+              "application/octet-stream": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/signature/{token_requester}/download-signed": {
+      "get": {
+        "operationId": "downloadSignedDocuments",
+        "summary": "Download signed documents",
+        "description": "Download the completed signed documents.",
+        "tags": ["Signatures"],
+        "parameters": [
+          {
+            "name": "token_requester",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed documents",
+            "content": {
+              "application/octet-stream": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/signature/receiver/fix-email/{receiver_token_requester}": {
+      "post": {
+        "operationId": "fixReceiverEmail",
+        "summary": "Fix receiver email address",
+        "description": "Correct a receiver's email address.",
+        "tags": ["Signatures"],
+        "parameters": [
+          {
+            "name": "receiver_token_requester",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Email updated" }
+        }
+      }
+    },
+    "/v1/signature/signer/fix-phone/{signer_token_requester}": {
+      "post": {
+        "operationId": "fixSignerPhone",
+        "summary": "Fix signer phone number",
+        "description": "Correct a signer's phone number.",
+        "tags": ["Signatures"],
+        "parameters": [
+          {
+            "name": "signer_token_requester",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["phone"],
+                "properties": {
+                  "phone": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Phone number updated" }
+        }
+      }
+    },
+    "/v1/signature/sendReminder/{token_requester}": {
+      "post": {
+        "operationId": "sendSignatureReminder",
+        "summary": "Send signature reminder",
+        "description": "Send reminder emails to pending signers.",
+        "tags": ["Signatures"],
+        "parameters": [
+          {
+            "name": "token_requester",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Reminder sent" }
+        }
+      }
+    },
+    "/v1/signature/void/{token_requester}": {
+      "post": {
+        "operationId": "voidSignatureRequest",
+        "summary": "Void a signature request",
+        "description": "Cancel an in-progress signature request.",
+        "tags": ["Signatures"],
+        "parameters": [
+          {
+            "name": "token_requester",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Signature request voided" }
+        }
+      }
+    },
+    "/v1/signature/increase-expiration-days/{token_requester}": {
+      "post": {
+        "operationId": "extendSignatureExpiration",
+        "summary": "Extend signature expiration",
+        "description": "Extend the expiration deadline for a signature request.",
+        "tags": ["Signatures"],
+        "parameters": [
+          {
+            "name": "token_requester",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["days"],
+                "properties": {
+                  "days": { "type": "integer", "description": "Number of days to extend." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Expiration extended" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token obtained from the /v1/auth endpoint."
+      }
+    },
+    "schemas": {
+      "Task": {
+        "type": "object",
+        "properties": {
+          "task": { "type": "string" },
+          "tool": { "type": "string" },
+          "status": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "custom_int": { "type": "integer" }
+        }
+      },
+      "SignatureRequest": {
+        "type": "object",
+        "required": ["task", "files", "signers"],
+        "properties": {
+          "task": { "type": "string", "description": "Task identifier." },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "server_filename": { "type": "string" },
+                "filename": { "type": "string" }
+              }
+            }
+          },
+          "signers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "email"],
+              "properties": {
+                "name": { "type": "string" },
+                "email": { "type": "string", "format": "email" },
+                "phone": { "type": "string" }
+              }
+            }
+          },
+          "brand_name": { "type": "string" },
+          "brand_logo": { "type": "string" },
+          "expiration_days": { "type": "integer" }
+        }
+      },
+      "SignatureResponse": {
+        "type": "object",
+        "properties": {
+          "token_requester": { "type": "string" },
+          "status": { "type": "string" },
+          "signers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "email": { "type": "string" },
+                "status": { "type": "string" }
+              }
+            }
+          },
+          "created_at": { "type": "string", "format": "date-time" },
+          "expires_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}
