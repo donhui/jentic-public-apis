@@ -1,0 +1,1236 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Sensu Go",
+    "version": "v2",
+    "description": "Sensu Go REST API for monitoring and observability including checks, entities, events, and authentication.",
+    "x-jentic-source-url": "https://docs.sensu.io/sensu-go/latest/api/"
+  },
+  "servers": [
+    {
+      "url": "https://{host}:8080",
+      "variables": {
+        "host": {
+          "default": "sensu.example.com",
+          "description": "Sensu backend hostname"
+        }
+      }
+    }
+  ],
+  "security": [
+    { "apiKeyAuth": [] },
+    { "bearerAuth": [] }
+  ],
+  "tags": [
+    { "name": "Authentication", "description": "Auth token management" },
+    { "name": "Checks", "description": "Check management" },
+    { "name": "Entities", "description": "Entity management" },
+    { "name": "Events", "description": "Event management" },
+    { "name": "Namespaces", "description": "Namespace management" },
+    { "name": "APIKeys", "description": "API key management" },
+    { "name": "Handlers", "description": "Event handler management" },
+    { "name": "Filters", "description": "Event filter management" },
+    { "name": "Silenced", "description": "Silencing management" },
+    { "name": "Users", "description": "User management" },
+    { "name": "Assets", "description": "Runtime asset management" },
+    { "name": "Health", "description": "System health and status" }
+  ],
+  "paths": {
+    "/auth": {
+      "get": {
+        "operationId": "authenticate",
+        "summary": "Generate access and refresh tokens",
+        "tags": ["Authentication"],
+        "security": [
+          { "basicAuth": [] }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authentication successful",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/auth/test": {
+      "get": {
+        "operationId": "testAuthentication",
+        "summary": "Validate basic authentication credentials",
+        "tags": ["Authentication"],
+        "security": [
+          { "basicAuth": [] }
+        ],
+        "responses": {
+          "200": { "description": "Credentials valid" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/auth/token": {
+      "post": {
+        "operationId": "refreshToken",
+        "summary": "Renew an access token using refresh token",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["refresh_token"],
+                "properties": {
+                  "refresh_token": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token refreshed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/core/v2/namespaces/{namespace}/checks": {
+      "get": {
+        "operationId": "listChecks",
+        "summary": "List all checks",
+        "tags": ["Checks"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/Continue" },
+          { "$ref": "#/components/parameters/LabelSelector" },
+          { "$ref": "#/components/parameters/FieldSelector" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of checks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Check" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createCheck",
+        "summary": "Create a check",
+        "tags": ["Checks"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CheckInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Check created" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/namespaces/{namespace}/checks/{check}": {
+      "get": {
+        "operationId": "getCheck",
+        "summary": "Get a specific check",
+        "tags": ["Checks"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "$ref": "#/components/parameters/CheckName" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Check details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Check" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "createOrUpdateCheck",
+        "summary": "Create or update a check",
+        "tags": ["Checks"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "$ref": "#/components/parameters/CheckName" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CheckInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Check created or updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "patch": {
+        "operationId": "patchCheck",
+        "summary": "Partially update a check",
+        "tags": ["Checks"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "$ref": "#/components/parameters/CheckName" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/merge-patch+json": {
+              "schema": { "type": "object" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Check patched" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCheck",
+        "summary": "Delete a check",
+        "tags": ["Checks"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "$ref": "#/components/parameters/CheckName" }
+        ],
+        "responses": {
+          "204": { "description": "Check deleted" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/namespaces/{namespace}/checks/{check}/execute": {
+      "post": {
+        "operationId": "executeCheck",
+        "summary": "Execute an ad hoc check",
+        "tags": ["Checks"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "$ref": "#/components/parameters/CheckName" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["check", "subscriptions"],
+                "properties": {
+                  "check": { "type": "string" },
+                  "subscriptions": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Execution accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "issued": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/namespaces/{namespace}/checks/{check}/hooks/{type}": {
+      "put": {
+        "operationId": "assignCheckHook",
+        "summary": "Assign hook to check",
+        "tags": ["Checks"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "$ref": "#/components/parameters/CheckName" },
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "enum": ["critical", "warning", "unknown", "non-zero", "ok"] }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Hook assigned" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/namespaces/{namespace}/entities": {
+      "get": {
+        "operationId": "listEntities",
+        "summary": "List all entities",
+        "tags": ["Entities"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/Continue" },
+          { "$ref": "#/components/parameters/FieldSelector" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of entities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Entity" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createEntity",
+        "summary": "Create an entity",
+        "tags": ["Entities"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/EntityInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Entity created" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/namespaces/{namespace}/entities/{entity}": {
+      "get": {
+        "operationId": "getEntity",
+        "summary": "Get a specific entity",
+        "tags": ["Entities"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          {
+            "name": "entity",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Entity details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Entity" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "createOrUpdateEntity",
+        "summary": "Create or update an entity",
+        "tags": ["Entities"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          {
+            "name": "entity",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/EntityInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Entity created or updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteEntity",
+        "summary": "Delete an entity",
+        "tags": ["Entities"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          {
+            "name": "entity",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Entity deleted" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/namespaces/{namespace}/events": {
+      "get": {
+        "operationId": "listEvents",
+        "summary": "List all events",
+        "tags": ["Events"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/Continue" },
+          { "$ref": "#/components/parameters/FieldSelector" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Event" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createEvent",
+        "summary": "Create an event",
+        "tags": ["Events"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/EventInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Event created" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/namespaces/{namespace}/events/{entity}": {
+      "get": {
+        "operationId": "listEntityEvents",
+        "summary": "List events for a specific entity",
+        "tags": ["Events"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          {
+            "name": "entity",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/Continue" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Entity events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Event" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/namespaces/{namespace}/events/{entity}/{check}": {
+      "get": {
+        "operationId": "getEvent",
+        "summary": "Get event for entity and check",
+        "tags": ["Events"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          {
+            "name": "entity",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          { "$ref": "#/components/parameters/CheckName" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Event details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Event" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "createOrUpdateEvent",
+        "summary": "Create or update an event",
+        "tags": ["Events"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          {
+            "name": "entity",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          { "$ref": "#/components/parameters/CheckName" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/EventInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Event created or updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteEvent",
+        "summary": "Delete an event",
+        "tags": ["Events"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          {
+            "name": "entity",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          { "$ref": "#/components/parameters/CheckName" }
+        ],
+        "responses": {
+          "204": { "description": "Event deleted" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/namespaces": {
+      "get": {
+        "operationId": "listNamespaces",
+        "summary": "List all namespaces",
+        "tags": ["Namespaces"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/Continue" }
+        ],
+        "responses": {
+          "200": { "description": "List of namespaces", "content": { "application/json": { "schema": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" } } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createNamespace",
+        "summary": "Create a namespace",
+        "tags": ["Namespaces"],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string" } } } } } },
+        "responses": {
+          "201": { "description": "Namespace created" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/namespaces/{namespace}": {
+      "put": {
+        "operationId": "createOrUpdateNamespace",
+        "summary": "Create or update a namespace",
+        "tags": ["Namespaces"],
+        "parameters": [ { "$ref": "#/components/parameters/Namespace" } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string" } } } } } },
+        "responses": {
+          "201": { "description": "Namespace created or updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteNamespace",
+        "summary": "Delete a namespace",
+        "tags": ["Namespaces"],
+        "parameters": [ { "$ref": "#/components/parameters/Namespace" } ],
+        "responses": {
+          "204": { "description": "Namespace deleted" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/apikeys": {
+      "get": {
+        "operationId": "listApiKeys",
+        "summary": "List all API keys",
+        "tags": ["APIKeys"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/Continue" }
+        ],
+        "responses": {
+          "200": { "description": "List of API keys", "content": { "application/json": { "schema": { "type": "array", "items": { "type": "object" } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createApiKey",
+        "summary": "Create an API key",
+        "tags": ["APIKeys"],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["username"], "properties": { "username": { "type": "string" }, "metadata": { "$ref": "#/components/schemas/Metadata" } } } } } },
+        "responses": {
+          "201": { "description": "API key created" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/apikeys/{apikey}": {
+      "delete": {
+        "operationId": "deleteApiKey",
+        "summary": "Delete an API key",
+        "tags": ["APIKeys"],
+        "parameters": [ { "name": "apikey", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": {
+          "204": { "description": "API key deleted" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/namespaces/{namespace}/handlers": {
+      "get": {
+        "operationId": "listHandlers",
+        "summary": "List all event handlers",
+        "tags": ["Handlers"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/Continue" }
+        ],
+        "responses": {
+          "200": { "description": "List of handlers", "content": { "application/json": { "schema": { "type": "array", "items": { "type": "object" } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createHandler",
+        "summary": "Create an event handler",
+        "tags": ["Handlers"],
+        "parameters": [ { "$ref": "#/components/parameters/Namespace" } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "201": { "description": "Handler created" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/namespaces/{namespace}/handlers/{handler}": {
+      "get": {
+        "operationId": "getHandler",
+        "summary": "Get a specific handler",
+        "tags": ["Handlers"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "name": "handler", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Handler details", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "createOrUpdateHandler",
+        "summary": "Create or update a handler",
+        "tags": ["Handlers"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "name": "handler", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "201": { "description": "Handler created or updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteHandler",
+        "summary": "Delete a handler",
+        "tags": ["Handlers"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "name": "handler", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "204": { "description": "Handler deleted" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/namespaces/{namespace}/filters": {
+      "get": {
+        "operationId": "listFilters",
+        "summary": "List all event filters",
+        "tags": ["Filters"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/Continue" }
+        ],
+        "responses": {
+          "200": { "description": "List of filters", "content": { "application/json": { "schema": { "type": "array", "items": { "type": "object" } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createFilter",
+        "summary": "Create an event filter",
+        "tags": ["Filters"],
+        "parameters": [ { "$ref": "#/components/parameters/Namespace" } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "201": { "description": "Filter created" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/namespaces/{namespace}/filters/{filter}": {
+      "get": {
+        "operationId": "getFilter",
+        "summary": "Get a specific filter",
+        "tags": ["Filters"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "name": "filter", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Filter details", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "createOrUpdateFilter",
+        "summary": "Create or update a filter",
+        "tags": ["Filters"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "name": "filter", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "201": { "description": "Filter created or updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteFilter",
+        "summary": "Delete a filter",
+        "tags": ["Filters"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "name": "filter", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "204": { "description": "Filter deleted" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/namespaces/{namespace}/silenced": {
+      "get": {
+        "operationId": "listSilenced",
+        "summary": "List all silenced entries",
+        "tags": ["Silenced"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/Continue" }
+        ],
+        "responses": {
+          "200": { "description": "List of silenced entries", "content": { "application/json": { "schema": { "type": "array", "items": { "type": "object" } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createSilenced",
+        "summary": "Create a silenced entry",
+        "tags": ["Silenced"],
+        "parameters": [ { "$ref": "#/components/parameters/Namespace" } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "metadata": { "$ref": "#/components/schemas/Metadata" }, "check": { "type": "string" }, "subscription": { "type": "string" }, "begin": { "type": "integer" }, "expire": { "type": "integer" }, "expire_on_resolve": { "type": "boolean" }, "reason": { "type": "string" } } } } } },
+        "responses": {
+          "201": { "description": "Silenced entry created" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/namespaces/{namespace}/silenced/{silenced}": {
+      "delete": {
+        "operationId": "deleteSilenced",
+        "summary": "Delete a silenced entry",
+        "tags": ["Silenced"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "name": "silenced", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "204": { "description": "Silenced entry deleted" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/users": {
+      "get": {
+        "operationId": "listUsers",
+        "summary": "List all users",
+        "tags": ["Users"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/Continue" }
+        ],
+        "responses": {
+          "200": { "description": "List of users", "content": { "application/json": { "schema": { "type": "array", "items": { "type": "object" } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createUser",
+        "summary": "Create a user",
+        "tags": ["Users"],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["username", "password"], "properties": { "username": { "type": "string" }, "password": { "type": "string" }, "groups": { "type": "array", "items": { "type": "string" } }, "disabled": { "type": "boolean" } } } } } },
+        "responses": {
+          "201": { "description": "User created" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/users/{user}": {
+      "get": {
+        "operationId": "getUser",
+        "summary": "Get a specific user",
+        "tags": ["Users"],
+        "parameters": [ { "name": "user", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": {
+          "200": { "description": "User details", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "createOrUpdateUser",
+        "summary": "Create or update a user",
+        "tags": ["Users"],
+        "parameters": [ { "name": "user", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["username"], "properties": { "username": { "type": "string" }, "password": { "type": "string" }, "groups": { "type": "array", "items": { "type": "string" } }, "disabled": { "type": "boolean" } } } } } },
+        "responses": {
+          "201": { "description": "User created or updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteUser",
+        "summary": "Delete a user",
+        "tags": ["Users"],
+        "parameters": [ { "name": "user", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": {
+          "204": { "description": "User deleted" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/namespaces/{namespace}/assets": {
+      "get": {
+        "operationId": "listAssets",
+        "summary": "List all runtime assets",
+        "tags": ["Assets"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/Continue" }
+        ],
+        "responses": {
+          "200": { "description": "List of assets", "content": { "application/json": { "schema": { "type": "array", "items": { "type": "object" } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createAsset",
+        "summary": "Create a runtime asset",
+        "tags": ["Assets"],
+        "parameters": [ { "$ref": "#/components/parameters/Namespace" } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "201": { "description": "Asset created" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/core/v2/namespaces/{namespace}/assets/{asset}": {
+      "get": {
+        "operationId": "getAsset",
+        "summary": "Get a specific runtime asset",
+        "tags": ["Assets"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "name": "asset", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Asset details", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "createOrUpdateAsset",
+        "summary": "Create or update a runtime asset",
+        "tags": ["Assets"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "name": "asset", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "201": { "description": "Asset created or updated" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteAsset",
+        "summary": "Delete a runtime asset",
+        "tags": ["Assets"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Namespace" },
+          { "name": "asset", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "204": { "description": "Asset deleted" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Get backend health status",
+        "tags": ["Health"],
+        "security": [],
+        "responses": {
+          "200": { "description": "Backend is healthy", "content": { "application/json": { "schema": { "type": "object" } } } }
+        }
+      }
+    },
+    "/version": {
+      "get": {
+        "operationId": "getVersion",
+        "summary": "Get API version",
+        "tags": ["Health"],
+        "security": [],
+        "responses": {
+          "200": { "description": "Version info", "content": { "application/json": { "schema": { "type": "object", "properties": { "etcd": { "type": "object" }, "sensu_backend": { "type": "string" } } } } } }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "operationId": "getMetrics",
+        "summary": "Get Prometheus metrics",
+        "tags": ["Health"],
+        "responses": {
+          "200": { "description": "Prometheus metrics", "content": { "text/plain": { "schema": { "type": "string" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "API key: 'Key {api-key}'"
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "JWT access token"
+      },
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic"
+      }
+    },
+    "parameters": {
+      "Namespace": {
+        "name": "namespace",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "default": "default" },
+        "description": "Sensu namespace"
+      },
+      "CheckName": {
+        "name": "check",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" },
+        "description": "Check name"
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "schema": { "type": "integer" },
+        "description": "Maximum number of results"
+      },
+      "Continue": {
+        "name": "continue",
+        "in": "query",
+        "schema": { "type": "string" },
+        "description": "Pagination continuation token"
+      },
+      "LabelSelector": {
+        "name": "labelSelector",
+        "in": "query",
+        "schema": { "type": "string" },
+        "description": "Label-based filtering"
+      },
+      "FieldSelector": {
+        "name": "fieldSelector",
+        "in": "query",
+        "schema": { "type": "string" },
+        "description": "Field-based filtering"
+      }
+    },
+    "schemas": {
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": { "type": "string" },
+          "expires_at": { "type": "integer" },
+          "refresh_token": { "type": "string" }
+        }
+      },
+      "Metadata": {
+        "type": "object",
+        "required": ["name", "namespace"],
+        "properties": {
+          "name": { "type": "string" },
+          "namespace": { "type": "string" },
+          "labels": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
+          "annotations": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          }
+        }
+      },
+      "Check": {
+        "type": "object",
+        "properties": {
+          "command": { "type": "string" },
+          "subscriptions": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "interval": { "type": "integer" },
+          "cron": { "type": "string" },
+          "timeout": { "type": "integer" },
+          "ttl": { "type": "integer" },
+          "publish": { "type": "boolean" },
+          "handlers": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "metadata": { "$ref": "#/components/schemas/Metadata" }
+        }
+      },
+      "CheckInput": {
+        "type": "object",
+        "required": ["metadata", "subscriptions"],
+        "properties": {
+          "command": { "type": "string" },
+          "subscriptions": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "interval": { "type": "integer" },
+          "cron": { "type": "string" },
+          "timeout": { "type": "integer" },
+          "ttl": { "type": "integer" },
+          "publish": { "type": "boolean" },
+          "handlers": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "pipelines": {
+            "type": "array",
+            "items": { "type": "object" }
+          },
+          "metadata": { "$ref": "#/components/schemas/Metadata" }
+        }
+      },
+      "Entity": {
+        "type": "object",
+        "properties": {
+          "entity_class": { "type": "string", "enum": ["agent", "proxy"] },
+          "subscriptions": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "system": { "type": "object" },
+          "metadata": { "$ref": "#/components/schemas/Metadata" }
+        }
+      },
+      "EntityInput": {
+        "type": "object",
+        "required": ["entity_class", "metadata"],
+        "properties": {
+          "entity_class": { "type": "string", "enum": ["agent", "proxy"] },
+          "subscriptions": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "metadata": { "$ref": "#/components/schemas/Metadata" }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "properties": {
+          "entity": { "$ref": "#/components/schemas/Entity" },
+          "check": { "$ref": "#/components/schemas/Check" },
+          "timestamp": { "type": "integer" },
+          "metadata": { "$ref": "#/components/schemas/Metadata" }
+        }
+      },
+      "EventInput": {
+        "type": "object",
+        "properties": {
+          "entity": {
+            "type": "object",
+            "properties": {
+              "entity_class": { "type": "string" },
+              "metadata": { "$ref": "#/components/schemas/Metadata" }
+            }
+          },
+          "check": {
+            "type": "object",
+            "properties": {
+              "output": { "type": "string" },
+              "state": { "type": "string" },
+              "status": { "type": "integer" },
+              "interval": { "type": "integer" },
+              "metadata": { "$ref": "#/components/schemas/Metadata" }
+            }
+          },
+          "pipelines": {
+            "type": "array",
+            "items": { "type": "object" }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "code": { "type": "integer" }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Malformed request",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Authentication required",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      }
+    }
+  }
+}
