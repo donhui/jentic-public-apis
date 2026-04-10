@@ -1,0 +1,1224 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Enrich Layer API",
+    "description": "Enrich Layer is a data enrichment API that provides structured company profiles, person profiles, job listings, school data, and contact information from professional networks.",
+    "version": "2.0.0",
+    "x-jentic-source-url": "https://enrichlayer.com/docs"
+  },
+  "servers": [
+    {
+      "url": "https://enrichlayer.com/api/v2"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    { "name": "People", "description": "Person lookup, profile, and role endpoints" },
+    { "name": "Companies", "description": "Company lookup, profile, and employee endpoints" },
+    { "name": "Search", "description": "Search for companies and people" },
+    { "name": "Contacts", "description": "Email and phone lookups" },
+    { "name": "Jobs", "description": "Job profiles, search, and listing counts" },
+    { "name": "Schools", "description": "School profiles and student listings" },
+    { "name": "Meta", "description": "Account and credit balance endpoints" }
+  ],
+  "paths": {
+    "/profile/resolve": {
+      "get": {
+        "operationId": "personLookup",
+        "summary": "Person Lookup",
+        "description": "Look up a person using name and company information. Costs 2 credits per successful request.",
+        "tags": ["People"],
+        "parameters": [
+          { "name": "company_domain", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Company name or domain" },
+          { "name": "first_name", "in": "query", "required": true, "schema": { "type": "string" }, "description": "First name of the user" },
+          { "name": "last_name", "in": "query", "schema": { "type": "string" }, "description": "Last name of the user" },
+          { "name": "location", "in": "query", "schema": { "type": "string" }, "description": "Location of this user (country, city, or state)" },
+          { "name": "title", "in": "query", "schema": { "type": "string" }, "description": "Title that user is holding at current job" },
+          { "name": "similarity_checks", "in": "query", "schema": { "type": "string", "enum": ["include", "skip"], "default": "include" }, "description": "Controls false positive filtering" },
+          { "name": "enrich_profile", "in": "query", "schema": { "type": "string", "enum": ["enrich", "skip"], "default": "skip" }, "description": "Set to enrich to include cached profile data (+1 credit)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful person lookup",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PersonLookupResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/profile": {
+      "get": {
+        "operationId": "getPersonProfile",
+        "summary": "Person Profile",
+        "description": "Get structured data of a person profile. Costs 1 credit per successful request.",
+        "tags": ["People"],
+        "parameters": [
+          { "name": "profile_url", "in": "query", "schema": { "type": "string" }, "description": "LinkedIn profile URL" },
+          { "name": "twitter_profile_url", "in": "query", "schema": { "type": "string" }, "description": "Twitter/X profile URL" },
+          { "name": "facebook_profile_url", "in": "query", "schema": { "type": "string" }, "description": "Facebook profile URL" },
+          { "name": "extra", "in": "query", "schema": { "type": "string", "enum": ["include", "exclude"] }, "description": "Include gender, birth date, industry, interests" },
+          { "name": "github_profile_id", "in": "query", "schema": { "type": "string", "enum": ["include", "exclude"] }, "description": "Add GitHub ID data" },
+          { "name": "facebook_profile_id", "in": "query", "schema": { "type": "string", "enum": ["include", "exclude"] }, "description": "Add Facebook ID data" },
+          { "name": "twitter_profile_id", "in": "query", "schema": { "type": "string", "enum": ["include", "exclude"] }, "description": "Add Twitter ID data" },
+          { "name": "personal_contact_number", "in": "query", "schema": { "type": "string", "enum": ["include", "exclude"] }, "description": "Add personal phone numbers" },
+          { "name": "personal_email", "in": "query", "schema": { "type": "string", "enum": ["include", "exclude"] }, "description": "Add personal emails" },
+          { "name": "skills", "in": "query", "schema": { "type": "string", "enum": ["include", "exclude"] }, "description": "Include skills data" },
+          { "name": "use_cache", "in": "query", "schema": { "type": "string", "enum": ["if-present", "if-recent"] }, "description": "Cache behavior" },
+          { "name": "fallback_to_cache", "in": "query", "schema": { "type": "string", "enum": ["on-error", "never"] }, "description": "Fallback strategy" },
+          { "name": "live_fetch", "in": "query", "schema": { "type": "string", "enum": ["force", "default"] }, "description": "Fresh fetch control" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful person profile retrieval",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PersonProfile" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/person/profile-picture": {
+      "get": {
+        "operationId": "getPersonProfilePicture",
+        "summary": "Person Profile Picture",
+        "description": "Retrieve profile pictures from cached people profiles. Costs 0 credits.",
+        "tags": ["People"],
+        "parameters": [
+          { "name": "person_profile_url", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Profile URL of the person" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful profile picture retrieval",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProfilePictureResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/find/company/role/": {
+      "get": {
+        "operationId": "roleLookup",
+        "summary": "Role Lookup",
+        "description": "Identify specific roles within companies. Costs 3 credits per successful request.",
+        "tags": ["People"],
+        "parameters": [
+          { "name": "role", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Role of the profile to look up" },
+          { "name": "company_name", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Name of the company to search" },
+          { "name": "enrich_profile", "in": "query", "schema": { "type": "string", "enum": ["skip", "enrich"], "default": "skip" }, "description": "Controls result enrichment (+1 credit)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful role lookup",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PersonLookupResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/company/resolve": {
+      "get": {
+        "operationId": "companyLookup",
+        "summary": "Company Lookup",
+        "description": "Look up a company by name or domain. Costs 2 credits per successful request.",
+        "tags": ["Companies"],
+        "parameters": [
+          { "name": "company_domain", "in": "query", "schema": { "type": "string" }, "description": "Company website or domain name" },
+          { "name": "company_name", "in": "query", "schema": { "type": "string" }, "description": "Company name" },
+          { "name": "company_location", "in": "query", "schema": { "type": "string" }, "description": "ISO 3166-1 alpha-2 country code" },
+          { "name": "enrich_profile", "in": "query", "schema": { "type": "string", "enum": ["skip", "enrich"], "default": "skip" }, "description": "Enrich with cached profile data (+1 credit)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful company lookup",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CompanyLookupResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/company/resolve-id": {
+      "get": {
+        "operationId": "companyIdLookup",
+        "summary": "Company ID Lookup",
+        "description": "Convert a company numeric ID to its vanity ID. Costs 0 credits.",
+        "tags": ["Companies"],
+        "parameters": [
+          { "name": "id", "in": "query", "required": true, "schema": { "type": "string" }, "description": "The company's internal numeric ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful ID lookup",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CompanyIdLookupResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/company": {
+      "get": {
+        "operationId": "getCompanyProfile",
+        "summary": "Company Profile",
+        "description": "Get structured data of a company profile. Costs 1 credit per successful request.",
+        "tags": ["Companies"],
+        "parameters": [
+          { "name": "url", "in": "query", "required": true, "schema": { "type": "string" }, "description": "URL of the company profile to crawl" },
+          { "name": "categories", "in": "query", "schema": { "type": "string", "enum": ["exclude", "include"], "default": "exclude" }, "description": "Include company categories (+1 credit)" },
+          { "name": "funding_data", "in": "query", "schema": { "type": "string", "enum": ["exclude", "include"], "default": "exclude" }, "description": "Include funding rounds (+1 credit)" },
+          { "name": "exit_data", "in": "query", "schema": { "type": "string", "enum": ["exclude", "include"], "default": "exclude" }, "description": "Include investment exits (+1 credit)" },
+          { "name": "acquisitions", "in": "query", "schema": { "type": "string", "enum": ["exclude", "include"], "default": "exclude" }, "description": "Include acquisition data (+1 credit)" },
+          { "name": "extra", "in": "query", "schema": { "type": "string", "enum": ["exclude", "include"], "default": "exclude" }, "description": "Include external enrichments (+1 credit)" },
+          { "name": "use_cache", "in": "query", "schema": { "type": "string", "enum": ["if-present", "if-recent"] }, "description": "Cache behavior" },
+          { "name": "fallback_to_cache", "in": "query", "schema": { "type": "string", "enum": ["on-error", "never"], "default": "on-error" }, "description": "Error fallback behavior" },
+          { "name": "live_fetch", "in": "query", "schema": { "type": "string", "enum": ["force", "default"], "default": "default" }, "description": "Force fresh data (+9 credits)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful company profile retrieval",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CompanyProfile" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/company/profile-picture": {
+      "get": {
+        "operationId": "getCompanyProfilePicture",
+        "summary": "Company Profile Picture",
+        "description": "Retrieve profile pictures from cached company profiles. Costs 0 credits.",
+        "tags": ["Companies"],
+        "parameters": [
+          { "name": "company_profile_url", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Profile URL of the company" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful profile picture retrieval",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProfilePictureResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/company/employees/count": {
+      "get": {
+        "operationId": "getEmployeeCount",
+        "summary": "Employee Count",
+        "description": "Get the employee count for a company. Costs 1 credit per successful request.",
+        "tags": ["Companies"],
+        "parameters": [
+          { "name": "url", "in": "query", "required": true, "schema": { "type": "string" }, "description": "URL of the company profile to target" },
+          { "name": "coy_name_match", "in": "query", "schema": { "type": "string", "enum": ["include", "exclude"], "default": "include" }, "description": "Include/exclude profiles matching company name" },
+          { "name": "at_date", "in": "query", "schema": { "type": "string", "format": "date" }, "description": "Fetch employee count at a particular date (YYYY-MM-DD)" },
+          { "name": "use_cache", "in": "query", "schema": { "type": "string", "enum": ["if-present", "if-recent"], "default": "if-present" }, "description": "Cache behavior" },
+          { "name": "estimated_employee_count", "in": "query", "schema": { "type": "string", "enum": ["include", "exclude"], "default": "exclude" }, "description": "Include estimated employee count" },
+          { "name": "employment_status", "in": "query", "schema": { "type": "string", "enum": ["current", "past", "all"], "default": "current" }, "description": "Filter by employment status" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful employee count",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EmployeeCountResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/company/employees/": {
+      "get": {
+        "operationId": "listEmployees",
+        "summary": "Employee Listing",
+        "description": "Get a list of employees from a company profile. Costs 3 credits per employee returned.",
+        "tags": ["Companies"],
+        "parameters": [
+          { "name": "url", "in": "query", "required": true, "schema": { "type": "string" }, "description": "URL of the company profile to target" },
+          { "name": "coy_name_match", "in": "query", "schema": { "type": "string", "enum": ["include", "exclude"], "default": "include" }, "description": "Filter for company name matching" },
+          { "name": "use_cache", "in": "query", "schema": { "type": "string", "enum": ["if-present", "if-recent"], "default": "if-present" }, "description": "Data freshness control" },
+          { "name": "country", "in": "query", "schema": { "type": "string" }, "description": "ISO 3166-1 alpha-2 country code (+3 credits)" },
+          { "name": "enrich_profiles", "in": "query", "schema": { "type": "string", "enum": ["skip", "enrich"], "default": "skip" }, "description": "Full profile retrieval (+1 credit per employee)" },
+          { "name": "boolean_role_search", "in": "query", "schema": { "type": "string", "maxLength": 255 }, "description": "Filter employees by title using boolean expression" },
+          { "name": "page_size", "in": "query", "schema": { "type": "string", "default": "10" }, "description": "Maximum results per call (1-9999)" },
+          { "name": "employment_status", "in": "query", "schema": { "type": "string", "enum": ["current", "past", "all"], "default": "current" }, "description": "Employee status filter" },
+          { "name": "sort_by", "in": "query", "schema": { "type": "string", "enum": ["recently-joined", "recently-left", "oldest", "none"], "default": "none" }, "description": "Result ordering" },
+          { "name": "resolve_numeric_id", "in": "query", "schema": { "type": "string", "enum": ["false", "true"], "default": "false" }, "description": "Support numeric company IDs (+2 credits)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful employee listing",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EmployeeListResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/company/employee/search/": {
+      "get": {
+        "operationId": "searchEmployees",
+        "summary": "Employee Search",
+        "description": "Search for employees at a company by keyword. Costs 10 credits per successful request.",
+        "tags": ["Companies"],
+        "parameters": [
+          { "name": "company_profile_url", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Profile URL of the target company" },
+          { "name": "keyword_boolean", "in": "query", "required": true, "schema": { "type": "string", "maxLength": 255 }, "description": "Job title keyword in Boolean Search Syntax" },
+          { "name": "page_size", "in": "query", "schema": { "type": "string", "default": "10" }, "description": "Results per call (1-9999)" },
+          { "name": "country", "in": "query", "schema": { "type": "string" }, "description": "ISO 3166-1 alpha-2 country code (+3 credits)" },
+          { "name": "enrich_profiles", "in": "query", "schema": { "type": "string", "enum": ["skip", "enrich"], "default": "skip" }, "description": "Return full profiles (+1 credit per profile)" },
+          { "name": "resolve_numeric_id", "in": "query", "schema": { "type": "string", "enum": ["true", "false"], "default": "false" }, "description": "Enable numerical company ID support (+2 credits)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful employee search",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EmployeeListResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/search/company": {
+      "get": {
+        "operationId": "searchCompanies",
+        "summary": "Company Search",
+        "description": "Search for companies by various criteria. Costs 3 credits per company URL returned.",
+        "tags": ["Search"],
+        "parameters": [
+          { "name": "country", "in": "query", "schema": { "type": "string" }, "description": "ISO 3166-1 alpha-2 country code" },
+          { "name": "region", "in": "query", "schema": { "type": "string" }, "description": "State, province, or political division" },
+          { "name": "city", "in": "query", "schema": { "type": "string" }, "description": "City name search expression" },
+          { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["EDUCATIONAL", "GOVERNMENT_AGENCY", "NON_PROFIT", "PARTNERSHIP", "PRIVATELY_HELD", "PUBLIC_COMPANY", "SELF_EMPLOYED", "SELF_OWNED"] }, "description": "Company type filter" },
+          { "name": "follower_count_min", "in": "query", "schema": { "type": "integer" }, "description": "Minimum follower count" },
+          { "name": "follower_count_max", "in": "query", "schema": { "type": "integer" }, "description": "Maximum follower count" },
+          { "name": "name", "in": "query", "schema": { "type": "string" }, "description": "Company name search expression" },
+          { "name": "industry", "in": "query", "schema": { "type": "string" }, "description": "Industry classification search" },
+          { "name": "primary_industry", "in": "query", "schema": { "type": "string" }, "description": "Primary industry filter" },
+          { "name": "employee_count_min", "in": "query", "schema": { "type": "integer" }, "description": "Minimum employee count" },
+          { "name": "employee_count_max", "in": "query", "schema": { "type": "integer" }, "description": "Maximum employee count" },
+          { "name": "description", "in": "query", "schema": { "type": "string" }, "description": "Company description search" },
+          { "name": "founded_after_year", "in": "query", "schema": { "type": "integer" }, "description": "Founded after year filter" },
+          { "name": "founded_before_year", "in": "query", "schema": { "type": "integer" }, "description": "Founded before year filter" },
+          { "name": "funding_amount_min", "in": "query", "schema": { "type": "integer" }, "description": "Minimum funding amount (USD)" },
+          { "name": "funding_amount_max", "in": "query", "schema": { "type": "integer" }, "description": "Maximum funding amount (USD)" },
+          { "name": "funding_raised_after", "in": "query", "schema": { "type": "string" }, "description": "Funding raised after date" },
+          { "name": "funding_raised_before", "in": "query", "schema": { "type": "string" }, "description": "Funding raised before date" },
+          { "name": "public_identifier_in_list", "in": "query", "schema": { "type": "string" }, "description": "Profile URL identifier include filter" },
+          { "name": "public_identifier_not_in_list", "in": "query", "schema": { "type": "string" }, "description": "Profile URL identifier exclude filter" },
+          { "name": "domain_name", "in": "query", "schema": { "type": "string" }, "description": "Domain name search" },
+          { "name": "page_size", "in": "query", "schema": { "type": "integer", "default": 100, "minimum": 1, "maximum": 100 }, "description": "Results per page" },
+          { "name": "enrich_profiles", "in": "query", "schema": { "type": "string", "enum": ["skip", "enrich"], "default": "skip" }, "description": "Enrich with profile data" },
+          { "name": "use_cache", "in": "query", "schema": { "type": "string", "enum": ["if-present", "if-recent"] }, "description": "Cache freshness control" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful company search",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CompanySearchResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/search/person": {
+      "get": {
+        "operationId": "searchPeople",
+        "summary": "Person Search",
+        "description": "Search for people by various criteria. Costs 3 credits per profile URL returned.",
+        "tags": ["Search"],
+        "parameters": [
+          { "name": "country", "in": "query", "schema": { "type": "string" }, "description": "ISO 3166-1 alpha-2 country code" },
+          { "name": "first_name", "in": "query", "schema": { "type": "string" }, "description": "First name search expression" },
+          { "name": "last_name", "in": "query", "schema": { "type": "string" }, "description": "Last name search expression" },
+          { "name": "current_role_title", "in": "query", "schema": { "type": "string" }, "description": "Current role title" },
+          { "name": "past_role_title", "in": "query", "schema": { "type": "string" }, "description": "Past role title" },
+          { "name": "current_company_name", "in": "query", "schema": { "type": "string" }, "description": "Current company name" },
+          { "name": "past_company_name", "in": "query", "schema": { "type": "string" }, "description": "Past company name" },
+          { "name": "current_company_profile_url", "in": "query", "schema": { "type": "string" }, "description": "Current company profile URL" },
+          { "name": "past_company_profile_url", "in": "query", "schema": { "type": "string" }, "description": "Past company profile URL" },
+          { "name": "city", "in": "query", "schema": { "type": "string" }, "description": "City filter" },
+          { "name": "region", "in": "query", "schema": { "type": "string" }, "description": "Region filter" },
+          { "name": "headline", "in": "query", "schema": { "type": "string" }, "description": "Headline search" },
+          { "name": "summary", "in": "query", "schema": { "type": "string" }, "description": "Summary search" },
+          { "name": "education_field_of_study", "in": "query", "schema": { "type": "string" }, "description": "Education field of study" },
+          { "name": "education_degree_name", "in": "query", "schema": { "type": "string" }, "description": "Education degree name" },
+          { "name": "education_school_name", "in": "query", "schema": { "type": "string" }, "description": "Education school name" },
+          { "name": "skills", "in": "query", "schema": { "type": "string" }, "description": "Skills filter" },
+          { "name": "languages", "in": "query", "schema": { "type": "string" }, "description": "Languages filter" },
+          { "name": "interests", "in": "query", "schema": { "type": "string" }, "description": "Interests filter" },
+          { "name": "page_size", "in": "query", "schema": { "type": "integer", "default": 100, "minimum": 1, "maximum": 100 }, "description": "Results per page" },
+          { "name": "enrich_profiles", "in": "query", "schema": { "type": "string", "enum": ["skip", "enrich"], "default": "skip" }, "description": "Enrich with profile data" },
+          { "name": "use_cache", "in": "query", "schema": { "type": "string", "enum": ["if-present", "if-recent"] }, "description": "Cache freshness control" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful person search",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PersonSearchResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/disposable-email": {
+      "get": {
+        "operationId": "checkDisposableEmail",
+        "summary": "Disposable Email Address Check",
+        "description": "Check whether an email address belongs to a disposable email service. Costs 0 credits.",
+        "tags": ["Contacts"],
+        "parameters": [
+          { "name": "email", "in": "query", "required": true, "schema": { "type": "string", "format": "email" }, "description": "Email address to check" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful disposable email check",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DisposableEmailResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/contact-api/personal-contact": {
+      "get": {
+        "operationId": "personalContactNumberLookup",
+        "summary": "Personal Contact Number Lookup",
+        "description": "Extract personal contact numbers from a profile. Costs 1 credit per number returned.",
+        "tags": ["Contacts"],
+        "parameters": [
+          { "name": "profile_url", "in": "query", "schema": { "type": "string" }, "description": "Profile URL to extract contact numbers from" },
+          { "name": "twitter_profile_url", "in": "query", "schema": { "type": "string" }, "description": "Twitter/X profile URL" },
+          { "name": "facebook_profile_url", "in": "query", "schema": { "type": "string" }, "description": "Facebook profile URL" },
+          { "name": "page_size", "in": "query", "schema": { "type": "string", "default": "0" }, "description": "Max results per call (0 = no limit)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful contact number lookup",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ContactNumbersResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/contact-api/personal-email": {
+      "get": {
+        "operationId": "personalEmailLookup",
+        "summary": "Personal Email Lookup",
+        "description": "Extract personal email addresses from a profile. Costs 1 credit per email returned.",
+        "tags": ["Contacts"],
+        "parameters": [
+          { "name": "profile_url", "in": "query", "schema": { "type": "string" }, "description": "Profile URL to extract emails from" },
+          { "name": "twitter_profile_url", "in": "query", "schema": { "type": "string" }, "description": "Twitter/X profile URL" },
+          { "name": "facebook_profile_url", "in": "query", "schema": { "type": "string" }, "description": "Facebook profile URL" },
+          { "name": "email_validation", "in": "query", "schema": { "type": "string", "enum": ["none", "fast", "precise"], "default": "none" }, "description": "Validation level" },
+          { "name": "page_size", "in": "query", "schema": { "type": "string", "default": "0" }, "description": "Max emails returned (0 = unlimited)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful email lookup",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PersonalEmailResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/resolve/phone": {
+      "get": {
+        "operationId": "reverseContactNumberLookup",
+        "summary": "Reverse Contact Number Lookup",
+        "description": "Identify social media profiles from a phone number. Costs 3 credits per successful request.",
+        "tags": ["Contacts"],
+        "parameters": [
+          { "name": "phone_number", "in": "query", "required": true, "schema": { "type": "string" }, "description": "E.164 formatted phone number" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful reverse phone lookup",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReversePhoneResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/profile/resolve/email": {
+      "get": {
+        "operationId": "reverseEmailLookup",
+        "summary": "Reverse Email Lookup",
+        "description": "Identify a person's profile from an email address. Costs 3 credits per successful request.",
+        "tags": ["Contacts"],
+        "parameters": [
+          { "name": "email", "in": "query", "required": true, "schema": { "type": "string", "format": "email" }, "description": "Email address to look up" },
+          { "name": "lookup_depth", "in": "query", "schema": { "type": "string", "enum": ["superficial", "deep"], "default": "deep" }, "description": "Lookup intensity" },
+          { "name": "enrich_profile", "in": "query", "schema": { "type": "string", "enum": ["skip", "enrich"], "default": "skip" }, "description": "Controls profile enrichment (+1 credit)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful reverse email lookup",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PersonLookupResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/profile/email": {
+      "get": {
+        "operationId": "workEmailLookup",
+        "summary": "Work Email Lookup",
+        "description": "Extract a verified work email address from a profile. Costs 3 credits per successful request.",
+        "tags": ["Contacts"],
+        "parameters": [
+          { "name": "profile_url", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Profile URL of the person" },
+          { "name": "callback_url", "in": "query", "schema": { "type": "string", "format": "uri" }, "description": "Webhook URL to notify when processing completes" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful work email lookup (may be queued)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WorkEmailResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/job": {
+      "get": {
+        "operationId": "getJobProfile",
+        "summary": "Job Profile",
+        "description": "Get structured data of a job listing. Costs 2 credits per successful request.",
+        "tags": ["Jobs"],
+        "parameters": [
+          { "name": "url", "in": "query", "required": true, "schema": { "type": "string" }, "description": "URL of a job profile to target" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful job profile retrieval",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/JobProfile" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/company/job": {
+      "get": {
+        "operationId": "searchJobs",
+        "summary": "Job Search",
+        "description": "Search for job listings. Costs 2 credits per successful request.",
+        "tags": ["Jobs"],
+        "parameters": [
+          { "name": "job_type", "in": "query", "schema": { "type": "string", "enum": ["full-time", "part-time", "contract", "internship", "temporary", "volunteer", "anything"], "default": "anything" }, "description": "Nature of the job position" },
+          { "name": "experience_level", "in": "query", "schema": { "type": "string", "enum": ["internship", "entry_level", "associate", "mid_senior_level", "director", "anything"], "default": "anything" }, "description": "Required experience level" },
+          { "name": "when", "in": "query", "schema": { "type": "string", "enum": ["yesterday", "past-week", "past-month", "anytime"], "default": "anytime" }, "description": "Job posting timeframe" },
+          { "name": "flexibility", "in": "query", "schema": { "type": "string", "enum": ["remote", "on-site", "hybrid", "anything"], "default": "anything" }, "description": "Work arrangement type" },
+          { "name": "geo_id", "in": "query", "schema": { "type": "string" }, "description": "Geographic location identifier" },
+          { "name": "keyword", "in": "query", "schema": { "type": "string" }, "description": "Search keyword" },
+          { "name": "search_id", "in": "query", "schema": { "type": "string" }, "description": "Company search ID from Company Profile API" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful job search",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/JobSearchResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/company/job/count": {
+      "get": {
+        "operationId": "getJobsListingCount",
+        "summary": "Jobs Listing Count",
+        "description": "Get the count of job listings. Costs 2 credits per successful request.",
+        "tags": ["Jobs"],
+        "parameters": [
+          { "name": "job_type", "in": "query", "schema": { "type": "string", "enum": ["full-time", "part-time", "contract", "internship", "temporary", "volunteer", "anything"], "default": "anything" }, "description": "Nature of the job position" },
+          { "name": "experience_level", "in": "query", "schema": { "type": "string", "enum": ["internship", "entry_level", "associate", "mid_senior_level", "director", "anything"], "default": "anything" }, "description": "Required experience level" },
+          { "name": "when", "in": "query", "schema": { "type": "string", "enum": ["yesterday", "past-week", "past-month", "anytime"], "default": "anytime" }, "description": "Job posting timeframe" },
+          { "name": "flexibility", "in": "query", "schema": { "type": "string", "enum": ["remote", "on-site", "hybrid", "anything"], "default": "anything" }, "description": "Work arrangement type" },
+          { "name": "geo_id", "in": "query", "schema": { "type": "string" }, "description": "Geographic location identifier" },
+          { "name": "keyword", "in": "query", "schema": { "type": "string" }, "description": "Search keyword" },
+          { "name": "search_id", "in": "query", "schema": { "type": "string" }, "description": "Company search ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful job count",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/JobCountResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/school": {
+      "get": {
+        "operationId": "getSchoolProfile",
+        "summary": "School Profile",
+        "description": "Get structured data of a school profile. Costs 1 credit per successful request.",
+        "tags": ["Schools"],
+        "parameters": [
+          { "name": "url", "in": "query", "required": true, "schema": { "type": "string" }, "description": "URL of the school profile to crawl" },
+          { "name": "use_cache", "in": "query", "schema": { "type": "string", "enum": ["if-present", "if-recent"], "default": "if-present" }, "description": "Cache behavior" },
+          { "name": "live_fetch", "in": "query", "schema": { "type": "string", "enum": ["force", "default"], "default": "default" }, "description": "Force fresh data (+9 credits)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful school profile retrieval",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SchoolProfile" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/school/students/": {
+      "get": {
+        "operationId": "listStudents",
+        "summary": "Student Listing",
+        "description": "Get a list of students from a school profile. Costs 3 credits per student returned.",
+        "tags": ["Schools"],
+        "parameters": [
+          { "name": "school_url", "in": "query", "required": true, "schema": { "type": "string" }, "description": "URL of the school profile to target" },
+          { "name": "country", "in": "query", "schema": { "type": "string" }, "description": "ISO 3166-1 alpha-2 country code (+3 credits)" },
+          { "name": "enrich_profiles", "in": "query", "schema": { "type": "string", "enum": ["skip", "enrich"], "default": "skip" }, "description": "Full profile retrieval (+1 credit per student)" },
+          { "name": "search_keyword", "in": "query", "schema": { "type": "string" }, "description": "Filter by major using regex" },
+          { "name": "page_size", "in": "query", "schema": { "type": "string", "default": "10" }, "description": "Results per call (1-200000)" },
+          { "name": "student_status", "in": "query", "schema": { "type": "string", "enum": ["current", "past", "all"], "default": "current" }, "description": "Student status filter" },
+          { "name": "sort_by", "in": "query", "schema": { "type": "string", "enum": ["recently-matriculated", "recently-graduated", "none"], "default": "none" }, "description": "Sort order" },
+          { "name": "resolve_numeric_id", "in": "query", "schema": { "type": "string", "enum": ["true", "false"], "default": "false" }, "description": "Enable numerical ID support (+2 credits)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful student listing",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/StudentListResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/credit-balance": {
+      "get": {
+        "operationId": "viewCreditBalance",
+        "summary": "View Credit Balance",
+        "description": "Get the current available credit balance. Costs 0 credits.",
+        "tags": ["Meta"],
+        "responses": {
+          "200": {
+            "description": "Successful credit balance retrieval",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CreditBalanceResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer token authentication"
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request"
+      },
+      "Unauthorized": {
+        "description": "Unauthorized - invalid or missing authentication"
+      },
+      "Forbidden": {
+        "description": "Forbidden - insufficient permissions"
+      },
+      "NotFound": {
+        "description": "Resource not found"
+      },
+      "TooManyRequests": {
+        "description": "Rate limit exceeded"
+      },
+      "InternalServerError": {
+        "description": "Internal server error"
+      },
+      "ServiceUnavailable": {
+        "description": "Service unavailable"
+      }
+    },
+    "schemas": {
+      "PersonLookupResponse": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "description": "LinkedIn profile URL" },
+          "profile": { "$ref": "#/components/schemas/PersonProfile" },
+          "last_updated": { "type": "string", "format": "date-time", "description": "Last profile update timestamp" }
+        }
+      },
+      "PersonProfile": {
+        "type": "object",
+        "properties": {
+          "public_identifier": { "type": "string" },
+          "first_name": { "type": "string" },
+          "last_name": { "type": "string" },
+          "full_name": { "type": "string" },
+          "profile_pic_url": { "type": "string", "format": "uri" },
+          "background_cover_image_url": { "type": "string", "format": "uri" },
+          "headline": { "type": "string" },
+          "summary": { "type": "string" },
+          "occupation": { "type": "string" },
+          "country": { "type": "string" },
+          "city": { "type": "string" },
+          "state": { "type": "string" },
+          "follower_count": { "type": "integer" },
+          "experiences": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Experience" }
+          },
+          "education": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Education" }
+          },
+          "accomplishments": { "type": "array", "items": { "type": "object" } },
+          "volunteer_work": { "type": "array", "items": { "type": "object" } },
+          "certifications": { "type": "array", "items": { "type": "object" } },
+          "people_also_viewed": { "type": "array", "items": { "type": "object" } },
+          "recommendations": { "type": "array", "items": { "type": "object" } },
+          "activities": { "type": "array", "items": { "type": "object" } },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "thin_profile": { "type": "boolean" },
+              "last_updated": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      },
+      "Experience": {
+        "type": "object",
+        "properties": {
+          "company": { "type": "string" },
+          "title": { "type": "string" },
+          "location": { "type": "string" },
+          "starts_at": { "type": "object" },
+          "ends_at": { "type": "object" }
+        }
+      },
+      "Education": {
+        "type": "object",
+        "properties": {
+          "school": { "type": "string" },
+          "degree_name": { "type": "string" },
+          "field_of_study": { "type": "string" },
+          "starts_at": { "type": "object" },
+          "ends_at": { "type": "object" }
+        }
+      },
+      "ProfilePictureResponse": {
+        "type": "object",
+        "properties": {
+          "tmp_profile_pic_url": { "type": "string", "format": "uri", "description": "Temporary URL for the profile picture" }
+        }
+      },
+      "CompanyLookupResponse": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "description": "LinkedIn company URL" },
+          "profile": { "$ref": "#/components/schemas/CompanyProfile" },
+          "last_updated": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CompanyProfile": {
+        "type": "object",
+        "properties": {
+          "linkedin_internal_id": { "type": "string" },
+          "universal_name_id": { "type": "string" },
+          "search_id": { "type": "string" },
+          "name": { "type": "string" },
+          "tagline": { "type": "string" },
+          "description": { "type": "string" },
+          "website": { "type": "string", "format": "uri" },
+          "industry": { "type": "string" },
+          "company_type": { "type": "string" },
+          "founded_year": { "type": "integer", "nullable": true },
+          "specialities": { "type": "array", "items": { "type": "string" } },
+          "hq": { "$ref": "#/components/schemas/Location" },
+          "locations": { "type": "array", "items": { "$ref": "#/components/schemas/Location" } },
+          "company_size": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "follower_count": { "type": "integer" },
+          "profile_pic_url": { "type": "string", "format": "uri" },
+          "background_cover_image_url": { "type": "string", "format": "uri" },
+          "similar_companies": { "type": "array", "items": { "type": "object" } },
+          "affiliated_companies": { "type": "array", "items": { "type": "object" } },
+          "updates": { "type": "array", "items": { "type": "object" } },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "thin_profile": { "type": "boolean" },
+              "last_updated": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      },
+      "CompanyIdLookupResponse": {
+        "type": "object",
+        "properties": {
+          "vanity_id": { "type": "string", "description": "The company vanity identifier" }
+        }
+      },
+      "Location": {
+        "type": "object",
+        "properties": {
+          "country": { "type": "string" },
+          "city": { "type": "string" },
+          "postal_code": { "type": "string" },
+          "line_1": { "type": "string" },
+          "state": { "type": "string" },
+          "is_hq": { "type": "boolean" }
+        }
+      },
+      "EmployeeCountResponse": {
+        "type": "object",
+        "properties": {
+          "estimated_employee_count": { "type": "integer" },
+          "verified_employee_count": { "type": "integer" }
+        }
+      },
+      "EmployeeListResponse": {
+        "type": "object",
+        "properties": {
+          "employees": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "profile_url": { "type": "string" },
+                "profile": { "$ref": "#/components/schemas/PersonProfile" },
+                "last_updated": { "type": "string", "format": "date-time" }
+              }
+            }
+          },
+          "next_page": { "type": "string", "nullable": true }
+        }
+      },
+      "CompanySearchResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CompanyLookupResponse" }
+          },
+          "next_page": { "type": "string", "nullable": true },
+          "total_result_count": { "type": "integer" }
+        }
+      },
+      "PersonSearchResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "linkedin_profile_url": { "type": "string" },
+                "profile": { "$ref": "#/components/schemas/PersonProfile" }
+              }
+            }
+          },
+          "next_page": { "type": "string", "nullable": true },
+          "total_result_count": { "type": "integer" }
+        }
+      },
+      "DisposableEmailResponse": {
+        "type": "object",
+        "properties": {
+          "is_disposable_email": { "type": "boolean" },
+          "is_free_email": { "type": "boolean" }
+        }
+      },
+      "ContactNumbersResponse": {
+        "type": "object",
+        "properties": {
+          "numbers": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "PersonalEmailResponse": {
+        "type": "object",
+        "properties": {
+          "emails": { "type": "array", "items": { "type": "string" } },
+          "invalid_emails": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "ReversePhoneResponse": {
+        "type": "object",
+        "properties": {
+          "linkedin_profile_url": { "type": "string" },
+          "twitter_profile_url": { "type": "string" },
+          "facebook_profile_url": { "type": "string" }
+        }
+      },
+      "WorkEmailResponse": {
+        "type": "object",
+        "properties": {
+          "email_queue_count": { "type": "integer" }
+        }
+      },
+      "JobProfile": {
+        "type": "object",
+        "properties": {
+          "linkedin_internal_id": { "type": "string" },
+          "job_description": { "type": "string" },
+          "apply_url": { "type": "string", "format": "uri" },
+          "title": { "type": "string" },
+          "location": {
+            "type": "object",
+            "properties": {
+              "country": { "type": "string" },
+              "region": { "type": "string" },
+              "city": { "type": "string" },
+              "postal_code": { "type": "string" },
+              "latitude": { "type": "number" },
+              "longitude": { "type": "number" },
+              "street": { "type": "string" }
+            }
+          },
+          "company": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "url": { "type": "string" },
+              "logo": { "type": "string" }
+            }
+          },
+          "seniority_level": { "type": "string" },
+          "industry": { "type": "array", "items": { "type": "string" } },
+          "employment_type": { "type": "string" },
+          "job_functions": { "type": "array", "items": { "type": "string" } },
+          "total_applicants": { "type": "integer" }
+        }
+      },
+      "JobSearchResponse": {
+        "type": "object",
+        "properties": {
+          "job": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "company": { "type": "string" },
+                "company_url": { "type": "string", "format": "uri" },
+                "job_title": { "type": "string" },
+                "job_url": { "type": "string", "format": "uri" },
+                "list_date": { "type": "string", "format": "date" },
+                "location": { "type": "string" }
+              }
+            }
+          },
+          "next_page_no": { "type": "integer" },
+          "next_page_api_url": { "type": "string" },
+          "previous_page_no": { "type": "integer", "nullable": true },
+          "previous_page_api_url": { "type": "string", "nullable": true }
+        }
+      },
+      "JobCountResponse": {
+        "type": "object",
+        "properties": {
+          "count": { "type": "integer" }
+        }
+      },
+      "SchoolProfile": {
+        "type": "object",
+        "properties": {
+          "linkedin_internal_id": { "type": "string" },
+          "universal_name_id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "website": { "type": "string", "format": "uri" },
+          "industry": { "type": "string" },
+          "company_type": { "type": "string" },
+          "founded_year": { "type": "integer", "nullable": true },
+          "specialities": { "type": "array", "items": { "type": "string" } },
+          "hq": { "$ref": "#/components/schemas/Location" },
+          "locations": { "type": "array", "items": { "$ref": "#/components/schemas/Location" } },
+          "follower_count": { "type": "integer" },
+          "company_size": { "type": "array", "items": { "type": "integer" } },
+          "company_size_on_linkedin": { "type": "integer" },
+          "profile_pic_url": { "type": "string", "format": "uri" },
+          "background_cover_image_url": { "type": "string", "format": "uri" },
+          "similar_companies": { "type": "array", "items": { "type": "object" } },
+          "affiliated_companies": { "type": "array", "items": { "type": "object" } },
+          "updates": { "type": "array", "items": { "type": "object" } },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "thin_profile": { "type": "boolean" },
+              "last_updated": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      },
+      "StudentListResponse": {
+        "type": "object",
+        "properties": {
+          "students": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "profile_url": { "type": "string" },
+                "profile": { "$ref": "#/components/schemas/PersonProfile" },
+                "last_updated": { "type": "string", "format": "date-time" }
+              }
+            }
+          },
+          "next_page": { "type": "string", "nullable": true }
+        }
+      },
+      "CreditBalanceResponse": {
+        "type": "object",
+        "properties": {
+          "credit_balance": { "type": "integer", "description": "Current available credit balance" }
+        }
+      }
+    }
+  }
+}
