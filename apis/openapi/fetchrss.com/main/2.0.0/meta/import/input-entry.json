@@ -1,0 +1,393 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "FetchRSS API",
+    "description": "The FetchRSS API allows you to create, retrieve, and delete RSS feeds programmatically. It supports generating feeds from various sources including HTML pages, Facebook, YouTube, and more.",
+    "version": "2.0.0",
+    "x-jentic-source-url": "https://fetchrss.com/api"
+  },
+  "servers": [
+    {
+      "url": "https://fetchrss.com/api/v2",
+      "description": "FetchRSS API v2 production server"
+    }
+  ],
+  "paths": {
+    "/feeds": {
+      "get": {
+        "operationId": "listFeeds",
+        "summary": "List all feeds",
+        "description": "Retrieve all RSS feeds associated with the authenticated account, with pagination support.",
+        "tags": [
+          "Feeds"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination.",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Number of feeds per page (maximum 100).",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with list of feeds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createFeed",
+        "summary": "Create a new feed",
+        "description": "Generate a new RSS feed from a given URL. Supports HTML pages, Facebook, YouTube, and other sources. If a feed with the same configuration already exists, the existing feed data is returned.",
+        "tags": [
+          "Feeds"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFeedRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Feed created successfully (or existing feed returned if duplicate).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing required parameters or invalid values.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feeds/{id}": {
+      "delete": {
+        "operationId": "deleteFeed",
+        "summary": "Delete a feed",
+        "description": "Remove a specified RSS feed. Repeated creation and deletion of identical feeds may result in API key blocking.",
+        "tags": [
+          "Feeds"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the feed to delete.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feed deleted successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid feed ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateFeedRequest": {
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The target URL to generate an RSS feed from."
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Custom title for the feed (up to 120 characters)."
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Custom description for the feed (up to 500 characters)."
+          },
+          "items_per_feed": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Number of items per feed (1 to plan maximum)."
+          },
+          "news_selector": {
+            "type": "string",
+            "description": "CSS selector for the parent element containing feed items (required for HTML sources)."
+          },
+          "title_selector": {
+            "type": "string",
+            "description": "CSS selector for the item title (required for HTML sources)."
+          },
+          "content_selector": {
+            "type": "string",
+            "description": "CSS selector for the item content/summary (required for HTML sources)."
+          },
+          "pic_selector": {
+            "type": "string",
+            "description": "CSS selector for item images."
+          },
+          "date_selector": {
+            "type": "string",
+            "description": "CSS selector for item dates."
+          },
+          "author_selector": {
+            "type": "string",
+            "description": "CSS selector for item authors."
+          },
+          "link_selector": {
+            "type": "string",
+            "description": "CSS selector for item links."
+          },
+          "pic_src": {
+            "type": "string",
+            "description": "Image source attribute configuration."
+          },
+          "date_format": {
+            "type": "string",
+            "description": "Date format string for parsing dates."
+          },
+          "shared_to_original": {
+            "type": "boolean",
+            "description": "For Facebook sources: link to the original shared post instead of the share."
+          },
+          "video": {
+            "type": "boolean",
+            "description": "For YouTube sources: include video in feed items."
+          },
+          "order": {
+            "type": "string",
+            "description": "For YouTube sources: ordering of feed items."
+          }
+        }
+      },
+      "FeedListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Indicates if the request was successful."
+          },
+          "feeds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Feed"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "description": "Current page number."
+          },
+          "per_page": {
+            "type": "integer",
+            "description": "Number of items per page."
+          },
+          "total": {
+            "type": "integer",
+            "description": "Total number of feeds."
+          },
+          "total_pages": {
+            "type": "integer",
+            "description": "Total number of pages available."
+          },
+          "total_items": {
+            "type": "integer",
+            "description": "Total number of feed items across all feeds."
+          }
+        }
+      },
+      "FeedResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Indicates if the request was successful."
+          },
+          "feed": {
+            "$ref": "#/components/schemas/Feed"
+          }
+        }
+      },
+      "Feed": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique feed identifier."
+          },
+          "title": {
+            "type": "string",
+            "description": "Feed title."
+          },
+          "description": {
+            "type": "string",
+            "description": "Feed description."
+          },
+          "url": {
+            "type": "string",
+            "description": "Source URL the feed was created from."
+          },
+          "rss_url": {
+            "type": "string",
+            "description": "URL to access the generated RSS feed."
+          },
+          "src_url": {
+            "type": "string",
+            "description": "The original source URL the feed was created from."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the feed was created."
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the feed was last updated."
+          }
+        }
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Indicates the operation was successful."
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Always false for errors.",
+            "example": false
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "integer",
+                "description": "Error code."
+              },
+              "message": {
+                "type": "string",
+                "description": "Error message."
+              }
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "API-KEY",
+        "description": "API key obtained from FetchRSS account settings."
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKeyHeader": []
+    }
+  ]
+}
