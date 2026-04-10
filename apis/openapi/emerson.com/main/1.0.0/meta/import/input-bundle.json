@@ -1,0 +1,933 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Emerson DeltaV Edge REST API",
+    "description": "REST API for accessing DeltaV Edge Environment data including control hierarchy,\nruntime process values, historical/cached process values, alarms and events,\nand batch events.\n\n## Authentication\nAll data endpoints require a Bearer token obtained via one of the Login endpoints.\nTokens expire every 24 hours (configurable in DeltaV Edge Manager).\nWhen a token expires, the API returns a \"No authorization\" message.\n\n## Query Patterns\nThe Graph and History endpoints support two query patterns:\n- **By Entity ID**: Use the entity/parameter ID directly in the URL path segment.\n- **By Path**: Use the `path` query parameter with format `{system_name}/{shortest_unique_path}`.\n  Path queries only work for objects under Control Strategies and Recipes.\n\n## Date/Time Format\nAll date/time parameters use ISO 8601 format (e.g., `2023-09-17T11:00:00.000Z`).\n\n## TLS/SSL\nThe API is served over HTTPS. Certificates can be managed through the DeltaV Edge Manager.\n",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Emerson DeltaV Edge",
+      "url": "https://github.com/EmersonDeltaV/deltav-edge"
+    },
+    "x-jentic-source-url": "https://github.com/EmersonDeltaV/deltav-edge/blob/main/developer-guide/rest-api/rest-api.md"
+  },
+  "servers": [
+    {
+      "url": "https://{edge_ip}/edge/api/v1",
+      "description": "DeltaV Edge Node Enterprise network",
+      "variables": {
+        "edge_ip": {
+          "default": "10.0.0.1",
+          "description": "IP address of the Edge Node on the Enterprise network"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/Login/GetAuthToken/profile": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Get auth token (Profile user)",
+        "description": "Authenticate using a DeltaV Edge profile user account and obtain a Bearer token.\nThe profile must be set to \"Available\" in DeltaV Edge Manager.\nThe request body is sent as form data (not JSON).\n",
+        "operationId": "loginProfile",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "password"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "DeltaV Edge profile username",
+                    "example": "so"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "DeltaV Edge profile password"
+                  }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "password"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "DeltaV Edge profile username",
+                    "example": "so"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "DeltaV Edge profile password"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokenResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - invalid credentials"
+          }
+        }
+      }
+    },
+    "/Login/GetAuthToken/activedirectory": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Get auth token (Active Directory user)",
+        "description": "Authenticate using Active Directory credentials and obtain a Bearer token.\nThe request body is sent as form data (not JSON).\n",
+        "operationId": "loginActiveDirectory",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "password"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "Active Directory username"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "Active Directory password"
+                  },
+                  "domain": {
+                    "type": "string",
+                    "description": "Active Directory domain name (if required)"
+                  }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "password"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "Active Directory username"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "Active Directory password"
+                  },
+                  "domain": {
+                    "type": "string",
+                    "description": "Active Directory domain name (if required)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokenResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - invalid credentials"
+          }
+        }
+      }
+    },
+    "/graph": {
+      "get": {
+        "tags": [
+          "Graph"
+        ],
+        "summary": "Query graph by path",
+        "description": "Retrieve control hierarchy data, entity configuration, and runtime process values\nby specifying a hierarchical path. Path queries work only for objects under\nControl Strategies and Recipes.\n\nThe path format is `{system_name}/{shortest_unique_path}`.\n\nSupported entity types: Alarm, Area, Control Module, Engineering Unit,\nEquipment Module, Fieldbus Shadow Block, Folder, Formula, Function Block,\nNamed Set, Named State, Operation, Parameter, Phase, Procedure, Process Cell,\nRecipe Parameter, SIS Module, SIS Named Set, SIS Named State, Step, System,\nTransition, Unit Module, Unit Procedure.\n",
+        "operationId": "getGraphByPath",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "required": true,
+            "description": "Hierarchical path to the entity in the format `{system_name}/{shortest_unique_path}`.\n",
+            "schema": {
+              "type": "string"
+            },
+            "example": "PH-MS-EDGE-PP_S/PID-101/PID1"
+          },
+          {
+            "name": "p",
+            "in": "query",
+            "required": false,
+            "description": "Properties filter. Use `1` to return all properties, or specify a\ncomma-separated list of property names (e.g., `name`, `CV`, `ST`).\n",
+            "schema": {
+              "type": "string"
+            },
+            "examples": {
+              "all": {
+                "value": "1",
+                "summary": "Return all properties"
+              },
+              "single": {
+                "value": "name",
+                "summary": "Return only the name property"
+              },
+              "multiple": {
+                "value": "name,CV,ST",
+                "summary": "Return specific properties"
+              }
+            }
+          },
+          {
+            "name": "r",
+            "in": "query",
+            "required": false,
+            "description": "Relationships filter. Use `1` to return all relationships, or specify a\ncomma-separated list of relationship names (e.g., `Parents`, `Children`,\n`ControlModules`, `Parameters`, `areas`, `controlmodules`).\n",
+            "schema": {
+              "type": "string"
+            },
+            "examples": {
+              "all": {
+                "value": "1",
+                "summary": "Return all relationships"
+              },
+              "specific": {
+                "value": "Parents,Children",
+                "summary": "Return specific relationships"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Graph data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - token missing, invalid, or expired"
+          }
+        }
+      }
+    },
+    "/graph/{entityId}": {
+      "get": {
+        "tags": [
+          "Graph"
+        ],
+        "summary": "Query graph by entity ID",
+        "description": "Retrieve control hierarchy data, entity configuration, and runtime process values\nby specifying the entity ID directly. Entity ID queries work for DeltaV objects\nunder System that have IDs.\n",
+        "operationId": "getGraphByEntityId",
+        "parameters": [
+          {
+            "name": "entityId",
+            "in": "path",
+            "required": true,
+            "description": "Numeric identifier for the DeltaV entity",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 281474981691392
+          },
+          {
+            "name": "p",
+            "in": "query",
+            "required": false,
+            "description": "Properties filter. Use `1` to return all properties, or specify a\ncomma-separated list of property names.\n",
+            "schema": {
+              "type": "string"
+            },
+            "examples": {
+              "all": {
+                "value": "1",
+                "summary": "Return all properties"
+              },
+              "single": {
+                "value": "name",
+                "summary": "Return only the name property"
+              }
+            }
+          },
+          {
+            "name": "r",
+            "in": "query",
+            "required": false,
+            "description": "Relationships filter. Use `1` to return all relationships, or specify a\ncomma-separated list of relationship names.\n",
+            "schema": {
+              "type": "string"
+            },
+            "examples": {
+              "all": {
+                "value": "1",
+                "summary": "Return all relationships"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Graph data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - token missing, invalid, or expired"
+          }
+        }
+      }
+    },
+    "/history": {
+      "get": {
+        "tags": [
+          "History"
+        ],
+        "summary": "Query history by path",
+        "description": "Retrieve cached/historical parameter values by specifying a hierarchical path.\nSupports the dot convention for field access (e.g., `PV.CV` appended to path).\n\n**Warning:** Requesting long time spans without aggregation may cause timeouts.\nUse the `Aggregation` and `Interval` parameters for large time ranges.\n",
+        "operationId": "getHistoryByPath",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "required": true,
+            "description": "Hierarchical path to the parameter. Supports dot convention for field access\n(e.g., `{system}/{module}/{block}/PV.CV`).\n",
+            "schema": {
+              "type": "string"
+            },
+            "example": "PH-MS-EDGE-PP_S/PID-101/PID1/PV.CV"
+          },
+          {
+            "name": "p",
+            "in": "query",
+            "required": false,
+            "description": "Field name to retrieve history for (e.g., `CV`, `ST`).\nCan also be specified via dot convention in the path.\n",
+            "schema": {
+              "type": "string"
+            },
+            "example": "CV"
+          },
+          {
+            "name": "StartTime",
+            "in": "query",
+            "required": false,
+            "description": "Start of the time range in ISO 8601 format.\nDefaults to 24 hours before the current time.\n",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2023-09-16T11:00:00.000Z"
+          },
+          {
+            "name": "EndTime",
+            "in": "query",
+            "required": false,
+            "description": "End of the time range in ISO 8601 format.\nDefaults to the current time.\n",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2023-09-17T11:00:00.000Z"
+          },
+          {
+            "name": "Aggregation",
+            "in": "query",
+            "required": false,
+            "description": "Aggregation function to apply to the historical data.\nRecommended for large time ranges to avoid timeouts.\n",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Interpolative",
+                "Average",
+                "TimeAverage",
+                "Total",
+                "Minimum",
+                "Maximum",
+                "MinimumActualTime",
+                "MaximumActualTime",
+                "Range",
+                "Count",
+                "Start",
+                "End"
+              ]
+            },
+            "example": "Average"
+          },
+          {
+            "name": "Interval",
+            "in": "query",
+            "required": false,
+            "description": "Numeric interval value used with the Aggregation parameter to define\nthe aggregation window size.\n",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 100
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historical data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - token missing, invalid, or expired"
+          }
+        }
+      }
+    },
+    "/history/{paramId}": {
+      "get": {
+        "tags": [
+          "History"
+        ],
+        "summary": "Query history by parameter ID",
+        "description": "Retrieve cached/historical parameter values by specifying the parameter entity ID.\n",
+        "operationId": "getHistoryByParamId",
+        "parameters": [
+          {
+            "name": "paramId",
+            "in": "path",
+            "required": true,
+            "description": "Numeric identifier for the parameter",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "p",
+            "in": "query",
+            "required": true,
+            "description": "Field name to retrieve history for (e.g., `CV`, `ST`)",
+            "schema": {
+              "type": "string"
+            },
+            "example": "CV"
+          },
+          {
+            "name": "StartTime",
+            "in": "query",
+            "required": false,
+            "description": "Start of the time range in ISO 8601 format.\nDefaults to 24 hours before the current time.\n",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2023-09-16T11:00:00.000Z"
+          },
+          {
+            "name": "EndTime",
+            "in": "query",
+            "required": false,
+            "description": "End of the time range in ISO 8601 format.\nDefaults to the current time.\n",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2023-09-17T11:00:00.000Z"
+          },
+          {
+            "name": "Aggregation",
+            "in": "query",
+            "required": false,
+            "description": "Aggregation function to apply to the historical data",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Interpolative",
+                "Average",
+                "TimeAverage",
+                "Total",
+                "Minimum",
+                "Maximum",
+                "MinimumActualTime",
+                "MaximumActualTime",
+                "Range",
+                "Count",
+                "Start",
+                "End"
+              ]
+            }
+          },
+          {
+            "name": "Interval",
+            "in": "query",
+            "required": false,
+            "description": "Numeric interval value for aggregation window size",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 100
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historical data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - token missing, invalid, or expired"
+          }
+        }
+      }
+    },
+    "/ae": {
+      "get": {
+        "tags": [
+          "Alarms & Events"
+        ],
+        "summary": "Get alarms and events",
+        "description": "Retrieve cached alarms and events with optional filtering by time range,\npagination, and any alarm/event property.\n\nAny available alarm/event property can be used as a filter parameter\n(e.g., `Level=Critical,Warning` or `module=PID-111`). Multiple values\nfor a filter can be comma-separated.\n",
+        "operationId": "getAlarmsAndEvents",
+        "parameters": [
+          {
+            "name": "StartTime",
+            "in": "query",
+            "required": false,
+            "description": "Start of the time range in ISO 8601 format",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2024-11-13T05:50:11.889Z"
+          },
+          {
+            "name": "EndTime",
+            "in": "query",
+            "required": false,
+            "description": "End of the time range in ISO 8601 format",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2024-11-13T05:50:12.379Z"
+          },
+          {
+            "name": "PS",
+            "in": "query",
+            "required": false,
+            "description": "Page size - number of records per page",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 10000
+          },
+          {
+            "name": "PN",
+            "in": "query",
+            "required": false,
+            "description": "Page number for paginated results",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "Level",
+            "in": "query",
+            "required": false,
+            "description": "Filter by alarm/event level. Supports comma-separated values.\n",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Critical,Warning"
+          },
+          {
+            "name": "module",
+            "in": "query",
+            "required": false,
+            "description": "Filter by module name",
+            "schema": {
+              "type": "string"
+            },
+            "example": "PID-111"
+          },
+          {
+            "name": "area",
+            "in": "query",
+            "required": false,
+            "description": "Filter by area name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alarms and events retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlarmsAndEventsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - token missing, invalid, or expired"
+          }
+        }
+      }
+    },
+    "/batchevent": {
+      "get": {
+        "tags": [
+          "Batch Events"
+        ],
+        "summary": "Get batch events",
+        "description": "Retrieve cached batch event data with optional filtering by time range,\nbatch ID, recipe, event type, and pagination.\n\nDefault time range is the latest 1 hour if not specified.\nRecipe values support comma-separated lists with backslash escaping.\n",
+        "operationId": "getBatchEvents",
+        "parameters": [
+          {
+            "name": "starttime",
+            "in": "query",
+            "required": false,
+            "description": "Start of the time range in ISO 8601 format.\nDefaults to 1 hour before the current time.\n",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2024-10-30T16:00:41.804Z"
+          },
+          {
+            "name": "endtime",
+            "in": "query",
+            "required": false,
+            "description": "End of the time range in ISO 8601 format.\nDefaults to the current time.\n",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2024-10-30T16:04:25.213Z"
+          },
+          {
+            "name": "PN",
+            "in": "query",
+            "required": false,
+            "description": "Page number for paginated results",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "batchID",
+            "in": "query",
+            "required": false,
+            "description": "Filter by batch identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Recipe",
+            "in": "query",
+            "required": false,
+            "description": "Filter by recipe name. Supports comma-separated values\nwith backslash escaping for literal commas.\n",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "event",
+            "in": "query",
+            "required": false,
+            "description": "Filter by event type",
+            "schema": {
+              "type": "string"
+            },
+            "example": "State Change"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Batch events retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchEventResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - token missing, invalid, or expired"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer token obtained from the Login endpoints.\nTokens expire every 24 hours (configurable in DeltaV Edge Manager).\n"
+      }
+    },
+    "schemas": {
+      "AuthTokenResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "JWT or opaque Bearer token for authenticating subsequent API requests"
+          }
+        },
+        "required": [
+          "accessToken"
+        ],
+        "example": {
+          "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        }
+      },
+      "GraphResponse": {
+        "type": "object",
+        "description": "Response containing entity properties and/or relationships from\nthe DeltaV control hierarchy. The structure of `p` varies depending\non the entity type and the properties requested.\n",
+        "properties": {
+          "p": {
+            "type": "object",
+            "description": "Entity properties object. Keys are property names (e.g., `name`, `CV`, `ST`).\nWhen querying runtime values, properties may contain nested `value` fields.\n",
+            "additionalProperties": true,
+            "example": {
+              "name": "PID1",
+              "CV": {
+                "value": 42.5
+              },
+              "ST": {
+                "value": 1
+              }
+            }
+          },
+          "r": {
+            "type": "object",
+            "description": "Entity relationships object. Keys are relationship names\n(e.g., `Parents`, `Children`, `ControlModules`, `Parameters`).\n",
+            "additionalProperties": true
+          }
+        }
+      },
+      "HistoryResponse": {
+        "type": "object",
+        "properties": {
+          "fieldHistory": {
+            "$ref": "#/components/schemas/FieldHistory"
+          }
+        },
+        "required": [
+          "fieldHistory"
+        ]
+      },
+      "FieldHistory": {
+        "type": "object",
+        "properties": {
+          "fieldValue": {
+            "type": "array",
+            "description": "Array of timestamped values for the requested field",
+            "items": {
+              "$ref": "#/components/schemas/HistoricalDataPoint"
+            }
+          }
+        },
+        "required": [
+          "fieldValue"
+        ]
+      },
+      "HistoricalDataPoint": {
+        "type": "object",
+        "properties": {
+          "timeStamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp of the data point",
+            "example": "2023-09-16T11:00:05.000Z"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "description": "The recorded value at this timestamp",
+            "example": 42.5
+          }
+        },
+        "required": [
+          "timeStamp",
+          "value"
+        ]
+      },
+      "AlarmsAndEventsResponse": {
+        "type": "object",
+        "properties": {
+          "alarmsAndEvents": {
+            "type": "array",
+            "description": "Array of alarm and event records",
+            "items": {
+              "$ref": "#/components/schemas/AlarmOrEvent"
+            }
+          }
+        },
+        "required": [
+          "alarmsAndEvents"
+        ]
+      },
+      "AlarmOrEvent": {
+        "type": "object",
+        "description": "An alarm or event record. Contains standard properties such as\n`area`, `level`, and `module`, plus additional dynamic properties\ndepending on the event type.\n",
+        "properties": {
+          "area": {
+            "type": "string",
+            "description": "The area in the control hierarchy where the alarm/event originated",
+            "example": "AREA_A"
+          },
+          "level": {
+            "type": "string",
+            "description": "Severity level of the alarm/event",
+            "example": "Critical"
+          },
+          "module": {
+            "type": "string",
+            "description": "The module associated with the alarm/event",
+            "example": "PID-101"
+          },
+          "timeStamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Time the alarm/event occurred"
+          }
+        },
+        "additionalProperties": true
+      },
+      "BatchEventResponse": {
+        "type": "object",
+        "description": "Response containing batch event records",
+        "properties": {
+          "batchEvents": {
+            "type": "array",
+            "description": "Array of batch event records",
+            "items": {
+              "$ref": "#/components/schemas/BatchEvent"
+            }
+          }
+        }
+      },
+      "BatchEvent": {
+        "type": "object",
+        "description": "A batch event record",
+        "properties": {
+          "batchID": {
+            "type": "string",
+            "description": "Identifier of the batch"
+          },
+          "Recipe": {
+            "type": "string",
+            "description": "Name of the recipe"
+          },
+          "event": {
+            "type": "string",
+            "description": "Type of event (e.g., \"State Change\")",
+            "example": "State Change"
+          },
+          "timeStamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Time the batch event occurred"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Obtain access tokens for API authorization"
+    },
+    {
+      "name": "Graph",
+      "description": "Control hierarchy data, entity configuration, and runtime process values"
+    },
+    {
+      "name": "History",
+      "description": "Cached/historical parameter values with optional aggregation"
+    },
+    {
+      "name": "Alarms & Events",
+      "description": "Cached alarms and events with filtering and pagination"
+    },
+    {
+      "name": "Batch Events",
+      "description": "Cached batch event data with filtering and pagination"
+    }
+  ]
+}
