@@ -1,0 +1,387 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "dPaste API",
+    "version": "2.0.0",
+    "description": "The dpaste.com HTTP API for creating, deleting, and retrieving paste items. Supports syntax highlighting, expiry, and user authentication via API tokens.",
+    "x-jentic-source-url": "https://dpaste.com/api"
+  },
+  "servers": [
+    {
+      "url": "https://dpaste.com/api",
+      "description": "dPaste API v2"
+    }
+  ],
+  "paths": {
+    "/v2/": {
+      "post": {
+        "operationId": "createItem",
+        "summary": "Create a new paste item",
+        "description": "Creates a new paste item with the given content. Authenticating makes you the owner of the item.",
+        "tags": ["Items"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["content"],
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "The paste content (required)"
+                  },
+                  "syntax": {
+                    "type": "string",
+                    "description": "Syntax highlighting choice; omit for plain-text"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Title for the paste item"
+                  },
+                  "expiry_days": {
+                    "type": "integer",
+                    "description": "Number of days before the item expires"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Item created successfully. Location header contains the item URL.",
+            "headers": {
+              "Location": {
+                "description": "URL of the created item",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Expires": {
+                "description": "Expiry date of the item",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "description": "URL of the created item"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing required content field",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/delete/{itemId}": {
+      "delete": {
+        "operationId": "deleteItem",
+        "summary": "Delete a paste item",
+        "description": "Deletes an existing paste item. You must authenticate as the poster of the item.",
+        "tags": ["Items"],
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The item identifier"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Item deleted successfully"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - must be the poster",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/item_detail/{itemId}": {
+      "get": {
+        "operationId": "getItemDetail",
+        "summary": "Get details of a single paste item",
+        "description": "Retrieves detailed information about a paste item including title, syntax, expiry, and size.",
+        "tags": ["Items"],
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The item identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user_items/{userId}": {
+      "get": {
+        "operationId": "getUserItems",
+        "summary": "Get links to a user's items",
+        "description": "Returns a JSON array of item URLs for the specified user. Anonymous requests return public items only.",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The user identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User's item URLs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user_items_detail/{userId}": {
+      "get": {
+        "operationId": "getUserItemsDetail",
+        "summary": "Get details of a user's items",
+        "description": "Returns detailed information about all items for a user. Anonymous requests return public items only.",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The user identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User's items with details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ItemSummary"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API token from your dpaste dashboard"
+      }
+    },
+    "schemas": {
+      "ItemDetail": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "syntax": {
+              "type": "string"
+            },
+            "expiry": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "size": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "ItemSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "syntax": {
+            "type": "string"
+          },
+          "expiry": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "size": {
+            "type": "integer"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {"name": "Items", "description": "Paste item management"},
+    {"name": "Users", "description": "User item retrieval"}
+  ]
+}
