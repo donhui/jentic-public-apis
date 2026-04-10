@@ -1,0 +1,1166 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Hybrid Analysis API",
+    "description": "Hybrid Analysis provides a free malware analysis service powered by CrowdStrike Falcon Sandbox. The API allows submitting files and URLs for analysis, searching for existing reports, and accessing threat intelligence feeds. A User-Agent header (e.g. 'Falcon Sandbox') is recommended. Rate limits are returned in Api-Limits, Submission-Limits, Quick-Scan-Limits, and Sample-Download-Limits response headers. API keys have authorization levels: restricted, default, elevated, and super.",
+    "version": "2.0.0",
+    "x-jentic-source-url": "https://hybrid-analysis.com/docs/api/v2"
+  },
+  "servers": [
+    {
+      "url": "https://www.hybrid-analysis.com/api/v2",
+      "description": "Hybrid Analysis API v2"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Search",
+      "description": "Search for analysis reports"
+    },
+    {
+      "name": "Submit",
+      "description": "Submit files and URLs for analysis"
+    },
+    {
+      "name": "Report",
+      "description": "Retrieve analysis reports"
+    },
+    {
+      "name": "Overview",
+      "description": "Quick file/URL overview"
+    },
+    {
+      "name": "Feed",
+      "description": "Threat intelligence feed"
+    },
+    {
+      "name": "System",
+      "description": "System information"
+    }
+  ],
+  "paths": {
+    "/search/hash": {
+      "post": {
+        "tags": [
+          "Search"
+        ],
+        "summary": "Search by hash (MD5, SHA1, SHA256)",
+        "operationId": "searchByHash",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "hash"
+                ],
+                "properties": {
+                  "hash": {
+                    "type": "string",
+                    "description": "MD5, SHA1, or SHA256 hash"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SearchResult"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        },
+        "security": [
+          {
+            "apiKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/search/terms": {
+      "post": {
+        "tags": [
+          "Search"
+        ],
+        "summary": "Search by various terms",
+        "operationId": "searchByTerms",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "filename": {
+                    "type": "string"
+                  },
+                  "filetype": {
+                    "type": "string"
+                  },
+                  "filetype_desc": {
+                    "type": "string"
+                  },
+                  "env_id": {
+                    "type": "integer"
+                  },
+                  "country": {
+                    "type": "string"
+                  },
+                  "verdict": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      2,
+                      3,
+                      4,
+                      5
+                    ]
+                  },
+                  "av_detect": {
+                    "type": "string"
+                  },
+                  "vx_family": {
+                    "type": "string"
+                  },
+                  "tag": {
+                    "type": "string"
+                  },
+                  "port": {
+                    "type": "integer"
+                  },
+                  "host": {
+                    "type": "string"
+                  },
+                  "domain": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string"
+                  },
+                  "similar_to": {
+                    "type": "string"
+                  },
+                  "context": {
+                    "type": "string"
+                  },
+                  "imp_hash": {
+                    "type": "string"
+                  },
+                  "ssdeep": {
+                    "type": "string"
+                  },
+                  "authentihash": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SearchResult"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        },
+        "security": [
+          {
+            "apiKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/submit/file": {
+      "post": {
+        "tags": [
+          "Submit"
+        ],
+        "summary": "Submit a file for analysis",
+        "operationId": "submitFile",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file",
+                  "environment_id"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "File to analyze"
+                  },
+                  "environment_id": {
+                    "type": "integer",
+                    "description": "Environment ID (e.g. 100=Win7 32bit, 110=Win7 64bit, 120=Win10 64bit)"
+                  },
+                  "no_share_third_party": {
+                    "type": "boolean"
+                  },
+                  "allow_community_access": {
+                    "type": "boolean"
+                  },
+                  "no_hash_lookup": {
+                    "type": "boolean"
+                  },
+                  "action_script": {
+                    "type": "string"
+                  },
+                  "hybrid_analysis": {
+                    "type": "boolean"
+                  },
+                  "experimental_anti_evasion": {
+                    "type": "boolean"
+                  },
+                  "script_logging": {
+                    "type": "boolean"
+                  },
+                  "input_sample_tampering": {
+                    "type": "boolean"
+                  },
+                  "network_settings": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "comment": {
+                    "type": "string"
+                  },
+                  "custom_date_time": {
+                    "type": "string"
+                  },
+                  "custom_cmd_line": {
+                    "type": "string"
+                  },
+                  "custom_run_time": {
+                    "type": "integer"
+                  },
+                  "submit_name": {
+                    "type": "string"
+                  },
+                  "document_password": {
+                    "type": "string"
+                  },
+                  "environment_variable": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Submission successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        },
+        "security": [
+          {
+            "apiKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/submit/url-for-analysis": {
+      "post": {
+        "tags": [
+          "Submit"
+        ],
+        "summary": "Submit a URL for analysis",
+        "operationId": "submitUrl",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "url",
+                  "environment_id"
+                ],
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "description": "URL to analyze"
+                  },
+                  "environment_id": {
+                    "type": "integer"
+                  },
+                  "no_share_third_party": {
+                    "type": "boolean"
+                  },
+                  "allow_community_access": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Submission successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        },
+        "security": [
+          {
+            "apiKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/report/{id}/summary": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "Get analysis report summary",
+        "operationId": "getReportSummary",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Report ID (SHA256:environment_id)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Report summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Report not found"
+          }
+        },
+        "security": [
+          {
+            "apiKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/overview/{sha256}": {
+      "get": {
+        "tags": [
+          "Overview"
+        ],
+        "summary": "Get quick overview of a file by SHA256",
+        "operationId": "getOverview",
+        "parameters": [
+          {
+            "name": "sha256",
+            "in": "path",
+            "required": true,
+            "description": "SHA256 hash",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File overview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Overview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
+        "security": [
+          {
+            "apiKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/overview/{sha256}/sample": {
+      "get": {
+        "tags": [
+          "Overview"
+        ],
+        "summary": "Download sample file by SHA256",
+        "operationId": "downloadSample",
+        "parameters": [
+          {
+            "name": "sha256",
+            "in": "path",
+            "required": true,
+            "description": "SHA256 hash",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sample file (gzip compressed)",
+            "content": {
+              "application/gzip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
+        "security": [
+          {
+            "apiKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/feed/latest": {
+      "get": {
+        "tags": [
+          "Feed"
+        ],
+        "summary": "Get latest malware feed",
+        "operationId": "getLatestFeed",
+        "responses": {
+          "200": {
+            "description": "Latest feed entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FeedEntry"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "apiKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/key/current": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Get current API key information and limits",
+        "operationId": "getApiKeyInfo",
+        "description": "Returns information about the current API key including authorization level and rate limits.",
+        "responses": {
+          "200": {
+            "description": "API key information and quota details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "api_key": {"type": "string"},
+                    "auth_level": {"type": "integer", "description": "Authorization level"},
+                    "auth_level_name": {"type": "string", "description": "Authorization level name (restricted, default, elevated, super)"},
+                    "user": {"type": "string"}
+                  }
+                }
+              }
+            }
+          },
+          "401": {"description": "Unauthorized"}
+        },
+        "security": [{"apiKeyHeader": []}]
+      }
+    },
+    "/report/{id}/state": {
+      "get": {
+        "tags": ["Report"],
+        "summary": "Get submission state",
+        "operationId": "getReportState",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Report ID (SHA256:environment_id)",
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Submission state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "state": {"type": "string", "description": "Current state of the submission"},
+                    "error": {"type": "string", "nullable": true}
+                  }
+                }
+              }
+            }
+          },
+          "401": {"description": "Unauthorized"},
+          "404": {"description": "Report not found"}
+        },
+        "security": [{"apiKeyHeader": []}]
+      }
+    },
+    "/report/{id}/screenshots": {
+      "get": {
+        "tags": ["Report"],
+        "summary": "Get report screenshots",
+        "operationId": "getReportScreenshots",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Report ID (SHA256:environment_id)",
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Report screenshots",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "image": {"type": "string", "description": "Base64-encoded screenshot image"},
+                      "name": {"type": "string"}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {"description": "Unauthorized"},
+          "404": {"description": "Report not found"}
+        },
+        "security": [{"apiKeyHeader": []}]
+      }
+    },
+    "/search/hashes": {
+      "post": {
+        "tags": ["Search"],
+        "summary": "Bulk hash search",
+        "operationId": "searchByHashes",
+        "description": "Search for multiple hashes in a single request.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["hashes[]"],
+                "properties": {
+                  "hashes[]": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Array of MD5, SHA1, or SHA256 hashes"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {"$ref": "#/components/schemas/SearchResult"}
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"},
+          "429": {"description": "Rate limit exceeded"}
+        },
+        "security": [{"apiKeyHeader": []}]
+      }
+    },
+    "/quick-scan/{id}": {
+      "get": {
+        "tags": ["Submit"],
+        "summary": "Get quick scan results by ID",
+        "operationId": "getQuickScanResult",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Quick scan ID",
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Quick scan results",
+            "content": {
+              "application/json": {
+                "schema": {"type": "object"}
+              }
+            }
+          },
+          "401": {"description": "Unauthorized"},
+          "404": {"description": "Quick scan not found"}
+        },
+        "security": [{"apiKeyHeader": []}]
+      }
+    },
+    "/system/version": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Get API version information",
+        "operationId": "getSystemVersion",
+        "responses": {
+          "200": {
+            "description": "Version info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/environments": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Get available analysis environments",
+        "operationId": "getEnvironments",
+        "responses": {
+          "200": {
+            "description": "Available environments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Environment"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "apiKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/quick-scan/file": {
+      "post": {
+        "tags": [
+          "Submit"
+        ],
+        "summary": "Submit file for quick scan",
+        "operationId": "quickScanFile",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file",
+                  "scan_type"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "scan_type": {
+                    "type": "string",
+                    "enum": [
+                      "all",
+                      "lookup_ha",
+                      "lookup_vt"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Quick scan results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "apiKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/system/stats": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Get webservice statistics",
+        "operationId": "getSystemStats",
+        "responses": {
+          "200": {
+            "description": "System statistics",
+            "content": {
+              "application/json": {
+                "schema": {"type": "object"}
+              }
+            }
+          },
+          "401": {"description": "Unauthorized"}
+        },
+        "security": [{"apiKeyHeader": []}]
+      }
+    },
+    "/system/configuration": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Get instance configuration",
+        "operationId": "getSystemConfiguration",
+        "responses": {
+          "200": {
+            "description": "Instance configuration",
+            "content": {
+              "application/json": {
+                "schema": {"type": "object"}
+              }
+            }
+          },
+          "401": {"description": "Unauthorized"}
+        },
+        "security": [{"apiKeyHeader": []}]
+      }
+    },
+    "/quick-scan/url": {
+      "post": {
+        "tags": [
+          "Submit"
+        ],
+        "summary": "Submit URL for quick scan",
+        "operationId": "quickScanUrl",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "url",
+                  "scan_type"
+                ],
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  },
+                  "scan_type": {
+                    "type": "string",
+                    "enum": [
+                      "all",
+                      "lookup_ha",
+                      "lookup_vt"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Quick scan results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "apiKeyHeader": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SearchResult": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string"
+          },
+          "environment_id": {
+            "type": "integer"
+          },
+          "environment_description": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "md5": {
+            "type": "string"
+          },
+          "sha1": {
+            "type": "string"
+          },
+          "sha512": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string"
+          },
+          "type_short": {
+            "type": "string"
+          },
+          "verdict": {
+            "type": "string"
+          },
+          "vx_family": {
+            "type": "string"
+          },
+          "threat_score": {
+            "type": "integer"
+          },
+          "av_detect": {
+            "type": "integer"
+          },
+          "analysis_start_time": {
+            "type": "string"
+          },
+          "submit_name": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SubmissionResponse": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string"
+          },
+          "submission_id": {
+            "type": "string"
+          },
+          "environment_id": {
+            "type": "integer"
+          },
+          "sha256": {
+            "type": "string"
+          }
+        }
+      },
+      "ReportSummary": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string"
+          },
+          "environment_id": {
+            "type": "integer"
+          },
+          "environment_description": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "verdict": {
+            "type": "string"
+          },
+          "threat_score": {
+            "type": "integer"
+          },
+          "av_detect": {
+            "type": "integer"
+          },
+          "total_signatures": {
+            "type": "integer"
+          },
+          "total_processes": {
+            "type": "integer"
+          },
+          "total_network_connections": {
+            "type": "integer"
+          },
+          "domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "hosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "compromised_hosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "classification_tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Overview": {
+        "type": "object",
+        "properties": {
+          "sha256": {
+            "type": "string"
+          },
+          "sha1": {
+            "type": "string"
+          },
+          "md5": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string"
+          },
+          "verdict": {
+            "type": "string"
+          },
+          "threat_score": {
+            "type": "integer"
+          },
+          "submissions": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "FeedEntry": {
+        "type": "object",
+        "properties": {
+          "sha256": {
+            "type": "string"
+          },
+          "verdict": {
+            "type": "string"
+          },
+          "threat_score": {
+            "type": "integer"
+          },
+          "av_detect": {
+            "type": "integer"
+          },
+          "vx_family": {
+            "type": "string"
+          },
+          "analysis_start_time": {
+            "type": "string"
+          }
+        }
+      },
+      "Environment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "description": {
+            "type": "string"
+          },
+          "architecture": {
+            "type": "string"
+          },
+          "total_virtual_memory": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "api-key",
+        "description": "Hybrid Analysis API key"
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKeyHeader": []
+    }
+  ]
+}
