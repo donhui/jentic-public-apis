@@ -1,0 +1,921 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "FLOWii API",
+    "description": "FLOWii is a cloud application for managing your business more effectively. The API provides access to tasks, activities, business cases, cash flows, attendance, bank accounts, and more using JSON:API format.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://flowiiapi.docs.apiary.io/#reference/account/token"
+  },
+  "servers": [
+    {
+      "url": "https://app.flowii.com/api",
+      "description": "FLOWii API Server"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": [],
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    { "name": "Account", "description": "Authentication and account management" },
+    { "name": "Activities", "description": "Task activity management" },
+    { "name": "ActivityIntervals", "description": "Activity time interval tracking" },
+    { "name": "ActivityTypes", "description": "Activity type definitions" },
+    { "name": "Attendance", "description": "Attendance event and absence management" },
+    { "name": "BankAccounts", "description": "Bank account information" },
+    { "name": "BusinessCases", "description": "Business case management" },
+    { "name": "BusinessCaseConfig", "description": "Business case configuration (fields, states, sources, failures)" },
+    { "name": "CashFlow", "description": "Cash flow management (income and expenditure)" }
+  ],
+  "paths": {
+    "/token": {
+      "post": {
+        "operationId": "getToken",
+        "summary": "Get access token",
+        "description": "Authenticate with username and password to obtain access and refresh tokens.",
+        "tags": ["Account"],
+        "security": [{ "apiKey": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["grant_type", "username", "password"],
+                "properties": {
+                  "grant_type": { "type": "string", "enum": ["password"] },
+                  "username": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token obtained successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenResponse" }
+              }
+            }
+          },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/companies": {
+      "get": {
+        "operationId": "getAllowedCompanies",
+        "summary": "Get allowed companies",
+        "tags": ["Account"],
+        "responses": {
+          "200": {
+            "description": "Companies retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CompanyListResponse" }
+              }
+            }
+          },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/permissions": {
+      "get": {
+        "operationId": "getUserPermissions",
+        "summary": "Get user permissions",
+        "tags": ["Account"],
+        "parameters": [
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Permissions retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PermissionsResponse" }
+              }
+            }
+          },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/tasks/{id}/activities": {
+      "get": {
+        "operationId": "getTaskActivities",
+        "summary": "Get task activity list",
+        "tags": ["Activities"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activities retrieved successfully",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiListResponse" } } }
+          },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/tasks/{id}/activities/{activityId}": {
+      "patch": {
+        "operationId": "updateTaskActivity",
+        "summary": "Update task activity state",
+        "tags": ["Activities"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "activityId", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiPatchRequest" } } }
+        },
+        "responses": {
+          "204": { "description": "Activity updated successfully" },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/tasks/{id}/activityintervals": {
+      "get": {
+        "operationId": "getTaskActivityIntervals",
+        "summary": "Get task activity intervals",
+        "tags": ["ActivityIntervals"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activity intervals retrieved",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiListResponse" } } }
+          },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "post": {
+        "operationId": "createActivityInterval",
+        "summary": "Create an activity interval",
+        "tags": ["ActivityIntervals"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiCreateRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Activity interval created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiSingleResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/tasks/{id}/activityintervals/{activityIntervalId}": {
+      "patch": {
+        "operationId": "updateActivityInterval",
+        "summary": "Update an activity interval",
+        "tags": ["ActivityIntervals"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "activityIntervalId", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiPatchRequest" } } }
+        },
+        "responses": {
+          "204": { "description": "Activity interval updated" },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "delete": {
+        "operationId": "deleteActivityInterval",
+        "summary": "Delete an activity interval",
+        "tags": ["ActivityIntervals"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "activityIntervalId", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "204": { "description": "Activity interval deleted" },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/activitytypes": {
+      "get": {
+        "operationId": "getActivityTypes",
+        "summary": "Get activity types",
+        "tags": ["ActivityTypes"],
+        "parameters": [
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": { "description": "Activity types retrieved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiListResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/activitytypes/{id}": {
+      "get": {
+        "operationId": "getActivityType",
+        "summary": "Get a single activity type",
+        "tags": ["ActivityTypes"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": { "description": "Activity type retrieved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiSingleResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/attendanceevents": {
+      "post": {
+        "operationId": "createAttendanceEvent",
+        "summary": "Create an attendance event",
+        "tags": ["Attendance"],
+        "parameters": [
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AttendanceEventRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Attendance event created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiSingleResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/plannedabsences": {
+      "post": {
+        "operationId": "createPlannedAbsence",
+        "summary": "Create a planned absence",
+        "tags": ["Attendance"],
+        "parameters": [
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlannedAbsenceRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Planned absence created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiSingleResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/summary/attendance": {
+      "get": {
+        "operationId": "getAttendanceSummary",
+        "summary": "Get attendance summary",
+        "tags": ["Attendance"],
+        "parameters": [
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": { "description": "Attendance summary retrieved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AttendanceSummaryResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/bankaccounts": {
+      "get": {
+        "operationId": "listBankAccounts",
+        "summary": "List bank accounts",
+        "tags": ["BankAccounts"],
+        "parameters": [
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": { "description": "Bank accounts retrieved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiListResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/bankaccounts/{id}": {
+      "get": {
+        "operationId": "getBankAccount",
+        "summary": "Get a bank account",
+        "tags": ["BankAccounts"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": { "description": "Bank account retrieved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiSingleResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/businesscases": {
+      "get": {
+        "operationId": "listBusinessCases",
+        "summary": "List business cases",
+        "tags": ["BusinessCases"],
+        "parameters": [
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "filter[created-from]", "in": "query", "schema": { "type": "integer", "format": "int64", "description": "Unix timestamp" } },
+          { "name": "filter[created-to]", "in": "query", "schema": { "type": "integer", "format": "int64", "description": "Unix timestamp" } },
+          { "name": "filter[edited-from]", "in": "query", "schema": { "type": "integer", "format": "int64", "description": "Unix timestamp" } },
+          { "name": "filter[edited-to]", "in": "query", "schema": { "type": "integer", "format": "int64", "description": "Unix timestamp" } },
+          { "name": "filter[state-id]", "in": "query", "schema": { "type": "integer" } },
+          { "name": "filter[partner-id]", "in": "query", "schema": { "type": "integer" } },
+          { "name": "filter[search-text]", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Business cases retrieved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiListResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "post": {
+        "operationId": "createBusinessCase",
+        "summary": "Create a business case",
+        "tags": ["BusinessCases"],
+        "parameters": [
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiCreateRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Business case created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiSingleResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/businesscases/{id}": {
+      "get": {
+        "operationId": "getBusinessCase",
+        "summary": "Get a business case",
+        "tags": ["BusinessCases"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": { "description": "Business case retrieved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiSingleResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "patch": {
+        "operationId": "updateBusinessCase",
+        "summary": "Update a business case",
+        "tags": ["BusinessCases"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiPatchRequest" } } }
+        },
+        "responses": {
+          "204": { "description": "Business case updated" },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "delete": {
+        "operationId": "deleteBusinessCase",
+        "summary": "Delete a business case",
+        "tags": ["BusinessCases"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "204": { "description": "Business case deleted" },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/businesscases/{id}/tasks": {
+      "get": {
+        "operationId": "getBusinessCaseTasks",
+        "summary": "Get tasks for a business case",
+        "tags": ["BusinessCases"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Tasks retrieved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiListResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/businesscases/{id}/communications": {
+      "get": {
+        "operationId": "getBusinessCaseCommunications",
+        "summary": "Get communications for a business case",
+        "tags": ["BusinessCases"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Communications retrieved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiListResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/businesscases/{id}/mails": {
+      "get": {
+        "operationId": "getBusinessCaseEmails",
+        "summary": "Get emails for a business case",
+        "tags": ["BusinessCases"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Emails retrieved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiListResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/businesscases/{id}/files": {
+      "get": {
+        "operationId": "getBusinessCaseAttachments",
+        "summary": "Get attachments for a business case",
+        "tags": ["BusinessCases"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": { "description": "Attachments retrieved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiListResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "post": {
+        "operationId": "uploadBusinessCaseAttachment",
+        "summary": "Upload an attachment to a business case",
+        "tags": ["BusinessCases"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/FileUploadRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Attachment uploaded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiSingleResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/businesscases/export/xml": {
+      "get": {
+        "operationId": "exportBusinessCasesXml",
+        "summary": "Export business cases as XML",
+        "tags": ["BusinessCases"],
+        "parameters": [
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "includeMessages", "in": "query", "schema": { "type": "boolean" } },
+          { "name": "filter[created-from]", "in": "query", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "filter[created-to]", "in": "query", "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": { "description": "Export ZIP file", "content": { "application/zip": { "schema": { "type": "string", "format": "binary" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/businesscases/customfields": {
+      "get": {
+        "operationId": "getBusinessCaseCustomFields",
+        "summary": "Get business case custom fields",
+        "tags": ["BusinessCaseConfig"],
+        "parameters": [
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": { "description": "Custom fields retrieved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiListResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/businesscasefailures": {
+      "get": {
+        "operationId": "getBusinessCaseFailures",
+        "summary": "Get business case failure reasons",
+        "tags": ["BusinessCaseConfig"],
+        "parameters": [
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": { "description": "Failures retrieved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiListResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/businesscasesources": {
+      "get": {
+        "operationId": "getBusinessCaseSources",
+        "summary": "Get business case sources",
+        "tags": ["BusinessCaseConfig"],
+        "parameters": [
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": { "description": "Sources retrieved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiListResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/businesscasestates": {
+      "get": {
+        "operationId": "getBusinessCaseStates",
+        "summary": "Get business case states",
+        "tags": ["BusinessCaseConfig"],
+        "parameters": [
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": { "description": "States retrieved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiListResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/cashflow": {
+      "get": {
+        "operationId": "listCashFlows",
+        "summary": "List cash flows",
+        "tags": ["CashFlow"],
+        "parameters": [
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "filter[created-from]", "in": "query", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "filter[created-to]", "in": "query", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "filter[paid-from]", "in": "query", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "filter[paid-to]", "in": "query", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "filter[amount-from]", "in": "query", "schema": { "type": "number" } },
+          { "name": "filter[amount-to]", "in": "query", "schema": { "type": "number" } },
+          { "name": "filter[type]", "in": "query", "schema": { "type": "integer", "enum": [1, 2], "description": "1=Income, 2=Expenditure" } },
+          { "name": "filter[category-ids]", "in": "query", "schema": { "type": "string" } },
+          { "name": "filter[partner-id]", "in": "query", "schema": { "type": "integer" } },
+          { "name": "filter[business-case-id]", "in": "query", "schema": { "type": "integer" } },
+          { "name": "filter[order-id]", "in": "query", "schema": { "type": "integer" } },
+          { "name": "filter[invoice-pairing]", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Cash flows retrieved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiListResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "post": {
+        "operationId": "createCashFlow",
+        "summary": "Create a cash flow entry",
+        "tags": ["CashFlow"],
+        "parameters": [
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiCreateRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Cash flow created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiSingleResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/cashflow/{id}": {
+      "get": {
+        "operationId": "getCashFlow",
+        "summary": "Get a cash flow entry",
+        "tags": ["CashFlow"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": {
+          "200": { "description": "Cash flow retrieved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonApiSingleResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer access token obtained from /token endpoint"
+      },
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Api-Key",
+        "description": "FLOWii API key"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": { "type": "string" },
+                "title": { "type": "string" },
+                "detail": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": { "type": "string" },
+          "refresh_token": { "type": "string" },
+          "token_type": { "type": "string" },
+          "expires_in": { "type": "integer" }
+        }
+      },
+      "CompanyListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string" },
+                "id": { "type": "string" },
+                "attributes": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "PermissionsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "tasks": { "type": "boolean" },
+                  "partners": { "type": "boolean" },
+                  "events": { "type": "boolean" },
+                  "orders": { "type": "boolean" },
+                  "business-cases": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "AttendanceSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "total-paid": { "type": "number" },
+                  "balance": { "type": "number" },
+                  "unpaid": { "type": "number" },
+                  "vacation-available": { "type": "number" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "AttendanceEventRequest": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "example": "attendance-event" },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "integer", "description": "Event type (1-15)" },
+                  "date-time": { "type": "string", "format": "date-time" },
+                  "note": { "type": "string" }
+                }
+              },
+              "relationships": {
+                "type": "object",
+                "properties": {
+                  "user": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "type": { "type": "string" },
+                          "id": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "PlannedAbsenceRequest": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "example": "planned-absence" },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "integer", "description": "Absence type (5-15)" },
+                  "date-from": { "type": "string", "format": "date" },
+                  "date-to": { "type": "string", "format": "date" },
+                  "note": { "type": "string" }
+                }
+              },
+              "relationships": {
+                "type": "object",
+                "properties": {
+                  "user": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "type": { "type": "string" },
+                          "id": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "FileUploadRequest": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "example": "file" },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "file-name": { "type": "string" },
+                  "content": { "type": "string", "description": "Base64 encoded file content" },
+                  "content-type": { "type": "string" },
+                  "note": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "JsonApiListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/JsonApiResource" }
+          },
+          "included": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/JsonApiResource" }
+          },
+          "links": { "$ref": "#/components/schemas/JsonApiLinks" }
+        }
+      },
+      "JsonApiSingleResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/JsonApiResource" },
+          "included": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/JsonApiResource" }
+          }
+        }
+      },
+      "JsonApiResource": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string" },
+          "id": { "type": "string" },
+          "attributes": { "type": "object" },
+          "relationships": { "type": "object" }
+        }
+      },
+      "JsonApiLinks": {
+        "type": "object",
+        "properties": {
+          "self": { "type": "string" },
+          "next": { "type": "string" },
+          "prev": { "type": "string" }
+        }
+      },
+      "JsonApiCreateRequest": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "attributes": { "type": "object" },
+              "relationships": { "type": "object" }
+            }
+          }
+        }
+      },
+      "JsonApiPatchRequest": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "id": { "type": "string" },
+              "attributes": { "type": "object" },
+              "relationships": { "type": "object" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
