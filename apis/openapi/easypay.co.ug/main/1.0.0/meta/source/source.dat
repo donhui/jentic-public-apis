@@ -1,0 +1,513 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "EasyPay Uganda Mobile Money API",
+    "description": "EasyPay Mobile Money API for Uganda. Supports collecting payments from and sending money to mobile money accounts (MTN, Airtel, Africell, UTL). All operations use a single POST endpoint with an 'action' field discriminator. Requires SSL/HTTPS. New accounts are limited to $10 USD/month for testing. 3% charge on deposits, variable payout fees.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://www.easypay.co.ug/kb/knowledge-base/open-mobile-money-api-uganda-mtn-airtel-africell-utl-m-sente/"
+  },
+  "servers": [
+    {
+      "url": "https://www.easypay.co.ug",
+      "description": "EasyPay production server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Payments",
+      "description": "Mobile money deposit and payout operations"
+    },
+    {
+      "name": "Status",
+      "description": "Transaction status and account balance queries"
+    }
+  ],
+  "paths": {
+    "/api/#mmdeposit": {
+      "post": {
+        "operationId": "mobilemoneydeposit",
+        "summary": "Collect payment from mobile money account",
+        "description": "Initiates a mobile money deposit (collection) from a customer's mobile money account. Supports MTN, Airtel, Africell, and UTL networks. A 3% fee applies. The actual endpoint is POST /api/ with action=mmdeposit.",
+        "tags": [
+          "Payments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "password",
+                  "action",
+                  "amount",
+                  "currency",
+                  "phone",
+                  "reference",
+                  "reason"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "Client ID provided by EasyPay"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "Client secret provided by EasyPay"
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "mmdeposit"
+                    ],
+                    "description": "Action type - must be 'mmdeposit'"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "description": "Deposit amount"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "description": "Currency code",
+                    "example": "UGX"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "description": "Customer mobile money phone number with country code (e.g. 256XXXXXXXXX)"
+                  },
+                  "reference": {
+                    "type": "string",
+                    "description": "Unique order/transaction identifier"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Transaction description/narrative"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deposit response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepositResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/#mmpayout": {
+      "post": {
+        "operationId": "mobilemoneypayout",
+        "summary": "Send money to mobile money account",
+        "description": "Sends money from EasyPay account to a mobile money account. Variable fees based on amount range. The actual endpoint is POST /api/ with action=mmpayout.",
+        "tags": [
+          "Payments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "password",
+                  "action",
+                  "amount",
+                  "currency",
+                  "phone",
+                  "reference"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "Client ID provided by EasyPay"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "Client secret provided by EasyPay"
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "mmpayout"
+                    ],
+                    "description": "Action type - must be 'mmpayout'"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "description": "Payout amount"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "description": "Currency code",
+                    "example": "UGX"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "description": "Recipient phone number with country code"
+                  },
+                  "reference": {
+                    "type": "string",
+                    "description": "Unique reference identifier"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payout response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayoutResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/#mmstatus": {
+      "post": {
+        "operationId": "checktransactionstatus",
+        "summary": "Check transaction status",
+        "description": "Returns the status of a mobile money transaction by reference. The actual endpoint is POST /api/ with action=mmstatus.",
+        "tags": [
+          "Status"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "password",
+                  "action",
+                  "reference"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "Client ID provided by EasyPay"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "Client secret provided by EasyPay"
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "mmstatus"
+                    ],
+                    "description": "Action type - must be 'mmstatus'"
+                  },
+                  "reference": {
+                    "type": "string",
+                    "description": "Original transaction reference"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transaction status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/#checkbalance": {
+      "post": {
+        "operationId": "checkaccountbalance",
+        "summary": "Check account balance",
+        "description": "Retrieves the current account balance at EasyPay. The actual endpoint is POST /api/ with action=checkbalance.",
+        "tags": [
+          "Status"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "password",
+                  "action"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "Client ID provided by EasyPay"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "Client secret provided by EasyPay"
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "checkbalance"
+                    ],
+                    "description": "Action type - must be 'checkbalance'"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account balance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DepositResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "integer",
+            "description": "1 for success, 0 for failure",
+            "enum": [
+              0,
+              1
+            ]
+          },
+          "data": {
+            "type": "object",
+            "description": "Transaction receipt data (present on success)"
+          },
+          "errormsg": {
+            "type": "string",
+            "description": "Error description (present on failure)"
+          }
+        }
+      },
+      "PayoutResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "integer",
+            "description": "1 for success, 0 for failure",
+            "enum": [
+              0,
+              1
+            ]
+          },
+          "phone": {
+            "type": "string",
+            "description": "Recipient phone number"
+          },
+          "reference": {
+            "type": "string",
+            "description": "Order/reference ID"
+          },
+          "transactionId": {
+            "type": "string",
+            "description": "EasyPay transaction ID"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Transaction amount"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Transaction narrative"
+          },
+          "errormsg": {
+            "type": "string",
+            "description": "Error message (present on failure)"
+          }
+        }
+      },
+      "StatusResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "integer",
+            "description": "1 for success, 0 for failure",
+            "enum": [
+              0,
+              1
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "Transaction status"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Transaction amount"
+          },
+          "charge": {
+            "type": "string",
+            "description": "Associated fee"
+          },
+          "reference": {
+            "type": "string",
+            "description": "Transaction reference"
+          }
+        }
+      },
+      "BalanceResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "integer",
+            "description": "1 for success, 0 for failure",
+            "enum": [
+              0,
+              1
+            ]
+          },
+          "data": {
+            "type": "string",
+            "description": "Balance amount"
+          },
+          "currencyCode": {
+            "type": "string",
+            "description": "Currency code (e.g. UGX)"
+          },
+          "errormsg": {
+            "type": "string",
+            "description": "Error message (present on failure)"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "description": "Error message"
+              },
+              "code": {
+                "type": "string",
+                "description": "Error code"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
