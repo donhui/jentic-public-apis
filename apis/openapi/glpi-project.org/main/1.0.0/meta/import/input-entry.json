@@ -1,0 +1,1461 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "GLPI REST API",
+    "version": "1.0.0",
+    "description": "GLPI REST API provides programmatic access to the GLPI IT asset management and helpdesk system. It allows managing items (computers, tickets, users, etc.), performing searches, managing sessions, entities, and profiles.",
+    "x-jentic-source-url": "https://github.com/glpi-project/glpi/blob/main/apirest.md"
+  },
+  "servers": [
+    {
+      "url": "https://{server}/apirest.php",
+      "variables": {
+        "server": {
+          "default": "glpi.example.com",
+          "description": "GLPI server hostname and path"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/initSession": {
+      "get": {
+        "operationId": "initSession",
+        "summary": "Initialize a session",
+        "description": "Request a session token to use other API endpoints. Authenticate with Basic auth or user_token.",
+        "tags": [
+          "Session"
+        ],
+        "parameters": [
+          {
+            "name": "App-Token",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Authorization string from GLPI API configuration"
+          },
+          {
+            "name": "get_full_session",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Also return full session data"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session initialized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "session_token": {
+                      "type": "string"
+                    },
+                    "session": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "basicAuth": []
+          },
+          {
+            "userTokenAuth": []
+          }
+        ]
+      }
+    },
+    "/killSession": {
+      "get": {
+        "operationId": "killSession",
+        "summary": "Destroy a session",
+        "description": "Destroy the current session identified by the session token.",
+        "tags": [
+          "Session"
+        ],
+        "responses": {
+          "200": {
+            "description": "Session destroyed"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/lostPassword": {
+      "put": {
+        "operationId": "lostPassword",
+        "summary": "Request password recovery or reset password",
+        "description": "Send a password recovery email or reset a password using a token.",
+        "tags": [
+          "Session"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "description": "Email address of the user"
+                  },
+                  "password_forget_token": {
+                    "type": "string",
+                    "description": "Reset token (for password reset)"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "New password (for password reset)"
+                  }
+                },
+                "required": [
+                  "email"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password recovery request sent or password reset"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        },
+        "security": []
+      }
+    },
+    "/getMyProfiles": {
+      "get": {
+        "operationId": "getMyProfiles",
+        "summary": "Get my profiles",
+        "description": "Return all profiles associated to the logged-in user.",
+        "tags": [
+          "Profile"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of profiles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "myprofiles": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Profile"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/getActiveProfile": {
+      "get": {
+        "operationId": "getActiveProfile",
+        "summary": "Get active profile",
+        "description": "Return the current active profile.",
+        "tags": [
+          "Profile"
+        ],
+        "responses": {
+          "200": {
+            "description": "Active profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/changeActiveProfile": {
+      "post": {
+        "operationId": "changeActiveProfile",
+        "summary": "Change active profile",
+        "description": "Change the active profile to the specified one.",
+        "tags": [
+          "Profile"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "profiles_id": {
+                    "type": "integer",
+                    "description": "ID of the new active profile"
+                  }
+                },
+                "required": [
+                  "profiles_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile changed"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/getMyEntities": {
+      "get": {
+        "operationId": "getMyEntities",
+        "summary": "Get my entities",
+        "description": "Return all possible entities of the current logged-in user.",
+        "tags": [
+          "Entity"
+        ],
+        "parameters": [
+          {
+            "name": "is_recursive",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Also display sub entities"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of entities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "myentities": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Entity"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/getActiveEntities": {
+      "get": {
+        "operationId": "getActiveEntities",
+        "summary": "Get active entities",
+        "description": "Return active entities of the current logged-in user.",
+        "tags": [
+          "Entity"
+        ],
+        "responses": {
+          "200": {
+            "description": "Active entities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "active_entity": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "active_entity_recursive": {
+                          "type": "boolean"
+                        },
+                        "active_entities": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/changeActiveEntities": {
+      "post": {
+        "operationId": "changeActiveEntities",
+        "summary": "Change active entities",
+        "description": "Change the active entity.",
+        "tags": [
+          "Entity"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "entities_id": {
+                    "oneOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "all"
+                        ]
+                      }
+                    ],
+                    "description": "ID of the new active entity or 'all'"
+                  },
+                  "is_recursive": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Entity changed"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/getFullSession": {
+      "get": {
+        "operationId": "getFullSession",
+        "summary": "Get full session",
+        "description": "Return the current PHP session data.",
+        "tags": [
+          "Session"
+        ],
+        "responses": {
+          "200": {
+            "description": "Session data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "session": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/getGlpiConfig": {
+      "get": {
+        "operationId": "getGlpiConfig",
+        "summary": "Get GLPI configuration",
+        "description": "Return the current GLPI configuration.",
+        "tags": [
+          "Configuration"
+        ],
+        "responses": {
+          "200": {
+            "description": "Configuration data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "cfg_glpi": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/{itemtype}": {
+      "get": {
+        "operationId": "getAllItems",
+        "summary": "Get all items of a type",
+        "description": "Return a collection of rows of the specified itemtype.",
+        "tags": [
+          "Items"
+        ],
+        "parameters": [
+          {
+            "name": "itemtype",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "GLPI item type (e.g., Computer, Ticket, User)"
+          },
+          {
+            "name": "expand_dropdowns",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Show dropdown name instead of id"
+          },
+          {
+            "name": "get_hateoas",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "Show relations in links attribute"
+          },
+          {
+            "name": "only_id",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Keep only id keys"
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "0-49"
+            },
+            "description": "Pagination range (e.g., 0-49, 150-199)"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Search option ID to sort by"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ASC",
+                "DESC"
+              ],
+              "default": "ASC"
+            },
+            "description": "Sort order"
+          },
+          {
+            "name": "is_deleted",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Return deleted elements"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Item"
+                  }
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Partial content (pagination)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Item"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "operationId": "addItems",
+        "summary": "Add item(s)",
+        "description": "Add one or multiple objects of the specified itemtype.",
+        "tags": [
+          "Items"
+        ],
+        "parameters": [
+          {
+            "name": "itemtype",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "input": {
+                    "oneOf": [
+                      {
+                        "type": "object"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "object"
+                        }
+                      }
+                    ],
+                    "description": "Object or array of objects to create"
+                  }
+                },
+                "required": [
+                  "input"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Item(s) created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "207": {
+            "description": "Multi-status for bulk creation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BulkResult"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/{itemtype}/{id}": {
+      "get": {
+        "operationId": "getItem",
+        "summary": "Get an item",
+        "description": "Return the instance fields of the specified itemtype identified by id.",
+        "tags": [
+          "Items"
+        ],
+        "parameters": [
+          {
+            "name": "itemtype",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "expand_dropdowns",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "get_hateoas",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          {
+            "name": "with_networkports",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "with_infocoms",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "with_contracts",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "with_documents",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "with_tickets",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "with_problems",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "with_changes",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "with_notes",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "with_logs",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Item"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateItem",
+        "summary": "Update an item",
+        "description": "Update an existing item of the specified itemtype.",
+        "tags": [
+          "Items"
+        ],
+        "parameters": [
+          {
+            "name": "itemtype",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "input": {
+                    "type": "object",
+                    "description": "Fields to update"
+                  }
+                },
+                "required": [
+                  "input"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Item updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BulkResult"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteItem",
+        "summary": "Delete an item",
+        "description": "Delete an item of the specified itemtype.",
+        "tags": [
+          "Items"
+        ],
+        "parameters": [
+          {
+            "name": "itemtype",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "force_purge",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Force purge (bypass trashbin)"
+          },
+          {
+            "name": "history",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "Save deletion in global history"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item deleted (bulk)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BulkResult"
+                  }
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Item deleted (single)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/{itemtype}/{id}/{subItemtype}": {
+      "get": {
+        "operationId": "getSubItems",
+        "summary": "Get sub items",
+        "description": "Return a collection of sub-items for the identified item.",
+        "tags": [
+          "Items"
+        ],
+        "parameters": [
+          {
+            "name": "itemtype",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "subItemtype",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Sub-item type (e.g., Log, Ticket)"
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "0-49"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ASC",
+                "DESC"
+              ],
+              "default": "ASC"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of sub-items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Item"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/getMultipleItems": {
+      "get": {
+        "operationId": "getMultipleItems",
+        "summary": "Get multiple items",
+        "description": "Retrieve multiple items of different types in a single request.",
+        "tags": [
+          "Items"
+        ],
+        "parameters": [
+          {
+            "name": "items",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "JSON array of {itemtype, items_id} objects"
+          },
+          {
+            "name": "expand_dropdowns",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Item"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/listSearchOptions/{itemtype}": {
+      "get": {
+        "operationId": "listSearchOptions",
+        "summary": "List search options",
+        "description": "List all available search options for the specified itemtype.",
+        "tags": [
+          "Search"
+        ],
+        "parameters": [
+          {
+            "name": "itemtype",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "raw",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Return raw uncleaned search options"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search options",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/search/{itemtype}": {
+      "get": {
+        "operationId": "searchItems",
+        "summary": "Search items",
+        "description": "Use the GLPI search engine to find items of the specified type with criteria-based filtering.",
+        "tags": [
+          "Search"
+        ],
+        "parameters": [
+          {
+            "name": "itemtype",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ASC",
+                "DESC"
+              ],
+              "default": "ASC"
+            }
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "0-49"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResult"
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Partial search results (pagination)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/getMassiveActions/{itemtype}": {
+      "get": {
+        "operationId": "getMassiveActions",
+        "summary": "Get available massive actions",
+        "description": "Show the available massive actions for a given itemtype.",
+        "tags": [
+          "Massive Actions"
+        ],
+        "parameters": [
+          {
+            "name": "itemtype",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "is_deleted",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of massive actions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MassiveAction"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/applyMassiveAction/{itemtype}": {
+      "post": {
+        "operationId": "applyMassiveAction",
+        "summary": "Apply massive action",
+        "description": "Run a massive action on selected items.",
+        "tags": [
+          "Massive Actions"
+        ],
+        "parameters": [
+          {
+            "name": "itemtype",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "Item IDs to execute action on"
+                  }
+                },
+                "required": [
+                  "ids"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "All items processed"
+          },
+          "207": {
+            "description": "Partial success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "422": {
+            "description": "All items failed"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Item": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "entities_id": {
+            "type": "integer"
+          },
+          "is_deleted": {
+            "type": "integer"
+          },
+          "date_mod": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "date_creation": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rel": {
+                  "type": "string"
+                },
+                "href": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "entities": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "Entity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "SearchResult": {
+        "type": "object",
+        "properties": {
+          "totalcount": {
+            "type": "integer"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "range": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "BulkResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "MassiveAction": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "sessionToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Session-Token",
+        "description": "Session token obtained from initSession endpoint"
+      },
+      "appToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "App-Token",
+        "description": "Application token from GLPI API configuration"
+      },
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Basic HTTP authentication for initSession"
+      },
+      "userTokenAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "User token authentication: 'user_token <token>'"
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Authentication required",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "BadRequest": {
+        "description": "Bad request",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "sessionToken": [],
+      "appToken": []
+    }
+  ]
+}
