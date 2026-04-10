@@ -1,0 +1,360 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "EngageLab Push API",
+    "version": "1.0.0",
+    "description": "EngageLab App Push REST API for creating push notifications, group pushes, and managing push delivery to Android, iOS, and HarmonyOS devices.",
+    "x-jentic-source-url": "https://engagelab.com/docs/app-push/rest-api/create-push-api"
+  },
+  "servers": [
+    {
+      "url": "https://pushapi-sgp.engagelab.com",
+      "description": "Singapore data center"
+    }
+  ],
+  "security": [
+    {
+      "basicAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Push",
+      "description": "Push notification operations"
+    },
+    {
+      "name": "GroupPush",
+      "description": "Group push notification operations"
+    }
+  ],
+  "paths": {
+    "/v4/push": {
+      "post": {
+        "operationId": "createPush",
+        "summary": "Create a push notification",
+        "description": "Send a push notification to targeted devices. Supports targeting by tags, aliases, registration IDs, segments, or broadcast to all.",
+        "tags": ["Push"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePushRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Push notification created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v4/grouppush": {
+      "post": {
+        "operationId": "createGroupPush",
+        "summary": "Create a group push notification",
+        "description": "Send a push notification across multiple apps in a group. Uses group-level authentication.",
+        "tags": ["GroupPush"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePushRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Group push created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupPushResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "HTTP Basic Authentication using Base64-encoded appkey:master_secret (or group-GroupKey:GroupMasterSecret for group push)"
+      }
+    },
+    "schemas": {
+      "CreatePushRequest": {
+        "type": "object",
+        "required": ["to", "body"],
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "Service sender identifier"
+          },
+          "to": {
+            "description": "Push target. Use 'all' for broadcast, or an object for targeted push (tags, aliases, registration_id, segment, live_activity_id).",
+            "oneOf": [
+              {
+                "type": "string",
+                "enum": ["all"]
+              },
+              {
+                "$ref": "#/components/schemas/PushTarget"
+              }
+            ]
+          },
+          "body": {
+            "$ref": "#/components/schemas/PushBody"
+          },
+          "request_id": {
+            "type": "string",
+            "description": "Client-defined request identifier"
+          },
+          "custom_args": {
+            "type": "object",
+            "description": "Custom callback data (max 128 characters when serialized)",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PushTarget": {
+        "type": "object",
+        "properties": {
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Target by tags"
+          },
+          "tags_and": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Target by tags with AND logic"
+          },
+          "alias": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Target by aliases"
+          },
+          "registration_id": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Target by registration IDs"
+          },
+          "segment": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            },
+            "description": "Target by user segment"
+          },
+          "live_activity_id": {
+            "type": "string",
+            "description": "Target iOS live activity"
+          }
+        }
+      },
+      "PushBody": {
+        "type": "object",
+        "required": ["platform"],
+        "properties": {
+          "platform": {
+            "description": "Target platforms",
+            "oneOf": [
+              {
+                "type": "string",
+                "enum": ["all", "android", "ios", "hmos"]
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["android", "ios", "hmos"]
+                }
+              }
+            ]
+          },
+          "notification": {
+            "type": "object",
+            "description": "Notification content with platform-specific variants",
+            "properties": {
+              "alert": {
+                "type": "string",
+                "description": "Default notification text"
+              },
+              "android": {
+                "type": "object",
+                "properties": {
+                  "alert": { "type": "string" },
+                  "title": { "type": "string" }
+                }
+              },
+              "ios": {
+                "type": "object",
+                "properties": {
+                  "alert": { "type": "string" },
+                  "sound": { "type": "string" },
+                  "badge": { "type": "integer" }
+                }
+              },
+              "hmos": {
+                "type": "object",
+                "properties": {
+                  "alert": { "type": "string" },
+                  "title": { "type": "string" }
+                }
+              }
+            }
+          },
+          "message": {
+            "type": "object",
+            "description": "Custom in-app message",
+            "properties": {
+              "msg_content": { "type": "string" },
+              "title": { "type": "string" },
+              "content_type": { "type": "string" },
+              "extras": {
+                "type": "object",
+                "additionalProperties": { "type": "string" }
+              }
+            }
+          },
+          "live_activity": {
+            "type": "object",
+            "description": "iOS real-time activity content"
+          },
+          "options": {
+            "type": "object",
+            "description": "Push delivery options",
+            "properties": {
+              "time_to_live": {
+                "type": "integer",
+                "description": "Time to live in seconds"
+              },
+              "apns_production": {
+                "type": "boolean",
+                "description": "Use APNs production environment"
+              },
+              "apns_collapse_id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "PushResponse": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "description": "Request identifier"
+          },
+          "msg_id": {
+            "type": "string",
+            "description": "Message identifier"
+          }
+        }
+      },
+      "GroupPushResponse": {
+        "type": "object",
+        "properties": {
+          "group_msgid": {
+            "type": "string",
+            "description": "Group message identifier"
+          }
+        },
+        "additionalProperties": {
+          "type": "object",
+          "properties": {
+            "request_id": { "type": "string" },
+            "msg_id": { "type": "string" }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "integer",
+                "description": "Error code"
+              },
+              "message": {
+                "type": "string",
+                "description": "Error message"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
