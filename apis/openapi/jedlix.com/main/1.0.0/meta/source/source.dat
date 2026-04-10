@@ -1,0 +1,396 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Jedlix SCSP API",
+    "description": "Jedlix Smart Charging Service Provider (SCSP) API for receiving OCPP charging station events and meter values.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://developer.jedlix.com/docs/ocpi-sessions-api"
+  },
+  "servers": [
+    {
+      "url": "https://api.jedlix.com",
+      "description": "Jedlix Production API"
+    }
+  ],
+  "security": [
+    {
+      "OAuth2Bearer": [],
+      "ApiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "OCPP Events",
+      "description": "OCPP event and meter value endpoints for EVSE communication"
+    }
+  ],
+  "paths": {
+    "/v1/scsp/evse/{evse_uid}/events/{payload_protocol}/TransactionEvent": {
+      "post": {
+        "operationId": "posttransactionevent",
+        "summary": "Send a transaction event",
+        "description": "Submit a transaction event (Started, Ended, or Updated) for a specific EVSE.",
+        "tags": [
+          "OCPP Events"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/EvseUid"
+          },
+          {
+            "$ref": "#/components/parameters/PayloadProtocol"
+          },
+          {
+            "name": "evse_uid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The evse_uid"
+          },
+          {
+            "name": "payload_protocol",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The payload_protocol"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransactionEventRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/v1/scsp/evse/{evse_uid}/events/ocpp2.0.1/MeterValues": {
+      "post": {
+        "operationId": "postmetervalues",
+        "summary": "Send meter values",
+        "description": "Submit meter values for a specific EVSE. Recommended update frequency is 300 seconds or lower.",
+        "tags": [
+          "OCPP Events"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/EvseUid"
+          },
+          {
+            "name": "evse_uid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The evse_uid"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeterValuesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "OAuth2Bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "OAuth 2.0 Bearer Token"
+      },
+      "ApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "ApiKey",
+        "description": "Static API Key"
+      }
+    },
+    "parameters": {
+      "EvseUid": {
+        "name": "evse_uid",
+        "in": "path",
+        "required": true,
+        "description": "EVSE unique identifier",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "PayloadProtocol": {
+        "name": "payload_protocol",
+        "in": "path",
+        "required": true,
+        "description": "Payload protocol version (e.g. ocpp2.0.1)",
+        "schema": {
+          "type": "string"
+        },
+        "example": "ocpp2.0.1"
+      }
+    },
+    "schemas": {
+      "TransactionEventRequest": {
+        "type": "object",
+        "required": [
+          "timestamp",
+          "eventType",
+          "evse",
+          "triggerReason",
+          "transactionInfo"
+        ],
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the event"
+          },
+          "eventType": {
+            "type": "string",
+            "enum": [
+              "Started",
+              "Ended",
+              "Updated"
+            ],
+            "description": "Type of the transaction event"
+          },
+          "evse": {
+            "$ref": "#/components/schemas/Evse"
+          },
+          "triggerReason": {
+            "type": "string",
+            "description": "Reason that triggered this event"
+          },
+          "transactionInfo": {
+            "$ref": "#/components/schemas/TransactionInfo"
+          }
+        }
+      },
+      "Evse": {
+        "type": "object",
+        "required": [
+          "id",
+          "connectorId"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "EVSE identifier"
+          },
+          "connectorId": {
+            "type": "integer",
+            "description": "Connector identifier"
+          }
+        }
+      },
+      "TransactionInfo": {
+        "type": "object",
+        "required": [
+          "transactionId"
+        ],
+        "properties": {
+          "transactionId": {
+            "type": "string",
+            "description": "Unique transaction identifier"
+          },
+          "chargingState": {
+            "type": "string",
+            "description": "Current charging state of the transaction"
+          }
+        }
+      },
+      "MeterValuesRequest": {
+        "type": "object",
+        "required": [
+          "evseId",
+          "meterValue"
+        ],
+        "properties": {
+          "evseId": {
+            "type": "integer",
+            "description": "EVSE identifier"
+          },
+          "meterValue": {
+            "type": "array",
+            "description": "Array of meter value entries",
+            "items": {
+              "$ref": "#/components/schemas/MeterValue"
+            }
+          }
+        }
+      },
+      "MeterValue": {
+        "type": "object",
+        "required": [
+          "timestamp",
+          "sampledValue"
+        ],
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the meter reading"
+          },
+          "sampledValue": {
+            "type": "array",
+            "description": "Array of sampled values",
+            "items": {
+              "$ref": "#/components/schemas/SampledValue"
+            }
+          }
+        }
+      },
+      "SampledValue": {
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "properties": {
+          "value": {
+            "type": "number",
+            "description": "The measured value"
+          },
+          "context": {
+            "type": "string",
+            "description": "Type of detail value (e.g. Sample.Periodic)"
+          },
+          "measurand": {
+            "type": "string",
+            "description": "Type of measurement (e.g. Energy.Active.Import.Register)"
+          },
+          "phase": {
+            "type": "string",
+            "description": "Phase to which the measurement applies"
+          },
+          "location": {
+            "type": "string",
+            "description": "Location of measurement (e.g. Outlet)"
+          },
+          "unitOfMeasure": {
+            "$ref": "#/components/schemas/UnitOfMeasure"
+          }
+        }
+      },
+      "UnitOfMeasure": {
+        "type": "object",
+        "properties": {
+          "unit": {
+            "type": "string",
+            "description": "Unit of the value (e.g. Wh, W, A, V)"
+          },
+          "multiplier": {
+            "type": "integer",
+            "description": "Multiplier for the value (10^multiplier)"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error code or type"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "description": "Error message"
+              },
+              "code": {
+                "type": "string",
+                "description": "Error code"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad Request",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Internal Server Error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  }
+}
