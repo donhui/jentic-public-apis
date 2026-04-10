@@ -1,0 +1,283 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CinetPay API",
+    "version": "2.0.0",
+    "description": "CinetPay payment gateway API for processing online payments via mobile money, credit cards, and digital wallets across Africa. Supports payment initialization, transaction management, transfers, airtime, and SMS services.",
+    "x-jentic-source-url": "https://docs.cinetpay.com"
+  },
+  "servers": [
+    {
+      "url": "https://api-checkout.cinetpay.com",
+      "description": "Checkout API Server"
+    }
+  ],
+  "paths": {
+    "/v2/payment": {
+      "post": {
+        "operationId": "initiatePayment",
+        "summary": "Initiate Payment",
+        "description": "Initiates a payment transaction by generating a payment token and checkout URL for redirecting customers to complete payment",
+        "tags": [
+          "Payment"
+        ],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentInitiationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Transaction created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentInitiationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Missing or invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid API key or site ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "apikey",
+        "description": "Merchant API key from CinetPay dashboard"
+      }
+    },
+    "schemas": {
+      "PaymentInitiationRequest": {
+        "type": "object",
+        "required": [
+          "apikey",
+          "site_id",
+          "transaction_id",
+          "amount",
+          "currency",
+          "description",
+          "notify_url",
+          "return_url",
+          "channels"
+        ],
+        "properties": {
+          "apikey": {
+            "type": "string",
+            "description": "Merchant API key"
+          },
+          "site_id": {
+            "type": "string",
+            "description": "Merchant site identifier"
+          },
+          "transaction_id": {
+            "type": "string",
+            "description": "Unique transaction identifier from merchant system"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Payment amount (must be a multiple of 5)",
+            "multipleOf": 5
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "XOF",
+              "XAF",
+              "CDF",
+              "GNF",
+              "USD"
+            ],
+            "description": "Payment currency code"
+          },
+          "description": {
+            "type": "string",
+            "description": "Payment description (avoid special characters: #, /, $, _, &)"
+          },
+          "notify_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Webhook URL for payment notifications"
+          },
+          "return_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to redirect customer after payment completion"
+          },
+          "channels": {
+            "type": "string",
+            "enum": [
+              "ALL",
+              "MOBILE_MONEY",
+              "CREDIT_CARD",
+              "WALLET"
+            ],
+            "description": "Allowed payment channels"
+          },
+          "customer_name": {
+            "type": "string",
+            "description": "Customer first name (required for card payments)"
+          },
+          "customer_surname": {
+            "type": "string",
+            "description": "Customer last name (required for card payments)"
+          },
+          "customer_email": {
+            "type": "string",
+            "format": "email",
+            "description": "Customer email (required for card payments)"
+          },
+          "customer_phone_number": {
+            "type": "string",
+            "description": "Customer phone number (required for card payments)"
+          },
+          "customer_address": {
+            "type": "string",
+            "description": "Customer address (required for card payments)"
+          },
+          "customer_city": {
+            "type": "string",
+            "description": "Customer city (required for card payments)"
+          },
+          "customer_country": {
+            "type": "string",
+            "description": "Customer country ISO 2-letter code (required for card payments)",
+            "pattern": "^[A-Z]{2}$"
+          },
+          "customer_state": {
+            "type": "string",
+            "description": "Customer state/region (required for card payments)"
+          },
+          "customer_zip_code": {
+            "type": "string",
+            "description": "Customer ZIP/postal code (required for card payments)"
+          },
+          "lang": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en"
+            ],
+            "description": "Checkout page language",
+            "default": "fr"
+          },
+          "metadata": {
+            "type": "string",
+            "description": "Custom metadata for transaction tracking"
+          },
+          "invoice_data": {
+            "type": "object",
+            "description": "Custom invoice fields (up to 3 fields)",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "lock_phone_number": {
+            "type": "boolean",
+            "description": "Whether to preset and lock customer phone number on checkout",
+            "default": false
+          }
+        }
+      },
+      "PaymentInitiationResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "201",
+            "description": "Response code"
+          },
+          "message": {
+            "type": "string",
+            "example": "CREATED",
+            "description": "Response message"
+          },
+          "description": {
+            "type": "string",
+            "example": "Transaction created with success",
+            "description": "Detailed response description"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "payment_token": {
+                "type": "string",
+                "description": "Generated payment token"
+              },
+              "payment_url": {
+                "type": "string",
+                "format": "uri",
+                "description": "Checkout URL to redirect customer"
+              }
+            }
+          },
+          "api_response_id": {
+            "type": "string",
+            "description": "API response tracking identifier"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Error code (e.g., 608, 609, 613, 624)"
+          },
+          "message": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed error description"
+          },
+          "api_response_id": {
+            "type": "string",
+            "description": "API response tracking identifier"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Payment",
+      "description": "Payment initialization and checkout operations"
+    }
+  ]
+}
