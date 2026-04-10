@@ -1,0 +1,672 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Vagrant Cloud",
+    "version": "v2",
+    "description": "Vagrant Cloud API for managing Vagrant boxes, versions, and providers on app.vagrantup.com.",
+    "x-jentic-source-url": "https://developer.hashicorp.com/vagrant/vagrant-cloud/api/v2"
+  },
+  "servers": [
+    {
+      "url": "https://app.vagrantup.com/api/v2"
+    }
+  ],
+  "security": [
+    { "bearerAuth": [] }
+  ],
+  "tags": [
+    { "name": "Authentication", "description": "Token validation" },
+    { "name": "Organizations", "description": "Organization management" },
+    { "name": "Search", "description": "Box search" },
+    { "name": "Boxes", "description": "Box management" },
+    { "name": "Versions", "description": "Box version management" },
+    { "name": "Providers", "description": "Provider management" }
+  ],
+  "paths": {
+    "/authenticate": {
+      "get": {
+        "operationId": "validateToken",
+        "summary": "Validate an authentication token",
+        "tags": ["Authentication"],
+        "responses": {
+          "200": { "description": "Token is valid" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/user/{username}": {
+      "get": {
+        "operationId": "getOrganization",
+        "summary": "Read an organization",
+        "tags": ["Organizations"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Username" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organization details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Organization" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/search": {
+      "get": {
+        "operationId": "searchBoxes",
+        "summary": "Search for Vagrant boxes",
+        "tags": ["Search"],
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "Search query" },
+          { "name": "architecture", "in": "query", "schema": { "type": "string" } },
+          { "name": "provider", "in": "query", "schema": { "type": "string" } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["downloads", "created", "updated"] } },
+          { "name": "order", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"] } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "boxes": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Box" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/box/{username}/{name}": {
+      "get": {
+        "operationId": "getBox",
+        "summary": "Read a box",
+        "tags": ["Boxes"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Username" },
+          { "$ref": "#/components/parameters/BoxName" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Box details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Box" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateBox",
+        "summary": "Update a box",
+        "tags": ["Boxes"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Username" },
+          { "$ref": "#/components/parameters/BoxName" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BoxInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Box updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Box" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteBox",
+        "summary": "Delete a box",
+        "tags": ["Boxes"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Username" },
+          { "$ref": "#/components/parameters/BoxName" }
+        ],
+        "responses": {
+          "200": { "description": "Box deleted" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/boxes": {
+      "post": {
+        "operationId": "createBox",
+        "summary": "Create a box",
+        "tags": ["Boxes"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "name"],
+                "properties": {
+                  "username": { "type": "string" },
+                  "name": { "type": "string" },
+                  "short_description": { "type": "string" },
+                  "description": { "type": "string" },
+                  "is_private": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Box created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Box" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/box/{username}/{name}/version/{version}": {
+      "get": {
+        "operationId": "getVersion",
+        "summary": "Read a version",
+        "tags": ["Versions"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Username" },
+          { "$ref": "#/components/parameters/BoxName" },
+          { "$ref": "#/components/parameters/Version" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Version details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BoxVersion" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateVersion",
+        "summary": "Update a version",
+        "tags": ["Versions"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Username" },
+          { "$ref": "#/components/parameters/BoxName" },
+          { "$ref": "#/components/parameters/Version" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/VersionInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Version updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BoxVersion" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteVersion",
+        "summary": "Delete a version",
+        "tags": ["Versions"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Username" },
+          { "$ref": "#/components/parameters/BoxName" },
+          { "$ref": "#/components/parameters/Version" }
+        ],
+        "responses": {
+          "200": { "description": "Version deleted" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/box/{username}/{name}/versions": {
+      "post": {
+        "operationId": "createVersion",
+        "summary": "Create a version",
+        "tags": ["Versions"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Username" },
+          { "$ref": "#/components/parameters/BoxName" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/VersionInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Version created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BoxVersion" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/box/{username}/{name}/version/{version}/release": {
+      "put": {
+        "operationId": "releaseVersion",
+        "summary": "Release a version",
+        "tags": ["Versions"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Username" },
+          { "$ref": "#/components/parameters/BoxName" },
+          { "$ref": "#/components/parameters/Version" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Version released",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BoxVersion" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/box/{username}/{name}/version/{version}/revoke": {
+      "put": {
+        "operationId": "revokeVersion",
+        "summary": "Revoke a version",
+        "tags": ["Versions"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Username" },
+          { "$ref": "#/components/parameters/BoxName" },
+          { "$ref": "#/components/parameters/Version" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Version revoked",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BoxVersion" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/box/{username}/{name}/version/{version}/providers": {
+      "post": {
+        "operationId": "createProvider",
+        "summary": "Create a provider",
+        "tags": ["Providers"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Username" },
+          { "$ref": "#/components/parameters/BoxName" },
+          { "$ref": "#/components/parameters/Version" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ProviderInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provider created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Provider" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/box/{username}/{name}/version/{version}/provider/{provider}/{architecture}": {
+      "get": {
+        "operationId": "getProvider",
+        "summary": "Read a provider",
+        "tags": ["Providers"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Username" },
+          { "$ref": "#/components/parameters/BoxName" },
+          { "$ref": "#/components/parameters/Version" },
+          { "$ref": "#/components/parameters/ProviderName" },
+          { "$ref": "#/components/parameters/Architecture" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Provider" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateProvider",
+        "summary": "Update a provider",
+        "tags": ["Providers"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Username" },
+          { "$ref": "#/components/parameters/BoxName" },
+          { "$ref": "#/components/parameters/Version" },
+          { "$ref": "#/components/parameters/ProviderName" },
+          { "$ref": "#/components/parameters/Architecture" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ProviderInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provider updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Provider" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteProvider",
+        "summary": "Delete a provider",
+        "tags": ["Providers"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Username" },
+          { "$ref": "#/components/parameters/BoxName" },
+          { "$ref": "#/components/parameters/Version" },
+          { "$ref": "#/components/parameters/ProviderName" },
+          { "$ref": "#/components/parameters/Architecture" }
+        ],
+        "responses": {
+          "200": { "description": "Provider deleted" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/box/{username}/{name}/version/{version}/provider/{provider}/{architecture}/upload": {
+      "get": {
+        "operationId": "getUploadUrl",
+        "summary": "Get upload URL for provider",
+        "tags": ["Providers"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Username" },
+          { "$ref": "#/components/parameters/BoxName" },
+          { "$ref": "#/components/parameters/Version" },
+          { "$ref": "#/components/parameters/ProviderName" },
+          { "$ref": "#/components/parameters/Architecture" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upload URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "upload_path": { "type": "string", "format": "uri" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/box/{username}/{name}/version/{version}/provider/{provider}/{architecture}/upload/direct": {
+      "get": {
+        "operationId": "getDirectUploadUrl",
+        "summary": "Get direct upload URL for provider",
+        "tags": ["Providers"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Username" },
+          { "$ref": "#/components/parameters/BoxName" },
+          { "$ref": "#/components/parameters/Version" },
+          { "$ref": "#/components/parameters/ProviderName" },
+          { "$ref": "#/components/parameters/Architecture" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Direct upload details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "upload_path": { "type": "string", "format": "uri" },
+                    "callback": { "type": "string", "format": "uri" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Vagrant Cloud authentication token"
+      }
+    },
+    "parameters": {
+      "Username": {
+        "name": "username",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      },
+      "BoxName": {
+        "name": "name",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" },
+        "description": "Box name"
+      },
+      "Version": {
+        "name": "version",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" },
+        "description": "Version string (e.g., 1.0.0)"
+      },
+      "ProviderName": {
+        "name": "provider",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" },
+        "description": "Provider name (e.g., virtualbox, vmware_desktop)"
+      },
+      "Architecture": {
+        "name": "architecture",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" },
+        "description": "Architecture (e.g., amd64, arm64)"
+      }
+    },
+    "schemas": {
+      "Organization": {
+        "type": "object",
+        "properties": {
+          "username": { "type": "string" },
+          "avatar_url": { "type": "string" },
+          "profile_html": { "type": "string" },
+          "profile_markdown": { "type": "string" },
+          "boxes": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Box" }
+          }
+        }
+      },
+      "Box": {
+        "type": "object",
+        "properties": {
+          "tag": { "type": "string" },
+          "username": { "type": "string" },
+          "name": { "type": "string" },
+          "short_description": { "type": "string" },
+          "description_html": { "type": "string" },
+          "description_markdown": { "type": "string" },
+          "is_private": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" },
+          "downloads": { "type": "integer" },
+          "current_version": { "$ref": "#/components/schemas/BoxVersion" },
+          "versions": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/BoxVersion" }
+          }
+        }
+      },
+      "BoxInput": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "short_description": { "type": "string" },
+          "description": { "type": "string" },
+          "is_private": { "type": "boolean" }
+        }
+      },
+      "BoxVersion": {
+        "type": "object",
+        "properties": {
+          "version": { "type": "string" },
+          "status": { "type": "string" },
+          "description_html": { "type": "string" },
+          "description_markdown": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" },
+          "providers": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Provider" }
+          }
+        }
+      },
+      "VersionInput": {
+        "type": "object",
+        "required": ["version"],
+        "properties": {
+          "version": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      },
+      "Provider": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "hosted": { "type": "boolean" },
+          "hosted_token": { "type": "string" },
+          "original_url": { "type": "string" },
+          "download_url": { "type": "string" },
+          "checksum": { "type": "string" },
+          "checksum_type": { "type": "string" },
+          "architecture": { "type": "string" },
+          "default_architecture": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ProviderInput": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "url": { "type": "string", "format": "uri" },
+          "checksum": { "type": "string" },
+          "checksum_type": { "type": "string", "enum": ["md5", "sha1", "sha256", "sha384", "sha512"] },
+          "architecture": { "type": "string" },
+          "default_architecture": { "type": "boolean" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Validation error",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Authentication required",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      }
+    }
+  }
+}
