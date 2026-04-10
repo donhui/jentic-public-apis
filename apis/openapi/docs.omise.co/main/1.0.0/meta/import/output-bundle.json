@@ -1,0 +1,1835 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Omise Payments API",
+    "description": "Omise payment gateway API providing charge management, customer management, token creation, refunds, and transfers.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://www.omise.co/docs"
+  },
+  "servers": [
+    {
+      "url": "https://api.omise.co",
+      "description": "Omise API server"
+    },
+    {
+      "url": "https://vault.omise.co",
+      "description": "Omise Vault server (for tokens)"
+    }
+  ],
+  "paths": {
+    "/charges": {
+      "post": {
+        "operationId": "createCharge",
+        "summary": "Create a charge",
+        "description": "Create and authorize or capture a charge from a card, customer, or source.",
+        "tags": [
+          "Charges"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChargeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Charge created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Charge"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listCharges",
+        "summary": "List charges",
+        "description": "Retrieve a paginated list of charges for the account.",
+        "tags": [
+          "Charges"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            },
+            "description": "Records per page"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "description": "Number of records to skip"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "chronological",
+                "reverse_chronological"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Earliest UTC datetime (ISO 8601)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Latest UTC datetime (ISO 8601)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of charges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargeList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      }
+    },
+    "/charges/{id}": {
+      "get": {
+        "operationId": "retrieveCharge",
+        "summary": "Retrieve a charge",
+        "description": "Retrieve charge details by ID.",
+        "tags": [
+          "Charges"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Charge ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Charge details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Charge"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateCharge",
+        "summary": "Update a charge",
+        "description": "Modify charge description or metadata.",
+        "tags": [
+          "Charges"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string"
+                  },
+                  "metadata": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated charge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Charge"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      }
+    },
+    "/charges/{id}/capture": {
+      "post": {
+        "operationId": "captureCharge",
+        "summary": "Capture a charge",
+        "description": "Capture a previously authorized charge.",
+        "tags": [
+          "Charges"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "capture_amount": {
+                    "type": "integer",
+                    "description": "Partial capture amount in smallest currency unit"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Charge captured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Charge"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      }
+    },
+    "/charges/{id}/reverse": {
+      "post": {
+        "operationId": "reverseCharge",
+        "summary": "Reverse a charge",
+        "description": "Reverse an uncaptured authorization.",
+        "tags": [
+          "Charges"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Charge reversed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Charge"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      }
+    },
+    "/charges/{id}/expire": {
+      "post": {
+        "operationId": "expireCharge",
+        "summary": "Expire a pending charge",
+        "description": "Set a pending charge to expired state.",
+        "tags": [
+          "Charges"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Charge expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Charge"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      }
+    },
+    "/charges/{id}/refunds": {
+      "post": {
+        "operationId": "createRefund",
+        "summary": "Create a refund",
+        "description": "Create a refund on the charge matching the specified ID.",
+        "tags": [
+          "Refunds"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Charge ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "amount"
+                ],
+                "properties": {
+                  "amount": {
+                    "type": "integer",
+                    "description": "Refund amount in smallest currency unit"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Custom key-value pairs (max 15000 chars)"
+                  },
+                  "void": {
+                    "type": "boolean",
+                    "description": "Force void processing if applicable"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Refund created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refund"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listChargeRefunds",
+        "summary": "List refunds for a charge",
+        "description": "Returns a list of refunds belonging to the specified charge.",
+        "tags": [
+          "Refunds"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "chronological",
+                "reverse_chronological"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of refunds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      }
+    },
+    "/charges/{id}/refunds/{refundId}": {
+      "get": {
+        "operationId": "retrieveRefund",
+        "summary": "Retrieve a refund",
+        "description": "Returns the refund matching the refund ID belonging to the specified charge.",
+        "tags": [
+          "Refunds"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Charge ID"
+          },
+          {
+            "name": "refundId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Refund ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Refund details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refund"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      }
+    },
+    "/refunds": {
+      "get": {
+        "operationId": "listAllRefunds",
+        "summary": "List all refunds",
+        "description": "Retrieve paginated refund records for the entire account.",
+        "tags": [
+          "Refunds"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "chronological",
+                "reverse_chronological"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of refunds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      }
+    },
+    "/customers": {
+      "post": {
+        "operationId": "createCustomer",
+        "summary": "Create a customer",
+        "description": "Create a new customer, optionally attaching a card via token.",
+        "tags": [
+          "Customers"
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Customer created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listCustomers",
+        "summary": "List customers",
+        "description": "Returns a paginated list of customers belonging to the account.",
+        "tags": [
+          "Customers"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "chronological",
+                "reverse_chronological"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of customers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      }
+    },
+    "/customers/{id}": {
+      "get": {
+        "operationId": "retrieveCustomer",
+        "summary": "Retrieve a customer",
+        "description": "Returns the customer matching the specified ID.",
+        "tags": [
+          "Customers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateCustomer",
+        "summary": "Update a customer",
+        "description": "Updates and returns the specified customer.",
+        "tags": [
+          "Customers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCustomerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated customer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "destroyCustomer",
+        "summary": "Destroy a customer",
+        "description": "Delete the customer matching the specified ID.",
+        "tags": [
+          "Customers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      }
+    },
+    "/transfers": {
+      "post": {
+        "operationId": "createTransfer",
+        "summary": "Create a transfer",
+        "description": "Create and return a new transfer.",
+        "tags": [
+          "Transfers"
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTransferRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transfer created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transfer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listTransfers",
+        "summary": "List transfers",
+        "description": "Returns a paginated list of transfers.",
+        "tags": [
+          "Transfers"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "chronological",
+                "reverse_chronological"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of transfers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      }
+    },
+    "/transfers/{id}": {
+      "get": {
+        "operationId": "retrieveTransfer",
+        "summary": "Retrieve a transfer",
+        "description": "Retrieve a specific transfer by ID.",
+        "tags": [
+          "Transfers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transfer details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transfer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "destroyTransfer",
+        "summary": "Destroy a transfer",
+        "description": "Destroy the transfer matching the specified ID.",
+        "tags": [
+          "Transfers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transfer destroyed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transfer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      }
+    },
+    "/tokens": {
+      "post": {
+        "operationId": "createToken",
+        "summary": "Create a token",
+        "description": "Create a single-use token for card data. Uses vault server and public key authentication.",
+        "tags": [
+          "Tokens"
+        ],
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      }
+    },
+    "/tokens/{id}": {
+      "get": {
+        "operationId": "retrieveToken",
+        "summary": "Retrieve a token",
+        "description": "Returns the token matching the specified ID.",
+        "tags": [
+          "Tokens"
+        ],
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "HTTP Basic Auth using secret API key as username with empty password (skey_test_xxx:)"
+      }
+    },
+    "schemas": {
+      "CreateChargeRequest": {
+        "type": "object",
+        "required": [
+          "amount",
+          "currency"
+        ],
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "description": "Amount in smallest currency unit"
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 code"
+          },
+          "card": {
+            "type": "string",
+            "description": "Token ID for card payment"
+          },
+          "customer": {
+            "type": "string",
+            "description": "Customer ID"
+          },
+          "source": {
+            "type": "string",
+            "description": "Source ID for alternative payment methods"
+          },
+          "capture": {
+            "type": "boolean",
+            "description": "Auto-capture flag"
+          },
+          "return_uri": {
+            "type": "string",
+            "description": "Redirect URI for 3DS authentication"
+          },
+          "description": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object"
+          }
+        }
+      },
+      "Charge": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "example": "charge"
+          },
+          "id": {
+            "type": "string"
+          },
+          "livemode": {
+            "type": "boolean"
+          },
+          "location": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "paid": {
+            "type": "boolean"
+          },
+          "refundable": {
+            "type": "boolean"
+          },
+          "capture": {
+            "type": "boolean"
+          },
+          "authorized": {
+            "type": "boolean"
+          },
+          "reversed": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "card": {
+            "type": "object"
+          },
+          "source": {
+            "type": "object"
+          },
+          "customer": {
+            "type": "string"
+          },
+          "transaction": {
+            "type": "string"
+          },
+          "refunded_amount": {
+            "type": "integer"
+          },
+          "return_uri": {
+            "type": "string"
+          },
+          "authorize_uri": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ChargeList": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "example": "list"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Charge"
+            }
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "CreateCustomerRequest": {
+        "type": "object",
+        "properties": {
+          "card": {
+            "type": "string",
+            "description": "Unused token identifier to attach as card"
+          },
+          "description": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "linked_account": {
+            "type": "string",
+            "description": "Account linked for direct debit"
+          },
+          "metadata": {
+            "type": "object"
+          }
+        }
+      },
+      "UpdateCustomerRequest": {
+        "type": "object",
+        "properties": {
+          "card": {
+            "type": "string"
+          },
+          "default_card": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "linked_account": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object"
+          }
+        }
+      },
+      "Customer": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "example": "customer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "livemode": {
+            "type": "boolean"
+          },
+          "location": {
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "cards": {
+            "type": "object"
+          },
+          "default_card": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CustomerList": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "example": "list"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Customer"
+            }
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "Refund": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "example": "refund"
+          },
+          "id": {
+            "type": "string"
+          },
+          "livemode": {
+            "type": "boolean"
+          },
+          "location": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "charge": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "voided": {
+            "type": "boolean"
+          },
+          "transaction": {
+            "type": "string"
+          },
+          "funding_amount": {
+            "type": "integer"
+          },
+          "funding_currency": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RefundList": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "example": "list"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Refund"
+            }
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "CreateTransferRequest": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "description": "Amount in smallest currency unit"
+          },
+          "recipient": {
+            "type": "string",
+            "description": "Recipient ID; defaults to account default"
+          },
+          "fail_fast": {
+            "type": "boolean",
+            "description": "Prevent retries on failure"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "split_transfer": {
+            "type": "boolean"
+          },
+          "idemp_key": {
+            "type": "string",
+            "description": "Idempotency key"
+          }
+        }
+      },
+      "Transfer": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "example": "transfer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "livemode": {
+            "type": "boolean"
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "fee": {
+            "type": "integer"
+          },
+          "paid": {
+            "type": "boolean"
+          },
+          "sent": {
+            "type": "boolean"
+          },
+          "sendable": {
+            "type": "boolean"
+          },
+          "recipient": {
+            "type": "string"
+          },
+          "bank_account": {
+            "type": "object"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "transactions": {
+            "type": "object"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TransferList": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "example": "list"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Transfer"
+            }
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "CreateTokenRequest": {
+        "type": "object",
+        "required": [
+          "card[name]",
+          "card[number]",
+          "card[expiration_month]",
+          "card[expiration_year]"
+        ],
+        "properties": {
+          "card[name]": {
+            "type": "string",
+            "description": "Card owner name"
+          },
+          "card[number]": {
+            "type": "string",
+            "description": "Card number"
+          },
+          "card[expiration_month]": {
+            "type": "integer",
+            "description": "Expiration month"
+          },
+          "card[expiration_year]": {
+            "type": "integer",
+            "description": "Expiration year"
+          },
+          "card[security_code]": {
+            "type": "string",
+            "description": "CVV/CVC code"
+          },
+          "card[street1]": {
+            "type": "string"
+          },
+          "card[street2]": {
+            "type": "string"
+          },
+          "card[city]": {
+            "type": "string"
+          },
+          "card[state]": {
+            "type": "string"
+          },
+          "card[postal_code]": {
+            "type": "string"
+          },
+          "card[country]": {
+            "type": "string",
+            "description": "Two-letter ISO 3166 code"
+          },
+          "card[phone_number]": {
+            "type": "string"
+          },
+          "card[email]": {
+            "type": "string"
+          }
+        }
+      },
+      "Token": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "example": "token"
+          },
+          "id": {
+            "type": "string"
+          },
+          "livemode": {
+            "type": "boolean"
+          },
+          "location": {
+            "type": "string"
+          },
+          "used": {
+            "type": "boolean"
+          },
+          "charge_status": {
+            "type": "string"
+          },
+          "card": {
+            "type": "object"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "example": "error"
+          },
+          "location": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "basicAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Charges",
+      "description": "Charge creation and management"
+    },
+    {
+      "name": "Customers",
+      "description": "Customer management"
+    },
+    {
+      "name": "Tokens",
+      "description": "Token creation and retrieval (vault server)"
+    },
+    {
+      "name": "Refunds",
+      "description": "Refund operations"
+    },
+    {
+      "name": "Transfers",
+      "description": "Fund transfer operations"
+    }
+  ]
+}
