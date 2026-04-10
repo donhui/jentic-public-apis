@@ -1,0 +1,342 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "eSewa ePay API",
+    "version": "2.0.0",
+    "description": "eSewa ePay is a payment gateway API for Nepal that enables merchants to accept payments through eSewa's digital wallet platform. The API supports payment form submission and transaction status verification using HMAC-SHA256 signature-based authentication.",
+    "x-jentic-source-url": "https://developer.esewa.com.np/pages/Epay",
+    "contact": {
+      "name": "eSewa Support",
+      "email": "merchant@esewa.com.np"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://epay.esewa.com.np",
+      "description": "Production server"
+    },
+    {
+      "url": "https://rc-epay.esewa.com.np",
+      "description": "Testing server (RC environment)"
+    }
+  ],
+  "paths": {
+    "/api/epay/main/v2/form": {
+      "post": {
+        "operationId": "submitPaymentForm",
+        "summary": "Submit payment form",
+        "description": "Initiates a payment transaction by submitting a payment form with merchant details, amounts, and signature. All parameters are required and must not be null or empty.",
+        "tags": [
+          "Payment"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentFormRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment processed successfully. User is redirected to success_url or failure_url with transaction details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters or signature",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid signature or merchant credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/epay/transaction/status/": {
+      "get": {
+        "operationId": "getTransactionStatus",
+        "summary": "Get transaction status",
+        "description": "Retrieves the current status of a transaction using the product code, transaction UUID, and total amount. Available on production server at https://esewa.com.np/api/epay/transaction/status/ or testing at https://rc.esewa.com.np/api/epay/transaction/status/",
+        "tags": [
+          "Transaction"
+        ],
+        "parameters": [
+          {
+            "name": "product_code",
+            "in": "query",
+            "required": true,
+            "description": "Merchant product code provided by eSewa",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "total_amount",
+            "in": "query",
+            "required": true,
+            "description": "Total transaction amount",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "transaction_uuid",
+            "in": "query",
+            "required": true,
+            "description": "Unique transaction identifier (alphanumeric with hyphens)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction status retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing or invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Transaction not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "hmacSignature": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "signature",
+        "description": "HMAC-SHA256 signature generated using secret key and message fields (total_amount, transaction_uuid, product_code) in order, Base64 encoded as defined in RFC 2104"
+      }
+    },
+    "schemas": {
+      "PaymentFormRequest": {
+        "type": "object",
+        "required": [
+          "amount",
+          "tax_amount",
+          "total_amount",
+          "transaction_uuid",
+          "product_code",
+          "product_service_charge",
+          "product_delivery_charge",
+          "success_url",
+          "failure_url",
+          "signed_field_names",
+          "signature"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Product amount (must not be null or empty)"
+          },
+          "tax_amount": {
+            "type": "string",
+            "description": "Tax amount applied on product (use '0' if no tax)"
+          },
+          "total_amount": {
+            "type": "string",
+            "description": "Total amount including all charges (amount + tax + service charge + delivery charge)"
+          },
+          "transaction_uuid": {
+            "type": "string",
+            "description": "Unique alphanumeric transaction identifier with hyphens"
+          },
+          "product_code": {
+            "type": "string",
+            "description": "Merchant product code provided by eSewa"
+          },
+          "product_service_charge": {
+            "type": "string",
+            "description": "Service charge by merchant (use '0' if no charge)"
+          },
+          "product_delivery_charge": {
+            "type": "string",
+            "description": "Delivery charge by merchant (use '0' if no charge)"
+          },
+          "success_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to redirect after successful payment"
+          },
+          "failure_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to redirect after payment failure or pending status"
+          },
+          "signed_field_names": {
+            "type": "string",
+            "description": "Comma-separated list of field names used for signature generation (e.g., 'total_amount,transaction_uuid,product_code')"
+          },
+          "signature": {
+            "type": "string",
+            "description": "HMAC-SHA256 signature, Base64 encoded, generated from signed field values and secret key"
+          }
+        }
+      },
+      "PaymentResponse": {
+        "type": "object",
+        "properties": {
+          "transaction_code": {
+            "type": "string",
+            "description": "eSewa transaction code"
+          },
+          "status": {
+            "type": "string",
+            "description": "Payment status",
+            "enum": [
+              "COMPLETE",
+              "PENDING",
+              "FULL_REFUND",
+              "PARTIAL_REFUND",
+              "AMBIGUOUS",
+              "NOT_FOUND",
+              "CANCELED"
+            ]
+          },
+          "total_amount": {
+            "type": "string",
+            "description": "Total transaction amount"
+          },
+          "transaction_uuid": {
+            "type": "string",
+            "description": "Unique transaction identifier"
+          },
+          "product_code": {
+            "type": "string",
+            "description": "Merchant product code"
+          },
+          "signature": {
+            "type": "string",
+            "description": "Response signature for verification"
+          }
+        }
+      },
+      "TransactionStatusResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Current transaction status",
+            "enum": [
+              "COMPLETE",
+              "PENDING",
+              "FULL_REFUND",
+              "PARTIAL_REFUND",
+              "AMBIGUOUS",
+              "NOT_FOUND",
+              "CANCELED"
+            ]
+          },
+          "transaction_code": {
+            "type": "string",
+            "description": "eSewa transaction code"
+          },
+          "total_amount": {
+            "type": "string",
+            "description": "Total transaction amount"
+          },
+          "transaction_uuid": {
+            "type": "string",
+            "description": "Unique transaction identifier"
+          },
+          "product_code": {
+            "type": "string",
+            "description": "Merchant product code"
+          },
+          "ref_id": {
+            "type": "string",
+            "description": "Reference ID from eSewa"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "error_code": {
+            "type": "string",
+            "description": "Error code"
+          },
+          "details": {
+            "type": "string",
+            "description": "Additional error details"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "hmacSignature": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Payment",
+      "description": "Payment initiation and form submission"
+    },
+    {
+      "name": "Transaction",
+      "description": "Transaction status verification"
+    }
+  ]
+}
