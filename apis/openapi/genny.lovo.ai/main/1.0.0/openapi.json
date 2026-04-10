@@ -1,0 +1,440 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Genny by LOVO Text-to-Speech API",
+    "version": "1.0.0",
+    "description": "Genny by LOVO AI text-to-speech API providing synchronous and asynchronous TTS generation, speaker listing, and team billing information. Audio URLs expire after 24 hours.",
+    "x-jentic-source-url": "https://docs.genny.lovo.ai"
+  },
+  "servers": [
+    {
+      "url": "https://api.genny.lovo.ai"
+    }
+  ],
+  "paths": {
+    "/api/v1/teams/status": {
+      "get": {
+        "operationId": "getTeamStatus",
+        "summary": "Get team billing information",
+        "description": "Retrieve team billing and subscription status.",
+        "tags": [
+          "Teams"
+        ],
+        "responses": {
+          "200": {
+            "description": "Team status retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/speakers": {
+      "get": {
+        "operationId": "listSpeakers",
+        "summary": "List available speakers",
+        "description": "Retrieve all speakers with optional filtering. Supports pagination.",
+        "tags": [
+          "Speakers"
+        ],
+        "parameters": [
+          {
+            "name": "language",
+            "in": "query",
+            "description": "Filter by language code.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "gender",
+            "in": "query",
+            "description": "Filter by gender.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "male",
+                "female"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination.",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of speakers per page.",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of speakers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpeakerListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tts/sync": {
+      "post": {
+        "operationId": "generateTtsSync",
+        "summary": "Synchronous text-to-speech",
+        "description": "Generate audio synchronously. Has a 90-second timeout; returns a pending job if processing exceeds the limit.",
+        "tags": [
+          "Text-to-Speech"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TtsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Audio generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TtsResponse"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Processing exceeds timeout, job pending",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TtsJobPending"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tts": {
+      "post": {
+        "operationId": "generateTtsAsync",
+        "summary": "Asynchronous text-to-speech",
+        "description": "Submit a TTS job asynchronously. Returns a job ID for status tracking.",
+        "tags": [
+          "Text-to-Speech"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TtsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Job submitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TtsJobPending"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tts/{jobId}": {
+      "get": {
+        "operationId": "getTtsJob",
+        "summary": "Retrieve TTS job status",
+        "description": "Retrieve the status and audio URLs for an async TTS job. Audio URLs expire after 24 hours.",
+        "tags": [
+          "Text-to-Speech"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "description": "The job identifier returned from the async TTS endpoint.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job status and audio URLs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TtsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TeamStatus": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string",
+            "description": "Current subscription plan."
+          },
+          "credits_remaining": {
+            "type": "integer",
+            "description": "Remaining character credits."
+          },
+          "credits_total": {
+            "type": "integer",
+            "description": "Total character credits for the period."
+          }
+        }
+      },
+      "Speaker": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Speaker unique identifier."
+          },
+          "display_name": {
+            "type": "string",
+            "description": "Speaker display name."
+          },
+          "language": {
+            "type": "string",
+            "description": "Language code."
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female"
+            ],
+            "description": "Speaker gender."
+          },
+          "sample_url": {
+            "type": "string",
+            "description": "URL to sample audio."
+          }
+        }
+      },
+      "SpeakerListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Speaker"
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "TtsRequest": {
+        "type": "object",
+        "required": [
+          "text",
+          "speaker"
+        ],
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text content to convert to speech."
+          },
+          "speaker": {
+            "type": "string",
+            "description": "Speaker ID."
+          },
+          "speed": {
+            "type": "number",
+            "description": "Speech speed multiplier (0.5-2.0).",
+            "minimum": 0.5,
+            "maximum": 2
+          },
+          "emphasis": {
+            "type": "string",
+            "description": "Emphasis level."
+          }
+        }
+      },
+      "TtsResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Job identifier."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "processing",
+              "completed",
+              "failed"
+            ],
+            "description": "Job status."
+          },
+          "urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Audio download URLs (expire after 24 hours)."
+          },
+          "duration": {
+            "type": "number",
+            "description": "Audio duration in seconds."
+          }
+        }
+      },
+      "TtsJobPending": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Job identifier for polling."
+          },
+          "status": {
+            "type": "string",
+            "example": "pending"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message."
+          },
+          "code": {
+            "type": "integer",
+            "description": "Error code."
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "name": "X-API-KEY",
+        "in": "header",
+        "description": "API key for authentication"
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKey": []
+    }
+  ]
+}
