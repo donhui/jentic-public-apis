@@ -1,0 +1,316 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Flyimg",
+    "version": "1.0.0",
+    "description": "Flyimg is an on-the-fly image resizing, cropping, and compression service. Images are processed via URL parameters.",
+    "x-jentic-source-url": "https://docs.flyimg.io"
+  },
+  "servers": [
+    {
+      "url": "https://{server}",
+      "description": "Flyimg server instance",
+      "variables": {
+        "server": {
+          "default": "your-flyimg-instance.com",
+          "description": "Your Flyimg server address"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/upload/{options}/{image_url}": {
+      "get": {
+        "operationId": "transformImage",
+        "summary": "Transform and serve an image",
+        "description": "Fetches a remote image, applies the specified transformations, and returns the processed image with appropriate headers.",
+        "tags": [
+          "Image Processing"
+        ],
+        "parameters": [
+          {
+            "name": "options",
+            "in": "path",
+            "required": true,
+            "description": "Comma-separated transformation options (e.g., 'w_250,h_200,q_80,c_1'). See schema for available options.",
+            "schema": {
+              "type": "string",
+              "example": "w_250,h_200,q_80"
+            }
+          },
+          {
+            "name": "image_url",
+            "in": "path",
+            "required": true,
+            "description": "Full URL of the source image to process",
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transformed image",
+            "content": {
+              "image/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid options or image URL"
+          },
+          "404": {
+            "description": "Source image not found"
+          }
+        }
+      }
+    },
+    "/path/{options}/{image_url}": {
+      "get": {
+        "operationId": "getTransformedImagePath",
+        "summary": "Get absolute path of transformed image",
+        "description": "Processes the image and returns the absolute file path of the result as a string in the response body.",
+        "tags": [
+          "Image Processing"
+        ],
+        "parameters": [
+          {
+            "name": "options",
+            "in": "path",
+            "required": true,
+            "description": "Comma-separated transformation options",
+            "schema": {
+              "type": "string",
+              "example": "w_250,h_200,q_80"
+            }
+          },
+          {
+            "name": "image_url",
+            "in": "path",
+            "required": true,
+            "description": "Full URL of the source image to process",
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Absolute path of the processed image",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid options or image URL"
+          }
+        }
+      }
+    },
+    "/upload/{options}": {
+      "post": {
+        "operationId": "transformUploadedImage",
+        "summary": "Transform an uploaded image",
+        "description": "Accepts an image via POST (binary or base64 JSON) and applies the specified transformations.",
+        "tags": [
+          "Image Processing"
+        ],
+        "parameters": [
+          {
+            "name": "options",
+            "in": "path",
+            "required": true,
+            "description": "Comma-separated transformation options",
+            "schema": {
+              "type": "string",
+              "example": "w_250,h_200,q_80"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary",
+                "description": "Raw image binary data"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": {
+                    "type": "string",
+                    "format": "byte",
+                    "description": "Base64-encoded image data"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transformed image",
+            "content": {
+              "image/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid options or image data"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TransformationOptions": {
+        "type": "object",
+        "description": "Available transformation options passed as comma-separated key_value pairs in the URL path",
+        "properties": {
+          "w": {
+            "type": "integer",
+            "description": "Target width in pixels"
+          },
+          "h": {
+            "type": "integer",
+            "description": "Target height in pixels"
+          },
+          "c": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "description": "Enable crop to fill (1=enabled)"
+          },
+          "g": {
+            "type": "string",
+            "enum": [
+              "NorthWest",
+              "North",
+              "NorthEast",
+              "West",
+              "Center",
+              "East",
+              "SouthWest",
+              "South",
+              "SouthEast"
+            ],
+            "description": "Crop gravity/positioning"
+          },
+          "r": {
+            "type": "string",
+            "description": "Rotation angle (e.g., 90, -180)"
+          },
+          "q": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Compression quality (default 90)"
+          },
+          "o": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "input",
+              "png",
+              "webp",
+              "avif",
+              "jxl",
+              "jpeg",
+              "jpg"
+            ],
+            "description": "Output format"
+          },
+          "bg": {
+            "type": "string",
+            "description": "Background color (hex without #)"
+          },
+          "st": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "description": "Strip EXIF/color profile (default 1)"
+          },
+          "sh": {
+            "type": "string",
+            "description": "Gaussian sharpening: radius x sigma"
+          },
+          "blr": {
+            "type": "string",
+            "description": "Blur effect: radius x sigma"
+          },
+          "f": {
+            "type": "string",
+            "description": "Resize filter algorithm (default Lanczos)"
+          },
+          "fc": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "description": "Face detection crop (1=enabled)"
+          },
+          "fb": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "description": "Face blur (1=enabled)"
+          },
+          "smc": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "description": "Smart crop (1=enabled)"
+          },
+          "t": {
+            "type": "string",
+            "description": "Watermark text overlay"
+          },
+          "tc": {
+            "type": "string",
+            "description": "Text color (default white)"
+          },
+          "ts": {
+            "type": "integer",
+            "description": "Text size in pixels (default 12)"
+          },
+          "rf": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "description": "Force refresh, bypass cache (1=enabled)"
+          }
+        }
+      }
+    }
+  }
+}
