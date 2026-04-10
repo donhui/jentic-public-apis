@@ -1,0 +1,832 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Localytics Query API",
+    "description": "The Localytics Query API provides programmatic access to your Localytics analytics data. It supports querying app metadata, attributes, and running analytics queries with flexible dimensions, conditions, and metrics.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Localytics",
+      "url": "http://docs.localytics.com/dev/query-api.html#query-api"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.localytics.com/v1",
+      "description": "Localytics Query API v1"
+    }
+  ],
+  "security": [
+    {
+      "basicAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Root",
+      "description": "API root resource and metadata"
+    },
+    {
+      "name": "Apps",
+      "description": "Application listing and details"
+    },
+    {
+      "name": "Attributes",
+      "description": "Application and global attribute information"
+    },
+    {
+      "name": "Query",
+      "description": "Analytics query operations"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "getRoot",
+        "summary": "Root resource",
+        "description": "Returns API metadata and hypermedia links for discovering available resources.",
+        "tags": ["Root"],
+        "responses": {
+          "200": {
+            "description": "API metadata and hypermedia links.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RootResource"
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "502": { "$ref": "#/components/responses/BadGateway" }
+        }
+      }
+    },
+    "/apps": {
+      "get": {
+        "operationId": "listApps",
+        "summary": "List all accessible applications",
+        "description": "Returns all applications accessible with the current API credentials.",
+        "tags": ["Apps"],
+        "responses": {
+          "200": {
+            "description": "A set of applications.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppSet"
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "406": { "$ref": "#/components/responses/NotAcceptable" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "502": { "$ref": "#/components/responses/BadGateway" }
+        }
+      }
+    },
+    "/apps/{app_id}": {
+      "get": {
+        "operationId": "getApp",
+        "summary": "Show a single application",
+        "description": "Returns details for a single application including name, stats, custom dimensions, and creation timestamp.",
+        "tags": ["Apps"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AppIdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Application details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/App"
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "406": { "$ref": "#/components/responses/NotAcceptable" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "502": { "$ref": "#/components/responses/BadGateway" }
+        }
+      }
+    },
+    "/apps/{app_id}/attributes": {
+      "get": {
+        "operationId": "getAppAttributes",
+        "summary": "Show app attributes",
+        "description": "Returns attributes for a specific application, organized by event name, including high-cardinality attributes.",
+        "tags": ["Attributes"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AppIdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Attribute set for the application.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeSet"
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "406": { "$ref": "#/components/responses/NotAcceptable" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "502": { "$ref": "#/components/responses/BadGateway" }
+        }
+      }
+    },
+    "/attributes": {
+      "get": {
+        "operationId": "listAttributes",
+        "summary": "Show attributes across all apps",
+        "description": "Returns attributes across all accessible applications.",
+        "tags": ["Attributes"],
+        "responses": {
+          "200": {
+            "description": "Attribute set across all applications.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeSet"
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "406": { "$ref": "#/components/responses/NotAcceptable" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "502": { "$ref": "#/components/responses/BadGateway" }
+        }
+      }
+    },
+    "/query": {
+      "get": {
+        "operationId": "queryGet",
+        "summary": "Analytics query (GET)",
+        "description": "Run an analytics query using query parameters. Rate limits: 1 simultaneous request, 60 per minute, 150 per hour, 1000 per day.",
+        "tags": ["Query"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/QueryAppId"
+          },
+          {
+            "$ref": "#/components/parameters/QueryMetrics"
+          },
+          {
+            "$ref": "#/components/parameters/QueryDimensions"
+          },
+          {
+            "$ref": "#/components/parameters/QueryConditions"
+          },
+          {
+            "$ref": "#/components/parameters/QueryDays"
+          },
+          {
+            "$ref": "#/components/parameters/QueryOrder"
+          },
+          {
+            "$ref": "#/components/parameters/QueryLimit"
+          },
+          {
+            "$ref": "#/components/parameters/QueryComment"
+          },
+          {
+            "$ref": "#/components/parameters/QueryTranslate"
+          },
+          {
+            "$ref": "#/components/parameters/QueryProfileDbId"
+          },
+          {
+            "$ref": "#/components/parameters/QuerySamplingRatio"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Query results.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultSet"
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "406": { "$ref": "#/components/responses/NotAcceptable" },
+          "422": { "$ref": "#/components/responses/UnprocessableEntity" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "502": { "$ref": "#/components/responses/BadGateway" }
+        }
+      },
+      "post": {
+        "operationId": "queryPost",
+        "summary": "Analytics query (POST)",
+        "description": "Run an analytics query using a JSON request body. Accepts the same parameters as the GET variant. Rate limits: 1 simultaneous request, 60 per minute, 150 per hour, 1000 per day.",
+        "tags": ["Query"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query results.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultSet"
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "406": { "$ref": "#/components/responses/NotAcceptable" },
+          "422": { "$ref": "#/components/responses/UnprocessableEntity" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalServerError" },
+          "502": { "$ref": "#/components/responses/BadGateway" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "HTTP Basic Authentication. Use your API key as the username and API secret as the password."
+      }
+    },
+    "parameters": {
+      "AppIdPath": {
+        "name": "app_id",
+        "in": "path",
+        "required": true,
+        "description": "Unique application identifier.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "QueryAppId": {
+        "name": "app_id",
+        "in": "query",
+        "required": true,
+        "description": "One or more application IDs (comma-separated).",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "QueryMetrics": {
+        "name": "metrics",
+        "in": "query",
+        "required": true,
+        "description": "Metrics to retrieve, e.g. users, sessions, occurrences (comma-separated).",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "QueryDimensions": {
+        "name": "dimensions",
+        "in": "query",
+        "required": false,
+        "description": "Dimensions to split or group results by (comma-separated).",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "QueryConditions": {
+        "name": "conditions",
+        "in": "query",
+        "required": false,
+        "description": "Filter criteria as a JSON-encoded string or structured conditions.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "QueryDays": {
+        "name": "days",
+        "in": "query",
+        "required": false,
+        "description": "Number of days to include in the query window.",
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 396,
+          "default": 30
+        }
+      },
+      "QueryOrder": {
+        "name": "order",
+        "in": "query",
+        "required": false,
+        "description": "Sort specification for results (comma-separated).",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "QueryLimit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "description": "Maximum number of result rows to return.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20000,
+          "default": 20000
+        }
+      },
+      "QueryComment": {
+        "name": "comment",
+        "in": "query",
+        "required": false,
+        "description": "Optional metadata or comment for the query.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "QueryTranslate": {
+        "name": "translate",
+        "in": "query",
+        "required": false,
+        "description": "Key translation map as a JSON-encoded string.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "QueryProfileDbId": {
+        "name": "profiledb_id",
+        "in": "query",
+        "required": false,
+        "description": "Profile database ID(s) to query against.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "QuerySamplingRatio": {
+        "name": "sampling_ratio",
+        "in": "query",
+        "required": false,
+        "description": "Sampling ratio for the query (0 to 1).",
+        "schema": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "schemas": {
+      "RootResource": {
+        "type": "object",
+        "description": "API root resource with metadata and hypermedia links.",
+        "properties": {
+          "links": {
+            "type": "object",
+            "description": "Hypermedia links to available resources.",
+            "additionalProperties": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        }
+      },
+      "AppSet": {
+        "type": "object",
+        "description": "A collection of applications.",
+        "properties": {
+          "apps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/App"
+            }
+          }
+        },
+        "required": ["apps"]
+      },
+      "App": {
+        "type": "object",
+        "description": "An application with metadata, stats, and custom dimensions.",
+        "properties": {
+          "app_id": {
+            "type": "string",
+            "description": "Unique application identifier."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name of the application."
+          },
+          "stats": {
+            "$ref": "#/components/schemas/AppStats"
+          },
+          "custom_dimensions": {
+            "type": "array",
+            "description": "Custom dimensions defined for this application.",
+            "items": {
+              "$ref": "#/components/schemas/CustomDimension"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the application was created."
+          },
+          "links": {
+            "type": "object",
+            "description": "Hypermedia links related to this application.",
+            "additionalProperties": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        },
+        "required": ["app_id", "name"]
+      },
+      "AppStats": {
+        "type": "object",
+        "description": "Summary statistics for an application.",
+        "properties": {
+          "sessions": {
+            "type": "integer",
+            "description": "Total number of sessions."
+          },
+          "users": {
+            "type": "integer",
+            "description": "Total number of users."
+          },
+          "events": {
+            "type": "integer",
+            "description": "Total number of events."
+          }
+        }
+      },
+      "CustomDimension": {
+        "type": "object",
+        "description": "A custom dimension defined on an application.",
+        "properties": {
+          "dimension_index": {
+            "type": "integer",
+            "description": "Index of the custom dimension (0-9)."
+          },
+          "dimension_name": {
+            "type": "string",
+            "description": "Name of the custom dimension."
+          }
+        }
+      },
+      "AttributeSet": {
+        "type": "object",
+        "description": "A collection of attributes organized by event name.",
+        "properties": {
+          "attributes": {
+            "type": "object",
+            "description": "Map of event names to their attribute arrays.",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Attribute"
+              }
+            }
+          },
+          "high_cardinality_attributes": {
+            "type": "array",
+            "description": "Attributes flagged as high cardinality.",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Attribute": {
+        "type": "object",
+        "description": "An individual attribute definition.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Attribute name."
+          },
+          "type": {
+            "type": "string",
+            "description": "Data type of the attribute.",
+            "enum": ["string", "integer", "float", "date", "boolean"]
+          },
+          "high_cardinality": {
+            "type": "boolean",
+            "description": "Whether this attribute has high cardinality."
+          }
+        },
+        "required": ["name", "type"]
+      },
+      "QueryRequest": {
+        "type": "object",
+        "description": "Request body for a POST analytics query.",
+        "required": ["app_id", "metrics"],
+        "properties": {
+          "app_id": {
+            "description": "One or more application IDs.",
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            ]
+          },
+          "metrics": {
+            "description": "Metrics to retrieve (e.g. users, sessions, occurrences).",
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            ]
+          },
+          "dimensions": {
+            "description": "Dimensions to split or group results by.",
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            ]
+          },
+          "conditions": {
+            "description": "Filter criteria.",
+            "oneOf": [
+              { "type": "string" },
+              { "type": "object" }
+            ]
+          },
+          "days": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 396,
+            "default": 30,
+            "description": "Number of days to include in the query window."
+          },
+          "order": {
+            "description": "Sort specification for results.",
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20000,
+            "default": 20000,
+            "description": "Maximum number of result rows to return."
+          },
+          "comment": {
+            "type": "string",
+            "description": "Optional metadata or comment for the query."
+          },
+          "translate": {
+            "description": "Key translation map.",
+            "oneOf": [
+              { "type": "string" },
+              { "type": "object" }
+            ]
+          },
+          "profiledb_id": {
+            "type": "string",
+            "description": "Profile database ID(s) to query against."
+          },
+          "sampling_ratio": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Sampling ratio for the query."
+          }
+        }
+      },
+      "ResultSet": {
+        "type": "object",
+        "description": "The result of an analytics query.",
+        "properties": {
+          "results": {
+            "type": "array",
+            "description": "Array of result rows.",
+            "items": {
+              "$ref": "#/components/schemas/ResultRow"
+            }
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/ResultMetadata"
+          },
+          "query": {
+            "$ref": "#/components/schemas/QueryCopy"
+          }
+        },
+        "required": ["results"]
+      },
+      "ResultRow": {
+        "type": "object",
+        "description": "A single row in the query results. Keys correspond to requested dimensions and metrics.",
+        "additionalProperties": true
+      },
+      "ResultMetadata": {
+        "type": "object",
+        "description": "Metadata about the query result.",
+        "properties": {
+          "sampling_ratio": {
+            "type": "number",
+            "description": "The sampling ratio applied to this query."
+          },
+          "days": {
+            "type": "integer",
+            "description": "Number of days covered."
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Start date of the query window."
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "description": "End date of the query window."
+          }
+        }
+      },
+      "QueryCopy": {
+        "type": "object",
+        "description": "A copy of the query parameters as submitted.",
+        "properties": {
+          "app_id": {
+            "description": "Application ID(s) queried.",
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            ]
+          },
+          "metrics": {
+            "description": "Metrics requested.",
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            ]
+          },
+          "dimensions": {
+            "description": "Dimensions requested.",
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            ]
+          },
+          "conditions": {
+            "description": "Conditions applied."
+          },
+          "days": {
+            "type": "integer"
+          },
+          "order": {
+            "description": "Sort specification applied."
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "comment": {
+            "type": "string"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "description": "An error response.",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error type or code."
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message."
+          }
+        },
+        "required": ["error", "message"]
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Authentication credentials are missing or invalid.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "The authenticated user does not have access to the requested resource.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "The requested resource was not found.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotAcceptable": {
+        "description": "The requested response format is not supported.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "UnprocessableEntity": {
+        "description": "The query parameters are invalid or cannot be processed.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Rate limit exceeded. Limits: 1 simultaneous request, 60 per minute, 150 per hour, 1000 per day.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "An internal server error occurred.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "BadGateway": {
+        "description": "The server received an invalid response from an upstream server.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  }
+}
