@@ -1,0 +1,894 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Keybase API",
+    "version": "1.0",
+    "description": "Keybase public API for user lookups, key management, authentication, and Merkle tree operations.",
+    "x-jentic-source-url": "https://keybase.io/docs/api/1.0"
+  },
+  "servers": [
+    {
+      "url": "https://keybase.io/_/api/1.0"
+    }
+  ],
+  "paths": {
+    "/signup.json": {
+      "post": {
+        "operationId": "signup",
+        "tags": [
+          "Users"
+        ],
+        "summary": "Register a new user account",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signup successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - username taken, reserved, or invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/login.json": {
+      "post": {
+        "operationId": "login",
+        "tags": [
+          "Users"
+        ],
+        "summary": "Authenticate a user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email_or_username": {
+                    "type": "string",
+                    "description": "Email or username"
+                  },
+                  "hmac_pwh": {
+                    "type": "string",
+                    "description": "HMAC of the password hash"
+                  },
+                  "csrf_token": {
+                    "type": "string",
+                    "description": "CSRF token from getsalt"
+                  },
+                  "login_session": {
+                    "type": "string",
+                    "description": "Login session from getsalt"
+                  }
+                },
+                "required": [
+                  "email_or_username",
+                  "hmac_pwh",
+                  "csrf_token",
+                  "login_session"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        }
+      }
+    },
+    "/getsalt.json": {
+      "get": {
+        "operationId": "getSalt",
+        "tags": [
+          "Users"
+        ],
+        "summary": "Retrieve salt for password hashing during login",
+        "parameters": [
+          {
+            "name": "email_or_username",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Email or username to get salt for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Salt retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "$ref": "#/components/schemas/Status"
+                    },
+                    "salt": {
+                      "type": "string",
+                      "description": "Hex-encoded salt"
+                    },
+                    "csrf_token": {
+                      "type": "string"
+                    },
+                    "login_session": {
+                      "type": "string"
+                    },
+                    "pwh_version": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/user/lookup.json": {
+      "get": {
+        "operationId": "userLookup",
+        "tags": [
+          "Users"
+        ],
+        "summary": "Look up user information by various identifiers",
+        "parameters": [
+          {
+            "name": "usernames",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated list of Keybase usernames"
+          },
+          {
+            "name": "domain",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Domain name to look up"
+          },
+          {
+            "name": "twitter",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Twitter handle"
+          },
+          {
+            "name": "github",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "GitHub username"
+          },
+          {
+            "name": "reddit",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Reddit username"
+          },
+          {
+            "name": "hackernews",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Hacker News username"
+          },
+          {
+            "name": "key_fingerprint",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "PGP key fingerprint"
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated list of fields to return (pictures, basics, public_keys, profile, proofs_summary, etc.)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User lookup results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserLookupResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/key/add.json": {
+      "post": {
+        "operationId": "addKey",
+        "tags": [
+          "Keys"
+        ],
+        "summary": "Add a PGP key to the authenticated user's account",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "public_key": {
+                    "type": "string",
+                    "description": "Armored PGP public key"
+                  },
+                  "private_key": {
+                    "type": "string",
+                    "description": "Private key in P3SKB format"
+                  },
+                  "csrf_token": {
+                    "type": "string",
+                    "description": "CSRF token"
+                  },
+                  "is_primary": {
+                    "type": "boolean",
+                    "description": "Must be true"
+                  }
+                },
+                "required": [
+                  "public_key",
+                  "csrf_token",
+                  "is_primary"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Key added successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "$ref": "#/components/schemas/Status"
+                    },
+                    "kid": {
+                      "type": "string"
+                    },
+                    "csrf_token": {
+                      "type": "string"
+                    },
+                    "is_primary": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Session required - BAD_SESSION error"
+          }
+        }
+      }
+    },
+    "/key/fetch.json": {
+      "get": {
+        "operationId": "fetchKey",
+        "tags": [
+          "Keys"
+        ],
+        "summary": "Fetch PGP keys by key ID",
+        "parameters": [
+          {
+            "name": "pgp_key_ids",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated list of PGP key IDs"
+          },
+          {
+            "name": "ops",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Bitmask for key operations filter (0x1=encrypt, 0x2=decrypt, 0x4=verify, 0x8=sign)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Keys retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyFetchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized - required for secret keys"
+          }
+        }
+      }
+    },
+    "/sig/next_seqno.json": {
+      "get": {
+        "operationId": "getNextSeqno",
+        "tags": [
+          "Signatures"
+        ],
+        "summary": "Get the next signature sequence number for the current user",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sequence number retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Session required"
+          }
+        }
+      }
+    },
+    "/sig/post.json": {
+      "post": {
+        "operationId": "postSignature",
+        "tags": [
+          "Signatures"
+        ],
+        "summary": "Post a new signature to the user's signature chain",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sig": {
+                    "type": "string",
+                    "description": "The PGP signature"
+                  },
+                  "sig_id_base": {
+                    "type": "string",
+                    "description": "Base signature ID"
+                  },
+                  "sig_id_short": {
+                    "type": "string",
+                    "description": "Short signature ID"
+                  },
+                  "csrf_token": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "sig",
+                  "csrf_token"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signature posted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Session required"
+          }
+        }
+      }
+    },
+    "/session/killall.json": {
+      "post": {
+        "operationId": "killAllSessions",
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Terminate all active sessions for the current user",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "csrf_token": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "csrf_token"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "All sessions terminated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Session required"
+          }
+        }
+      }
+    },
+    "/merkle/root.json": {
+      "get": {
+        "operationId": "getMerkleRoot",
+        "tags": [
+          "Merkle"
+        ],
+        "summary": "Get the site-wide Merkle tree root",
+        "parameters": [
+          {
+            "name": "seqno",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Return the root with this sequence number"
+          },
+          {
+            "name": "ctime",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Return the first root at or after this UTC timestamp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Merkle root retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MerkleRootResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/merkle/block.json": {
+      "get": {
+        "operationId": "getMerkleBlock",
+        "tags": [
+          "Merkle"
+        ],
+        "summary": "Get a block from the Merkle tree",
+        "parameters": [
+          {
+            "name": "hash",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Hash of the Merkle block to retrieve"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Merkle block retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session",
+        "description": "Session cookie obtained via login"
+      }
+    },
+    "schemas": {
+      "Status": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "description": "0 for success"
+          },
+          "name": {
+            "type": "string",
+            "description": "Status name, e.g. OK"
+          }
+        }
+      },
+      "StatusResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/Status"
+          },
+          "csrf_token": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/Status"
+          }
+        }
+      },
+      "SignupRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "User's full name"
+          },
+          "email": {
+            "type": "string",
+            "description": "User's email address"
+          },
+          "username": {
+            "type": "string",
+            "description": "Desired username"
+          },
+          "pwh": {
+            "type": "string",
+            "description": "Password hash (32-char hex string)"
+          },
+          "pwh_version": {
+            "type": "integer",
+            "description": "Hash version (value: 3)"
+          },
+          "salt": {
+            "type": "string",
+            "description": "16-byte salt, hex-encoded"
+          },
+          "invitation_id": {
+            "type": "string",
+            "description": "Required invitation token"
+          },
+          "pdpka5_kid": {
+            "type": "string",
+            "description": "EdDSA public key identifier"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "username",
+          "pwh",
+          "pwh_version",
+          "salt",
+          "invitation_id",
+          "pdpka5_kid"
+        ]
+      },
+      "UserLookupResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/Status"
+          },
+          "them": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/User"
+            },
+            "description": "Array of matching user objects"
+          },
+          "csrf_token": {
+            "type": "string"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "basics": {
+            "type": "object",
+            "properties": {
+              "username": {
+                "type": "string"
+              },
+              "ctime": {
+                "type": "integer"
+              },
+              "mtime": {
+                "type": "integer"
+              },
+              "id_version": {
+                "type": "integer"
+              },
+              "track_version": {
+                "type": "integer"
+              },
+              "last_id_change": {
+                "type": "integer"
+              }
+            }
+          },
+          "pictures": {
+            "type": "object",
+            "properties": {
+              "primary": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  },
+                  "width": {
+                    "type": "integer"
+                  },
+                  "height": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "public_keys": {
+            "type": "object",
+            "properties": {
+              "primary": {
+                "type": "object",
+                "properties": {
+                  "kid": {
+                    "type": "string"
+                  },
+                  "key_fingerprint": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "profile": {
+            "type": "object",
+            "properties": {
+              "full_name": {
+                "type": "string"
+              },
+              "location": {
+                "type": "string"
+              },
+              "bio": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "KeyFetchResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/Status"
+          },
+          "keys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Key"
+            }
+          }
+        }
+      },
+      "Key": {
+        "type": "object",
+        "properties": {
+          "bundle": {
+            "type": "string",
+            "description": "PGP public key block"
+          },
+          "uid": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "key_type": {
+            "type": "integer"
+          },
+          "kid": {
+            "type": "string",
+            "description": "Keybase key ID"
+          },
+          "self_signed": {
+            "type": "integer"
+          },
+          "primary_bundle_in_keyring": {
+            "type": "integer"
+          },
+          "secret": {
+            "type": "integer"
+          }
+        }
+      },
+      "MerkleRootResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/Status"
+          },
+          "hash": {
+            "type": "string",
+            "description": "Merkle root hash"
+          },
+          "seqno": {
+            "type": "integer",
+            "description": "Sequence number"
+          },
+          "ctime": {
+            "type": "integer",
+            "description": "Unix timestamp"
+          },
+          "ctime_string": {
+            "type": "string",
+            "description": "ISO 8601 timestamp"
+          },
+          "sig": {
+            "type": "string",
+            "description": "PGP signature"
+          },
+          "payload_json": {
+            "type": "string",
+            "description": "JSON payload"
+          },
+          "txid": {
+            "type": "string",
+            "description": "Transaction ID"
+          }
+        }
+      }
+    }
+  },
+  "security": []
+}
