@@ -1,0 +1,510 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Personal Demographics Service (FHIR) API",
+    "description": "## Overview \nUse this API to access the [Personal Demographics Service (PDS)](https://digital.nhs.uk/services/demographics) - the national electronic database of NHS patient details such as name, address, date of birth, related people, registered GP practice and NHS number.\n\nThis API has three [access modes](#overview--access-modes), which give you different functionality and ways of authenticating. Depending on your access mode, you can:\n* search for patients\n* get patient details\n* update patient details\n* get a patient's related people\n* get patient coverage\n* update patient coverage\n* create a record for a new patient (except for GPs - see below)\n\nYou cannot currently use this API to:\n* create a new record for a birth - use [PDS HL7 V3 API](https://digital.nhs.uk/developer/api-catalogue/personal-demographics-service-hl7-v3)\n* receive birth notifications - use [PDS HL7 V3 API](https://digital.nhs.uk/developer/api-catalogue/personal-demographics-service-hl7-v3) or [PDS Notifications FHIR API](https://digital.nhs.uk/developer/api-catalogue/personal-demographics-service-notifications-fhir) \n* register a new patient at a GP Practice - use [NHAIS GP Links API](https://digital.nhs.uk/developer/api-catalogue/nhais-gp-links)\n* receive patient death notifications - use [PDS Notifications FHIR API](https://digital.nhs.uk/developer/api-catalogue/personal-demographics-service-notifications-fhir) \n* receive notifications about a patient's change of address - use [PDS Notifications FHIR API](https://digital.nhs.uk/developer/api-catalogue/personal-demographics-service-notifications-fhir) \n* receive notifications about a patient's change of GP - use [PDS Notifications FHIR API](https://digital.nhs.uk/developer/api-catalogue/personal-demographics-service-notifications-fhir) \n* receive notifications about any PDS record change - use [PDS Notifications FHIR API](https://digital.nhs.uk/developer/api-catalogue/personal-demographics-service-notifications-fhir) \n\nYou can read and update the following data:\n* NHS number (read only)\n* name\n* administrative gender\n* addresses and contact details\n* birth information\n* death information\n* registered GP\n* nominated pharmacy\n* dispensing doctor pharmacy\n* medical appliance supplier pharmacy\n* related people, such as next of kin (read only)\n* patient coverage data\n\n### Patients included in PDS\nRegardless of nationality, or where they live now, PDS includes all patients who have ever been registered with a GP practice, or treated by a health or care organisation (even as a visitor or migrant) in England, Wales, the Isle of Man, or in a UK Defence Medical Services unit anywhere in the world. \n\nAll patients in PDS have an NHS number which is unique. The 10-digit NHS number is used in England, Wales, the Isle of Man, Scotland and Northern Ireland, but not the Channel Islands. Scotland and Northern Ireland have their own distinct number ranges.\n\n## Who can use this API\nThis API can only be used where there is a [legal basis](https://digital.nhs.uk/services/demographics/access-data-on-the-personal-demographics-service) to do so. Make sure you have a valid use case before you go too far with your development.  You must demonstrate you have a [valid use case](https://digital.nhs.uk/services/demographics/access-data-on-the-personal-demographics-service) as part of digital onboarding. \n\n[You must do this before you can go live](https://digital.nhs.uk/developer/api-catalogue/personal-demographics-service-fhir#overview--onboarding).\n\n### Who can access PDS records\nHealth and care organisations in England and the Isle of Man can access PDS records. Legitimate direct care examples include NHS organisations delivering healthcare, local authorities delivering care, third sector and private sector health and care organisations, and developers delivering systems to health and care organisations. \n\nHealth and care organisations in Wales access their own version of PDS called the Welsh Demographics Service (WDS) which is connected to PDS behind the scenes. \n\nPatients who receive health and social care or make use of NHS services in England, Wales and the Isle of Man can access their own PDS records. \n\nHealth and care organisations and patients in Scotland, Northern Ireland and the Channel Islands access their own equivalents of PDS.\n\n### Existing API users\nTo find out which healthcare software development organisations and products are already using this API, see [PDS FHIR API - integrated products](https://digital.nhs.uk/developer/api-catalogue/personal-demographics-service-fhir/integrated-products).\n\n## Access modes\nThis API has three access modes. They are: \n* healthcare worker access \n* patient access \n* restricted access \n\n### Healthcare worker access \nIf the end user is a healthcare worker then you must use this access mode. Use this access mode to: \n* search for patients and be able to present a list of matches for the user to choose from \n* get patient details \n* update patient details \n* get a patient's related people\n* create a record for a new patient (except for GPs)\n\nThis access mode is [user-restricted](https://digital.nhs.uk/developer/guides-and-documentation/security-and-authorisation#user-restricted-apis), meaning an end user must be present, authenticated and authorised. \n\nThe end user must be: \n* a healthcare worker \n* strongly authenticated, using CIS2 Authentication, to [authenticator assurance level AAL2 or AAL3](https://digital.nhs.uk/services/care-identity-service/applications-and-services/cis2-authentication/authenticators#authenticator-levels)\n* authorised, using [national role-based access control (RBAC)](https://digital.nhs.uk/developer/guides-and-documentation/security-and-authorisation/national-rbac-for-developers)\n\nTo use this access mode, use one of the following security patterns:\n\n|\tSecurity pattern\t\t                                                                                                                                                                                                  |\tTechnical details\t                                             |\tAdvantages                                                              | Disadvantages                                                             |\n|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| ---------------------------------------------------------| -------------------------------------------------------------------------|---------------------------------------------------------------------------|\n|[NHS CIS2 - combined authentication and authorisation](https://digital.nhs.uk/developer/guides-and-documentation/security-and-authorisation/user-restricted-restful-apis-nhs-cis2-combined-authentication-and-authorisation) |OAuth 2.0 authorisation code flow with API key and secret |No need to integrate and onboard separately with NHS CIS2.                |No access to user information.<br> Not recommended for use in GP software.     |\n|[NHS CIS2 - separate authentication and authorisation](https://digital.nhs.uk/developer/guides-and-documentation/security-and-authorisation/user-restricted-restful-apis-nhs-cis2-separate-authentication-and-authorisation) |OAuth 2.0 token exchange with signed JWT                  |Gives access to user information.<br>Recommended for use in GP software.     |Need to integrate and onboard separately with NHS CIS2.                    |\n\nThis access mode is [in beta](https://digital.nhs.uk/developer/guides-and-documentation/reference-guide#api-status).\n\n### Patient access \nIf the end user is a patient then you must use this access mode. Use this access mode to: \n* get the patient's own details \n* update the patient's own details (limited)\n* get the patient's related people\n* get patient coverage (for specific use cases only)\n* update patient coverage (for specific use cases only)\n\nThis access mode is [user-restricted](https://digital.nhs.uk/developer/guides-and-documentation/security-and-authorisation#user-restricted-apis), meaning an end user must be present, authenticated and authorised. \n\nThe end user must be: \n* a patient who receives health and social care or makes use of NHS services \n* strongly authenticated, using [NHS login](https://digital.nhs.uk/services/nhs-login)\n\nTo use this access mode, use one of the following security patterns:\n\n|\tSecurity pattern\t\t                                                                                                                                                                                                          |\tTechnical details\t                                  |\tAdvantages\t                                                | Disadvantages                                           |\n|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| ----------------------------------------------------| ------------------------------------------------------------|---------------------------------------------------------|\n|[NHS login - combined authentication and authorisation](https://digital.nhs.uk/developer/guides-and-documentation/security-and-authorisation/user-restricted-restful-apis-nhs-login-combined-authentication-and-authorisation) |OAuth 2.0 authorisation code with API key and secret |No need to integrate and onboard separately with NHS login.  |No access to user information.                           |\n|[NHS login - separate authentication and authorisation](https://digital.nhs.uk/developer/guides-and-documentation/security-and-authorisation/user-restricted-restful-apis-nhs-login-separate-authentication-and-authorisation) |OAuth 2.0 token exchange with signed JWT             |Gives access to user information.                            |Need to integrate and onboard separately with NHS login. |\n\nPatient access mode users must be authenticated to a high proofing level (P9) and to one of the following [vectors of trust](https://nhsconnect.github.io/nhslogin/vectors-of-trust/): \n* P9.Cp.Cd\n* P9.Cp.Ck\n* P9.Cm\n\nThis access mode is [in beta](https://digital.nhs.uk/developer/guides-and-documentation/reference-guide#api-status).\n\n### Restricted access\nYou must only use this access mode if you need to: \n* search for a patient and get a single match result returned \n* get a patient's details\n* get a patient's related people\n\nThis access mode is [application-restricted](https://digital.nhs.uk/developer/guides-and-documentation/security-and-authorisation#application-restricted-apis), meaning we authenticate and authorise the calling application but not the end user. \n\nThis access mode is not designed to be accessed by an end user. You might use this access mode as part of a back-end process to: \n* retrieve NHS numbers for data flowing from one system to another\n*\tverify an NHS number\n*\tget a patient's registered GP practice or contact details\n\nTo use this access mode, use this security pattern:\n* [Application-restricted RESTful API - signed JWT authentication](https://digital.nhs.uk/developer/guides-and-documentation/security-and-authorisation/application-restricted-restful-apis-signed-jwt-authentication)\n\nAvailable in production ([stable](https://digital.nhs.uk/developer/guides-and-documentation/reference-guide#api-status))\n\n## Status and roadmap\nThis API is [in production](https://digital.nhs.uk/developer/guides-and-documentation/reference-guide#statuses).\nHealthcare worker and patient access modes are [in beta](https://digital.nhs.uk/developer/guides-and-documentation/reference-guide#statuses).\n\nThe [Personal Demographics Service (PDS) ](https://digital.nhs.uk/services/personal-demographics-service/pds-roadmap-and-strategy) roadmap shows the planned changes for PDS products, including the PDS FHIR API. \n\n## Service level\n\nThis API is a platinum service, meaning it is operational and supported 24 hours a day, 365 days a year.\n\nFor more details, see [service levels](https://digital.nhs.uk/developer/guides-and-documentation/reference-guide#service-levels).\n\n## Rate limits\n\nThe default rate limit is 5TPS (Transactions Per Second), per app. If you require a higher rate limit please [contact us](https://digital.nhs.uk/developer/help-and-support). or raise this during the onboarding process.\n\n## Technology\nThis API is [RESTful](https://digital.nhs.uk/developer/guides-and-documentation/our-api-technologies#basic-rest).\n\nIt conforms to the [FHIR](https://digital.nhs.uk/developer/guides-and-documentation/our-api-technologies#fhir) global standard for health care data exchange, specifically to [FHIR R4 (v4.0.1)](https://hl7.org/fhir/r4/), except that it does not support the [capabilities](http://hl7.org/fhir/R4/http.html#capabilities) interaction.\n\nIt includes some country-specific FHIR extensions, which are built against [FHIR UK Core](https://digital.nhs.uk/services/fhir-uk-core), specifically [UK.core.r4 1.0.0](https://simplifier.net/packages/uk.core.r4/1.0.0).\n\nYou do not need to know much about FHIR to use this API - FHIR APIs are just RESTful APIs that follow specific rules.\nIn particular:\n- resource names are capitalised and singular, for example `/Patient` not `/patients`\n- array names are singular, for example `line` not `lines` for address lines\n- data items that are country-specific and thus not included in the FHIR global base resources are usually wrapped in an `extension` object\n\nThere are [libraries and SDKs available](https://digital.nhs.uk/developer/guides-and-documentation/api-technologies-at-nhs-digital#fhir-libraries-and-sdks) to help with FHIR API integration.\n\n## Network access\nThis API is available on the internet and, indirectly, on the [Health and Social Care Network (HSCN)](https://digital.nhs.uk/services/health-and-social-care-network).\n\nTo use this API with [NHS smartcards](https://digital.nhs.uk/developer/guides-and-documentation/security-and-authorisation/nhs-smartcards-for-developers), the end user needs an HSCN connection, although internet-facing alternatives to smartcards are available.\n\nFor more details see [Network access for APIs](https://digital.nhs.uk/developer/guides-and-documentation/network-access-for-apis).\n   \n## Errors\nWe use standard HTTP status codes to show whether an API request succeeded or not. They are usually in the range:\n\n* 200 to 299 if it succeeded, including code 202 if it was accepted by an API that needs to wait for further action\n* 400 to 499 if it failed because of a client error by your application\n* 500 to 599 if it failed because of an error on our server\n\nErrors specific to each API are shown in the Endpoints section, under Response. See our [reference guide](https://digital.nhs.uk/developer/guides-and-documentation/reference-guide#http-status-codes) for more on errors.\n\nYour API-calling application should have a mechanism to automatically try again, for example by giving status information to your end user, before giving up. See our [reference guide](https://digital.nhs.uk/developer/guides-and-documentation/reference-guide#error-handling) for more information about error handling.\n\n## Open source\nYou might find the following [open source](https://digital.nhs.uk/developer/guides-and-documentation/reference-guide#open-source) resources useful:\n\n| Resource                  | Description                                                          | Links                                                                          |\n|---------------------------|----------------------------------------------------------------------|--------------------------------------------------------------------------------|\n| PDS FHIR API              | Source code for the API proxy, sandbox and specification.            | [GitHub repo](https://github.com/NHSDigital/personal-demographics-service-api) |\n| FHIR libraries and SDKs   | Various open source libraries for integrating with FHIR APIs.        | [FHIR libraries and SDKs](https://digital.nhs.uk/developer/guides-and-documentation/api-technologies-at-nhs-digital#fhir-libraries-and-sdks) |\n| nhs-number                | Python package containing utilities for NHS numbers including validity checks, normalisation and generation. | [GitHub repo](https://github.com/uk-fci/nhs-number) \\| [Python Package index](https://pypi.org/project/nhs-number/) \\| [Docs](https://nhs-number.uk-fci.tech/) |\n\nWe currently don't have any open source client libraries or sample code for this API and the source code for the PDS FHIR back end (the Core Spine source code) is not currently in the open. If you think this would be useful, [contact us](https://digital.nhs.uk/developer/help-and-support).\n\n## Environments and testing\n\n| Environment       | Base URL                                                               |\n| ----------------- | ---------------------------------------------------------------------- |\n| Sandbox           | `https://sandbox.api.service.nhs.uk/personal-demographics/FHIR/R4/`    |\n| Integration test  | `https://int.api.service.nhs.uk/personal-demographics/FHIR/R4/`        |\n| Production        | `https://api.service.nhs.uk/personal-demographics/FHIR/R4/`            |\n\n### Sandbox testing\nOur [sandbox environment](https://digital.nhs.uk/developer/guides-and-documentation/testing#sandbox-testing):\n* is for early developer testing\n* only covers a limited set of scenarios\n* is stateless, so does not actually persist any updates\n* is open access, so does not allow you to test authorisation\n\nFor details of sandbox test scenarios, or to try out the sandbox using our 'Try this API' feature, see the documentation for each endpoint.\n\nAlternatively, you can try out the sandbox using our Postman collection:\n\n[![Run in Postman](https://run.pstmn.io/button.svg)](https://app.getpostman.com/run-collection/32547823-005ebee4-7510-44c3-bb0e-58f26b2ba747)\n\n### Integration testing\nOur [integration test environment](https://digital.nhs.uk/developer/guides-and-documentation/testing#integration-testing):\n* is for formal integration testing\n* is stateful, so persists updates\n* includes authorisation, with options for user-restricted access (with or without [smartcards](https://digital.nhs.uk/developer/guides-and-documentation/security-and-authorisation/nhs-smartcards-for-developers) and application-restricted access\n     \nFor read-only testing, you can either use our [PDS FHIR API test data packs](https://digital.nhs.uk/developer/api-catalogue/personal-demographics-service-fhir/pds-fhir-api-test-data) or set up your own test data.\n\nTo test updating patient details, you must set up your own test data.\n\nFor more details see [integration testing with our RESTful APIs](https://digital.nhs.uk/developer/guides-and-documentation/testing#integration-testing-with-our-restful-apis).\n\n### Production smoke testing\nYou must not use real patient data for smoke testing in the production environment.\n\nRather, use our [production test patient](https://digital.nhs.uk/developer/api-catalogue/personal-demographics-service-fhir/pds-fhir-api-test-data#production-smoke-testing).\n\n## Onboarding\nYou need to get your software approved by us before it can go live with this API. We call this onboarding. The onboarding process can sometimes be quite long, so it's worth planning well ahead.\n\nAs part of this process, you need to demonstrate your technical conformance to the requirements for this API. For more details according to your access mode, see:\n* [PDS FHIR API technical conformance - application-restricted access mode](https://digital.nhs.uk/developer/api-catalogue/personal-demographics-service-fhir/pds-fhir-technical-conformance---application-restricted-access-mode)\n* [PDS FHIR API technical conformance - healthcare worker access mode](https://digital.nhs.uk/developer/api-catalogue/personal-demographics-service-fhir/pds-fhir-technical-conformance---healthcare-worker-access-mode)\n\nYou also need to demonstrate that you can manage risks. This might impact the design of your software. For details, see [Onboarding support information](https://digital.nhs.uk/developer/api-catalogue/personal-demographics-service-fhir/onboarding-support-information).\n\nTo understand how our online digital onboarding process works, see [digital onboarding](https://digital.nhs.uk/developer/guides-and-documentation/digital-onboarding). \n\n<div class=\"nhsd-m-emphasis-box nhsd-m-emphasis-box--emphasis nhsd-!t-margin-bottom-6\" aria-label=\"Highlighted Information\">\n    <div class=\"nhsd-a-box nhsd-a-box--border-blue\">\n        <div class=\"nhsd-m-emphasis-box__image-box\">\n            <figure class=\"nhsd-a-image\">\n                <picture class=\"nhsd-a-image__picture\">\n                    <img src=\"http://digital.nhs.uk/binaries/content/gallery/icons/play-circle.svg?colour=231f20\" alt=\"\" style=\"object-fit:fill\">\n                </picture>\n            </figure>\n        </div>\n        <div class=\"nhsd-m-emphasis-box__content-box\">\n            <div data-uipath=\"website.contentblock.emphasis.content\" class=\"nhsd-t-word-break\"><p class=\"nhsd-t-body\">To get started, sign in or create a <a href=\"https://onboarding.prod.api.platform.nhs.uk/\">developer account</a>, then select 'product onboarding'.</p></div>            \n        </div>\n    </div>\n</div>\n\n## Related APIs\n\nThe following APIs are related to this API:\n\n### Personal Demographics Service (PDS) HL7 V3 API\nUse [PDS HL7 V3 API](https://digital.nhs.uk/developer/api-catalogue/personal-demographics-service-hl7-v3) if you want to use functions that are not yet available on the FHIR API, such as creating a new record for a birth or receiving birth notifications. For birth notifications, another option is [PDS Notifications - FHIR API](https://digital.nhs.uk/developer/api-catalogue/personal-demographics-service-notifications-fhir).\n\nOnce our roadmap is complete, PDS HL7 V3 API will become redundant. \n\n### Personal Demographics Service (PDS) Notifications - FHIR API\nUse [PDS Notifications - FHIR API](https://digital.nhs.uk/developer/api-catalogue/personal-demographics-service-notifications-fhir) to subscribe to be notified of a set of patient record changes, including any record update, birth, death, change of address and change of GP.\n\n### Organisation Data Service FHIR API  \nUse [Organisation Data Service FHIR API](https://developer.nhs.uk/apis/ods/) to get full details for the organisations related to the patient, such as their registered GP or nominated pharmacy.\n\n### Ordnance Survey (OS Places) API  \nUse [Ordnance Survey (OS Places) API](https://digital.nhs.uk/developer/api-catalogue/ordnance-survey-places-api) to identify, look up and verify addresses prior to a PDS update.\n\n## Contact us\nFor help and support connecting to our APIs and to join our developer community, see [Help and support building healthcare software](https://digital.nhs.uk/developer/help-and-support). \n",
+    "contact": {
+      "name": "Personal Demographics Service FHIR API Support",
+      "url": "https://digital.nhs.uk/developer/help-and-support",
+      "email": "ssd.nationalservicedesk@nhs.net"
+    },
+    "x-jentic-source-url": "https://raw.githubusercontent.com/NHSDigital/personal-demographics-service-api/master/specification/personal-demographics.yaml"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.api.service.nhs.uk/personal-demographics/FHIR/R4",
+      "description": "Sandbox environment."
+    },
+    {
+      "url": "https://int.api.service.nhs.uk/personal-demographics/FHIR/R4",
+      "description": "Integration test environment."
+    },
+    {
+      "url": "https://api.service.nhs.uk/personal-demographics/FHIR/R4",
+      "description": "Production environment."
+    }
+  ],
+  "paths": {
+    "/Patient": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/BearerAuthorization"
+        },
+        {
+          "$ref": "#/components/parameters/RoleId"
+        },
+        {
+          "$ref": "#/components/parameters/RequestID"
+        },
+        {
+          "$ref": "#/components/parameters/CorrelationID"
+        },
+        {
+          "$ref": "#/components/parameters/NHSD-End-User-Organisation-ODS"
+        }
+      ],
+      "get": {
+        "$ref": "components/paths/patient-search.yaml"
+      },
+      "post": {
+        "$ref": "components/paths/patient-create.yaml"
+      }
+    },
+    "/Patient/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Id"
+        },
+        {
+          "$ref": "#/components/parameters/BearerAuthorization"
+        },
+        {
+          "$ref": "#/components/parameters/RoleId"
+        },
+        {
+          "$ref": "#/components/parameters/RequestID"
+        },
+        {
+          "$ref": "#/components/parameters/CorrelationID"
+        },
+        {
+          "$ref": "#/components/parameters/NHSD-End-User-Organisation-ODS"
+        }
+      ],
+      "get": {
+        "$ref": "components/paths/patient-get.yaml"
+      },
+      "patch": {
+        "$ref": "components/paths/patient-patch.yaml"
+      }
+    },
+    "/Patient/{id}/RelatedPerson": {
+      "get": {
+        "$ref": "components/paths/relatedpersons-get.yaml"
+      }
+    },
+    "/Coverage": {
+      "get": {
+        "$ref": "components/paths/coverage-get.yaml"
+      },
+      "post": {
+        "$ref": "components/paths/coverage-post.yaml"
+      }
+    }
+  },
+  "components": {
+    "headers": {
+      "ETag": {
+        "$ref": "components/schemas/ETag.yaml"
+      },
+      "X-Correlation-Id": {
+        "$ref": "components/schemas/XCorrelationId.yaml"
+      },
+      "X-Request-Id": {
+        "$ref": "components/schemas/XRequestID.yaml"
+      },
+      "RetryAfter": {
+        "$ref": "components/schemas/RetryAfter.yaml"
+      }
+    },
+    "parameters": {
+      "Id": {
+        "name": "id",
+        "in": "path",
+        "description": "The patient's NHS number. The primary identifier of a patient, unique within NHS England and Wales. Always 10 digits and must be a [valid NHS number](https://www.datadictionary.nhs.uk/attributes/nhs_number.html).",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "example": "9000000009"
+        }
+      },
+      "IfMatch": {
+        "in": "header",
+        "name": "If-Match",
+        "description": "Latest known version identifier enclosed in quotes preceded by `W/`.\n\nSend the value of the patient's `ETag` response header on patient retrieval when updating a patient.\nThis is to ensure that any updates are applied against an up-to-date version of the patient resource.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^W/\"[0-9]+\"$",
+          "example": "W/\"2\""
+        }
+      },
+      "RoleId": {
+        "in": "header",
+        "name": "NHSD-Session-URID",
+        "description": "\nThe user role ID (URID) for the current session. Also known as a user role profile ID (URPID).\n\nThis header is optional.\n\nIn Application-restricted and Patient access mode this header is ignored.\n\nIn Healthcare worker access mode if you send this header it must be valid for the logged-in user. See [determine the user's role](https://digital.nhs.uk/developer/guides-and-documentation/security-and-authorisation/user-restricted-restful-apis-nhs-cis2-separate-authentication-and-authorisation#step-9-determine-the-user-s-role) for guidance.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "pattern": "^[0-9]+$",
+          "example": "555254240100"
+        }
+      },
+      "BearerAuthorization": {
+        "in": "header",
+        "name": "Authorization",
+        "description": "An [OAuth 2.0 bearer token](https://digital.nhs.uk/developer/guides-and-documentation/security-and-authorisation#user-restricted-apis).\n\nRequired in all environments except sandbox.\n",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "format": "^Bearer\\ [[:ascii:]]+$",
+          "example": "Bearer g1112R_ccQ1Ebbb4gtHBP1aaaNM"
+        }
+      },
+      "ContentType": {
+        "in": "header",
+        "name": "Content-Type",
+        "description": "For a PATCH request, this must be set to `application/json-patch+json`.\n",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "example": "application/json-patch+json"
+        }
+      },
+      "RequestID": {
+        "in": "header",
+        "name": "X-Request-ID",
+        "required": true,
+        "description": "A globally unique identifier (GUID) for the request, which we use to de-duplicate repeated requests and to trace the request if you contact our helpdesk.\n\nMust be a universally unique identifier (UUID) (ideally version 4).\n\nMirrored back in a response header.\n\nThis is a mandatory header.\n\nIf you re-send a failed request, use the same value in this header.\n",
+        "schema": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "example": "60E0B220-8136-4CA5-AE46-1D97EF59D068"
+        }
+      },
+      "CorrelationID": {
+        "in": "header",
+        "name": "X-Correlation-ID",
+        "required": false,
+        "description": "An optional ID which you can use to track transactions across multiple systems. It can take any value, but we recommend avoiding `.` characters.\n\nMirrored back in a response header.\n",
+        "schema": {
+          "type": "string",
+          "example": "11C46F5F-CDEF-4865-94B2-0EE0EDCC26DA"
+        }
+      },
+      "NHSD-End-User-Organisation-ODS": {
+        "in": "header",
+        "name": "NHSD-End-User-Organisation-ODS",
+        "required": false,
+        "description": "The ODS code of the user.\n\nMandatory for client applications which service multiple end user organisations (EUO). This will allow the calls to be attributed to the correct EUO.\n",
+        "schema": {
+          "type": "string",
+          "example": "Y12345"
+        }
+      },
+      "FuzzyMatch": {
+        "name": "_fuzzy-match",
+        "description": "A fuzzy search is performed, including checks for homophones, transposed names and historic information.\n\nYou cannot use wildcards with a fuzzy search.\n",
+        "example": false,
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "ExactMatch": {
+        "name": "_exact-match",
+        "description": "The search only returns results where the `score` field is 1.0. Use this with care - it is unlikely to work with fuzzy search or wildcards.",
+        "example": false,
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "History": {
+        "name": "_history",
+        "description": "The search looks for matches in historic information such as previous names and addresses.\n\nThis parameter has no effect for a fuzzy search, which always includes historic information.\n",
+        "example": false,
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "MaxResults": {
+        "name": "_max-results",
+        "description": "The maximum number of matching patients to return. For healthcare worker access, this must be between 1 and 50, and the default is 50.\nFor application-restricted access, this must be 1, and the default is 1.\nIf too many patients match the search criteria, we return a `TOO_MANY_MATCHES` error.\n",
+        "example": 1,
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "Family": {
+        "name": "family",
+        "description": "The patient's family name (surname).\n\nNot case sensitive. Max 35 characters.\nUse `*` as a wildcard but not in the first two characters and not in fuzzy search mode.\nMust be [URL encoded](https://en.wikipedia.org/wiki/Percent-encoding), for example a space must be represented by either `%20` or `+` and a wildcard must be encoded as `%2A`.\n",
+        "examples": {
+          "simple": {
+            "value": "Smith",
+            "summary": "Matches Smythe if `_fuzzy-match` is specified."
+          },
+          "wildcarded": {
+            "value": "Sm*t*",
+            "summary": "Wildcards must contain at least two characters, this matches Smith, Smythe"
+          }
+        },
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "Given": {
+        "name": "given",
+        "description": "The patient's given names, including their first and middle names.\n\nNot case sensitive. Max 35 characters.\nUse `*` as a wildcard but not in the first two characters and not in fuzzy search mode.\nWildcard searches will match the start of the first given name and not subsequent given names, for example the given names \"Alan Michael\" can be searched with \"Ala*\" but not \"Mic*\".\nMust be [URL encoded](https://en.wikipedia.org/wiki/Percent-encoding), for example a space must be represented by either `%20` or `+` and a wildcard must be encoded as `%2A`.\n\nA patient may have more than one given name, for example because they have a first name and a middle name.\nSpecify multiple given names by repeating this parameter.\nTo search for  `Jane Anne Smith` use `given=Jane&given=Anne&family=Smith`.\n\nThe first name may be a [compound name](https://en.wikipedia.org/wiki/Given_name#Compound), for example `John Paul`.\nTo search for `John Paul James Smith` (where `John Paul` is the first name, `James` is the middle name, and `Smith` the family name) use `given=John%20Paul&given=James&family=Smith`.\n\nIt is not necessary to specify subsequent given names, and doing so may impact your search results if they are not recorded in the PDS.\n",
+        "example": "Jane",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "Gender": {
+        "name": "gender",
+        "description": "This is the gender that is recorded on official documents, for example a birth certificate or passport. For some people, the gender held in PDS might not match the gender they identify with.",
+        "example": "female",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "male",
+            "female",
+            "other",
+            "unknown"
+          ],
+          "example": "female"
+        }
+      },
+      "Birthdate": {
+        "name": "birthdate",
+        "in": "query",
+        "description": "Date of birth in the format `<eq|ge|le>yyyy-mm-dd`. To specify a range, use `birthdate=geyyyy-mm-dd&birthdate=leyyyy-mm-dd`.",
+        "examples": {
+          "simple": {
+            "value": [
+              "eq2010-10-22"
+            ],
+            "description": "Exact match date"
+          },
+          "rangege": {
+            "value": [
+              "ge2010-10-22"
+            ],
+            "description": "Greater than or equals match, which matches 2010-10-22 or 2010-10-23"
+          },
+          "rangele": {
+            "value": [
+              "le2010-10-22"
+            ],
+            "description": "Less than or equals match, which matches 2010-10-22 or 2010-10-21"
+          }
+        },
+        "required": false,
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "DeathDate": {
+        "name": "death-date",
+        "in": "query",
+        "description": "Date of death in the format `<eq|ge|le>yyyy-mm-dd`. To specify a range, use `death-date=geyyyy-mm-dd&death-date=leyyyy-mm-dd`.\n\nFor a fuzzy search, this is ignored for matching but included in the score calculation.\n",
+        "examples": {
+          "simple": {
+            "value": "eq2010-10-22",
+            "description": "Exact match date"
+          },
+          "rangege": {
+            "value": "ge2010-10-22",
+            "description": "Greater than or equals match which matches 2010-10-22 or 2010-10-23"
+          },
+          "rangele": {
+            "value": "le2010-10-22",
+            "description": "Less than or equals match, which matches 2010-10-22 or 2010-10-21"
+          }
+        },
+        "required": false,
+        "schema": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "AddressPostalcode": {
+        "name": "address-postalcode",
+        "description": "The postcode of any of the patient's known addresses.\n\nNot case sensitive.\nSpaces are ignored, for example `LS16AE` and `LS1 6AE` both match `LS1 6AE`.\nUse `*` as a wildcard but not in the first two characters and not in fuzzy search mode.\nMust be [URL encoded](https://en.wikipedia.org/wiki/Percent-encoding), for example a space must be represented by either `%20` or `+` and a wildcard must be encoded as `%2A`.\n",
+        "examples": {
+          "simple": {
+            "value": "LS1 6AE",
+            "summary": "Spaces ignored, would match LS16AE"
+          },
+          "wildcarded": {
+            "value": "LS1*",
+            "summary": "Matches 'LS16AE', 'LS1 6AE' and 'LS1 6AB'"
+          }
+        },
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "AddressPostcode": {
+        "name": "address-postcode",
+        "description": "**N.B. that address-postcode will be deprecated in the future, address-postalcode should be used instead. \nIf both address-postcode and address-postalcode are provided, an INVALID_SEARCH_DATA error will be returned.**\nThe postcode of any of the patient's known addresses.\n\nNot case sensitive.\nSpaces are ignored, for example `LS16AE` and `LS1 6AE` both match `LS1 6AE`.\nUse `*` as a wildcard but not in the first two characters and not in fuzzy search mode.\nMust be [URL encoded](https://en.wikipedia.org/wiki/Percent-encoding), for example a space must be represented by either `%20` or `+` and a wildcard must be encoded as `%2A`.\n",
+        "examples": {
+          "simple": {
+            "value": "LS1 6AE",
+            "summary": "Spaces ignored, would match LS16AE"
+          },
+          "wildcarded": {
+            "value": "LS1*",
+            "summary": "Matches 'LS16AE', 'LS1 6AE' and 'LS1 6AB'"
+          }
+        },
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "GeneralPractitioner": {
+        "name": "general-practitioner",
+        "description": "The Organisation Data Service (ODS) code of the patient's registered GP practice.\n\nNot case sensitive.\nFor a fuzzy search, this is ignored for matching but included in the score calculation.\n",
+        "example": "Y12345",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "ManagingOrganization": {
+        "name": "managing-organization",
+        "description": "**This field is for internal-use only**.\n\nThe Organisation Data Service (ODS) code of the patient's current managing organization.\nNot case sensitive.\nFor a fuzzy search, this is ignored for matching but included in the score calculation.\n",
+        "example": "Y12345",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "ETag": {
+        "name": "etag",
+        "schema": {
+          "type": "string",
+          "pattern": "^W/\"[0-9]+\"$",
+          "example": "W/\"2\""
+        },
+        "in": "header",
+        "description": "Record version identifier enclosed in quotes and preceded by 'W/'. For example, `W/\"2\"`.\n\nCorresponds to `meta.versionId` attribute in the patient resource body.\n\nWhen you retrieve a patient resource, you get a version number for the resource (in the `ETag` response header and in the `versionId` field in the response).\nYou must then pass the resource's version number in any update request (in the `If-Match` response header) made for the patient.\n"
+      },
+      "XCorrelationId": {
+        "name": "x-correlation-id",
+        "schema": {
+          "type": "string",
+          "example": "11C46F5F-CDEF-4865-94B2-0EE0EDCC26DA"
+        },
+        "in": "header",
+        "description": "The X-Correlation-ID from the request header, if supplied, mirrored back.\n"
+      },
+      "RetryAfter": {
+        "name": "retry-after",
+        "description": "Time to wait before retrying your request in seconds",
+        "in": "header",
+        "schema": {
+          "type": "string",
+          "example": "5"
+        }
+      },
+      "EmailAddress": {
+        "name": "email",
+        "description": "Email address\n",
+        "example": "jane.smith@example.com",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "PhoneNumber": {
+        "name": "phone",
+        "description": "Phone number\n",
+        "example": "01632960587",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "SubscriberIdentifier": {
+        "name": "subscriber:identifier",
+        "description": "The NHS number that identifies the holder/subscriber of the coverage.\n",
+        "examples": {
+          "ehic_holder": {
+            "value": 9000000009,
+            "summary": "Returns a bundle that contains a Coverage resource for the patient with NHS number 9733162868."
+          },
+          "no_ehic": {
+            "value": 9000000033,
+            "summary": "Returns an empty bundle, alongside a meta object that can be used to apply an update to the patient's coverage."
+          }
+        },
+        "in": "query",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Patient": {
+        "$ref": "components/schemas/Patient.yaml"
+      },
+      "PatientSearch": {
+        "$ref": "components/schemas/PatientSearch.yaml"
+      },
+      "RelatedPersonBundle": {
+        "$ref": "components/schemas/RelatedPersonBundle.yaml"
+      },
+      "OperationOutcome": {
+        "$ref": "components/schemas/OperationOutcome.yaml"
+      }
+    },
+    "examples": {
+      "OperationOutcome": {
+        "summary": "OperationOutcome example",
+        "value": {
+          "resourceType": "OperationOutcome",
+          "issue": [
+            {
+              "severity": "error",
+              "code": "value",
+              "details": {
+                "coding": [
+                  {
+                    "system": "https://fhir.nhs.uk/R4/CodeSystem/Spine-ErrorOrWarningCode",
+                    "version": "1",
+                    "code": "INVALID_RESOURCE_ID",
+                    "display": "Resource Id is invalid"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
