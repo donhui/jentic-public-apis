@@ -1,0 +1,243 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Paylands Bizum Payment API",
+    "description": "Paylands API for processing Bizum payments in Spain. Bizum allows customers to pay using their phone number with SMS validation.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://docs.paylands.com/en/docs/apm/apm-bizum/"
+  },
+  "servers": [
+    {
+      "url": "https://api.paylands.com",
+      "description": "Production"
+    },
+    {
+      "url": "https://api.sandbox.paylands.com",
+      "description": "Sandbox (amounts between 0.51 and 15.00 EUR)"
+    }
+  ],
+  "paths": {
+    "/v1/sandbox/payment": {
+      "post": {
+        "operationId": "createBizumPaymentOrder",
+        "summary": "Create Bizum payment order",
+        "description": "Generate a payment order for Bizum transactions. After creation, redirect the customer to the Bizum payment gateway using the returned token.",
+        "tags": [
+          "Payments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentOrderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment order created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentOrderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failure - invalid API key"
+          }
+        }
+      }
+    },
+    "/v1/sandbox/payment/bizum/{token}": {
+      "get": {
+        "operationId": "redirectToBizumPayment",
+        "summary": "Redirect to Bizum payment",
+        "description": "Direct the customer to the Bizum payment interface for credential entry and SMS validation.",
+        "tags": [
+          "Payments"
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Payment token from order creation response"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bizum payment page rendered"
+          },
+          "400": {
+            "description": "Invalid or expired token"
+          },
+          "401": {
+            "description": "Authentication failure"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API key passed as Bearer token in Authorization header"
+      }
+    },
+    "schemas": {
+      "CreatePaymentOrderRequest": {
+        "type": "object",
+        "required": [
+          "service",
+          "amount",
+          "operative",
+          "secure",
+          "reference"
+        ],
+        "properties": {
+          "service": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Service UUID for REDSYS Bizum service"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Payment amount in cents (e.g., 1000 = 10.00 EUR)"
+          },
+          "operative": {
+            "type": "string",
+            "enum": [
+              "AUTHORIZATION",
+              "DEFERRED"
+            ],
+            "description": "Operation type"
+          },
+          "secure": {
+            "type": "boolean",
+            "description": "Must be set to true for Bizum",
+            "default": true
+          },
+          "reference": {
+            "type": "string",
+            "description": "Merchant reference identifier"
+          },
+          "signature": {
+            "type": "string",
+            "description": "Request signature"
+          },
+          "customer_ext_id": {
+            "type": "string",
+            "description": "External customer identifier"
+          },
+          "url_post": {
+            "type": "string",
+            "format": "uri",
+            "description": "Webhook notification URL"
+          },
+          "url_ok": {
+            "type": "string",
+            "format": "uri",
+            "description": "Success redirect URL"
+          },
+          "url_ko": {
+            "type": "string",
+            "format": "uri",
+            "description": "Failure redirect URL"
+          },
+          "dcc": {
+            "type": "boolean",
+            "description": "Enable dynamic currency conversion"
+          },
+          "dynamic_descriptor": {
+            "type": "string",
+            "description": "Descriptor shown on customer statement"
+          }
+        }
+      },
+      "PaymentOrderResponse": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "$ref": "#/components/schemas/PaymentOrder"
+          }
+        }
+      },
+      "PaymentOrder": {
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Order UUID"
+          },
+          "token": {
+            "type": "string",
+            "description": "Token for Bizum redirect"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "service": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "client": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Payments",
+      "description": "Payment order creation and processing"
+    }
+  ]
+}
