@@ -1,0 +1,1083 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Healthchecks.io Management API",
+    "description": "Programmatically manage checks and integrations in your Healthchecks.io account. Build automation to monitor dynamic infrastructure and custom monitoring dashboards. Rate limited to 100 requests per minute.",
+    "version": "3.0.0",
+    "x-jentic-source-url": "https://healthchecks.io/docs/api/"
+  },
+  "servers": [
+    {
+      "url": "https://healthchecks.io"
+    }
+  ],
+  "paths": {
+    "/api/v3/checks/": {
+      "get": {
+        "operationId": "listChecks",
+        "summary": "List existing checks",
+        "description": "Returns a list of checks belonging to the user, optionally filtered by one or more tags.",
+        "tags": [
+          "Checks"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "description": "Filter checks by slug.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "description": "Filter checks by tag. Can be repeated multiple times.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "checks": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Check"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - API key is missing or invalid"
+          },
+          "429": {
+            "description": "Too many requests - rate limit of 100 requests per minute exceeded"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createCheck",
+        "summary": "Create a new check",
+        "description": "Creates a new check and returns its ping URL. All request parameters are optional and will use their default values if omitted. When the 'unique' field is specified, performs an upsert.",
+        "tags": [
+          "Checks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "An existing check was found and updated (upsert via 'unique' field)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Check"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "A new check was successfully created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Check"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid field values or malformed request"
+          },
+          "401": {
+            "description": "Unauthorized - API key is missing or invalid"
+          },
+          "403": {
+            "description": "Forbidden - account has hit its check limit"
+          },
+          "429": {
+            "description": "Too many requests - rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/v3/checks/{uuid}": {
+      "get": {
+        "operationId": "getCheck",
+        "summary": "Get a single check",
+        "description": "Returns a JSON representation of a single check. Supports lookup by UUID or unique_key.",
+        "tags": [
+          "Checks"
+        ],
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "description": "Check UUID or unique_key",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Check"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - wrong API key type"
+          },
+          "404": {
+            "description": "Check not found"
+          },
+          "429": {
+            "description": "Too many requests - rate limit exceeded"
+          }
+        }
+      },
+      "post": {
+        "operationId": "updateCheck",
+        "summary": "Update an existing check",
+        "description": "Updates an existing check. All request parameters are optional; only supplied fields are modified.",
+        "tags": [
+          "Checks"
+        ],
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "description": "Check UUID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Check updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Check"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid field values"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Check not found"
+          },
+          "429": {
+            "description": "Too many requests - rate limit exceeded"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCheck",
+        "summary": "Delete a check",
+        "description": "Permanently deletes the check from the user's account. Returns the check object as it existed before deletion.",
+        "tags": [
+          "Checks"
+        ],
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "description": "Check UUID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Check deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Check"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Check not found"
+          },
+          "429": {
+            "description": "Too many requests - rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/v3/checks/{uuid}/pause": {
+      "post": {
+        "operationId": "pauseCheck",
+        "summary": "Pause monitoring of a check",
+        "description": "Disables monitoring for a check without removing it. The check goes into a paused state and will not send alerts.",
+        "tags": [
+          "Checks"
+        ],
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "description": "Check UUID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Check paused successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Check"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Check not found"
+          },
+          "429": {
+            "description": "Too many requests - rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/v3/checks/{uuid}/resume": {
+      "post": {
+        "operationId": "resumeCheck",
+        "summary": "Resume monitoring of a check",
+        "description": "Resumes a previously paused check. Only works if the check has manual_resume=true.",
+        "tags": [
+          "Checks"
+        ],
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "description": "Check UUID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Check resumed successfully with status set to 'new'",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Check"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Check not found"
+          },
+          "409": {
+            "description": "Conflict - check is not paused or manual_resume is not enabled"
+          },
+          "429": {
+            "description": "Too many requests - rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/v3/checks/{uuid}/pings/": {
+      "get": {
+        "operationId": "listPings",
+        "summary": "List check's logged pings",
+        "description": "Returns a list of pings this check has received. Returns up to 100 pings for free accounts and 1000 for paid accounts.",
+        "tags": [
+          "Pings"
+        ],
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "description": "Check UUID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pings": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Ping"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Check not found"
+          },
+          "429": {
+            "description": "Too many requests - rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/v3/checks/{uuid}/pings/{n}/body": {
+      "get": {
+        "operationId": "getPingBody",
+        "summary": "Get a ping's logged body",
+        "description": "Returns the body of a specific logged ping.",
+        "tags": [
+          "Pings"
+        ],
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "description": "Check UUID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "n",
+            "in": "path",
+            "required": true,
+            "description": "Ping number",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "503": {
+            "description": "Service unavailable - ping body storage is temporarily unavailable"
+          }
+        }
+      }
+    },
+    "/api/v3/checks/{uuid}/flips/": {
+      "get": {
+        "operationId": "listFlips",
+        "summary": "List check's status changes",
+        "description": "Returns a list of flips (status changes) this check has experienced.",
+        "tags": [
+          "Flips"
+        ],
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "description": "Check UUID or unique_key",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "seconds",
+            "in": "query",
+            "description": "Returns flips from the last N seconds.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "description": "Returns flips that are newer than the specified UNIX timestamp.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "description": "Returns flips that are older than the specified UNIX timestamp.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "flips": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Flip"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid query parameters"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Too many requests - rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/v3/channels/": {
+      "get": {
+        "operationId": "listChannels",
+        "summary": "List existing integrations",
+        "description": "Returns a list of integrations (notification channels) belonging to the project.",
+        "tags": [
+          "Integrations"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "channels": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Channel"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests - rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/v3/badges/": {
+      "get": {
+        "operationId": "listBadges",
+        "summary": "List project's badges",
+        "description": "Returns a map of all tags in the project, with badge URLs for each tag in multiple formats.",
+        "tags": [
+          "Badges"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadgesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests - rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/v3/status/": {
+      "get": {
+        "operationId": "getStatus",
+        "summary": "Check database connectivity",
+        "description": "Returns a status check to verify database connectivity. Does not require authentication.",
+        "tags": [
+          "Status"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Database is reachable"
+          },
+          "500": {
+            "description": "Database connection error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Api-Key",
+        "description": "Project API key (read-write or read-only). Read-only keys omit sensitive fields like ping_url and uuid."
+      }
+    },
+    "schemas": {
+      "Check": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the check."
+          },
+          "slug": {
+            "type": "string",
+            "description": "Slug identifier (lowercase letters, digits, hyphens, underscores)."
+          },
+          "tags": {
+            "type": "string",
+            "description": "Space-delimited list of tags."
+          },
+          "desc": {
+            "type": "string",
+            "description": "Free-form description of the check."
+          },
+          "grace": {
+            "type": "integer",
+            "description": "Grace period in seconds before alerting."
+          },
+          "n_pings": {
+            "type": "integer",
+            "description": "Total number of pings received."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "up",
+              "grace",
+              "down",
+              "paused"
+            ],
+            "description": "Current status of the check."
+          },
+          "started": {
+            "type": "boolean",
+            "description": "Whether the check has received a start signal."
+          },
+          "last_ping": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Timestamp of the last ping."
+          },
+          "next_ping": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Estimated timestamp of the next expected ping."
+          },
+          "manual_resume": {
+            "type": "boolean",
+            "description": "Whether the check requires manual resume after pausing."
+          },
+          "methods": {
+            "type": "string",
+            "description": "Allowed ping methods. Empty string for any method, 'POST' for POST only."
+          },
+          "start_kw": {
+            "type": "string",
+            "description": "Comma-separated keywords to interpret a ping as a start signal."
+          },
+          "success_kw": {
+            "type": "string",
+            "description": "Comma-separated keywords to interpret a ping as success."
+          },
+          "failure_kw": {
+            "type": "string",
+            "description": "Comma-separated keywords to interpret a ping as failure."
+          },
+          "filter_subject": {
+            "type": "boolean",
+            "description": "Whether to apply keyword filters to email subject."
+          },
+          "filter_body": {
+            "type": "boolean",
+            "description": "Whether to apply keyword filters to email body."
+          },
+          "filter_http_body": {
+            "type": "boolean",
+            "description": "Whether to apply keyword filters to HTTP ping body."
+          },
+          "filter_default_fail": {
+            "type": "boolean",
+            "description": "If true, pings not matching start/success/failure keywords count as failures."
+          },
+          "badge_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to an SVG badge for this check."
+          },
+          "uuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Check UUID. Only included with read-write API keys."
+          },
+          "ping_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL for sending pings. Only included with read-write API keys."
+          },
+          "update_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "API URL for updating this check."
+          },
+          "pause_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "API URL for pausing this check."
+          },
+          "resume_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "API URL for resuming this check."
+          },
+          "channels": {
+            "type": "string",
+            "description": "Comma-separated list of assigned integration UUIDs."
+          },
+          "timeout": {
+            "type": "integer",
+            "description": "Expected period in seconds (for simple checks)."
+          },
+          "schedule": {
+            "type": "string",
+            "description": "Cron expression or OnCalendar expression (for cron checks)."
+          },
+          "tz": {
+            "type": "string",
+            "description": "Server timezone for cron checks."
+          },
+          "unique_key": {
+            "type": "string",
+            "description": "Unique key for read-only API access. Only included with read-only API keys."
+          }
+        }
+      },
+      "CheckCreateRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the check."
+          },
+          "slug": {
+            "type": "string",
+            "description": "Slug identifier (a-z, 0-9, hyphens, underscores)."
+          },
+          "tags": {
+            "type": "string",
+            "description": "Space-delimited list of tags."
+          },
+          "desc": {
+            "type": "string",
+            "description": "Free-form description."
+          },
+          "timeout": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 31536000,
+            "description": "Expected period in seconds. Default 86400."
+          },
+          "grace": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 31536000,
+            "description": "Grace period in seconds. Default 3600."
+          },
+          "schedule": {
+            "type": "string",
+            "description": "Cron expression or OnCalendar expression."
+          },
+          "tz": {
+            "type": "string",
+            "description": "Timezone for cron checks. Default 'UTC'."
+          },
+          "manual_resume": {
+            "type": "boolean",
+            "description": "Whether paused checks require manual resume. Default false."
+          },
+          "methods": {
+            "type": "string",
+            "enum": [
+              "",
+              "POST"
+            ],
+            "description": "Allowed HTTP methods for pings."
+          },
+          "channels": {
+            "type": "string",
+            "description": "Integration UUIDs (comma-separated), channel names, or '*' for all."
+          },
+          "unique": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "name",
+                "slug",
+                "tags",
+                "timeout",
+                "grace"
+              ]
+            },
+            "description": "Fields for upsert deduplication."
+          },
+          "start_kw": {
+            "type": "string",
+            "description": "Comma-separated start keywords."
+          },
+          "success_kw": {
+            "type": "string",
+            "description": "Comma-separated success keywords."
+          },
+          "failure_kw": {
+            "type": "string",
+            "description": "Comma-separated failure keywords."
+          },
+          "filter_subject": {
+            "type": "boolean",
+            "description": "Apply keyword filters to email subject."
+          },
+          "filter_body": {
+            "type": "boolean",
+            "description": "Apply keyword filters to email body."
+          },
+          "filter_http_body": {
+            "type": "boolean",
+            "description": "Apply keyword filters to HTTP ping body."
+          },
+          "filter_default_fail": {
+            "type": "boolean",
+            "description": "Treat non-matching pings as failures."
+          }
+        }
+      },
+      "CheckUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the check."
+          },
+          "slug": {
+            "type": "string",
+            "description": "Slug identifier."
+          },
+          "tags": {
+            "type": "string",
+            "description": "Space-delimited list of tags."
+          },
+          "desc": {
+            "type": "string",
+            "description": "Free-form description."
+          },
+          "timeout": {
+            "type": "integer",
+            "description": "Expected period in seconds."
+          },
+          "grace": {
+            "type": "integer",
+            "description": "Grace period in seconds."
+          },
+          "schedule": {
+            "type": "string",
+            "description": "Cron expression."
+          },
+          "tz": {
+            "type": "string",
+            "description": "Timezone."
+          },
+          "manual_resume": {
+            "type": "boolean",
+            "description": "Require manual resume."
+          },
+          "methods": {
+            "type": "string",
+            "description": "Allowed HTTP methods."
+          },
+          "channels": {
+            "type": "string",
+            "description": "Integration UUIDs or channel names."
+          },
+          "start_kw": {
+            "type": "string"
+          },
+          "success_kw": {
+            "type": "string"
+          },
+          "failure_kw": {
+            "type": "string"
+          },
+          "filter_subject": {
+            "type": "boolean"
+          },
+          "filter_body": {
+            "type": "boolean"
+          },
+          "filter_http_body": {
+            "type": "boolean"
+          },
+          "filter_default_fail": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Ping": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Ping type (e.g., 'start', 'success', 'fail', 'log', 'ign', 'exitstatus')."
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the ping was received."
+          },
+          "n": {
+            "type": "integer",
+            "description": "Ping serial number."
+          },
+          "scheme": {
+            "type": "string",
+            "description": "Protocol used (http or https)."
+          },
+          "remote_addr": {
+            "type": "string",
+            "description": "IP address of the ping sender."
+          },
+          "method": {
+            "type": "string",
+            "description": "HTTP method used."
+          },
+          "ua": {
+            "type": "string",
+            "description": "User-Agent header of the ping request."
+          },
+          "rid": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Run ID for correlating start and success/fail pings."
+          },
+          "duration": {
+            "type": "number",
+            "description": "Duration in seconds between start and success/fail signals."
+          },
+          "body_url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "description": "URL to retrieve the ping body content, if available."
+          }
+        }
+      },
+      "Flip": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the status change occurred."
+          },
+          "up": {
+            "type": "integer",
+            "description": "1 for up, 0 for down.",
+            "enum": [
+              0,
+              1
+            ]
+          }
+        }
+      },
+      "Channel": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Integration UUID."
+          },
+          "name": {
+            "type": "string",
+            "description": "Integration name."
+          },
+          "kind": {
+            "type": "string",
+            "description": "Integration type (e.g., 'email', 'webhook', 'slack')."
+          }
+        }
+      },
+      "BadgesResponse": {
+        "type": "object",
+        "properties": {
+          "badges": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "svg": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "SVG badge URL."
+                },
+                "svg3": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "SVG badge URL (v3 style)."
+                },
+                "json": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "JSON badge URL."
+                },
+                "json3": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "JSON badge URL (v3 style)."
+                },
+                "shields": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "Shields.io compatible badge URL."
+                },
+                "shields3": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "Shields.io compatible badge URL (v3 style)."
+                }
+              }
+            },
+            "description": "Map of tag names to badge URLs in multiple formats."
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKeyHeader": []
+    }
+  ]
+}
