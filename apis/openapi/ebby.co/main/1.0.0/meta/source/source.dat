@@ -1,0 +1,538 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Ebby Transcription API",
+    "description": "Ebby is an automated transcription platform which accurately transcribes audio and video files, supporting more than 100 languages with features like speaker identification and profanity filtering.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://ebby.co/api/docs/v1"
+  },
+  "servers": [
+    {
+      "url": "https://api.ebby.co/v1",
+      "description": "Production server"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Transcription",
+      "description": "Transcription operations"
+    },
+    {
+      "name": "Files",
+      "description": "File management operations"
+    },
+    {
+      "name": "User",
+      "description": "User account operations"
+    }
+  ],
+  "paths": {
+    "/transcribe": {
+      "post": {
+        "operationId": "transcribeAudio",
+        "summary": "Transcribe audio or video file",
+        "description": "Submit an audio or video file for transcription. The transcription is processed asynchronously and results are sent to the callback URL upon completion.",
+        "tags": ["Transcription"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file", "language", "callback_url"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Audio or video file to transcribe"
+                  },
+                  "language": {
+                    "type": "string",
+                    "description": "Language code for the transcription"
+                  },
+                  "callback_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "URL to receive POST notification when transcription is complete"
+                  },
+                  "multi_speakers": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable multi-speaker detection"
+                  },
+                  "identify_speakers": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable speaker identification"
+                  },
+                  "num_speakers": {
+                    "type": "integer",
+                    "default": 2,
+                    "description": "Expected number of speakers"
+                  },
+                  "filter_profanity": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable profanity filtering"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transcription job created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/File"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/transcript/{id}/{format}": {
+      "get": {
+        "operationId": "getTranscript",
+        "summary": "Get transcript in specified format",
+        "description": "Retrieve the transcript for a file in the specified format.",
+        "tags": ["Transcription"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "File ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
+            "in": "path",
+            "required": true,
+            "description": "Output format for the transcript",
+            "schema": {
+              "type": "string",
+              "enum": ["text", "html", "word", "pdf", "srt", "vtt", "json"]
+            }
+          },
+          {
+            "name": "speakers",
+            "in": "query",
+            "description": "Include speaker labels",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          {
+            "name": "ts",
+            "in": "query",
+            "description": "Include timestamps",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          {
+            "name": "inline_ts",
+            "in": "query",
+            "description": "Include inline timestamps",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "inline_ts_frequency",
+            "in": "query",
+            "description": "Frequency of inline timestamps in seconds",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transcript data in the requested format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "File not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/file/{id}": {
+      "get": {
+        "operationId": "getFile",
+        "summary": "Get file metadata",
+        "description": "Retrieve metadata for a specific file including its transcription status.",
+        "tags": ["Files"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "File ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/File"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "File not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteFile",
+        "summary": "Delete a file",
+        "description": "Delete a file and its associated transcription data.",
+        "tags": ["Files"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "File ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted file object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/File"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "File not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files": {
+      "get": {
+        "operationId": "listFiles",
+        "summary": "List files",
+        "description": "Retrieve a paginated list of all files.",
+        "tags": ["Files"],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/file/update/{id}": {
+      "post": {
+        "operationId": "updateFile",
+        "summary": "Update file name",
+        "description": "Update the name of a file.",
+        "tags": ["Files"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "File ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "New file name"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated file object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/File"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "File not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user": {
+      "get": {
+        "operationId": "getUser",
+        "summary": "Get user information",
+        "description": "Retrieve the authenticated user's account information including remaining credit.",
+        "tags": ["User"],
+        "responses": {
+          "200": {
+            "description": "User information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer token authentication"
+      }
+    },
+    "schemas": {
+      "File": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique file identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "File name"
+          },
+          "duration": {
+            "type": "number",
+            "description": "Duration of the audio/video in seconds"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "File creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "File last update timestamp"
+          },
+          "status": {
+            "type": "string",
+            "description": "Current transcription status",
+            "enum": ["transcribing", "completed", "failed"]
+          },
+          "language": {
+            "type": "string",
+            "description": "Language code of the transcription"
+          }
+        }
+      },
+      "FileList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/File"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "description": "Current page number"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "User name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "User email address"
+          },
+          "remaining_credit": {
+            "type": "number",
+            "description": "Remaining transcription credit in seconds"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          }
+        }
+      }
+    }
+  }
+}
