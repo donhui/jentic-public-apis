@@ -1,0 +1,701 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Instiller API",
+    "version": "1.0.0",
+    "description": "Instiller is an email marketing platform providing a RESTful API for managing accounts, automation workflows, block lists, campaigns, data feeds, email profiles, and field maps.",
+    "x-jentic-source-url": "https://control.instiller.co.uk/help/api_integration"
+  },
+  "servers": [
+    {
+      "url": "https://control.instiller.co.uk/api",
+      "description": "Production server"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "paths": {
+    "/account/status": {
+      "get": {
+        "tags": ["Account"],
+        "summary": "Get account status",
+        "description": "Retrieve account details and transaction limits",
+        "operationId": "getAccountStatus",
+        "responses": {
+          "200": { "description": "Account details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AccountStatus" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Invalid API credentials", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/automation/list_workflows": {
+      "get": {
+        "tags": ["Automation"],
+        "summary": "List workflows",
+        "description": "List all non-draft workflows with optional status filtering",
+        "operationId": "listWorkflows",
+        "parameters": [
+          { "name": "status", "in": "query", "description": "Filter by workflow status", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "List of workflows", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Workflow" } } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/automation/list_workflow_emails": {
+      "get": {
+        "tags": ["Automation"],
+        "summary": "List workflow emails",
+        "description": "Get email actions for a specific workflow",
+        "operationId": "listWorkflowEmails",
+        "parameters": [
+          { "name": "workflow_id", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "List of workflow emails", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/WorkflowEmail" } } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/automation/workflow_details": {
+      "get": {
+        "tags": ["Automation"],
+        "summary": "Get workflow details",
+        "description": "Access workflow metrics (requires date range or launch ID)",
+        "operationId": "getWorkflowDetails",
+        "parameters": [
+          { "name": "workflow_id", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "date_start", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "date_end", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "launch_id", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Workflow details and metrics", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WorkflowDetails" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/automation/workflow_download": {
+      "get": {
+        "tags": ["Automation"],
+        "summary": "Download workflow data",
+        "description": "Download workflow activity data as ZIP",
+        "operationId": "downloadWorkflowData",
+        "parameters": [
+          { "name": "workflow_id", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "ZIP file download", "content": { "application/zip": { "schema": { "type": "string", "format": "binary" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/automation/trigger_workflow": {
+      "post": {
+        "tags": ["Automation"],
+        "summary": "Trigger workflow",
+        "description": "Trigger workflow for an individual user",
+        "operationId": "triggerWorkflow",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WorkflowTrigger" } } }
+        },
+        "responses": {
+          "200": { "description": "Workflow triggered", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/automation/trigger_basket_workflow": {
+      "post": {
+        "tags": ["Automation"],
+        "summary": "Trigger basket workflow",
+        "description": "Trigger workflow with basket object",
+        "operationId": "triggerBasketWorkflow",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BasketWorkflowTrigger" } } }
+        },
+        "responses": {
+          "200": { "description": "Workflow triggered", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/automation/launch_workflow": {
+      "get": {
+        "tags": ["Automation"],
+        "summary": "Launch workflow in bulk",
+        "description": "Launch workflows in bulk using lists",
+        "operationId": "launchWorkflow",
+        "parameters": [
+          { "name": "workflow_id", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "list_id", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Workflow launched", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/automation/cancel_workflow": {
+      "get": {
+        "tags": ["Automation"],
+        "summary": "Cancel workflow",
+        "description": "Cancel individual workflow journeys",
+        "operationId": "cancelWorkflow",
+        "parameters": [
+          { "name": "workflow_id", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "email", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Workflow cancelled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/automation/set_workflow_status": {
+      "get": {
+        "tags": ["Automation"],
+        "summary": "Set workflow status",
+        "description": "Activate, pause, or deactivate workflows",
+        "operationId": "setWorkflowStatus",
+        "parameters": [
+          { "name": "workflow_id", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "required": true, "schema": { "type": "string", "enum": ["active", "paused", "deactivated"] } }
+        ],
+        "responses": {
+          "200": { "description": "Status updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/block_list/email_add": {
+      "post": {
+        "tags": ["Block List"],
+        "summary": "Add email to block list",
+        "description": "Add single email address to block list",
+        "operationId": "addBlockedEmail",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["email"], "properties": { "email": { "type": "string", "format": "email" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Email added", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/block_list/email_remove": {
+      "post": {
+        "tags": ["Block List"],
+        "summary": "Remove email from block list",
+        "description": "Remove single email address from block list",
+        "operationId": "removeBlockedEmail",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["email"], "properties": { "email": { "type": "string", "format": "email" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Email removed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/block_list/email_search": {
+      "get": {
+        "tags": ["Block List"],
+        "summary": "Search blocked emails",
+        "description": "Search for email address in block list",
+        "operationId": "searchBlockedEmail",
+        "parameters": [
+          { "name": "email", "in": "query", "required": true, "schema": { "type": "string", "format": "email" } }
+        ],
+        "responses": {
+          "200": { "description": "Search result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BlockListSearchResult" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/block_list/email_export": {
+      "get": {
+        "tags": ["Block List"],
+        "summary": "Export blocked emails",
+        "description": "Export all blocked emails as ZIP",
+        "operationId": "exportBlockedEmails",
+        "responses": {
+          "200": { "description": "ZIP file download", "content": { "application/zip": { "schema": { "type": "string", "format": "binary" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/block_list/domain_add": {
+      "post": {
+        "tags": ["Block List"],
+        "summary": "Add domain to block list",
+        "operationId": "addBlockedDomain",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["domain"], "properties": { "domain": { "type": "string" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Domain added", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/block_list/domain_remove": {
+      "post": {
+        "tags": ["Block List"],
+        "summary": "Remove domain from block list",
+        "operationId": "removeBlockedDomain",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["domain"], "properties": { "domain": { "type": "string" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Domain removed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/block_list/domain_search": {
+      "get": {
+        "tags": ["Block List"],
+        "summary": "Search blocked domains",
+        "operationId": "searchBlockedDomain",
+        "parameters": [
+          { "name": "domain", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Search result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BlockListSearchResult" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/campaigns/search": {
+      "get": {
+        "tags": ["Campaigns"],
+        "summary": "Search campaigns",
+        "description": "Search for campaigns with optional filtering",
+        "operationId": "searchCampaigns",
+        "parameters": [
+          { "name": "query", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "List of campaigns", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Campaign" } } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/campaigns/details": {
+      "get": {
+        "tags": ["Campaigns"],
+        "summary": "Get campaign details",
+        "description": "Access high-level campaign metrics",
+        "operationId": "getCampaignDetails",
+        "parameters": [
+          { "name": "campaign_id", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Campaign details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CampaignDetails" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/campaigns/update": {
+      "post": {
+        "tags": ["Campaigns"],
+        "summary": "Update campaign",
+        "description": "Update campaign description and tags",
+        "operationId": "updateCampaign",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CampaignUpdate" } } }
+        },
+        "responses": {
+          "200": { "description": "Campaign updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/campaigns/queue": {
+      "get": {
+        "tags": ["Campaigns"],
+        "summary": "Queue campaign",
+        "description": "Schedule campaign for delivery",
+        "operationId": "queueCampaign",
+        "parameters": [
+          { "name": "campaign_id", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "schedule", "in": "query", "schema": { "type": "string", "format": "date-time" } }
+        ],
+        "responses": {
+          "200": { "description": "Campaign queued", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/campaigns/cancel_queued": {
+      "get": {
+        "tags": ["Campaigns"],
+        "summary": "Cancel queued campaign",
+        "operationId": "cancelQueuedCampaign",
+        "parameters": [
+          { "name": "campaign_id", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Campaign cancelled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/campaigns/download": {
+      "get": {
+        "tags": ["Campaigns"],
+        "summary": "Download campaign metrics",
+        "description": "Download campaign metrics data as ZIP",
+        "operationId": "downloadCampaignMetrics",
+        "parameters": [
+          { "name": "campaign_id", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "ZIP file download", "content": { "application/zip": { "schema": { "type": "string", "format": "binary" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/campaigns/engagement": {
+      "get": {
+        "tags": ["Campaigns"],
+        "summary": "Download engagement data",
+        "description": "Download user engagement data as ZIP",
+        "operationId": "downloadCampaignEngagement",
+        "parameters": [
+          { "name": "campaign_id", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "ZIP file download", "content": { "application/zip": { "schema": { "type": "string", "format": "binary" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/email_profiles/details": {
+      "get": {
+        "tags": ["Email Profiles"],
+        "summary": "List email profiles",
+        "description": "List all email profiles or retrieve a specific profile",
+        "operationId": "listEmailProfiles",
+        "parameters": [
+          { "name": "profile_id", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Email profile(s)", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/EmailProfile" } } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/email_profiles/add_or_update": {
+      "post": {
+        "tags": ["Email Profiles"],
+        "summary": "Create or update email profile",
+        "operationId": "addOrUpdateEmailProfile",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EmailProfileCreate" } } }
+        },
+        "responses": {
+          "200": { "description": "Profile created or updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EmailProfile" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/email_profiles/delete": {
+      "get": {
+        "tags": ["Email Profiles"],
+        "summary": "Delete email profile",
+        "operationId": "deleteEmailProfile",
+        "parameters": [
+          { "name": "profile_id", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Profile deleted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/email_profiles/add_suppression": {
+      "post": {
+        "tags": ["Email Profiles"],
+        "summary": "Add email to suppression list",
+        "operationId": "addSuppression",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["profile_id", "email"], "properties": { "profile_id": { "type": "string" }, "email": { "type": "string", "format": "email" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Email suppressed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/email_profiles/remove_suppression": {
+      "get": {
+        "tags": ["Email Profiles"],
+        "summary": "Remove email from suppression list",
+        "operationId": "removeSuppression",
+        "parameters": [
+          { "name": "profile_id", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "email", "in": "query", "required": true, "schema": { "type": "string", "format": "email" } }
+        ],
+        "responses": {
+          "200": { "description": "Suppression removed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/email_profiles/suppression_search": {
+      "get": {
+        "tags": ["Email Profiles"],
+        "summary": "Search suppressions",
+        "operationId": "searchSuppression",
+        "parameters": [
+          { "name": "profile_id", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "email", "in": "query", "required": true, "schema": { "type": "string", "format": "email" } }
+        ],
+        "responses": {
+          "200": { "description": "Search result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BlockListSearchResult" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/data_feed/engagement": {
+      "get": {
+        "tags": ["Data Feed"],
+        "summary": "Download engagement data feed",
+        "description": "Download engagement data for specified 24-hour period",
+        "operationId": "getEngagementDataFeed",
+        "parameters": [
+          { "name": "date", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": { "description": "Engagement data", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EngagementData" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/field_maps/list": {
+      "get": {
+        "tags": ["Field Maps"],
+        "summary": "List field maps",
+        "operationId": "listFieldMaps",
+        "responses": {
+          "200": { "description": "List of field maps", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/FieldMap" } } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/field_maps/details": {
+      "get": {
+        "tags": ["Field Maps"],
+        "summary": "Get field map details",
+        "operationId": "getFieldMapDetails",
+        "parameters": [
+          { "name": "field_map_id", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Field map details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/FieldMap" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "api_key",
+        "description": "API key generated from account settings. Also requires api_id parameter."
+      }
+    },
+    "schemas": {
+      "AccountStatus": {
+        "type": "object",
+        "properties": {
+          "accountId": { "type": "string" },
+          "status": { "type": "string" },
+          "transactionLimits": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "Workflow": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "status": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "WorkflowEmail": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "workflowId": { "type": "string" },
+          "subject": { "type": "string" },
+          "name": { "type": "string" }
+        }
+      },
+      "WorkflowDetails": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "status": { "type": "string" },
+          "metrics": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "WorkflowTrigger": {
+        "type": "object",
+        "required": ["workflow_id", "email"],
+        "properties": {
+          "workflow_id": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "data": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "BasketWorkflowTrigger": {
+        "type": "object",
+        "required": ["workflow_id", "email", "basket"],
+        "properties": {
+          "workflow_id": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "basket": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "Campaign": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "status": { "type": "string" },
+          "description": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CampaignDetails": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "status": { "type": "string" },
+          "metrics": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "CampaignUpdate": {
+        "type": "object",
+        "required": ["campaign_id"],
+        "properties": {
+          "campaign_id": { "type": "string" },
+          "description": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "EmailProfile": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "fromEmail": { "type": "string", "format": "email" },
+          "fromName": { "type": "string" },
+          "replyTo": { "type": "string", "format": "email" }
+        }
+      },
+      "EmailProfileCreate": {
+        "type": "object",
+        "required": ["name", "fromEmail"],
+        "properties": {
+          "profile_id": { "type": "string", "description": "Provide to update existing profile" },
+          "name": { "type": "string" },
+          "fromEmail": { "type": "string", "format": "email" },
+          "fromName": { "type": "string" },
+          "replyTo": { "type": "string", "format": "email" }
+        }
+      },
+      "EngagementData": {
+        "type": "object",
+        "properties": {
+          "date": { "type": "string", "format": "date" },
+          "entries": { "type": "array", "items": { "type": "object", "additionalProperties": true } }
+        }
+      },
+      "FieldMap": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "fields": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "type": { "type": "string" } } } }
+        }
+      },
+      "BlockListSearchResult": {
+        "type": "object",
+        "properties": {
+          "found": { "type": "boolean" },
+          "value": { "type": "string" }
+        }
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "message": { "type": "string" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "boolean" },
+          "message": { "type": "string" }
+        }
+      }
+    }
+  }
+}
