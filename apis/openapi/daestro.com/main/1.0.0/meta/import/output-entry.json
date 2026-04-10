@@ -1,0 +1,388 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Daestro API",
+    "description": "Daestro is a cloud agnostic platform that allows you to run your compute workloads on any cloud provider or on-premises infrastructure. The API enables programmatic job submission, status checking, and cancellation.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://daestro.com/docs/api-reference/job-submit"
+  },
+  "servers": [
+    {
+      "url": "https://api.daestro.com",
+      "description": "Daestro API"
+    }
+  ],
+  "paths": {
+    "/v1/client/job": {
+      "post": {
+        "operationId": "submitJob",
+        "summary": "Submit a job",
+        "description": "Submit a job for execution. The job will be queued and executed based on the job queue configuration.",
+        "tags": [
+          "Jobs"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobSubmitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Job accepted for execution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobSubmitResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/client/job/{job_id}": {
+      "get": {
+        "operationId": "getJobDetail",
+        "summary": "Get job detail",
+        "description": "Retrieve the current state and details of a specific job.",
+        "tags": [
+          "Jobs"
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the job",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job details retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/client/job/{job_id}/cancel": {
+      "post": {
+        "operationId": "cancelJob",
+        "summary": "Cancel a job",
+        "description": "Cancel a job whether it is in queue or running. Once accepted, it might take up to a couple of minutes for the job to be cancelled.",
+        "tags": [
+          "Jobs"
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the job to cancel",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Cancel request accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "JobSubmitRequest": {
+        "type": "object",
+        "required": [
+          "job_definition",
+          "job_queue"
+        ],
+        "properties": {
+          "job_definition": {
+            "type": "string",
+            "description": "Job definition identifier in format project_code::job_definition_name:version. Can be obtained from the Job Definition page.",
+            "example": "project-code::hello-world:1"
+          },
+          "job_queue": {
+            "type": "string",
+            "description": "Job queue identifier in format project_code::job_queue_name.",
+            "example": "project-code::your-job-queue"
+          },
+          "name": {
+            "type": "string",
+            "description": "Unique job name within the queue.",
+            "example": "my-unique-job-name"
+          },
+          "container_cmd": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of commands to execute in the container.",
+            "example": [
+              "uname",
+              "Param::subcommand"
+            ]
+          },
+          "container_cmd_parameter": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Parameters to substitute in container_cmd.",
+            "example": {
+              "subcommand": "-a"
+            }
+          },
+          "container_env": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ContainerEnvValue"
+            },
+            "description": "Environment variables for the container.",
+            "example": {
+              "access_token": {
+                "value": "sensitive-vars-will-be-encrypted",
+                "sensitive": true
+              }
+            }
+          },
+          "schedule_at": {
+            "type": "string",
+            "description": "ISO 8601 datetime string or unix timestamp in seconds for scheduled execution.",
+            "example": "2025-05-17T06:37:00.000Z"
+          }
+        }
+      },
+      "ContainerEnvValue": {
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "properties": {
+          "value": {
+            "type": "string",
+            "description": "The value of the environment variable."
+          },
+          "sensitive": {
+            "type": "boolean",
+            "description": "If true, the value will be encrypted and not shown again.",
+            "default": false
+          }
+        }
+      },
+      "JobSubmitResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "The unique identifier of the submitted job.",
+                "example": "019782a8-4054-7ae2-8adb-499a03e5460a"
+              }
+            }
+          }
+        }
+      },
+      "JobDetailResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/JobDetail"
+          }
+        }
+      },
+      "JobDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01976ead-e3b5-73e3-b26a-71a3fbc756b5"
+          },
+          "name": {
+            "type": "string",
+            "example": "YH-1750243754068"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "submitted",
+              "pending",
+              "runnable",
+              "starting",
+              "running",
+              "cancelling",
+              "cancelled",
+              "timeout",
+              "completed",
+              "failed",
+              "error"
+            ],
+            "example": "completed"
+          },
+          "system_note": {
+            "type": "string",
+            "nullable": true
+          },
+          "schedule_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-06-14T13:43:00.008875Z"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-06-18T07:21:56.081435Z"
+          }
+        }
+      },
+      "OkResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "example": false
+          },
+          "message": {
+            "type": "string",
+            "description": "Error information",
+            "example": "error info"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API key obtained from the Daestro console."
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}
