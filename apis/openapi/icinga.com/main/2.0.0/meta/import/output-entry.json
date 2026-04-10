@@ -1,0 +1,1554 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Icinga 2 API",
+    "version": "2.0.0",
+    "description": "The Icinga 2 API allows you to manage monitoring configuration objects and resources including querying, creating, modifying and deleting config objects, performing actions like rescheduling checks, subscribing to event streams, and managing configuration packages.",
+    "x-jentic-source-url": "https://icinga.com/docs/icinga-2/latest/doc/12-icinga2-api/"
+  },
+  "servers": [
+    {
+      "url": "https://{host}:5665/v1",
+      "variables": {
+        "host": {
+          "default": "localhost",
+          "description": "Icinga 2 server hostname"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/objects/{objectType}": {
+      "get": {
+        "operationId": "queryObjects",
+        "summary": "Query config objects",
+        "description": "Retrieve a list of configuration objects of the specified type. Supports filtering, joins, and attribute selection.",
+        "tags": [
+          "Config Objects"
+        ],
+        "parameters": [
+          {
+            "name": "objectType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "hosts",
+                "services",
+                "hostgroups",
+                "servicegroups",
+                "users",
+                "usergroups",
+                "notifications",
+                "dependencies",
+                "downtimes",
+                "comments",
+                "endpoints",
+                "zones",
+                "apiusers",
+                "timeperiods",
+                "checkcommands",
+                "eventcommands",
+                "notificationcommands"
+              ]
+            },
+            "description": "Type of config objects to query"
+          },
+          {
+            "name": "attrs",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated list of attributes to return"
+          },
+          {
+            "name": "joins",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated list of object types to join"
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter expression using Icinga 2 filter language"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectQueryResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "operationId": "createObject",
+        "summary": "Create a config object",
+        "description": "Create a new configuration object of the specified type.",
+        "tags": [
+          "Config Objects"
+        ],
+        "parameters": [
+          {
+            "name": "objectType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Type of config object to create"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateObjectRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Object created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/objects/{objectType}/{objectName}": {
+      "get": {
+        "operationId": "getObject",
+        "summary": "Get a specific config object",
+        "description": "Retrieve a specific configuration object by name.",
+        "tags": [
+          "Config Objects"
+        ],
+        "parameters": [
+          {
+            "name": "objectType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Type of config object"
+          },
+          {
+            "name": "objectName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Object name (use ! as separator for service objects, e.g., host!service)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectQueryResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "operationId": "modifyObject",
+        "summary": "Modify a config object",
+        "description": "Modify attributes of an existing configuration object.",
+        "tags": [
+          "Config Objects"
+        ],
+        "parameters": [
+          {
+            "name": "objectType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "objectName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModifyObjectRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Object modified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteObject",
+        "summary": "Delete a config object",
+        "description": "Delete a configuration object by name.",
+        "tags": [
+          "Config Objects"
+        ],
+        "parameters": [
+          {
+            "name": "objectType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "objectName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cascade",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Delete dependent objects"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/actions/process-check-result": {
+      "post": {
+        "operationId": "processCheckResult",
+        "summary": "Process a check result",
+        "description": "Send a check result for a host or service.",
+        "tags": [
+          "Actions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "Host",
+                      "Service"
+                    ]
+                  },
+                  "filter": {
+                    "type": "string",
+                    "description": "Filter expression"
+                  },
+                  "exit_status": {
+                    "type": "integer",
+                    "description": "Exit status code"
+                  },
+                  "plugin_output": {
+                    "type": "string",
+                    "description": "Plugin output text"
+                  },
+                  "performance_data": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Performance data"
+                  },
+                  "check_source": {
+                    "type": "string"
+                  },
+                  "execution_start": {
+                    "type": "number"
+                  },
+                  "execution_end": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "type",
+                  "filter",
+                  "exit_status",
+                  "plugin_output"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Check result processed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/actions/reschedule-check": {
+      "post": {
+        "operationId": "rescheduleCheck",
+        "summary": "Reschedule a check",
+        "description": "Reschedule a host or service check.",
+        "tags": [
+          "Actions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "Host",
+                      "Service"
+                    ]
+                  },
+                  "filter": {
+                    "type": "string"
+                  },
+                  "next_check": {
+                    "type": "number",
+                    "description": "Unix timestamp for next check"
+                  },
+                  "force_check": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "type",
+                  "filter"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Check rescheduled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/actions/acknowledge-problem": {
+      "post": {
+        "operationId": "acknowledgeProblem",
+        "summary": "Acknowledge a problem",
+        "description": "Acknowledge a host or service problem.",
+        "tags": [
+          "Actions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "Host",
+                      "Service"
+                    ]
+                  },
+                  "filter": {
+                    "type": "string"
+                  },
+                  "author": {
+                    "type": "string"
+                  },
+                  "comment": {
+                    "type": "string"
+                  },
+                  "sticky": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "notify": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "persistent": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "expiry": {
+                    "type": "number",
+                    "description": "Unix timestamp for expiry"
+                  }
+                },
+                "required": [
+                  "type",
+                  "filter",
+                  "author",
+                  "comment"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Problem acknowledged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/actions/remove-acknowledgement": {
+      "post": {
+        "operationId": "removeAcknowledgement",
+        "summary": "Remove an acknowledgement",
+        "description": "Remove a host or service acknowledgement.",
+        "tags": [
+          "Actions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "Host",
+                      "Service"
+                    ]
+                  },
+                  "filter": {
+                    "type": "string"
+                  },
+                  "author": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "filter"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Acknowledgement removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/actions/add-comment": {
+      "post": {
+        "operationId": "addComment",
+        "summary": "Add a comment",
+        "description": "Add a comment to a host or service.",
+        "tags": [
+          "Actions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "Host",
+                      "Service"
+                    ]
+                  },
+                  "filter": {
+                    "type": "string"
+                  },
+                  "author": {
+                    "type": "string"
+                  },
+                  "comment": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "filter",
+                  "author",
+                  "comment"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Comment added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/actions/remove-comment": {
+      "post": {
+        "operationId": "removeComment",
+        "summary": "Remove a comment",
+        "description": "Remove a comment by name or filter.",
+        "tags": [
+          "Actions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "comment": {
+                    "type": "string",
+                    "description": "Comment name"
+                  },
+                  "author": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "comment"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Comment removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/actions/schedule-downtime": {
+      "post": {
+        "operationId": "scheduleDowntime",
+        "summary": "Schedule a downtime",
+        "description": "Schedule a downtime for a host or service.",
+        "tags": [
+          "Actions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "Host",
+                      "Service"
+                    ]
+                  },
+                  "filter": {
+                    "type": "string"
+                  },
+                  "author": {
+                    "type": "string"
+                  },
+                  "comment": {
+                    "type": "string"
+                  },
+                  "start_time": {
+                    "type": "number",
+                    "description": "Unix timestamp"
+                  },
+                  "end_time": {
+                    "type": "number",
+                    "description": "Unix timestamp"
+                  },
+                  "fixed": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "duration": {
+                    "type": "number",
+                    "description": "Duration in seconds for flexible downtimes"
+                  },
+                  "all_services": {
+                    "type": "boolean",
+                    "description": "Schedule downtime for all services on host"
+                  },
+                  "child_options": {
+                    "type": "integer",
+                    "description": "0=no children, 1=triggered, 2=non-triggered"
+                  }
+                },
+                "required": [
+                  "type",
+                  "filter",
+                  "author",
+                  "comment",
+                  "start_time",
+                  "end_time"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Downtime scheduled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/actions/remove-downtime": {
+      "post": {
+        "operationId": "removeDowntime",
+        "summary": "Remove a downtime",
+        "description": "Remove a downtime by name or filter.",
+        "tags": [
+          "Actions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "downtime": {
+                    "type": "string",
+                    "description": "Downtime name"
+                  },
+                  "author": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "downtime"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Downtime removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/actions/send-custom-notification": {
+      "post": {
+        "operationId": "sendCustomNotification",
+        "summary": "Send a custom notification",
+        "description": "Send a custom notification for a host or service.",
+        "tags": [
+          "Actions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "Host",
+                      "Service"
+                    ]
+                  },
+                  "filter": {
+                    "type": "string"
+                  },
+                  "author": {
+                    "type": "string"
+                  },
+                  "comment": {
+                    "type": "string"
+                  },
+                  "force": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "type",
+                  "filter",
+                  "author",
+                  "comment"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notification sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/actions/shutdown-process": {
+      "post": {
+        "operationId": "shutdownProcess",
+        "summary": "Shutdown Icinga 2",
+        "description": "Shut down the Icinga 2 process.",
+        "tags": [
+          "Actions"
+        ],
+        "responses": {
+          "200": {
+            "description": "Shutdown initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/actions/restart-process": {
+      "post": {
+        "operationId": "restartProcess",
+        "summary": "Restart Icinga 2",
+        "description": "Restart the Icinga 2 process.",
+        "tags": [
+          "Actions"
+        ],
+        "responses": {
+          "200": {
+            "description": "Restart initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/events": {
+      "post": {
+        "operationId": "subscribeEventStream",
+        "summary": "Subscribe to event stream",
+        "description": "Open a long-lived HTTP connection to receive event notifications in real-time.",
+        "tags": [
+          "Event Streams"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "types": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "CheckResult",
+                        "StateChange",
+                        "Notification",
+                        "Flapping",
+                        "AcknowledgementSet",
+                        "AcknowledgementCleared",
+                        "CommentAdded",
+                        "CommentRemoved",
+                        "DowntimeAdded",
+                        "DowntimeRemoved",
+                        "DowntimeStarted",
+                        "DowntimeTriggered",
+                        "ObjectCreated",
+                        "ObjectModified",
+                        "ObjectDeleted"
+                      ]
+                    }
+                  },
+                  "queue": {
+                    "type": "string",
+                    "description": "Unique queue name"
+                  },
+                  "filter": {
+                    "type": "string",
+                    "description": "Filter expression"
+                  }
+                },
+                "required": [
+                  "types",
+                  "queue"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Event stream opened",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/status": {
+      "get": {
+        "operationId": "getStatus",
+        "summary": "Get status and statistics",
+        "description": "Retrieve status information and statistics about the Icinga 2 instance.",
+        "tags": [
+          "Status"
+        ],
+        "responses": {
+          "200": {
+            "description": "Status information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "object"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/config/packages": {
+      "get": {
+        "operationId": "listConfigPackages",
+        "summary": "List configuration packages",
+        "description": "List all available configuration packages and their stages.",
+        "tags": [
+          "Configuration Management"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of configuration packages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ConfigPackage"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createConfigPackage",
+        "summary": "Create a configuration package",
+        "description": "Create a new configuration package.",
+        "tags": [
+          "Configuration Management"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Package name"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Package created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/config/packages/{packageName}": {
+      "delete": {
+        "operationId": "deleteConfigPackage",
+        "summary": "Delete a configuration package",
+        "description": "Delete a configuration package and all its stages.",
+        "tags": [
+          "Configuration Management"
+        ],
+        "parameters": [
+          {
+            "name": "packageName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Package deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/config/packages/{packageName}/stages": {
+      "post": {
+        "operationId": "uploadConfigStage",
+        "summary": "Upload configuration stage",
+        "description": "Upload configuration files to create a new stage within a package.",
+        "tags": [
+          "Configuration Management"
+        ],
+        "parameters": [
+          {
+            "name": "packageName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "files": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "Map of file paths to file contents"
+                  },
+                  "reload": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "required": [
+                  "files"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stage created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/types": {
+      "get": {
+        "operationId": "listTypes",
+        "summary": "List available types",
+        "description": "List all available object types and their attributes.",
+        "tags": [
+          "Types"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of types",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "plural_name": {
+                            "type": "string"
+                          },
+                          "abstract": {
+                            "type": "boolean"
+                          },
+                          "fields": {
+                            "type": "object"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/templates/{objectType}": {
+      "get": {
+        "operationId": "queryTemplates",
+        "summary": "Query config templates",
+        "description": "Retrieve configuration templates for the specified object type.",
+        "tags": [
+          "Templates"
+        ],
+        "parameters": [
+          {
+            "name": "objectType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of templates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/variables": {
+      "get": {
+        "operationId": "queryVariables",
+        "summary": "Query global variables",
+        "description": "Retrieve a list of global variables.",
+        "tags": [
+          "Variables"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of variables",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ObjectQueryResult": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "attrs": {
+                  "type": "object"
+                },
+                "joins": {
+                  "type": "object"
+                },
+                "meta": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      },
+      "CreateObjectRequest": {
+        "type": "object",
+        "properties": {
+          "templates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Templates to import"
+          },
+          "attrs": {
+            "type": "object",
+            "description": "Object attributes"
+          }
+        },
+        "required": [
+          "attrs"
+        ]
+      },
+      "ModifyObjectRequest": {
+        "type": "object",
+        "properties": {
+          "attrs": {
+            "type": "object",
+            "description": "Attributes to modify"
+          }
+        },
+        "required": [
+          "attrs"
+        ]
+      },
+      "ConfigPackage": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "active-stage": {
+            "type": "string"
+          }
+        }
+      },
+      "StatusResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "number"
+                },
+                "status": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "number"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "errors": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Basic HTTP authentication using Icinga 2 API user credentials"
+      },
+      "certificateAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-SSL-Client-CN",
+        "description": "Client certificate CN-based authentication"
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Authentication required or insufficient permissions",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Object not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "BadRequest": {
+        "description": "Bad request - invalid parameters",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "basicAuth": []
+    }
+  ]
+}
