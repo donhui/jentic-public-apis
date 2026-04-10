@@ -1,0 +1,1219 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Fossil JSON API",
+    "version": "1.0.0",
+    "description": "Fossil SCM JSON API for interacting with repositories, including authentication, branches, timeline, wiki, tickets, artifacts, tags, users, diffs, and more.",
+    "x-jentic-source-url": "https://fossil-scm.org/home/doc/trunk/www/json-api/index.md"
+  },
+  "servers": [
+    {
+      "url": "https://{host}",
+      "description": "Fossil SCM server",
+      "variables": {
+        "host": {
+          "default": "localhost:8080",
+          "description": "Fossil server host"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/json/login": {
+      "post": {
+        "operationId": "login",
+        "summary": "Authenticate and get auth token",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "password"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Auth token response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LoginResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/logout": {
+      "get": {
+        "operationId": "logout",
+        "summary": "Logout and invalidate token",
+        "tags": ["Auth"],
+        "parameters": [
+          { "name": "authToken", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Logout response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WhoamiResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/json/whoami": {
+      "get": {
+        "operationId": "whoami",
+        "summary": "Get current user info",
+        "tags": ["Auth"],
+        "responses": {
+          "200": {
+            "description": "Current user details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WhoamiResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/json/cap": {
+      "get": {
+        "operationId": "getCapabilities",
+        "summary": "Get current user capabilities",
+        "tags": ["Auth"],
+        "responses": {
+          "200": {
+            "description": "User capabilities",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CapabilitiesResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/json/anonymousPassword": {
+      "get": {
+        "operationId": "getAnonymousPassword",
+        "summary": "Get anonymous login password",
+        "tags": ["Auth"],
+        "responses": {
+          "200": {
+            "description": "Anonymous password seed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "seed": { "type": "integer" },
+                    "password": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/json/branch/list": {
+      "get": {
+        "operationId": "listBranches",
+        "summary": "List repository branches",
+        "tags": ["Branches"],
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["open", "closed", "all"], "default": "open" },
+            "description": "Filter branches by state"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Branch list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BranchListResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/branch/create": {
+      "post": {
+        "operationId": "createBranch",
+        "summary": "Create a new branch",
+        "tags": ["Branches"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "basis": { "type": "string", "default": "trunk" },
+                  "bgColor": { "type": "string", "description": "#RRGGBB format" },
+                  "private": { "type": "boolean", "default": false }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created branch",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BranchCreateResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/timeline/checkin": {
+      "get": {
+        "operationId": "getCheckinTimeline",
+        "summary": "Get checkin (commit) timeline",
+        "tags": ["Timeline"],
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer" }, "description": "Limit entries (0 = no limit)" },
+          { "name": "files", "in": "query", "schema": { "type": "boolean" }, "description": "Include file list" },
+          { "name": "tag", "in": "query", "schema": { "type": "string" }, "description": "Filter by tag" },
+          { "name": "branch", "in": "query", "schema": { "type": "string" }, "description": "Filter by branch" },
+          { "name": "after", "in": "query", "schema": { "type": "string" }, "description": "Items after date (YYYY-MM-DD)" },
+          { "name": "before", "in": "query", "schema": { "type": "string" }, "description": "Items before date (YYYY-MM-DD)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Checkin timeline",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/CheckinTimelineEntry" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/timeline/technote": {
+      "get": {
+        "operationId": "getTechnoteTimeline",
+        "summary": "Get technote timeline",
+        "tags": ["Timeline"],
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "after", "in": "query", "schema": { "type": "string" } },
+          { "name": "before", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Technote timeline",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/TimelineEntry" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/timeline/ticket": {
+      "get": {
+        "operationId": "getTicketTimeline",
+        "summary": "Get ticket change timeline",
+        "tags": ["Timeline"],
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "after", "in": "query", "schema": { "type": "string" } },
+          { "name": "before", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ticket timeline",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/TicketTimelineEntry" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/timeline/wiki": {
+      "get": {
+        "operationId": "getWikiTimeline",
+        "summary": "Get wiki change timeline",
+        "tags": ["Timeline"],
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "after", "in": "query", "schema": { "type": "string" } },
+          { "name": "before", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wiki timeline",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/TimelineEntry" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/wiki/list": {
+      "get": {
+        "operationId": "listWikiPages",
+        "summary": "List wiki pages",
+        "tags": ["Wiki"],
+        "parameters": [
+          { "name": "verbose", "in": "query", "schema": { "type": "boolean", "default": false } },
+          { "name": "glob", "in": "query", "schema": { "type": "string", "default": "*" } },
+          { "name": "like", "in": "query", "schema": { "type": "string", "default": "%" } },
+          { "name": "invert", "in": "query", "schema": { "type": "boolean", "default": false } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wiki page list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      { "type": "string" },
+                      { "$ref": "#/components/schemas/WikiPageMeta" }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/wiki/get/{pageName}": {
+      "get": {
+        "operationId": "getWikiPage",
+        "summary": "Get a wiki page",
+        "tags": ["Wiki"],
+        "parameters": [
+          { "name": "pageName", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "uuid", "in": "query", "schema": { "type": "string" }, "description": "Specific version UUID" },
+          { "name": "format", "in": "query", "schema": { "type": "string", "enum": ["raw", "html", "none"], "default": "raw" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wiki page content",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WikiPage" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/wiki/create": {
+      "post": {
+        "operationId": "createWikiPage",
+        "summary": "Create a wiki page",
+        "tags": ["Wiki"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "content": { "type": "string" },
+                  "mimetype": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created page metadata",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WikiPageMeta" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/wiki/save": {
+      "post": {
+        "operationId": "saveWikiPage",
+        "summary": "Update/save a wiki page",
+        "tags": ["Wiki"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "content"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "content": { "type": "string" },
+                  "mimetype": { "type": "string" },
+                  "createIfNotExists": { "type": "boolean", "default": false }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved page metadata",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WikiPageMeta" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/wiki/diff/{v1}/{v2}": {
+      "get": {
+        "operationId": "diffWikiPages",
+        "summary": "Diff two wiki page versions",
+        "tags": ["Wiki"],
+        "parameters": [
+          { "name": "v1", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "v2", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Diff result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "v1": { "type": "string" },
+                    "v2": { "type": "string" },
+                    "diff": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/wiki/preview": {
+      "post": {
+        "operationId": "previewWikiContent",
+        "summary": "Preview rendered wiki content",
+        "tags": ["Wiki"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "body": { "type": "string" },
+                  "mimetype": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rendered HTML",
+            "content": {
+              "application/json": {
+                "schema": { "type": "string" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/report/list": {
+      "get": {
+        "operationId": "listReports",
+        "summary": "List ticket reports",
+        "tags": ["Tickets"],
+        "responses": {
+          "200": {
+            "description": "Report list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/ReportSummary" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/report/get/{reportNumber}": {
+      "get": {
+        "operationId": "getReport",
+        "summary": "Fetch a ticket report",
+        "tags": ["Tickets"],
+        "parameters": [
+          { "name": "reportNumber", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Report details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Report" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/report/run/{reportNumber}": {
+      "get": {
+        "operationId": "runReport",
+        "summary": "Run a ticket report",
+        "tags": ["Tickets"],
+        "parameters": [
+          { "name": "reportNumber", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "format", "in": "query", "schema": { "type": "string", "enum": ["array", "object"], "default": "object" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Report results",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReportRunResult" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/artifact/{hash}": {
+      "get": {
+        "operationId": "getArtifact",
+        "summary": "Get artifact info (checkin, file, or wiki)",
+        "tags": ["Artifacts"],
+        "parameters": [
+          { "name": "hash", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Artifact hash" },
+          { "name": "format", "in": "query", "schema": { "type": "string", "enum": ["raw", "html", "none"] } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Artifact details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Artifact" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/user/list": {
+      "get": {
+        "operationId": "listUsers",
+        "summary": "List all users",
+        "tags": ["Users"],
+        "responses": {
+          "200": {
+            "description": "User list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/User" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/user/get": {
+      "post": {
+        "operationId": "getUser",
+        "summary": "Get user info by name",
+        "tags": ["Users"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/user/save": {
+      "post": {
+        "operationId": "saveUser",
+        "summary": "Create or update a user",
+        "tags": ["Users"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "uid": { "type": "integer", "description": "-1 to create new user" },
+                  "password": { "type": "string" },
+                  "info": { "type": "string" },
+                  "capabilities": { "type": "string" },
+                  "forceLogout": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved user",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/tag/list": {
+      "get": {
+        "operationId": "listTags",
+        "summary": "List tags",
+        "tags": ["Tags"],
+        "parameters": [
+          { "name": "checkin", "in": "query", "schema": { "type": "string" } },
+          { "name": "raw", "in": "query", "schema": { "type": "boolean", "default": false } },
+          { "name": "includeTickets", "in": "query", "schema": { "type": "boolean", "default": false } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tag list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "raw": { "type": "boolean" },
+                    "includeTickets": { "type": "boolean" },
+                    "tags": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/tag/find/{tagName}": {
+      "get": {
+        "operationId": "findTag",
+        "summary": "Find artifacts by tag",
+        "tags": ["Tags"],
+        "parameters": [
+          { "name": "tagName", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "type", "in": "query", "schema": { "type": "string", "default": "*" }, "description": "Artifact type: ci, e, t, w" },
+          { "name": "raw", "in": "query", "schema": { "type": "boolean", "default": false } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tag search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "artifacts": { "type": "array", "items": { "type": "string" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/tag/add": {
+      "post": {
+        "operationId": "addTag",
+        "summary": "Add a tag to a checkin",
+        "tags": ["Tags"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "checkin"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "checkin": { "type": "string" },
+                  "value": { "type": "string" },
+                  "raw": { "type": "boolean", "default": false },
+                  "propagate": { "type": "boolean", "default": false }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tag added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "value": { "type": "string" },
+                    "propagate": { "type": "boolean" },
+                    "raw": { "type": "boolean" },
+                    "appliedTo": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/tag/cancel": {
+      "post": {
+        "operationId": "cancelTag",
+        "summary": "Cancel/remove a tag from a checkin",
+        "tags": ["Tags"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "checkin"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "checkin": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Tag cancelled" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/diff/{v1}/{v2}": {
+      "get": {
+        "operationId": "getDiff",
+        "summary": "Diff two versions",
+        "tags": ["Diff"],
+        "parameters": [
+          { "name": "v1", "in": "path", "required": true, "schema": { "type": "string" }, "description": "From version hash" },
+          { "name": "v2", "in": "path", "required": true, "schema": { "type": "string" }, "description": "To version hash" },
+          { "name": "context", "in": "query", "schema": { "type": "integer" }, "description": "Context lines" },
+          { "name": "sbs", "in": "query", "schema": { "type": "boolean", "default": false }, "description": "Side-by-side diff" },
+          { "name": "html", "in": "query", "schema": { "type": "boolean", "default": false }, "description": "HTML markup" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Diff output",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DiffResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/dir": {
+      "get": {
+        "operationId": "listDirectory",
+        "summary": "List repository directory",
+        "tags": ["Files"],
+        "parameters": [
+          { "name": "checkin", "in": "query", "schema": { "type": "string" }, "description": "Commit version (use 'tip' for latest)" },
+          { "name": "name", "in": "query", "schema": { "type": "string" }, "description": "Subdirectory path" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Directory listing",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DirectoryListing" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/finfo": {
+      "get": {
+        "operationId": "getFileInfo",
+        "summary": "Get file history information",
+        "tags": ["Files"],
+        "parameters": [
+          { "name": "name", "in": "query", "required": true, "schema": { "type": "string" }, "description": "File path" },
+          { "name": "checkin", "in": "query", "schema": { "type": "string" } },
+          { "name": "before", "in": "query", "schema": { "type": "string" } },
+          { "name": "after", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "File info",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FileInfo" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/stat": {
+      "get": {
+        "operationId": "getRepositoryStats",
+        "summary": "Get repository statistics",
+        "tags": ["Stats"],
+        "parameters": [
+          { "name": "full", "in": "query", "schema": { "type": "boolean", "default": false }, "description": "Include all computed fields" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Repository statistics",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RepositoryStats" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/json/config/get/{area}": {
+      "get": {
+        "operationId": "getConfig",
+        "summary": "Get repository configuration",
+        "tags": ["Config"],
+        "parameters": [
+          { "name": "area", "in": "path", "required": true, "schema": { "type": "string", "enum": ["skin", "ticket", "project", "all", "skin-backup"] } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Configuration properties",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "additionalProperties": true }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "authToken": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "authToken",
+        "description": "Authentication token obtained via /json/login"
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorEnvelope" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized - insufficient permissions",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorEnvelope" }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ErrorEnvelope": {
+        "type": "object",
+        "properties": {
+          "resultCode": { "type": "string" },
+          "resultText": { "type": "string" }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "authToken": { "type": "string" },
+          "name": { "type": "string" },
+          "capabilities": { "type": "string" },
+          "loginCookieName": { "type": "string" }
+        }
+      },
+      "WhoamiResponse": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "capabilities": { "type": "string" },
+          "authToken": { "type": "string" }
+        }
+      },
+      "CapabilitiesResponse": {
+        "type": "object",
+        "properties": {
+          "userName": { "type": "string" },
+          "capabilities": { "type": "string" },
+          "permissionFlags": {
+            "type": "object",
+            "properties": {
+              "setup": { "type": "boolean" },
+              "admin": { "type": "boolean" },
+              "delete": { "type": "boolean" },
+              "checkout": { "type": "boolean" },
+              "history": { "type": "boolean" }
+            },
+            "additionalProperties": { "type": "boolean" }
+          }
+        }
+      },
+      "BranchListResponse": {
+        "type": "object",
+        "properties": {
+          "range": { "type": "string" },
+          "current": { "type": "string" },
+          "branches": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "BranchCreateResponse": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "basis": { "type": "string" },
+          "uuid": { "type": "string" },
+          "isPrivate": { "type": "boolean" },
+          "bgColor": { "type": "string" }
+        }
+      },
+      "CheckinTimelineEntry": {
+        "type": "object",
+        "properties": {
+          "uuid": { "type": "string" },
+          "timestamp": { "type": "integer" },
+          "comment": { "type": "string" },
+          "user": { "type": "string" },
+          "isLeaf": { "type": "boolean" },
+          "bgColor": { "type": "string" },
+          "type": { "type": "string" },
+          "parents": { "type": "array", "items": { "type": "string" } },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "uuid": { "type": "string" },
+                "parent": { "type": "string" },
+                "state": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "TimelineEntry": {
+        "type": "object",
+        "properties": {
+          "uuid": { "type": "string" },
+          "timestamp": { "type": "integer" },
+          "comment": { "type": "string" },
+          "user": { "type": "string" },
+          "eventType": { "type": "string" }
+        }
+      },
+      "TicketTimelineEntry": {
+        "type": "object",
+        "properties": {
+          "uuid": { "type": "string" },
+          "timestamp": { "type": "integer" },
+          "user": { "type": "string" },
+          "eventType": { "type": "string" },
+          "comment": { "type": "string" },
+          "briefComment": { "type": "string" },
+          "ticketUuid": { "type": "string" }
+        }
+      },
+      "WikiPageMeta": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "uuid": { "type": "string" },
+          "user": { "type": "string" },
+          "timestamp": { "type": "integer" },
+          "size": { "type": "integer" }
+        }
+      },
+      "WikiPage": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "uuid": { "type": "string" },
+          "parent": { "type": "string" },
+          "user": { "type": "string" },
+          "timestamp": { "type": "integer" },
+          "size": { "type": "integer" },
+          "content": { "type": "string" }
+        }
+      },
+      "ReportSummary": {
+        "type": "object",
+        "properties": {
+          "report": { "type": "integer" },
+          "title": { "type": "string" },
+          "owner": { "type": "string" }
+        }
+      },
+      "Report": {
+        "type": "object",
+        "properties": {
+          "report": { "type": "integer" },
+          "owner": { "type": "string" },
+          "title": { "type": "string" },
+          "timestamp": { "type": "integer" },
+          "columns": { "type": "string" },
+          "sqlCode": { "type": "string" }
+        }
+      },
+      "ReportRunResult": {
+        "type": "object",
+        "properties": {
+          "report": { "type": "integer" },
+          "title": { "type": "string" },
+          "sqlcode": { "type": "string" },
+          "columnNames": { "type": "array", "items": { "type": "string" } },
+          "tickets": { "type": "array", "items": { "type": "object", "additionalProperties": true } }
+        }
+      },
+      "Artifact": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "enum": ["checkin", "file", "wiki"] },
+          "name": { "type": "string" },
+          "uuid": { "type": "string" },
+          "user": { "type": "string" },
+          "timestamp": { "type": "integer" },
+          "comment": { "type": "string" },
+          "isLeaf": { "type": "boolean" },
+          "parents": { "type": "array", "items": { "type": "string" } },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "files": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "size": { "type": "integer" },
+          "content": { "type": "string" }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "uid": { "type": "integer" },
+          "name": { "type": "string" },
+          "capabilities": { "type": "string" },
+          "info": { "type": "string" },
+          "timestamp": { "type": "integer" }
+        }
+      },
+      "DiffResponse": {
+        "type": "object",
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "diff": { "type": "string" }
+        }
+      },
+      "DirectoryListing": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "uuid": { "type": "string" },
+          "checkin": { "type": "string" },
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "isDir": { "type": "boolean" },
+                "uuid": { "type": "string" },
+                "size": { "type": "integer" },
+                "timestamp": { "type": "integer" }
+              }
+            }
+          }
+        }
+      },
+      "FileInfo": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "checkins": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "checkin": { "type": "string" },
+                "uuid": { "type": "string" },
+                "timestamp": { "type": "integer" },
+                "user": { "type": "string" },
+                "comment": { "type": "string" },
+                "size": { "type": "integer" },
+                "state": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "RepositoryStats": {
+        "type": "object",
+        "properties": {
+          "projectName": { "type": "string" },
+          "repositorySize": { "type": "integer" },
+          "ageDays": { "type": "number" },
+          "ageYears": { "type": "number" },
+          "projectCode": { "type": "string" },
+          "compiler": { "type": "string" },
+          "projectDescription": { "type": "string" },
+          "blobCount": { "type": "integer" },
+          "deltaCount": { "type": "integer" },
+          "uncompressedArtifactSize": { "type": "integer" },
+          "averageArtifactSize": { "type": "integer" },
+          "maxArtifactSize": { "type": "integer" },
+          "compressionRatio": { "type": "number" },
+          "checkinCount": { "type": "integer" },
+          "fileCount": { "type": "integer" },
+          "wikiPageCount": { "type": "integer" },
+          "ticketCount": { "type": "integer" },
+          "sqlite": {
+            "type": "object",
+            "properties": {
+              "version": { "type": "string" },
+              "pageCount": { "type": "integer" },
+              "pageSize": { "type": "integer" },
+              "freeList": { "type": "integer" },
+              "encoding": { "type": "string" },
+              "journalMode": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    { "authToken": [] }
+  ]
+}
