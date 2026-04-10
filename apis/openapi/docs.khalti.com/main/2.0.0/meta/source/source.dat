@@ -1,0 +1,414 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Khalti ePayment API",
+    "description": "Khalti payment gateway API for initiating payments, verifying payment status, and processing refunds in Nepal. Amounts are in paisa (1 NPR = 100 paisa).",
+    "version": "2.0.0",
+    "x-jentic-source-url": "https://docs.khalti.com/"
+  },
+  "servers": [
+    {
+      "url": "https://khalti.com/api/v2",
+      "description": "Production server"
+    },
+    {
+      "url": "https://dev.khalti.com/api/v2",
+      "description": "Sandbox server"
+    }
+  ],
+  "security": [
+    {
+      "khaltiAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Payments",
+      "description": "Payment initiation and verification"
+    },
+    {
+      "name": "Refunds",
+      "description": "Refund processing"
+    }
+  ],
+  "paths": {
+    "/epayment/initiate/": {
+      "post": {
+        "operationId": "initiatePayment",
+        "summary": "Initiate a payment request",
+        "description": "Creates a new payment request and returns a payment URL to redirect the customer to Khalti's payment page.",
+        "tags": ["Payments"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InitiatePaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment initiated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InitiatePaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/epayment/lookup/": {
+      "post": {
+        "operationId": "lookupPayment",
+        "summary": "Verify payment status",
+        "description": "Looks up the status of a payment using the payment identifier (pidx).",
+        "tags": ["Payments"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LookupPaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment status retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LookupPaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid pidx",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/merchant-transaction/{transactionId}/refund/": {
+      "post": {
+        "operationId": "refundTransaction",
+        "summary": "Refund a transaction",
+        "description": "Processes a full or partial refund for a completed transaction. Supports both wallet and bank refunds.",
+        "tags": ["Refunds"],
+        "parameters": [
+          {
+            "name": "transactionId",
+            "in": "path",
+            "required": true,
+            "description": "The transaction identifier to refund",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Refund processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid transaction or refund parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "khaltiAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Khalti API key. Format: Key <LIVE_SECRET_KEY>"
+      }
+    },
+    "schemas": {
+      "InitiatePaymentRequest": {
+        "type": "object",
+        "required": ["return_url", "website_url", "amount", "purchase_order_id", "purchase_order_name"],
+        "properties": {
+          "return_url": {
+            "type": "string",
+            "description": "URL to redirect the customer after payment"
+          },
+          "website_url": {
+            "type": "string",
+            "description": "Merchant website URL"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Payment amount in paisa (minimum 1000, i.e., 10 NPR)",
+            "minimum": 1000
+          },
+          "purchase_order_id": {
+            "type": "string",
+            "description": "Unique order identifier from the merchant"
+          },
+          "purchase_order_name": {
+            "type": "string",
+            "description": "Product or order name"
+          },
+          "customer_info": {
+            "$ref": "#/components/schemas/CustomerInfo"
+          },
+          "amount_breakdown": {
+            "type": "array",
+            "description": "Itemized breakdown of amounts",
+            "items": {
+              "$ref": "#/components/schemas/AmountBreakdownItem"
+            }
+          },
+          "product_details": {
+            "type": "array",
+            "description": "Product details",
+            "items": {
+              "$ref": "#/components/schemas/ProductDetail"
+            }
+          },
+          "merchant_username": {
+            "type": "string",
+            "description": "Merchant username"
+          },
+          "merchant_extra": {
+            "type": "string",
+            "description": "Additional merchant data"
+          }
+        }
+      },
+      "CustomerInfo": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Customer name"
+          },
+          "email": {
+            "type": "string",
+            "description": "Customer email"
+          },
+          "phone": {
+            "type": "string",
+            "description": "Customer phone number"
+          }
+        }
+      },
+      "AmountBreakdownItem": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Label for the amount line item"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Amount in paisa"
+          }
+        }
+      },
+      "ProductDetail": {
+        "type": "object",
+        "properties": {
+          "identity": {
+            "type": "string",
+            "description": "Product identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Product name"
+          },
+          "total_price": {
+            "type": "integer",
+            "description": "Total price in paisa"
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Product quantity"
+          },
+          "unit_price": {
+            "type": "integer",
+            "description": "Unit price in paisa"
+          }
+        }
+      },
+      "InitiatePaymentResponse": {
+        "type": "object",
+        "properties": {
+          "pidx": {
+            "type": "string",
+            "description": "Unique payment identifier"
+          },
+          "payment_url": {
+            "type": "string",
+            "description": "URL to redirect customer for payment"
+          },
+          "expires_at": {
+            "type": "string",
+            "description": "Payment expiration timestamp"
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Seconds until payment expiration"
+          }
+        }
+      },
+      "LookupPaymentRequest": {
+        "type": "object",
+        "required": ["pidx"],
+        "properties": {
+          "pidx": {
+            "type": "string",
+            "description": "Payment identifier from initiate response"
+          }
+        }
+      },
+      "LookupPaymentResponse": {
+        "type": "object",
+        "properties": {
+          "pidx": {
+            "type": "string",
+            "description": "Payment identifier"
+          },
+          "total_amount": {
+            "type": "integer",
+            "description": "Total amount in paisa"
+          },
+          "status": {
+            "type": "string",
+            "description": "Transaction status",
+            "enum": ["Completed", "Pending", "Initiated", "Refunded", "Expired", "User canceled"]
+          },
+          "transaction_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "Khalti transaction identifier"
+          },
+          "fee": {
+            "type": "integer",
+            "description": "Merchant fee in paisa"
+          },
+          "refunded": {
+            "type": "boolean",
+            "description": "Whether the transaction has been refunded"
+          }
+        }
+      },
+      "RefundRequest": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "description": "Refund amount in paisa (omit for full refund of wallet transactions)"
+          },
+          "mobile": {
+            "type": "string",
+            "description": "Mobile number linked to Khalti account (required for bank refunds)"
+          }
+        }
+      },
+      "RefundResponse": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "string",
+            "description": "Status message",
+            "example": "Transaction refund successful."
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "string",
+            "description": "Error detail message"
+          },
+          "error_key": {
+            "type": "string",
+            "description": "Error key identifier"
+          }
+        }
+      }
+    }
+  }
+}
