@@ -1,0 +1,351 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Khalti Payment Gateway API",
+    "version": "2.0.0",
+    "description": "Khalti Payment Gateway is a comprehensive payment solution, digital wallet, and API provider designed specifically for online services in Nepal. The API enables merchants to initiate payments, verify transactions, and manage payment lifecycle with API key-based authentication.",
+    "x-jentic-source-url": "https://docs.khalti.com/khalti-epayment/",
+    "contact": {
+      "name": "Khalti Merchant Support",
+      "email": "merchant@khalti.com",
+      "url": "https://khalti.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://khalti.com/api/v2",
+      "description": "Production server"
+    },
+    {
+      "url": "https://dev.khalti.com/api/v2",
+      "description": "Sandbox server for testing"
+    }
+  ],
+  "paths": {
+    "/epayment/initiate/": {
+      "post": {
+        "operationId": "initiatePayment",
+        "summary": "Initiate payment transaction",
+        "description": "Creates a new payment transaction and returns a payment URL where customers can complete the payment. The payment link expires in 60 minutes by default in production. Amount must be specified in paisa (minimum 1000 paisa = 10 NPR).",
+        "tags": [
+          "Payment"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentInitiateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment initiated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentInitiateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters or amount less than minimum",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/epayment/lookup/": {
+      "post": {
+        "operationId": "verifyPayment",
+        "summary": "Verify payment status",
+        "description": "Retrieves the current status and details of a payment transaction using the payment index (pidx). Merchants should verify transactions using this endpoint after receiving callback. Only 'Completed' status indicates successful payment.",
+        "tags": [
+          "Payment"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentLookupRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment status retrieved successfully (includes Completed, Pending, Initiated, Refunded, Partially Refunded statuses)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentLookupResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid pidx, or payment expired or user canceled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "API key authentication using the format: 'Key <LIVE_SECRET_KEY>'. Obtain secret key from test-admin.khalti.com (sandbox) or admin.khalti.com (production)"
+      }
+    },
+    "schemas": {
+      "PaymentInitiateRequest": {
+        "type": "object",
+        "required": [
+          "return_url",
+          "website_url",
+          "amount",
+          "purchase_order_id",
+          "purchase_order_name"
+        ],
+        "properties": {
+          "return_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL where user will be redirected after completing the payment transaction"
+          },
+          "website_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Merchant's website URL"
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "Payment amount in paisa (minimum 1000 paisa = 10 NPR)"
+          },
+          "purchase_order_id": {
+            "type": "string",
+            "description": "Unique identifier for this transaction from merchant system"
+          },
+          "purchase_order_name": {
+            "type": "string",
+            "description": "Name or description of the product/service being purchased"
+          },
+          "customer_info": {
+            "type": "object",
+            "description": "Optional customer information",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Customer name"
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "description": "Customer email address"
+              },
+              "phone": {
+                "type": "string",
+                "description": "Customer phone number"
+              }
+            }
+          },
+          "amount_breakdown": {
+            "type": "array",
+            "description": "Optional breakdown of amount by categories",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "description": "Label for this amount component"
+                },
+                "amount": {
+                  "type": "integer",
+                  "description": "Amount in paisa"
+                }
+              }
+            }
+          },
+          "product_details": {
+            "type": "array",
+            "description": "Optional detailed product information",
+            "items": {
+              "type": "object",
+              "properties": {
+                "identity": {
+                  "type": "string",
+                  "description": "Product identifier"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Product name"
+                },
+                "total_price": {
+                  "type": "integer",
+                  "description": "Total price in paisa"
+                },
+                "quantity": {
+                  "type": "integer",
+                  "description": "Quantity of product"
+                },
+                "unit_price": {
+                  "type": "integer",
+                  "description": "Unit price in paisa"
+                }
+              }
+            }
+          }
+        }
+      },
+      "PaymentInitiateResponse": {
+        "type": "object",
+        "properties": {
+          "pidx": {
+            "type": "string",
+            "description": "Payment index - unique identifier for this payment transaction"
+          },
+          "payment_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL where customer should be redirected to complete payment"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when payment link will expire"
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Number of seconds until payment link expires (default 1800 seconds = 30 minutes in sandbox, 60 minutes in production)"
+          }
+        }
+      },
+      "PaymentLookupRequest": {
+        "type": "object",
+        "required": [
+          "pidx"
+        ],
+        "properties": {
+          "pidx": {
+            "type": "string",
+            "description": "Payment index received from payment initiation"
+          }
+        }
+      },
+      "PaymentLookupResponse": {
+        "type": "object",
+        "properties": {
+          "pidx": {
+            "type": "string",
+            "description": "Payment index"
+          },
+          "total_amount": {
+            "type": "integer",
+            "description": "Total payment amount in paisa"
+          },
+          "status": {
+            "type": "string",
+            "description": "Current payment status. Only 'Completed' indicates successful payment.",
+            "enum": [
+              "Completed",
+              "Pending",
+              "Initiated",
+              "Refunded",
+              "Expired",
+              "User canceled",
+              "Partially Refunded"
+            ]
+          },
+          "transaction_id": {
+            "type": "string",
+            "description": "Khalti transaction identifier"
+          },
+          "fee": {
+            "type": "integer",
+            "description": "Transaction fee charged in paisa"
+          },
+          "refunded": {
+            "type": "boolean",
+            "description": "Whether the payment has been refunded (fully or partially)"
+          },
+          "purchase_order_id": {
+            "type": "string",
+            "description": "Merchant's purchase order identifier"
+          },
+          "purchase_order_name": {
+            "type": "string",
+            "description": "Product/service name"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "error_code": {
+            "type": "string",
+            "description": "Error code"
+          },
+          "detail": {
+            "type": "string",
+            "description": "Additional error details"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Payment",
+      "description": "Payment initiation and verification operations"
+    }
+  ]
+}
