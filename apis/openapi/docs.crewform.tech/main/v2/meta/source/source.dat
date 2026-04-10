@@ -1,0 +1,474 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CrewForm API",
+    "version": "v2",
+    "description": "CrewForm is an AI team builder. Create specialised agents -- researchers, writers, coders -- orchestrate them as a crew, and act on what they produce.",
+    "x-jentic-source-url": "https://docs.crewform.tech/api-reference"
+  },
+  "servers": [
+    {
+      "url": "https://{project}.supabase.co/functions/v1",
+      "description": "API v2 server",
+      "variables": {
+        "project": {
+          "default": "your-project",
+          "description": "Your Supabase project identifier"
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {"name": "Agents", "description": "AI agent management"},
+    {"name": "Tasks", "description": "Task management"},
+    {"name": "Teams", "description": "Team management"},
+    {"name": "Runs", "description": "Team run execution"},
+    {"name": "Hooks", "description": "Webhook subscriptions"},
+    {"name": "Identity", "description": "Current user info"}
+  ],
+  "paths": {
+    "/api-agents": {
+      "get": {
+        "operationId": "listAgents",
+        "summary": "List all agents",
+        "tags": ["Agents"],
+        "parameters": [
+          {"name": "id", "in": "query", "required": false, "schema": {"type": "string", "format": "uuid"}, "description": "Retrieve a single agent by ID"}
+        ],
+        "responses": {
+          "200": {"description": "List of agents", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Agent"}}}}},
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      },
+      "post": {
+        "operationId": "createAgent",
+        "summary": "Create a new agent",
+        "tags": ["Agents"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Agent created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Agent"}}}},
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      },
+      "patch": {
+        "operationId": "updateAgent",
+        "summary": "Update an existing agent",
+        "tags": ["Agents"],
+        "parameters": [
+          {"name": "id", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Agent updated", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Agent"}}}},
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      },
+      "delete": {
+        "operationId": "deleteAgent",
+        "summary": "Remove an agent",
+        "tags": ["Agents"],
+        "parameters": [
+          {"name": "id", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}}
+        ],
+        "responses": {
+          "200": {"description": "Agent deleted"},
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      }
+    },
+    "/api-tasks": {
+      "get": {
+        "operationId": "listTasks",
+        "summary": "List all tasks",
+        "tags": ["Tasks"],
+        "parameters": [
+          {"name": "id", "in": "query", "required": false, "schema": {"type": "string", "format": "uuid"}, "description": "Get specific task"},
+          {"name": "status", "in": "query", "required": false, "schema": {"type": "string", "enum": ["pending", "dispatched", "running", "completed", "failed", "cancelled"]}}
+        ],
+        "responses": {
+          "200": {"description": "List of tasks", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Task"}}}}},
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      },
+      "post": {
+        "operationId": "createTask",
+        "summary": "Create a new task",
+        "description": "Creates a task. Auto-dispatches if agent is assigned.",
+        "tags": ["Tasks"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Task created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Task"}}}},
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      },
+      "patch": {
+        "operationId": "updateTask",
+        "summary": "Update task details",
+        "tags": ["Tasks"],
+        "parameters": [
+          {"name": "id", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Task updated", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Task"}}}},
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      },
+      "delete": {
+        "operationId": "deleteTask",
+        "summary": "Remove a task",
+        "tags": ["Tasks"],
+        "parameters": [
+          {"name": "id", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}}
+        ],
+        "responses": {
+          "200": {"description": "Task deleted"},
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      }
+    },
+    "/api-teams": {
+      "get": {
+        "operationId": "listTeams",
+        "summary": "List all teams with members",
+        "tags": ["Teams"],
+        "parameters": [
+          {"name": "id", "in": "query", "required": false, "schema": {"type": "string", "format": "uuid"}, "description": "Fetch a single team"}
+        ],
+        "responses": {
+          "200": {"description": "List of teams", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Team"}}}}},
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      },
+      "post": {
+        "operationId": "createTeam",
+        "summary": "Create a new team",
+        "tags": ["Teams"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Team created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Team"}}}},
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      },
+      "patch": {
+        "operationId": "updateTeam",
+        "summary": "Update team configuration",
+        "tags": ["Teams"],
+        "parameters": [
+          {"name": "id", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Team updated", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Team"}}}},
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      },
+      "delete": {
+        "operationId": "deleteTeam",
+        "summary": "Delete a team",
+        "tags": ["Teams"],
+        "parameters": [
+          {"name": "id", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}}
+        ],
+        "responses": {
+          "200": {"description": "Team deleted"},
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      }
+    },
+    "/api-runs": {
+      "get": {
+        "operationId": "listRuns",
+        "summary": "List all team runs",
+        "tags": ["Runs"],
+        "parameters": [
+          {"name": "id", "in": "query", "required": false, "schema": {"type": "string", "format": "uuid"}, "description": "Get run with messages"},
+          {"name": "team_id", "in": "query", "required": false, "schema": {"type": "string", "format": "uuid"}, "description": "Filter by team"}
+        ],
+        "responses": {
+          "200": {"description": "List of runs", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Run"}}}}},
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      },
+      "post": {
+        "operationId": "createRun",
+        "summary": "Start a new team run",
+        "tags": ["Runs"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Run started", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Run"}}}},
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      }
+    },
+    "/api-hooks": {
+      "get": {
+        "operationId": "listHooks",
+        "summary": "List active webhook subscriptions",
+        "tags": ["Hooks"],
+        "responses": {
+          "200": {"description": "List of hooks", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Hook"}}}}},
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      },
+      "post": {
+        "operationId": "createHook",
+        "summary": "Subscribe to events",
+        "tags": ["Hooks"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HookCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Hook created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Hook"}}}},
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      },
+      "delete": {
+        "operationId": "deleteHook",
+        "summary": "Unsubscribe from events",
+        "tags": ["Hooks"],
+        "parameters": [
+          {"name": "id", "in": "query", "required": true, "schema": {"type": "string", "format": "uuid"}}
+        ],
+        "responses": {
+          "200": {"description": "Hook deleted"},
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      }
+    },
+    "/api-me": {
+      "get": {
+        "operationId": "getMe",
+        "summary": "Get current user, workspace, and plan details",
+        "tags": ["Identity"],
+        "responses": {
+          "200": {"description": "User details", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UserInfo"}}}},
+          "400": {"description": "Bad request"},
+          "401": {"description": "Unauthorized"}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "Agent": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "format": "uuid"},
+          "name": {"type": "string"},
+          "model": {"type": "string"},
+          "system_prompt": {"type": "string"},
+          "created_at": {"type": "string", "format": "date-time"}
+        }
+      },
+      "AgentCreate": {
+        "type": "object",
+        "required": ["name", "model", "system_prompt"],
+        "properties": {
+          "name": {"type": "string"},
+          "model": {"type": "string"},
+          "system_prompt": {"type": "string"}
+        }
+      },
+      "AgentUpdate": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "model": {"type": "string"},
+          "system_prompt": {"type": "string"}
+        }
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "format": "uuid"},
+          "name": {"type": "string"},
+          "description": {"type": "string"},
+          "status": {"type": "string", "enum": ["pending", "dispatched", "running", "completed", "failed", "cancelled"]},
+          "agent_id": {"type": "string", "format": "uuid"},
+          "result": {"type": "string"},
+          "created_at": {"type": "string", "format": "date-time"}
+        }
+      },
+      "TaskCreate": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {"type": "string"},
+          "description": {"type": "string"},
+          "agent_id": {"type": "string", "format": "uuid"}
+        }
+      },
+      "TaskUpdate": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "description": {"type": "string"},
+          "status": {"type": "string"},
+          "agent_id": {"type": "string", "format": "uuid"}
+        }
+      },
+      "Team": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "format": "uuid"},
+          "name": {"type": "string"},
+          "mode": {"type": "string", "enum": ["pipeline", "orchestrator", "collaboration"]},
+          "members": {"type": "array", "items": {"$ref": "#/components/schemas/Agent"}},
+          "created_at": {"type": "string", "format": "date-time"}
+        }
+      },
+      "TeamCreate": {
+        "type": "object",
+        "required": ["name", "mode"],
+        "properties": {
+          "name": {"type": "string"},
+          "mode": {"type": "string", "enum": ["pipeline", "orchestrator", "collaboration"]},
+          "member_ids": {"type": "array", "items": {"type": "string", "format": "uuid"}}
+        }
+      },
+      "Run": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "format": "uuid"},
+          "team_id": {"type": "string", "format": "uuid"},
+          "status": {"type": "string"},
+          "messages": {"type": "array", "items": {"type": "object"}},
+          "created_at": {"type": "string", "format": "date-time"}
+        }
+      },
+      "RunCreate": {
+        "type": "object",
+        "required": ["team_id"],
+        "properties": {
+          "team_id": {"type": "string", "format": "uuid"},
+          "input": {"type": "string"}
+        }
+      },
+      "Hook": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "format": "uuid"},
+          "event": {"type": "string"},
+          "url": {"type": "string", "format": "uri"},
+          "active": {"type": "boolean"}
+        }
+      },
+      "HookCreate": {
+        "type": "object",
+        "required": ["event", "url"],
+        "properties": {
+          "event": {"type": "string"},
+          "url": {"type": "string", "format": "uri"}
+        }
+      },
+      "UserInfo": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "format": "uuid"},
+          "email": {"type": "string", "format": "email"},
+          "workspace": {"type": "string"},
+          "plan": {"type": "string"}
+        }
+      }
+    }
+  }
+}
