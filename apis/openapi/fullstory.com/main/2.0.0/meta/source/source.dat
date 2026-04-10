@@ -1,0 +1,655 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Fullstory Server API",
+    "version": "2.0.0",
+    "description": "Fullstory is a digital experience analytics platform. The Server API allows you to capture custom data, create and manage users and events, retrieve session info, manage annotations, and more.",
+    "contact": {
+      "name": "Fullstory",
+      "url": "https://developer.fullstory.com"
+    },
+    "x-jentic-source-url": "https://developer.fullstory.com/server/getting-started/"
+  },
+  "servers": [
+    {
+      "url": "https://api.fullstory.com",
+      "description": "Fullstory API (routed by data center)"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Users",
+      "description": "Create, read, update, delete, and batch import users"
+    },
+    {
+      "name": "Events",
+      "description": "Create and batch import events"
+    },
+    {
+      "name": "Sessions",
+      "description": "List and retrieve session information"
+    },
+    {
+      "name": "Annotations",
+      "description": "Create annotations on sessions"
+    },
+    {
+      "name": "Organization",
+      "description": "Organization and account details"
+    }
+  ],
+  "paths": {
+    "/v2/users": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Create User",
+        "operationId": "createUser",
+        "description": "Creates a user with the specified details. Performs an upsert - inserts if user doesn't exist, updates if it does based on uid.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User created or updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        }
+      },
+      "get": {
+        "tags": ["Users"],
+        "summary": "List Users",
+        "operationId": "listUsers",
+        "description": "Lists users matching the specified criteria.",
+        "parameters": [
+          {
+            "name": "uid",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by user identifier"
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by email address"
+          },
+          {
+            "name": "page_token",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Token for pagination"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListUsersResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/v2/users/{id}": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get User",
+        "operationId": "getUser",
+        "description": "Retrieves user details by Fullstory-generated id.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Fullstory-generated user ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Update User",
+        "operationId": "updateUser",
+        "description": "Updates a user with the specified details.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Fullstory-generated user ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Delete User",
+        "operationId": "deleteUser",
+        "description": "Deletes a user by Fullstory-generated id. Alternatively, uid can be supplied as a query parameter.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Fullstory-generated user ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User deleted successfully"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/v2/users/batch": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Batch Import Users",
+        "operationId": "batchImportUsers",
+        "description": "Creates or updates multiple users in a single batch request.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchImportUsersRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Batch import initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchImportResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Server event quota exceeded"
+          }
+        }
+      }
+    },
+    "/v2/events": {
+      "post": {
+        "tags": ["Events"],
+        "summary": "Create Event",
+        "operationId": "createEvent",
+        "description": "Creates one event with the specified details.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEventRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Event created successfully"
+          },
+          "429": {
+            "description": "Server event quota exceeded"
+          }
+        }
+      }
+    },
+    "/v2/events/batch": {
+      "post": {
+        "tags": ["Events"],
+        "summary": "Batch Import Events",
+        "operationId": "batchImportEvents",
+        "description": "Creates multiple events in a single batch request.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchImportEventsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Batch import initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchImportResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Server event quota exceeded"
+          }
+        }
+      }
+    },
+    "/v2/sessions": {
+      "get": {
+        "tags": ["Sessions"],
+        "summary": "List Sessions",
+        "operationId": "listSessions",
+        "description": "Lists sessions matching the specified criteria.",
+        "parameters": [
+          {
+            "name": "uid",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by user identifier"
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by Fullstory user ID"
+          },
+          {
+            "name": "page_token",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Token for pagination"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListSessionsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/annotations": {
+      "post": {
+        "tags": ["Annotations"],
+        "summary": "Create Annotation",
+        "operationId": "createAnnotation",
+        "description": "Creates an annotation with the specified details.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAnnotationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Annotation created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Annotation"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "API key with 'Basic' prefix. Format: Basic {api_key}"
+      }
+    },
+    "schemas": {
+      "CreateUserRequest": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "string",
+            "description": "Your system's unique identifier for the user"
+          },
+          "display_name": {
+            "type": "string",
+            "description": "Display name of the user"
+          },
+          "email": {
+            "type": "string",
+            "description": "Email address of the user"
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Custom properties for the user. Type suffixes are not required in V2."
+          },
+          "schema": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Optional explicit type declarations for custom properties"
+          }
+        }
+      },
+      "UpdateUserRequest": {
+        "type": "object",
+        "properties": {
+          "display_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Fullstory-generated user ID"
+          },
+          "uid": {
+            "type": "string",
+            "description": "Your system's unique identifier"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "app_url": {
+            "type": "string",
+            "description": "Deep link to user's profile in Fullstory"
+          }
+        }
+      },
+      "ListUsersResponse": {
+        "type": "object",
+        "properties": {
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/User"
+            }
+          },
+          "next_page_token": {
+            "type": "string"
+          },
+          "total_results": {
+            "type": "integer"
+          }
+        }
+      },
+      "BatchImportUsersRequest": {
+        "type": "object",
+        "required": ["requests"],
+        "properties": {
+          "requests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateUserRequest"
+            }
+          }
+        }
+      },
+      "CreateEventRequest": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "uid": {
+                "type": "string"
+              }
+            },
+            "description": "User to associate the event with"
+          },
+          "session": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            }
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the event"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the event occurred"
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Custom properties for the event"
+          },
+          "schema": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "BatchImportEventsRequest": {
+        "type": "object",
+        "required": ["requests"],
+        "properties": {
+          "requests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateEventRequest"
+            }
+          }
+        }
+      },
+      "BatchImportResponse": {
+        "type": "object",
+        "properties": {
+          "job": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "ID of the import job"
+              },
+              "status": {
+                "type": "string",
+                "description": "Status of the import job"
+              }
+            }
+          }
+        }
+      },
+      "ListSessionsResponse": {
+        "type": "object",
+        "properties": {
+          "sessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Session"
+            }
+          },
+          "next_page_token": {
+            "type": "string"
+          }
+        }
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "created_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "app_url": {
+            "type": "string",
+            "description": "Link to session replay in Fullstory"
+          }
+        }
+      },
+      "CreateAnnotationRequest": {
+        "type": "object",
+        "required": ["note"],
+        "properties": {
+          "note": {
+            "type": "string",
+            "description": "Text content of the annotation"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Annotation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "created_time": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}
