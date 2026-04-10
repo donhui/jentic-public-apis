@@ -1,0 +1,874 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "GLEIF LEI API",
+    "description": "The GLEIF API provides access to the Global Legal Entity Identifier Foundation's LEI data, enabling search and retrieval of Legal Entity Identifier records, relationship data, and reference information.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "GLEIF",
+      "url": "https://www.gleif.org"
+    },
+    "x-jentic-source-url": "https://www.gleif.org/en/lei-data/gleif-api"
+  },
+  "servers": [
+    {
+      "url": "https://api.gleif.org/api/v1",
+      "description": "GLEIF API Production Server"
+    }
+  ],
+  "paths": {
+    "/lei-records": {
+      "get": {
+        "operationId": "getLeiRecords",
+        "summary": "List LEI Records",
+        "description": "Retrieve a paginated list of LEI records. Supports full-text search, field-specific filtering, and fuzzy matching.",
+        "tags": [
+          "LEI Records"
+        ],
+        "parameters": [
+          {
+            "name": "page[number]",
+            "in": "query",
+            "description": "Page number for pagination",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "page[size]",
+            "in": "query",
+            "description": "Number of results per page",
+            "schema": {
+              "type": "integer",
+              "default": 15,
+              "maximum": 200
+            }
+          },
+          {
+            "name": "filter[entity.legalName]",
+            "in": "query",
+            "description": "Filter by legal name of the entity",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[entity.legalAddress.country]",
+            "in": "query",
+            "description": "Filter by country code of the legal address (ISO 3166-1 alpha-2)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[entity.legalAddress.region]",
+            "in": "query",
+            "description": "Filter by region of the legal address",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[entity.registeredAs]",
+            "in": "query",
+            "description": "Filter by registration number",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[entity.category]",
+            "in": "query",
+            "description": "Filter by entity category",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "GENERAL",
+                "BRANCH",
+                "FUND",
+                "SOLE_PROPRIETOR"
+              ]
+            }
+          },
+          {
+            "name": "filter[entity.status]",
+            "in": "query",
+            "description": "Filter by entity status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "INACTIVE"
+              ]
+            }
+          },
+          {
+            "name": "filter[registration.status]",
+            "in": "query",
+            "description": "Filter by registration status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ISSUED",
+                "LAPSED",
+                "MERGED",
+                "RETIRED",
+                "ANNULLED",
+                "CANCELLED",
+                "TRANSFERRED",
+                "PENDING_ARCHIVAL",
+                "PENDING_TRANSFER"
+              ]
+            }
+          },
+          {
+            "name": "filter[bic]",
+            "in": "query",
+            "description": "Filter by BIC (Business Identifier Code)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[mic]",
+            "in": "query",
+            "description": "Filter by MIC (Market Identifier Code)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[ocid]",
+            "in": "query",
+            "description": "Filter by OpenCorporates ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[fulltext]",
+            "in": "query",
+            "description": "Full-text search across entity names and other text fields",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[owns]",
+            "in": "query",
+            "description": "Filter by LEI of owned entity (child)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter[ownedBy]",
+            "in": "query",
+            "description": "Filter by LEI of parent entity",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with LEI records",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeiRecordsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid filter or parameter"
+          },
+          "406": {
+            "description": "Not acceptable - unsupported media type requested"
+          }
+        }
+      }
+    },
+    "/lei-records/{lei}": {
+      "get": {
+        "operationId": "getLeiRecord",
+        "summary": "Get LEI Record by LEI",
+        "description": "Retrieve a single LEI record by its Legal Entity Identifier.",
+        "tags": [
+          "LEI Records"
+        ],
+        "parameters": [
+          {
+            "name": "lei",
+            "in": "path",
+            "required": true,
+            "description": "The 20-character Legal Entity Identifier",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9A-Z]{20}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with a single LEI record",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeiRecordResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "LEI record not found"
+          }
+        }
+      }
+    },
+    "/lei-records/{lei}/managing-lou": {
+      "get": {
+        "operationId": "getLeiRecordManagingLou",
+        "summary": "Get Managing LOU for LEI Record",
+        "description": "Retrieve the managing Local Operating Unit for a given LEI record.",
+        "tags": [
+          "LEI Records"
+        ],
+        "parameters": [
+          {
+            "name": "lei",
+            "in": "path",
+            "required": true,
+            "description": "The 20-character Legal Entity Identifier",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9A-Z]{20}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with managing LOU data",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "LEI record not found"
+          }
+        }
+      }
+    },
+    "/lei-records/{lei}/lei-issuer": {
+      "get": {
+        "operationId": "getLeiRecordIssuer",
+        "summary": "Get LEI Issuer for LEI Record",
+        "description": "Retrieve the LEI issuer for a given LEI record.",
+        "tags": [
+          "LEI Records"
+        ],
+        "parameters": [
+          {
+            "name": "lei",
+            "in": "path",
+            "required": true,
+            "description": "The 20-character Legal Entity Identifier",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9A-Z]{20}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with LEI issuer data",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "LEI record not found"
+          }
+        }
+      }
+    },
+    "/lei-records/{lei}/field-modifications": {
+      "get": {
+        "operationId": "getLeiRecordFieldModifications",
+        "summary": "Get Field Modifications for LEI Record",
+        "description": "Retrieve field modification history for a given LEI record.",
+        "tags": [
+          "LEI Records"
+        ],
+        "parameters": [
+          {
+            "name": "lei",
+            "in": "path",
+            "required": true,
+            "description": "The 20-character Legal Entity Identifier",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9A-Z]{20}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with field modifications",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "LEI record not found"
+          }
+        }
+      }
+    },
+    "/autocompletions": {
+      "get": {
+        "operationId": "getAutocompletions",
+        "summary": "Get Autocompletions",
+        "description": "Retrieve autocomplete suggestions for entity names based on a search query.",
+        "tags": [
+          "Search"
+        ],
+        "parameters": [
+          {
+            "name": "field",
+            "in": "query",
+            "required": true,
+            "description": "Field to autocomplete on",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "fulltext",
+                "entity.legalName",
+                "entity.legalName.exact"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Query string for autocomplete",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful autocomplete response",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutocompletionsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lei-issuers": {
+      "get": {
+        "operationId": "getLeiIssuers",
+        "summary": "List LEI Issuers",
+        "description": "Retrieve a list of all LEI issuers (Local Operating Units).",
+        "tags": [
+          "LEI Issuers"
+        ],
+        "parameters": [
+          {
+            "name": "page[number]",
+            "in": "query",
+            "description": "Page number for pagination",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "page[size]",
+            "in": "query",
+            "description": "Number of results per page",
+            "schema": {
+              "type": "integer",
+              "default": 15
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with LEI issuers list",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lei-issuers/{issuer_id}": {
+      "get": {
+        "operationId": "getLeiIssuer",
+        "summary": "Get LEI Issuer",
+        "description": "Retrieve a single LEI issuer by its identifier.",
+        "tags": [
+          "LEI Issuers"
+        ],
+        "parameters": [
+          {
+            "name": "issuer_id",
+            "in": "path",
+            "required": true,
+            "description": "The LEI issuer identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with LEI issuer data",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "LEI issuer not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "LeiRecordsResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMeta"
+          },
+          "links": {
+            "$ref": "#/components/schemas/PaginationLinks"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeiRecord"
+            }
+          }
+        }
+      },
+      "LeiRecordResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LeiRecord"
+          }
+        }
+      },
+      "LeiRecord": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "lei-records"
+          },
+          "id": {
+            "type": "string",
+            "description": "The 20-character LEI code",
+            "example": "5493001KJTIIGC8Y1R12"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/LeiRecordAttributes"
+          },
+          "relationships": {
+            "type": "object",
+            "properties": {
+              "managing-lou": {
+                "type": "object",
+                "properties": {
+                  "links": {
+                    "type": "object",
+                    "properties": {
+                      "related": {
+                        "type": "string",
+                        "format": "uri"
+                      }
+                    }
+                  }
+                }
+              },
+              "lei-issuer": {
+                "type": "object",
+                "properties": {
+                  "links": {
+                    "type": "object",
+                    "properties": {
+                      "related": {
+                        "type": "string",
+                        "format": "uri"
+                      }
+                    }
+                  }
+                }
+              },
+              "field-modifications": {
+                "type": "object",
+                "properties": {
+                  "links": {
+                    "type": "object",
+                    "properties": {
+                      "related": {
+                        "type": "string",
+                        "format": "uri"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "links": {
+            "type": "object",
+            "properties": {
+              "self": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        }
+      },
+      "LeiRecordAttributes": {
+        "type": "object",
+        "properties": {
+          "lei": {
+            "type": "string",
+            "description": "Legal Entity Identifier (20 characters)"
+          },
+          "entity": {
+            "$ref": "#/components/schemas/Entity"
+          },
+          "registration": {
+            "$ref": "#/components/schemas/Registration"
+          },
+          "bic": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Business Identifier Codes associated with this LEI"
+          },
+          "mic": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Market Identifier Codes"
+          },
+          "ocid": {
+            "type": "string",
+            "description": "OpenCorporates ID"
+          }
+        }
+      },
+      "Entity": {
+        "type": "object",
+        "properties": {
+          "legalName": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "language": {
+                "type": "string"
+              }
+            }
+          },
+          "otherNames": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "language": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "legalAddress": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "headquartersAddress": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "registeredAt": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "other": {
+                "type": "string"
+              }
+            }
+          },
+          "registeredAs": {
+            "type": "string"
+          },
+          "jurisdiction": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "GENERAL",
+              "BRANCH",
+              "FUND",
+              "SOLE_PROPRIETOR"
+            ]
+          },
+          "legalForm": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "other": {
+                "type": "string"
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          },
+          "creationDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "Registration": {
+        "type": "object",
+        "properties": {
+          "initialRegistrationDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastUpdateDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ISSUED",
+              "LAPSED",
+              "MERGED",
+              "RETIRED",
+              "ANNULLED",
+              "CANCELLED",
+              "TRANSFERRED",
+              "PENDING_ARCHIVAL",
+              "PENDING_TRANSFER"
+            ]
+          },
+          "nextRenewalDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "managingLou": {
+            "type": "string"
+          },
+          "corroborationLevel": {
+            "type": "string",
+            "enum": [
+              "FULLY_CORROBORATED",
+              "PARTIALLY_CORROBORATED",
+              "NOT_CORROBORATED"
+            ]
+          },
+          "validatedAt": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "other": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "properties": {
+          "language": {
+            "type": "string"
+          },
+          "addressLines": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "addressNumber": {
+            "type": "string"
+          },
+          "addressNumberWithinBuilding": {
+            "type": "string"
+          },
+          "mailRouting": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country code"
+          },
+          "postalCode": {
+            "type": "string"
+          }
+        }
+      },
+      "PaginationMeta": {
+        "type": "object",
+        "properties": {
+          "goldenCopy": {
+            "type": "object",
+            "properties": {
+              "publishDate": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "pagination": {
+            "type": "object",
+            "properties": {
+              "currentPage": {
+                "type": "integer"
+              },
+              "perPage": {
+                "type": "integer"
+              },
+              "from": {
+                "type": "integer"
+              },
+              "to": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              },
+              "lastPage": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "PaginationLinks": {
+        "type": "object",
+        "properties": {
+          "first": {
+            "type": "string",
+            "format": "uri"
+          },
+          "next": {
+            "type": "string",
+            "format": "uri"
+          },
+          "last": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "AutocompletionsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "attributes": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "string"
+                    },
+                    "lei": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "LEI Records",
+      "description": "Operations for retrieving Legal Entity Identifier records"
+    },
+    {
+      "name": "LEI Issuers",
+      "description": "Operations for retrieving LEI issuer (LOU) information"
+    },
+    {
+      "name": "Search",
+      "description": "Search and autocomplete operations"
+    }
+  ]
+}
