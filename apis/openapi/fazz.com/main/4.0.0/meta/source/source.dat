@@ -1,0 +1,872 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Fazz Payments API",
+    "description": "Fazz Payments API for accepting payments via PayNow QR, Virtual Account, and other methods, as well as sending disbursements in Singapore.",
+    "version": "4.0.0",
+    "x-jentic-source-url": "https://docs.fazz.com/docs/paynow"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox-id.xfers.com/api",
+      "description": "Sandbox environment"
+    },
+    {
+      "url": "https://id.xfers.com/api",
+      "description": "Production environment"
+    }
+  ],
+  "paths": {
+    "/v4/payments": {
+      "post": {
+        "operationId": "createPayment",
+        "summary": "Create a payment",
+        "description": "Create a one-time payment request via PayNow QR or other supported methods.",
+        "tags": ["Payments"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": ["attributes"],
+                    "properties": {
+                      "attributes": {
+                        "type": "object",
+                        "required": ["amount", "referenceId", "paymentMethodType"],
+                        "properties": {
+                          "amount": {
+                            "type": "string",
+                            "description": "Payment amount"
+                          },
+                          "referenceId": {
+                            "type": "string",
+                            "description": "Your reference identifier"
+                          },
+                          "paymentMethodType": {
+                            "type": "string",
+                            "enum": ["paynow", "virtual_bank_account"],
+                            "description": "Payment method type"
+                          },
+                          "expiredAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Expiration timestamp (ISO 8601)"
+                          },
+                          "paymentMethodOptions": {
+                            "type": "object",
+                            "properties": {
+                              "bankShortCode": {
+                                "type": "string",
+                                "description": "Bank short code (e.g., 'fazz')"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Payment created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "type": { "type": "string" },
+                        "attributes": {
+                          "$ref": "#/components/schemas/PaymentAttributes"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "basicAuth": [] }]
+      },
+      "get": {
+        "operationId": "listPayments",
+        "summary": "Get a list of payments",
+        "description": "Retrieve a list of payments.",
+        "tags": ["Payments"],
+        "parameters": [
+          {
+            "name": "page[number]",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer" },
+            "description": "Page number"
+          },
+          {
+            "name": "page[size]",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer" },
+            "description": "Page size"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of payments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "type": { "type": "string" },
+                          "attributes": { "$ref": "#/components/schemas/PaymentAttributes" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "basicAuth": [] }]
+      }
+    },
+    "/v4/payments/{paymentId}": {
+      "get": {
+        "operationId": "getPayment",
+        "summary": "Get a payment",
+        "description": "Retrieve details of a specific payment.",
+        "tags": ["Payments"],
+        "parameters": [
+          {
+            "name": "paymentId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "type": { "type": "string" },
+                        "attributes": { "$ref": "#/components/schemas/PaymentAttributes" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Payment not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "basicAuth": [] }]
+      },
+      "post": {
+        "operationId": "updatePayment",
+        "summary": "Update a payment",
+        "description": "Update an existing payment.",
+        "tags": ["Payments"],
+        "parameters": [
+          {
+            "name": "paymentId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "attributes": {
+                        "type": "object",
+                        "properties": {
+                          "action": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "type": { "type": "string" },
+                        "attributes": { "$ref": "#/components/schemas/PaymentAttributes" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "basicAuth": [] }]
+      }
+    },
+    "/v4/payment_methods/paynow": {
+      "post": {
+        "operationId": "createPaynowPaymentMethod",
+        "summary": "Create a static PayNow QR",
+        "description": "Create a static PayNow QR code for unlimited payments.",
+        "tags": ["Payment Methods"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": ["attributes"],
+                    "properties": {
+                      "attributes": {
+                        "type": "object",
+                        "required": ["referenceId", "bankShortCode"],
+                        "properties": {
+                          "referenceId": {
+                            "type": "string",
+                            "description": "Your reference identifier"
+                          },
+                          "bankShortCode": {
+                            "type": "string",
+                            "description": "Bank short code (e.g., 'fazz')"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Payment method created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "type": { "type": "string" },
+                        "attributes": { "$ref": "#/components/schemas/PaymentMethodAttributes" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "basicAuth": [] }]
+      }
+    },
+    "/v4/payment_methods/{paymentMethodId}": {
+      "get": {
+        "operationId": "getPaymentMethod",
+        "summary": "Get a payment method",
+        "description": "Retrieve details of a specific payment method.",
+        "tags": ["Payment Methods"],
+        "parameters": [
+          {
+            "name": "paymentMethodId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment method details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "type": { "type": "string" },
+                        "attributes": { "$ref": "#/components/schemas/PaymentMethodAttributes" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "basicAuth": [] }]
+      }
+    },
+    "/v4/disbursements": {
+      "post": {
+        "operationId": "createDisbursement",
+        "summary": "Create a disbursement",
+        "description": "Create a disbursement to send money.",
+        "tags": ["Disbursements"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": ["attributes"],
+                    "properties": {
+                      "attributes": {
+                        "type": "object",
+                        "required": ["amount", "referenceId", "disbursementMethod"],
+                        "properties": {
+                          "amount": { "type": "string" },
+                          "referenceId": { "type": "string" },
+                          "disbursementMethod": {
+                            "type": "object",
+                            "properties": {
+                              "type": { "type": "string" },
+                              "bankShortCode": { "type": "string" },
+                              "bankAccountNo": { "type": "string" },
+                              "bankAccountHolderName": { "type": "string" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Disbursement created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "type": { "type": "string" },
+                        "attributes": { "$ref": "#/components/schemas/DisbursementAttributes" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "basicAuth": [] }]
+      },
+      "get": {
+        "operationId": "listDisbursements",
+        "summary": "Get a list of disbursements",
+        "description": "Retrieve a list of disbursements.",
+        "tags": ["Disbursements"],
+        "parameters": [
+          {
+            "name": "page[number]",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "page[size]",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of disbursements",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "type": { "type": "string" },
+                          "attributes": { "$ref": "#/components/schemas/DisbursementAttributes" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "basicAuth": [] }]
+      }
+    },
+    "/v4/disbursements/{disbursementId}": {
+      "get": {
+        "operationId": "getDisbursement",
+        "summary": "Get a disbursement",
+        "description": "Retrieve details of a specific disbursement.",
+        "tags": ["Disbursements"],
+        "parameters": [
+          {
+            "name": "disbursementId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Disbursement details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "type": { "type": "string" },
+                        "attributes": { "$ref": "#/components/schemas/DisbursementAttributes" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "basicAuth": [] }]
+      }
+    },
+    "/v4/banks": {
+      "get": {
+        "operationId": "listBanks",
+        "summary": "Get a list of banks",
+        "description": "Retrieve a list of supported banks for disbursements.",
+        "tags": ["Reference Data"],
+        "responses": {
+          "200": {
+            "description": "List of banks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "type": { "type": "string" },
+                          "attributes": {
+                            "type": "object",
+                            "properties": {
+                              "name": { "type": "string" },
+                              "shortCode": { "type": "string" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "basicAuth": [] }]
+      }
+    },
+    "/v4/balance": {
+      "get": {
+        "operationId": "getBalance",
+        "summary": "Get account balance",
+        "description": "Retrieve the current account balance.",
+        "tags": ["Account"],
+        "responses": {
+          "200": {
+            "description": "Account balance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "type": { "type": "string" },
+                        "attributes": {
+                          "type": "object",
+                          "properties": {
+                            "balance": { "type": "string" },
+                            "currency": { "type": "string" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "basicAuth": [] }]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PaymentAttributes": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" },
+          "amount": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "expiredAt": { "type": "string", "format": "date-time" },
+          "referenceId": { "type": "string" },
+          "fees": { "type": "string" },
+          "paymentMethod": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "referenceId": { "type": "string" },
+              "instructions": {
+                "type": "object",
+                "properties": {
+                  "displayName": { "type": "string" },
+                  "imageUrl": { "type": "string", "format": "uri" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "PaymentMethodAttributes": {
+        "type": "object",
+        "properties": {
+          "referenceId": { "type": "string" },
+          "type": { "type": "string" },
+          "instructions": {
+            "type": "object",
+            "properties": {
+              "displayName": { "type": "string" },
+              "imageUrl": { "type": "string", "format": "uri" }
+            }
+          }
+        }
+      },
+      "DisbursementAttributes": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" },
+          "amount": { "type": "string" },
+          "referenceId": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "fees": { "type": "string" },
+          "disbursementMethod": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "bankShortCode": { "type": "string" },
+              "bankAccountNo": { "type": "string" },
+              "bankAccountHolderName": { "type": "string" }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Basic authentication using API key as username and secret key as password"
+      }
+    }
+  },
+  "security": [
+    { "basicAuth": [] }
+  ]
+}
