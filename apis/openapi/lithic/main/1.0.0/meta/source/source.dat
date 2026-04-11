@@ -1,0 +1,2117 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Lithic Card Issuing API",
+    "description": "Lithic API for card issuing, transaction management, and account operations. Provides programmatic access to create and manage virtual and physical cards, process transactions, and manage accounts.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://docs.lithic.com/reference"
+  },
+  "servers": [
+    {
+      "url": "https://api.lithic.com",
+      "description": "Production"
+    },
+    {
+      "url": "https://sandbox.lithic.com",
+      "description": "Sandbox"
+    }
+  ],
+  "security": [
+    {
+      "apiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Cards",
+      "description": "Card creation and management"
+    },
+    {
+      "name": "Accounts",
+      "description": "Account management"
+    },
+    {
+      "name": "Transactions",
+      "description": "Transaction operations"
+    },
+    {
+      "name": "Payments",
+      "description": "Payment operations"
+    },
+    {
+      "name": "ThreeDS",
+      "description": "3DS authentication operations"
+    },
+    {
+      "name": "AuthRules",
+      "description": "Authorization rules management"
+    },
+    {
+      "name": "Simulation",
+      "description": "Sandbox simulation endpoints"
+    }
+  ],
+  "paths": {
+    "/v1/cards": {
+      "get": {
+        "operationId": "listCards",
+        "summary": "List all cards",
+        "description": "Returns a paginated list of cards.",
+        "tags": ["Cards"],
+        "parameters": [
+          {
+            "name": "begin",
+            "in": "query",
+            "description": "Date string in RFC 3339 format. Only entries created after the specified time will be included.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "description": "Date string in RFC 3339 format. Only entries created before the specified time will be included.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of cards to return.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "description": "A cursor representing an item's token after which a page of results should begin.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ending_before",
+            "in": "query",
+            "description": "A cursor representing an item's token before which a page of results should end.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of cards",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createCard",
+        "summary": "Create a new card",
+        "description": "Creates a new virtual or physical card associated with an account.",
+        "tags": ["Cards"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCardRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Card created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Card"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cards/{card_token}": {
+      "get": {
+        "operationId": "getCard",
+        "summary": "Get a card",
+        "description": "Retrieves details of a specific card by its token.",
+        "tags": ["Cards"],
+        "parameters": [
+          {
+            "name": "card_token",
+            "in": "path",
+            "required": true,
+            "description": "Unique card token identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Card details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Card"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateCard",
+        "summary": "Update a card",
+        "description": "Updates a card's properties such as state or memo.",
+        "tags": ["Cards"],
+        "parameters": [
+          {
+            "name": "card_token",
+            "in": "path",
+            "required": true,
+            "description": "Unique card token identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCardRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Card updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Card"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cards/{card_token}/provision": {
+      "post": {
+        "operationId": "provisionCard",
+        "summary": "Provision a card for digital wallet",
+        "description": "Provisions a card for use with a digital wallet (Apple Pay, Google Pay, etc.).",
+        "tags": ["Cards"],
+        "parameters": [
+          {
+            "name": "card_token",
+            "in": "path",
+            "required": true,
+            "description": "Unique card token identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProvisionCardRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provisioning result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvisionCardResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/accounts": {
+      "get": {
+        "operationId": "listAccounts",
+        "summary": "List all accounts",
+        "description": "Returns a paginated list of accounts.",
+        "tags": ["Accounts"],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of accounts to return.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "description": "A cursor for pagination.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ending_before",
+            "in": "query",
+            "description": "A cursor for pagination.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/accounts/{account_token}": {
+      "get": {
+        "operationId": "getAccount",
+        "summary": "Get an account",
+        "description": "Retrieves details of a specific account by its token.",
+        "tags": ["Accounts"],
+        "parameters": [
+          {
+            "name": "account_token",
+            "in": "path",
+            "required": true,
+            "description": "Unique account token identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateAccount",
+        "summary": "Update an account",
+        "description": "Updates an account's properties.",
+        "tags": ["Accounts"],
+        "parameters": [
+          {
+            "name": "account_token",
+            "in": "path",
+            "required": true,
+            "description": "Unique account token identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAccountRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/accounts/{account_token}/spend_limits": {
+      "get": {
+        "operationId": "getAccountSpendLimits",
+        "summary": "Get account spend limits",
+        "description": "Retrieves spend limits for a specific account.",
+        "tags": ["Accounts"],
+        "parameters": [
+          {
+            "name": "account_token",
+            "in": "path",
+            "required": true,
+            "description": "Unique account token identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account spend limits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpendLimits"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/transactions": {
+      "get": {
+        "operationId": "listTransactions",
+        "summary": "List transactions",
+        "description": "Returns a paginated list of transactions. All amounts are in the smallest unit of their respective currency.",
+        "tags": ["Transactions"],
+        "parameters": [
+          {
+            "name": "begin",
+            "in": "query",
+            "description": "Date string in RFC 3339 format. Only entries created after the specified time will be included. UTC time zone.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "description": "Date string in RFC 3339 format. Only entries created before the specified time will be included. UTC time zone.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of transactions to return.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "description": "A cursor representing an item's token after which a page of results should begin.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ending_before",
+            "in": "query",
+            "description": "A cursor representing an item's token before which a page of results should end.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of transactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/transactions/{transaction_token}": {
+      "get": {
+        "operationId": "getTransaction",
+        "summary": "Get a transaction",
+        "description": "Retrieves details of a specific transaction by its token.",
+        "tags": ["Transactions"],
+        "parameters": [
+          {
+            "name": "transaction_token",
+            "in": "path",
+            "required": true,
+            "description": "Unique transaction token identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments": {
+      "get": {
+        "operationId": "listPayments",
+        "summary": "List payments",
+        "description": "Returns a paginated list of payments.",
+        "tags": ["Payments"],
+        "parameters": [
+          {
+            "name": "begin",
+            "in": "query",
+            "description": "Date string in RFC 3339 format. Only entries created after the specified time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "description": "Date string in RFC 3339 format. Only entries created before the specified time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of payments to return.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "description": "A cursor for pagination.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ending_before",
+            "in": "query",
+            "description": "A cursor for pagination.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of payments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPayment",
+        "summary": "Create a payment",
+        "description": "Creates a new payment.",
+        "tags": ["Payments"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/{payment_token}": {
+      "get": {
+        "operationId": "getPayment",
+        "summary": "Get a payment",
+        "description": "Retrieves details of a specific payment by its token.",
+        "tags": ["Payments"],
+        "parameters": [
+          {
+            "name": "payment_token",
+            "in": "path",
+            "required": true,
+            "description": "Unique payment token identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/three_ds_authentication/{three_ds_authentication_token}": {
+      "get": {
+        "operationId": "getThreeDsAuthentication",
+        "summary": "Get 3DS authentication",
+        "description": "Retrieves a 3DS authentication object by its token.",
+        "tags": ["ThreeDS"],
+        "parameters": [
+          {
+            "name": "three_ds_authentication_token",
+            "in": "path",
+            "required": true,
+            "description": "3DS authentication token.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "3DS authentication details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreeDsAuthentication"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/three_ds_authentication/simulate": {
+      "post": {
+        "operationId": "simulateThreeDsAuthentication",
+        "summary": "Simulate 3DS authentication",
+        "description": "Simulates a 3DS authentication flow in sandbox.",
+        "tags": ["ThreeDS", "Simulation"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateThreeDsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Simulation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreeDsAuthentication"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/simulate/authorize": {
+      "post": {
+        "operationId": "simulateAuthorization",
+        "summary": "Simulate an authorization",
+        "description": "Simulates a card authorization transaction in sandbox.",
+        "tags": ["Simulation"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateAuthorizationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Simulated authorization result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulateAuthorizationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/simulate/clearing": {
+      "post": {
+        "operationId": "simulateClearing",
+        "summary": "Simulate a clearing",
+        "description": "Simulates a transaction clearing in sandbox.",
+        "tags": ["Simulation"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateClearingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Simulated clearing result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulateClearingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/auth_rules": {
+      "get": {
+        "operationId": "listAuthRules",
+        "summary": "List authorization rules",
+        "description": "Returns a list of authorization rules.",
+        "tags": ["AuthRules"],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of rules to return.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "description": "A cursor for pagination.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ending_before",
+            "in": "query",
+            "description": "A cursor for pagination.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of authorization rules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthRuleListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createAuthRule",
+        "summary": "Create an authorization rule",
+        "description": "Creates a new authorization rule with specified conditions.",
+        "tags": ["AuthRules"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAuthRuleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorization rule created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/auth_rules/{auth_rule_token}": {
+      "get": {
+        "operationId": "getAuthRule",
+        "summary": "Get an authorization rule",
+        "description": "Retrieves details of a specific authorization rule.",
+        "tags": ["AuthRules"],
+        "parameters": [
+          {
+            "name": "auth_rule_token",
+            "in": "path",
+            "required": true,
+            "description": "Unique authorization rule token.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorization rule details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateAuthRule",
+        "summary": "Update an authorization rule",
+        "description": "Updates an existing authorization rule.",
+        "tags": ["AuthRules"],
+        "parameters": [
+          {
+            "name": "auth_rule_token",
+            "in": "path",
+            "required": true,
+            "description": "Unique authorization rule token.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAuthRuleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorization rule updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteAuthRule",
+        "summary": "Delete an authorization rule",
+        "description": "Deletes an authorization rule.",
+        "tags": ["AuthRules"],
+        "parameters": [
+          {
+            "name": "auth_rule_token",
+            "in": "path",
+            "required": true,
+            "description": "Unique authorization rule token.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorization rule deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": "Token of deleted rule"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Lithic API key. Provide as Bearer token in Authorization header."
+      }
+    },
+    "schemas": {
+      "Card": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique card identifier"
+          },
+          "account_token": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Associated account identifier"
+          },
+          "card_program_token": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Card program reference"
+          },
+          "type": {
+            "type": "string",
+            "description": "Card type",
+            "enum": ["VIRTUAL", "PHYSICAL", "MERCHANT_LOCKED", "SINGLE_USE"]
+          },
+          "state": {
+            "type": "string",
+            "description": "Current card state",
+            "enum": ["OPEN", "PAUSED", "CLOSED", "PENDING_FULFILLMENT", "PENDING_ACTIVATION"]
+          },
+          "last_four": {
+            "type": "string",
+            "description": "Last four digits of the card number"
+          },
+          "pan": {
+            "type": "string",
+            "description": "Primary account number (full card number)"
+          },
+          "exp_month": {
+            "type": "integer",
+            "description": "Expiration month"
+          },
+          "exp_year": {
+            "type": "integer",
+            "description": "Expiration year"
+          },
+          "memo": {
+            "type": "string",
+            "description": "Internal reference note"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp"
+          }
+        }
+      },
+      "CardListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Card"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether there are more results"
+          }
+        }
+      },
+      "CreateCardRequest": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Card type",
+            "enum": ["VIRTUAL", "PHYSICAL", "MERCHANT_LOCKED", "SINGLE_USE"]
+          },
+          "account_token": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Account identifier for card association"
+          },
+          "card_program_token": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Specific card program selection"
+          },
+          "product_id": {
+            "type": "string",
+            "description": "Product identifier (physical cards only)"
+          },
+          "shipping_address": {
+            "$ref": "#/components/schemas/ShippingAddress"
+          },
+          "memo": {
+            "type": "string",
+            "description": "Internal reference note"
+          }
+        }
+      },
+      "UpdateCardRequest": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "description": "Card state to update to",
+            "enum": ["OPEN", "PAUSED", "CLOSED"]
+          },
+          "memo": {
+            "type": "string",
+            "description": "Internal reference note"
+          }
+        }
+      },
+      "ProvisionCardRequest": {
+        "type": "object",
+        "properties": {
+          "digital_wallet": {
+            "type": "string",
+            "description": "Target digital wallet",
+            "enum": ["APPLE_PAY", "GOOGLE_PAY", "SAMSUNG_PAY"]
+          },
+          "nonce": {
+            "type": "string",
+            "description": "Nonce from the digital wallet provider"
+          },
+          "nonce_signature": {
+            "type": "string",
+            "description": "Signature of the nonce"
+          },
+          "certificate": {
+            "type": "string",
+            "description": "Certificate from the digital wallet provider"
+          }
+        }
+      },
+      "ProvisionCardResponse": {
+        "type": "object",
+        "properties": {
+          "provisioning_payload": {
+            "type": "string",
+            "description": "Provisioning payload to pass to the digital wallet"
+          }
+        }
+      },
+      "ShippingAddress": {
+        "type": "object",
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "line1": {
+            "type": "string"
+          },
+          "line2": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "postal_code": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-3 country code"
+          }
+        }
+      },
+      "Account": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Globally unique account identifier"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Account creation timestamp"
+          },
+          "status": {
+            "type": "string",
+            "description": "KYC/KYB evaluation status"
+          },
+          "email": {
+            "type": "string",
+            "description": "Primary email address"
+          },
+          "phone_number": {
+            "type": "string",
+            "description": "Contact phone number in E.164 format"
+          },
+          "external_id": {
+            "type": "string",
+            "description": "Customer-provided external identifier"
+          },
+          "user_type": {
+            "type": "string",
+            "description": "Account holder type",
+            "enum": ["INDIVIDUAL", "BUSINESS"]
+          }
+        }
+      },
+      "AccountListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Account"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether there are more accounts"
+          }
+        }
+      },
+      "UpdateAccountRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Updated email address"
+          },
+          "phone_number": {
+            "type": "string",
+            "description": "Updated phone number in E.164 format"
+          }
+        }
+      },
+      "SpendLimits": {
+        "type": "object",
+        "properties": {
+          "daily": {
+            "type": "object",
+            "properties": {
+              "available": {
+                "type": "integer",
+                "description": "Available daily spend in smallest currency unit"
+              },
+              "limit": {
+                "type": "integer",
+                "description": "Daily spend limit in smallest currency unit"
+              },
+              "used": {
+                "type": "integer",
+                "description": "Amount used today in smallest currency unit"
+              }
+            }
+          },
+          "monthly": {
+            "type": "object",
+            "properties": {
+              "available": {
+                "type": "integer",
+                "description": "Available monthly spend"
+              },
+              "limit": {
+                "type": "integer",
+                "description": "Monthly spend limit"
+              },
+              "used": {
+                "type": "integer",
+                "description": "Amount used this month"
+              }
+            }
+          },
+          "lifetime": {
+            "type": "object",
+            "properties": {
+              "available": {
+                "type": "integer",
+                "description": "Available lifetime spend"
+              },
+              "limit": {
+                "type": "integer",
+                "description": "Lifetime spend limit"
+              },
+              "used": {
+                "type": "integer",
+                "description": "Amount used lifetime"
+              }
+            }
+          }
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique transaction identifier"
+          },
+          "card_token": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Token of the card used"
+          },
+          "account_token": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Token of the associated account"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Transaction amount in smallest currency unit"
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 currency code"
+          },
+          "status": {
+            "type": "string",
+            "description": "Transaction status",
+            "enum": ["PENDING", "VOIDED", "SETTLED", "DECLINED", "EXPIRED"]
+          },
+          "result": {
+            "type": "string",
+            "description": "Transaction result",
+            "enum": ["APPROVED", "DECLINED"]
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Transaction creation timestamp"
+          },
+          "merchant": {
+            "type": "object",
+            "properties": {
+              "descriptor": {
+                "type": "string",
+                "description": "Merchant descriptor"
+              },
+              "mcc": {
+                "type": "string",
+                "description": "Merchant category code"
+              },
+              "city": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "country": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "TransactionListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Transaction"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether there are more transactions"
+          }
+        }
+      },
+      "Payment": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique payment identifier"
+          },
+          "category": {
+            "type": "string",
+            "description": "Payment category"
+          },
+          "status": {
+            "type": "string",
+            "description": "Payment status"
+          },
+          "result": {
+            "type": "string",
+            "description": "Payment result"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Payment creation timestamp"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp"
+          },
+          "financial_account_token": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Financial account token"
+          },
+          "direction": {
+            "type": "string",
+            "description": "Payment direction",
+            "enum": ["CREDIT", "DEBIT"]
+          },
+          "method": {
+            "type": "string",
+            "description": "Payment method",
+            "enum": ["ACH_NEXT_DAY", "ACH_SAME_DAY"]
+          }
+        }
+      },
+      "PaymentListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Payment"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether there are more payments"
+          }
+        }
+      },
+      "CreatePaymentRequest": {
+        "type": "object",
+        "required": ["amount", "financial_account_token", "external_bank_account_token", "method", "type"],
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "description": "Amount in smallest currency unit"
+          },
+          "financial_account_token": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Financial account token"
+          },
+          "external_bank_account_token": {
+            "type": "string",
+            "format": "uuid",
+            "description": "External bank account token"
+          },
+          "method": {
+            "type": "string",
+            "description": "Payment method",
+            "enum": ["ACH_NEXT_DAY", "ACH_SAME_DAY"]
+          },
+          "type": {
+            "type": "string",
+            "description": "Payment type",
+            "enum": ["COLLECTION", "PAYMENT"]
+          },
+          "memo": {
+            "type": "string",
+            "description": "Memo for the payment"
+          }
+        }
+      },
+      "ThreeDsAuthentication": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "format": "uuid",
+            "description": "3DS authentication token"
+          },
+          "card_token": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Card token"
+          },
+          "transaction_token": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Transaction token"
+          },
+          "authentication_result": {
+            "type": "string",
+            "description": "Authentication result"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp"
+          }
+        }
+      },
+      "SimulateThreeDsRequest": {
+        "type": "object",
+        "properties": {
+          "merchant": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "mcc": {
+                "type": "string"
+              },
+              "country": {
+                "type": "string"
+              }
+            }
+          },
+          "pan": {
+            "type": "string",
+            "description": "Card PAN"
+          },
+          "transaction": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "integer"
+              },
+              "currency": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "SimulateAuthorizationRequest": {
+        "type": "object",
+        "required": ["amount", "descriptor", "pan"],
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "description": "Authorization amount in smallest currency unit"
+          },
+          "descriptor": {
+            "type": "string",
+            "description": "Merchant descriptor"
+          },
+          "pan": {
+            "type": "string",
+            "description": "Card PAN to authorize against"
+          },
+          "mcc": {
+            "type": "string",
+            "description": "Merchant category code"
+          },
+          "merchant_currency": {
+            "type": "string",
+            "description": "Merchant currency"
+          }
+        }
+      },
+      "SimulateAuthorizationResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Transaction token"
+          },
+          "debugging_request_id": {
+            "type": "string",
+            "description": "Request ID for debugging"
+          }
+        }
+      },
+      "SimulateClearingRequest": {
+        "type": "object",
+        "required": ["token"],
+        "properties": {
+          "token": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Transaction token to clear"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Clearing amount (defaults to authorization amount)"
+          }
+        }
+      },
+      "SimulateClearingResponse": {
+        "type": "object",
+        "properties": {
+          "debugging_request_id": {
+            "type": "string",
+            "description": "Request ID for debugging"
+          }
+        }
+      },
+      "AuthRule": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique rule identifier"
+          },
+          "state": {
+            "type": "string",
+            "description": "Rule state",
+            "enum": ["ACTIVE", "INACTIVE"]
+          },
+          "program_level": {
+            "type": "boolean",
+            "description": "Whether this is a program-level rule"
+          },
+          "card_tokens": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Cards this rule applies to"
+          },
+          "account_tokens": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Accounts this rule applies to"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AuthRuleListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuthRule"
+            }
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CreateAuthRuleRequest": {
+        "type": "object",
+        "properties": {
+          "card_tokens": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Cards to apply rule to"
+          },
+          "account_tokens": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Accounts to apply rule to"
+          },
+          "parameters": {
+            "type": "object",
+            "description": "Rule parameters and conditions"
+          }
+        }
+      },
+      "UpdateAuthRuleRequest": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": ["ACTIVE", "INACTIVE"],
+            "description": "Updated rule state"
+          },
+          "parameters": {
+            "type": "object",
+            "description": "Updated rule parameters"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message"
+          },
+          "debugging_request_id": {
+            "type": "string",
+            "description": "Request ID for debugging purposes"
+          }
+        }
+      }
+    }
+  }
+}
