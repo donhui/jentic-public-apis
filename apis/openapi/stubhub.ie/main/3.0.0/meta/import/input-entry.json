@@ -1,0 +1,407 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "StubHub International Sellers API",
+    "description": "StubHub International API for sellers to authenticate, create listings, and manage webhook subscriptions.",
+    "version": "3.0.0",
+    "x-jentic-source-url": "https://developer.stubhub.ie/get-started"
+  },
+  "servers": [
+    {
+      "url": "https://api.stubcloudprod.com",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/sellers/oauth/accesstoken": {
+      "post": {
+        "operationId": "generateAccessToken",
+        "summary": "Generate an access token",
+        "description": "Generates a Bearer token for API authentication. Token must be refreshed every 6 months.",
+        "tags": [
+          "Authentication"
+        ],
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "grant_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "client_credentials"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccessTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Access token generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid credentials format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid consumer key or secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sellers/inventory/listings/v3": {
+      "post": {
+        "operationId": "createListing",
+        "summary": "Create a new listing",
+        "tags": [
+          "Listings"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateListingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Listing created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid listing data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or expired token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partners/webhooks/v3": {
+      "post": {
+        "operationId": "createWebhookSubscription",
+        "summary": "Subscribe to webhook events",
+        "tags": [
+          "Webhooks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscriptionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook subscription created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSubscriptionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Base64-encoded consumer key:secret"
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "AccessTokenRequest": {
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "StubHub.ie account email"
+          },
+          "password": {
+            "type": "string",
+            "description": "StubHub.ie account password"
+          }
+        }
+      },
+      "AccessTokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "description": "Bearer token for API authentication"
+          }
+        }
+      },
+      "CreateListingRequest": {
+        "type": "object",
+        "required": [
+          "eventId",
+          "pricePerProduct",
+          "products"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "integer",
+            "description": "Event identifier"
+          },
+          "pricePerProduct": {
+            "$ref": "#/components/schemas/Price"
+          },
+          "externalListingId": {
+            "type": "integer",
+            "description": "External listing reference ID"
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Product"
+            }
+          },
+          "stockType": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Stock types (e.g., PDF)"
+          },
+          "paymentType": {
+            "type": "integer",
+            "description": "Payment type identifier"
+          }
+        }
+      },
+      "Price": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          }
+        }
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "externalId": {
+            "type": "string"
+          },
+          "row": {
+            "type": "string"
+          },
+          "seat": {
+            "type": "string"
+          },
+          "productType": {
+            "type": "string"
+          },
+          "ga": {
+            "type": "boolean",
+            "description": "General admission flag"
+          }
+        }
+      },
+      "ListingResponse": {
+        "type": "object",
+        "properties": {
+          "listingId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "WebhookSubscriptionRequest": {
+        "type": "object",
+        "required": [
+          "callback",
+          "subscription"
+        ],
+        "properties": {
+          "callback": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "auth": {
+                "type": "object",
+                "properties": {
+                  "authType": {
+                    "type": "string"
+                  },
+                  "tokenEndPoint": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "oauthRequest": {
+                    "type": "object",
+                    "properties": {
+                      "clientId": {
+                        "type": "string"
+                      },
+                      "clientSecret": {
+                        "type": "string"
+                      },
+                      "grantType": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "subscription": {
+            "type": "object",
+            "properties": {
+              "listing": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Event types to subscribe to (e.g., listing_sale)"
+              }
+            }
+          }
+        }
+      },
+      "WebhookSubscriptionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique webhook subscription ID"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "OAuth token management"
+    },
+    {
+      "name": "Listings",
+      "description": "Inventory listing management"
+    },
+    {
+      "name": "Webhooks",
+      "description": "Webhook subscription management"
+    }
+  ]
+}
