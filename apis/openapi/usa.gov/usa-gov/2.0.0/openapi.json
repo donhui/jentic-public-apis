@@ -1,0 +1,345 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "USA.gov Search Results API",
+    "description": "The USA.gov Search Results API (powered by Search.gov) provides programmatic access to search results from USA.gov and other federal government websites. It enables searching across federal web content with features like keyword highlighting, best bets, and spelling corrections.",
+    "version": "2.0.0",
+    "contact": {
+      "name": "USA.gov",
+      "url": "https://www.usa.gov"
+    },
+    "license": {
+      "name": "Public Domain",
+      "url": "https://www.usa.gov/policies"
+    },
+    "x-jentic-source-url": "https://www.usa.gov/developer"
+  },
+  "servers": [
+    {
+      "url": "https://api.gsa.gov/technology/searchgov/v2",
+      "description": "Search.gov API production server"
+    }
+  ],
+  "tags": [
+    { "name": "search", "description": "Search results operations" }
+  ],
+  "paths": {
+    "/results/i14y": {
+      "get": {
+        "summary": "Search web results",
+        "description": "Retrieve search results from indexed federal government web content. Returns web results, best bets, spelling corrections, and related search suggestions.",
+        "operationId": "searchResults",
+        "tags": ["search"],
+        "parameters": [
+          {
+            "name": "affiliate",
+            "in": "query",
+            "required": true,
+            "description": "Site handle identifying the search configuration (unique identifier for the site).",
+            "schema": { "type": "string" },
+            "example": "usagov"
+          },
+          {
+            "name": "access_key",
+            "in": "query",
+            "required": true,
+            "description": "Unique API access key for the site. Generated during search site setup.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "description": "The search query string.",
+            "schema": { "type": "string" },
+            "example": "social security"
+          },
+          {
+            "name": "enable_highlighting",
+            "in": "query",
+            "description": "Whether to include HTML highlighting tags around matching terms in results.",
+            "schema": { "type": "boolean", "default": true }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of results to return per page.",
+            "schema": { "type": "integer", "default": 20, "maximum": 50 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Offset for pagination. Starts at 0.",
+            "schema": { "type": "integer", "default": 0, "maximum": 999 }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "description": "Sort order for results.",
+            "schema": {
+              "type": "string",
+              "enum": ["relevance", "date"],
+              "default": "relevance"
+            }
+          },
+          {
+            "name": "sitelimit",
+            "in": "query",
+            "description": "Restrict results to a specific domain or subfolder (e.g., 'www.usa.gov/benefits').",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "api_key",
+            "in": "query",
+            "description": "Optional API.Data.gov API key for higher rate limits (1,000 requests/hour default without key).",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful search response.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SearchResultsResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing or invalid required parameters.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid access_key or affiliate.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded. Default limit is 1,000 requests per hour.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SearchResultsResponse": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "The search query that was executed."
+          },
+          "web": {
+            "$ref": "#/components/schemas/WebResults"
+          },
+          "text_best_bets": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TextBestBet" },
+            "description": "Editorially curated best bet results."
+          },
+          "graphic_best_bets": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/GraphicBestBet" },
+            "description": "Graphical best bet results with images."
+          },
+          "health_topics": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/HealthTopic" },
+            "description": "Related health topics from MedlinePlus."
+          },
+          "job_openings": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/JobOpening" },
+            "description": "Related federal job openings."
+          },
+          "federal_register_documents": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/FederalRegisterDocument" },
+            "description": "Related Federal Register documents."
+          },
+          "recent_tweets": {
+            "type": "array",
+            "items": { "type": "object" },
+            "description": "Recent relevant social media posts."
+          },
+          "recent_video_news": {
+            "type": "array",
+            "items": { "type": "object" },
+            "description": "Recent relevant video news."
+          },
+          "route_to": {
+            "type": "string",
+            "description": "URL to redirect to for configured query routing.",
+            "nullable": true
+          }
+        }
+      },
+      "WebResults": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "description": "Total number of matching web results."
+          },
+          "next_offset": {
+            "type": "integer",
+            "description": "Offset value for the next page of results.",
+            "nullable": true
+          },
+          "spelling_correction": {
+            "type": "string",
+            "description": "Suggested spelling correction for the query.",
+            "nullable": true
+          },
+          "results": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/WebResult" }
+          }
+        }
+      },
+      "WebResult": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Title of the web page. May include HTML highlighting tags."
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the web page."
+          },
+          "snippet": {
+            "type": "string",
+            "description": "Text snippet from the page. May include HTML highlighting tags."
+          },
+          "publication_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Publication date of the content.",
+            "nullable": true
+          },
+          "thumbnail_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL of a thumbnail image for the result.",
+            "nullable": true
+          }
+        }
+      },
+      "TextBestBet": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique identifier for the best bet."
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the best bet."
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the best bet."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the best bet."
+          }
+        }
+      },
+      "GraphicBestBet": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "title": { "type": "string" },
+          "title_url": { "type": "string", "format": "uri" },
+          "image_url": { "type": "string", "format": "uri" },
+          "image_alt_text": { "type": "string" },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": { "type": "string" },
+                "url": { "type": "string", "format": "uri" }
+              }
+            }
+          }
+        }
+      },
+      "HealthTopic": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "url": { "type": "string", "format": "uri" },
+          "snippet": { "type": "string" }
+        }
+      },
+      "JobOpening": {
+        "type": "object",
+        "properties": {
+          "position_title": { "type": "string" },
+          "organization_name": { "type": "string" },
+          "rate_interval_code": { "type": "string" },
+          "minimum": { "type": "number" },
+          "maximum": { "type": "number" },
+          "start_date": { "type": "string", "format": "date" },
+          "end_date": { "type": "string", "format": "date" },
+          "locations": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "url": { "type": "string", "format": "uri" }
+        }
+      },
+      "FederalRegisterDocument": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "title": { "type": "string" },
+          "url": { "type": "string", "format": "uri" },
+          "agency_names": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "document_type": { "type": "string" },
+          "document_number": { "type": "string" },
+          "publication_date": { "type": "string", "format": "date" },
+          "comments_close_on": { "type": "string", "format": "date", "nullable": true },
+          "start_page": { "type": "integer" },
+          "end_page": { "type": "integer" },
+          "page_length": { "type": "integer" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    }
+  }
+}

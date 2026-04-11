@@ -1,0 +1,313 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "QuizAPI",
+    "description": "Access thousands of quiz questions across programming, science, and more. Browse by category, difficulty, and tags. Supports AI-powered question generation, embeddable widgets, leaderboards, and analytics.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "QuizAPI Support",
+      "url": "https://quizapi.io"
+    },
+    "x-jentic-source-url": "https://quizapi.io/"
+  },
+  "servers": [
+    {
+      "url": "https://quizapi.io",
+      "description": "Production"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "tags": [
+    {"name": "Discovery", "description": "Endpoints that require no authentication"},
+    {"name": "Quizzes", "description": "Browse and search published quizzes"},
+    {"name": "Questions", "description": "Retrieve questions for quizzes or browse across all quizzes"}
+  ],
+  "paths": {
+    "/api/v1/metadata": {
+      "get": {
+        "tags": ["Discovery"],
+        "summary": "Get API metadata",
+        "description": "Returns available categories, tags, difficulties, question types, and aggregate stats. No API key required.",
+        "operationId": "getMetadata",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Metadata retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["success", "data"],
+                  "properties": {
+                    "success": {"type": "boolean", "enum": [true]},
+                    "data": {
+                      "type": "object",
+                      "required": ["difficulties", "questionTypes", "categories", "tags", "stats"],
+                      "properties": {
+                        "difficulties": {
+                          "type": "array",
+                          "items": {"$ref": "#/components/schemas/Difficulty"},
+                          "example": ["EASY", "MEDIUM", "HARD", "EXPERT"]
+                        },
+                        "questionTypes": {
+                          "type": "array",
+                          "items": {"$ref": "#/components/schemas/QuestionType"},
+                          "example": ["MULTIPLE_CHOICE", "TRUE_FALSE", "OPEN_ENDED"]
+                        },
+                        "categories": {
+                          "type": "array",
+                          "items": {"type": "string"},
+                          "example": ["Programming", "DevOps", "Science"]
+                        },
+                        "tags": {
+                          "type": "array",
+                          "items": {"type": "string"},
+                          "example": ["javascript", "python", "docker"]
+                        },
+                        "stats": {
+                          "type": "object",
+                          "required": ["totalQuizzes", "totalQuestions"],
+                          "properties": {
+                            "totalQuizzes": {"type": "integer", "example": 150},
+                            "totalQuestions": {"type": "integer", "example": 3200}
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/quizzes": {
+      "get": {
+        "tags": ["Quizzes"],
+        "summary": "List quizzes",
+        "description": "Returns a paginated list of published, approved quizzes. Supports filtering by category, difficulty, tags, and free-text topic search.",
+        "operationId": "listQuizzes",
+        "parameters": [
+          {"name": "category", "in": "query", "schema": {"type": "string"}, "description": "Filter by category (case-insensitive)", "example": "Programming"},
+          {"name": "difficulty", "in": "query", "schema": {"$ref": "#/components/schemas/Difficulty"}, "description": "Filter by difficulty level"},
+          {"name": "tags", "in": "query", "schema": {"type": "string"}, "description": "Comma-separated list of tags", "example": "javascript,react"},
+          {"name": "topic", "in": "query", "schema": {"type": "string"}, "description": "Free-text search in title, description, and tags", "example": "react hooks"},
+          {"name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 50, "default": 10}, "description": "Number of results to return (1-50)"},
+          {"name": "offset", "in": "query", "schema": {"type": "integer", "minimum": 0, "default": 0}, "description": "Number of results to skip for pagination"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Quizzes retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["success", "data", "meta"],
+                  "properties": {
+                    "success": {"type": "boolean", "enum": [true]},
+                    "data": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/QuizListItem"}
+                    },
+                    "meta": {
+                      "type": "object",
+                      "required": ["total", "limit", "offset"],
+                      "properties": {
+                        "total": {"type": "integer"},
+                        "limit": {"type": "integer"},
+                        "offset": {"type": "integer"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
+          }
+        }
+      }
+    },
+    "/api/v1/questions": {
+      "get": {
+        "tags": ["Questions"],
+        "summary": "Get questions",
+        "description": "Two modes: (1) Pass quiz_id to get ordered questions for a specific quiz. (2) Omit quiz_id to browse questions across all published quizzes with pagination, filtering, and optional randomization.",
+        "operationId": "getQuestions",
+        "parameters": [
+          {"name": "quiz_id", "in": "query", "schema": {"type": "string"}, "description": "If provided, returns questions for this quiz. If omitted, enters browse mode."},
+          {"name": "include_answers", "in": "query", "schema": {"type": "string", "enum": ["true", "false"]}, "description": "Set to true to include answers (quiz_id mode only). In browse mode, answers are always included."},
+          {"name": "category", "in": "query", "schema": {"type": "string"}, "description": "Filter by quiz category. Comma-separated for multiple (browse mode only)."},
+          {"name": "difficulty", "in": "query", "schema": {"type": "string"}, "description": "Filter by difficulty. Comma-separated for multiple (browse mode only)."},
+          {"name": "type", "in": "query", "schema": {"type": "string"}, "description": "Filter by question type. Comma-separated (browse mode only)."},
+          {"name": "tags", "in": "query", "schema": {"type": "string"}, "description": "Comma-separated tags to match (browse mode only)."},
+          {"name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 50, "default": 10}, "description": "Max questions per page in browse mode (1-50)"},
+          {"name": "offset", "in": "query", "schema": {"type": "integer", "minimum": 0, "default": 0}, "description": "Number of questions to skip (browse mode only)"},
+          {"name": "random", "in": "query", "schema": {"type": "string", "enum": ["true", "false"]}, "description": "Set to true to shuffle results randomly (browse mode only)"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Questions retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["success", "data", "meta"],
+                  "properties": {
+                    "success": {"type": "boolean", "enum": [true]},
+                    "data": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/QuizQuestion"}
+                    },
+                    "meta": {"$ref": "#/components/schemas/PaginationMeta"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Pass your API key as a Bearer token: Authorization: Bearer qza_live_..."
+      }
+    },
+    "schemas": {
+      "Difficulty": {
+        "type": "string",
+        "enum": ["EASY", "MEDIUM", "HARD", "EXPERT"],
+        "description": "Difficulty level of a quiz or question"
+      },
+      "QuestionType": {
+        "type": "string",
+        "enum": ["MULTIPLE_CHOICE", "TRUE_FALSE", "OPEN_ENDED"],
+        "description": "The type of question"
+      },
+      "Answer": {
+        "type": "object",
+        "required": ["id", "text", "isCorrect"],
+        "properties": {
+          "id": {"type": "string", "example": "ans_abc123"},
+          "text": {"type": "string", "example": "42"},
+          "isCorrect": {"type": "boolean", "example": true}
+        }
+      },
+      "QuizListItem": {
+        "type": "object",
+        "required": ["id", "title", "description", "category", "difficulty", "tags", "questionCount", "plays"],
+        "properties": {
+          "id": {"type": "string", "example": "cm3abc123def456"},
+          "title": {"type": "string", "example": "JavaScript Fundamentals"},
+          "description": {"type": "string", "example": "Test your JS knowledge"},
+          "category": {"type": "string", "example": "Programming"},
+          "difficulty": {"$ref": "#/components/schemas/Difficulty"},
+          "tags": {"type": "array", "items": {"type": "string"}, "example": ["javascript", "web"]},
+          "questionCount": {"type": "integer", "example": 10},
+          "plays": {"type": "integer", "example": 1250}
+        }
+      },
+      "QuizQuestion": {
+        "type": "object",
+        "required": ["id", "quizId", "text", "type", "difficulty"],
+        "properties": {
+          "id": {"type": "string", "example": "cm3xyz789ghi012"},
+          "quizId": {"type": "string", "example": "cm3abc123def456"},
+          "text": {"type": "string", "example": "What is the typeof null in JavaScript?"},
+          "type": {"$ref": "#/components/schemas/QuestionType"},
+          "difficulty": {"$ref": "#/components/schemas/Difficulty"},
+          "explanation": {"type": "string", "nullable": true, "example": "typeof null returns 'object' due to a legacy bug in JavaScript."},
+          "category": {"type": "string", "nullable": true, "example": "Programming"},
+          "tags": {"type": "array", "items": {"type": "string"}, "example": ["javascript", "fundamentals"]},
+          "quizTitle": {"type": "string", "example": "JavaScript Essentials"},
+          "answers": {"type": "array", "items": {"$ref": "#/components/schemas/Answer"}}
+        }
+      },
+      "PaginationMeta": {
+        "type": "object",
+        "required": ["total", "pageTotal", "page", "lastPage", "limit", "offset"],
+        "properties": {
+          "total": {"type": "integer", "description": "Total matching results across all pages", "example": 23},
+          "pageTotal": {"type": "integer", "description": "Number of results in this page", "example": 10},
+          "page": {"type": "integer", "description": "Current page number (1-based)", "example": 1},
+          "lastPage": {"type": "integer", "description": "Total number of pages", "example": 3},
+          "limit": {"type": "integer", "description": "Results per page", "example": 10},
+          "offset": {"type": "integer", "description": "Number of results skipped", "example": 0},
+          "links": {"$ref": "#/components/schemas/PaginationLinks"}
+        }
+      },
+      "PaginationLinks": {
+        "type": "object",
+        "properties": {
+          "first": {"type": "string", "example": "/api/v1/questions?offset=0&limit=10"},
+          "last": {"type": "string", "example": "/api/v1/questions?offset=20&limit=10"},
+          "next": {"type": "string", "nullable": true, "example": "/api/v1/questions?offset=10&limit=10"},
+          "prev": {"type": "string", "nullable": true}
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["success", "error"],
+        "properties": {
+          "success": {"type": "boolean", "enum": [false]},
+          "error": {"type": "string", "example": "Something went wrong."}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,523 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Path of Exile API",
+    "description": "The official Path of Exile API provides access to game information including league data, ladder rankings, PvP matches, public stash tabs, and account profiles. Authentication uses OAuth 2.0 for account-specific endpoints.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Grinding Gear Games",
+      "url": "https://www.pathofexile.com"
+    },
+    "x-jentic-source-url": "https://www.pathofexile.com/developer/docs"
+  },
+  "servers": [
+    {
+      "url": "https://api.pathofexile.com",
+      "description": "Production API"
+    }
+  ],
+  "security": [
+    {
+      "oAuth2": []
+    }
+  ],
+  "tags": [
+    {"name": "Leagues", "description": "League information"},
+    {"name": "Ladders", "description": "League ladder rankings"},
+    {"name": "PvP", "description": "PvP match and season data"},
+    {"name": "Stash Tabs", "description": "Public stash tab data"},
+    {"name": "Accounts", "description": "Account and character information"},
+    {"name": "Characters", "description": "Character details and items"}
+  ],
+  "paths": {
+    "/league": {
+      "get": {
+        "tags": ["Leagues"],
+        "summary": "List leagues",
+        "description": "Retrieve a list of current and past leagues.",
+        "operationId": "listLeagues",
+        "security": [],
+        "parameters": [
+          {"name": "type", "in": "query", "schema": {"type": "string", "enum": ["main", "event", "season"]}, "description": "Filter by league type"},
+          {"name": "realm", "in": "query", "schema": {"type": "string", "enum": ["pc", "xbox", "sony"]}, "description": "Game realm"},
+          {"name": "season", "in": "query", "schema": {"type": "string"}, "description": "Filter by season ID"},
+          {"name": "limit", "in": "query", "schema": {"type": "integer", "default": 50}, "description": "Number of results"},
+          {"name": "offset", "in": "query", "schema": {"type": "integer", "default": 0}, "description": "Result offset"}
+        ],
+        "responses": {
+          "200": {
+            "description": "List of leagues",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {"$ref": "#/components/schemas/League"}
+                }
+              }
+            }
+          },
+          "400": {"$ref": "#/components/responses/BadRequest"},
+          "429": {"$ref": "#/components/responses/RateLimited"}
+        }
+      }
+    },
+    "/league/{id}": {
+      "get": {
+        "tags": ["Leagues"],
+        "summary": "Get a league",
+        "description": "Retrieve details for a specific league by ID.",
+        "operationId": "getLeague",
+        "security": [],
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "schema": {"type": "string"}, "description": "League ID"},
+          {"name": "realm", "in": "query", "schema": {"type": "string", "enum": ["pc", "xbox", "sony"]}}
+        ],
+        "responses": {
+          "200": {
+            "description": "League details",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/League"}
+              }
+            }
+          },
+          "404": {"$ref": "#/components/responses/NotFound"},
+          "429": {"$ref": "#/components/responses/RateLimited"}
+        }
+      }
+    },
+    "/league/{id}/ladder": {
+      "get": {
+        "tags": ["Ladders"],
+        "summary": "Get league ladder",
+        "description": "Retrieve the ladder (rankings) for a specific league.",
+        "operationId": "getLeagueLadder",
+        "security": [],
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "schema": {"type": "string"}, "description": "League ID"},
+          {"name": "realm", "in": "query", "schema": {"type": "string", "enum": ["pc", "xbox", "sony"]}},
+          {"name": "limit", "in": "query", "schema": {"type": "integer", "default": 20, "maximum": 200}},
+          {"name": "offset", "in": "query", "schema": {"type": "integer", "default": 0}},
+          {"name": "type", "in": "query", "schema": {"type": "string", "enum": ["league", "labyrinth"]}, "description": "Ladder type"},
+          {"name": "sort", "in": "query", "schema": {"type": "string"}, "description": "Sort order"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Ladder rankings",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/Ladder"}
+              }
+            }
+          },
+          "404": {"$ref": "#/components/responses/NotFound"},
+          "429": {"$ref": "#/components/responses/RateLimited"}
+        }
+      }
+    },
+    "/pvp-match": {
+      "get": {
+        "tags": ["PvP"],
+        "summary": "List PvP matches",
+        "description": "Retrieve a list of PvP matches for a given season.",
+        "operationId": "listPvpMatches",
+        "security": [],
+        "parameters": [
+          {"name": "type", "in": "query", "schema": {"type": "string", "enum": ["season", "tournament"]}, "description": "Match type"},
+          {"name": "season", "in": "query", "schema": {"type": "string"}, "description": "PvP season ID"},
+          {"name": "realm", "in": "query", "schema": {"type": "string", "enum": ["pc", "xbox", "sony"]}}
+        ],
+        "responses": {
+          "200": {
+            "description": "List of PvP matches",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {"$ref": "#/components/schemas/PvpMatch"}
+                }
+              }
+            }
+          },
+          "429": {"$ref": "#/components/responses/RateLimited"}
+        }
+      }
+    },
+    "/pvp-match/{matchId}": {
+      "get": {
+        "tags": ["PvP"],
+        "summary": "Get a PvP match",
+        "description": "Retrieve details for a specific PvP match.",
+        "operationId": "getPvpMatch",
+        "security": [],
+        "parameters": [
+          {"name": "matchId", "in": "path", "required": true, "schema": {"type": "string"}, "description": "PvP match ID"},
+          {"name": "realm", "in": "query", "schema": {"type": "string", "enum": ["pc", "xbox", "sony"]}}
+        ],
+        "responses": {
+          "200": {
+            "description": "PvP match details",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/PvpMatch"}
+              }
+            }
+          },
+          "404": {"$ref": "#/components/responses/NotFound"},
+          "429": {"$ref": "#/components/responses/RateLimited"}
+        }
+      }
+    },
+    "/public-stash-tabs": {
+      "get": {
+        "tags": ["Stash Tabs"],
+        "summary": "Get public stash tabs",
+        "description": "Retrieve a chunk of public stash tab data. Use the id from the response to page through results.",
+        "operationId": "getPublicStashTabs",
+        "security": [],
+        "parameters": [
+          {"name": "id", "in": "query", "schema": {"type": "string"}, "description": "Pagination cursor from previous response"},
+          {"name": "realm", "in": "query", "schema": {"type": "string", "enum": ["pc", "xbox", "sony"]}}
+        ],
+        "responses": {
+          "200": {
+            "description": "Public stash tab data",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/PublicStashTabsResponse"}
+              }
+            }
+          },
+          "429": {"$ref": "#/components/responses/RateLimited"}
+        }
+      }
+    },
+    "/account/profile": {
+      "get": {
+        "tags": ["Accounts"],
+        "summary": "Get account profile",
+        "description": "Retrieve the profile of the authenticated account.",
+        "operationId": "getAccountProfile",
+        "responses": {
+          "200": {
+            "description": "Account profile",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/Account"}
+              }
+            }
+          },
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "429": {"$ref": "#/components/responses/RateLimited"}
+        }
+      }
+    },
+    "/account/stashes/{league}": {
+      "get": {
+        "tags": ["Accounts"],
+        "summary": "Get account stash tabs",
+        "description": "Retrieve stash tabs for the authenticated account in a specific league.",
+        "operationId": "getAccountStashes",
+        "parameters": [
+          {"name": "league", "in": "path", "required": true, "schema": {"type": "string"}, "description": "League ID"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Stash tab data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "stashes": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/StashTab"}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "429": {"$ref": "#/components/responses/RateLimited"}
+        }
+      }
+    },
+    "/character": {
+      "get": {
+        "tags": ["Characters"],
+        "summary": "List characters",
+        "description": "Retrieve a list of characters for the authenticated account.",
+        "operationId": "listCharacters",
+        "responses": {
+          "200": {
+            "description": "List of characters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {"$ref": "#/components/schemas/Character"}
+                }
+              }
+            }
+          },
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "429": {"$ref": "#/components/responses/RateLimited"}
+        }
+      }
+    },
+    "/character/{name}": {
+      "get": {
+        "tags": ["Characters"],
+        "summary": "Get a character",
+        "description": "Retrieve detailed information for a specific character by name.",
+        "operationId": "getCharacter",
+        "parameters": [
+          {"name": "name", "in": "path", "required": true, "schema": {"type": "string"}, "description": "Character name"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Character details",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/CharacterDetail"}
+              }
+            }
+          },
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "404": {"$ref": "#/components/responses/NotFound"},
+          "429": {"$ref": "#/components/responses/RateLimited"}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "oAuth2": {
+        "type": "oauth2",
+        "description": "OAuth 2.0 authentication for account-specific endpoints.",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://www.pathofexile.com/oauth/authorize",
+            "tokenUrl": "https://www.pathofexile.com/oauth/token",
+            "scopes": {
+              "account:profile": "View account profile",
+              "account:stashes": "View account stash tabs",
+              "account:characters": "View account characters",
+              "account:item_filter": "View and edit item filters",
+              "account:league_accounts": "View league accounts"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "League": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "description": "League identifier"},
+          "realm": {"type": "string"},
+          "description": {"type": "string"},
+          "url": {"type": "string", "format": "uri"},
+          "startAt": {"type": "string", "format": "date-time"},
+          "endAt": {"type": "string", "format": "date-time", "nullable": true},
+          "delveEvent": {"type": "boolean"},
+          "rules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {"type": "string"},
+                "name": {"type": "string"},
+                "description": {"type": "string"}
+              }
+            }
+          }
+        }
+      },
+      "Ladder": {
+        "type": "object",
+        "properties": {
+          "total": {"type": "integer", "description": "Total number of entries"},
+          "entries": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/LadderEntry"}
+          }
+        }
+      },
+      "LadderEntry": {
+        "type": "object",
+        "properties": {
+          "rank": {"type": "integer"},
+          "dead": {"type": "boolean"},
+          "online": {"type": "boolean"},
+          "character": {
+            "type": "object",
+            "properties": {
+              "id": {"type": "string"},
+              "name": {"type": "string"},
+              "level": {"type": "integer"},
+              "class": {"type": "string"},
+              "experience": {"type": "integer", "format": "int64"}
+            }
+          },
+          "account": {
+            "type": "object",
+            "properties": {
+              "name": {"type": "string"},
+              "realm": {"type": "string"}
+            }
+          }
+        }
+      },
+      "PvpMatch": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "realm": {"type": "string"},
+          "startAt": {"type": "string", "format": "date-time"},
+          "endAt": {"type": "string", "format": "date-time"},
+          "url": {"type": "string", "format": "uri"},
+          "description": {"type": "string"},
+          "glickoRatings": {"type": "boolean"},
+          "pvp": {"type": "boolean"},
+          "style": {"type": "string"},
+          "registerAt": {"type": "string", "format": "date-time"}
+        }
+      },
+      "PublicStashTabsResponse": {
+        "type": "object",
+        "properties": {
+          "next_change_id": {"type": "string", "description": "Cursor for next page"},
+          "stashes": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/StashTab"}
+          }
+        }
+      },
+      "StashTab": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "public": {"type": "boolean"},
+          "accountName": {"type": "string"},
+          "stash": {"type": "string", "description": "Stash tab name"},
+          "stashType": {"type": "string"},
+          "items": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/Item"}
+          }
+        }
+      },
+      "Item": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "typeLine": {"type": "string"},
+          "baseType": {"type": "string"},
+          "identified": {"type": "boolean"},
+          "ilvl": {"type": "integer", "description": "Item level"},
+          "note": {"type": "string", "description": "Price note"},
+          "icon": {"type": "string", "format": "uri"},
+          "league": {"type": "string"},
+          "w": {"type": "integer", "description": "Width in inventory"},
+          "h": {"type": "integer", "description": "Height in inventory"},
+          "frameType": {"type": "integer"},
+          "stackSize": {"type": "integer"},
+          "maxStackSize": {"type": "integer"},
+          "explicitMods": {"type": "array", "items": {"type": "string"}},
+          "implicitMods": {"type": "array", "items": {"type": "string"}},
+          "craftedMods": {"type": "array", "items": {"type": "string"}},
+          "sockets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "group": {"type": "integer"},
+                "attr": {"type": "string"}
+              }
+            }
+          }
+        }
+      },
+      "Account": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "realm": {"type": "string"},
+          "uuid": {"type": "string"},
+          "guild": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "name": {"type": "string"}
+            }
+          }
+        }
+      },
+      "Character": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "league": {"type": "string"},
+          "classId": {"type": "integer"},
+          "ascendancyClass": {"type": "integer"},
+          "class": {"type": "string"},
+          "level": {"type": "integer"},
+          "experience": {"type": "integer", "format": "int64"}
+        }
+      },
+      "CharacterDetail": {
+        "allOf": [
+          {"$ref": "#/components/schemas/Character"},
+          {
+            "type": "object",
+            "properties": {
+              "equipment": {"type": "array", "items": {"$ref": "#/components/schemas/Item"}},
+              "inventory": {"type": "array", "items": {"$ref": "#/components/schemas/Item"}},
+              "jewels": {"type": "array", "items": {"$ref": "#/components/schemas/Item"}},
+              "passives": {
+                "type": "object",
+                "properties": {
+                  "hashes": {"type": "array", "items": {"type": "integer"}},
+                  "hashes_ex": {"type": "array", "items": {"type": "integer"}}
+                }
+              }
+            }
+          }
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {"type": "integer"},
+              "message": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid request parameters",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+      },
+      "Unauthorized": {
+        "description": "Authentication required or token invalid",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+      },
+      "RateLimited": {
+        "description": "Rate limit exceeded. Check X-Rate-Limit headers.",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+      }
+    }
+  }
+}

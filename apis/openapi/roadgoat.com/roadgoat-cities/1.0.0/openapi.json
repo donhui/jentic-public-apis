@@ -1,0 +1,504 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "RoadGoat Cities API",
+    "description": "The RoadGoat Cities API provides access to city and destination content including descriptions, photos, known-for tags, budget information, safety scores, and related destinations. It follows the JSON:API specification and provides rich data about cities worldwide for travel applications.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "RoadGoat",
+      "url": "https://www.roadgoat.com"
+    },
+    "x-jentic-source-url": "https://www.roadgoat.com/business/cities-api"
+  },
+  "servers": [
+    {
+      "url": "https://api.roadgoat.com/api/v2",
+      "description": "RoadGoat API v2 production server"
+    }
+  ],
+  "security": [
+    {
+      "basicAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Destinations",
+      "description": "Search and retrieve city/destination information"
+    }
+  ],
+  "paths": {
+    "/destinations": {
+      "get": {
+        "operationId": "searchDestinations",
+        "summary": "Search Destinations",
+        "description": "Search for destinations (cities) by keyword. Returns a list of matching destinations with basic information.",
+        "tags": ["Destinations"],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search query string (city name, country, etc.).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Paris"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful search response in JSON:API format.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DestinationsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing API credentials.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No destinations found.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/destinations/{id}": {
+      "get": {
+        "operationId": "getDestination",
+        "summary": "Get Destination by ID",
+        "description": "Retrieve detailed information about a specific destination by its unique ID. Includes descriptions, photos, known-for tags, budget info, safety scores, and related destinations.",
+        "tags": ["Destinations"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique destination identifier.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful destination detail response.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DestinationDetailResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Destination not found.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/destinations/auto_complete": {
+      "get": {
+        "operationId": "autoCompleteDestinations",
+        "summary": "Auto-Complete Destinations",
+        "description": "Get auto-complete suggestions for destination names. Useful for type-ahead search interfaces.",
+        "tags": ["Destinations"],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Partial search query string for auto-completion.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Par"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Auto-complete suggestions.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DestinationsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "HTTP Basic Authentication using your RoadGoat API key as the username and secret as the password."
+      }
+    },
+    "schemas": {
+      "DestinationsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Destination"
+            }
+          },
+          "included": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncludedResource"
+            }
+          }
+        }
+      },
+      "DestinationDetailResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Destination"
+          },
+          "included": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncludedResource"
+            }
+          }
+        }
+      },
+      "Destination": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique destination identifier."
+          },
+          "type": {
+            "type": "string",
+            "description": "Resource type (always 'destinations').",
+            "enum": ["destinations"]
+          },
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Destination name."
+              },
+              "slug": {
+                "type": "string",
+                "description": "URL-friendly slug."
+              },
+              "short_description": {
+                "type": "string",
+                "description": "Short description of the destination."
+              },
+              "description": {
+                "type": "string",
+                "description": "Full description of the destination."
+              },
+              "long_description": {
+                "type": "string",
+                "description": "Extended description."
+              },
+              "latitude": {
+                "type": "number",
+                "format": "double"
+              },
+              "longitude": {
+                "type": "number",
+                "format": "double"
+              },
+              "population": {
+                "type": "integer",
+                "description": "City population."
+              },
+              "budget": {
+                "type": "object",
+                "description": "Budget information.",
+                "properties": {
+                  "value": {
+                    "type": "number"
+                  },
+                  "text": {
+                    "type": "string"
+                  },
+                  "currency": {
+                    "type": "string"
+                  }
+                }
+              },
+              "safety": {
+                "type": "object",
+                "description": "Safety score.",
+                "properties": {
+                  "value": {
+                    "type": "number"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                }
+              },
+              "known_for": {
+                "type": "array",
+                "description": "Tags describing what the city is known for.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "score": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "walk_score": {
+                "type": "integer",
+                "description": "Walk score for the destination."
+              },
+              "bike_score": {
+                "type": "integer",
+                "description": "Bike score for the destination."
+              },
+              "average_rating": {
+                "type": "number",
+                "format": "float",
+                "description": "Average user rating."
+              },
+              "reviews_count": {
+                "type": "integer",
+                "description": "Number of user reviews."
+              },
+              "wikipedia_url": {
+                "type": "string",
+                "description": "URL to the Wikipedia page."
+              },
+              "website": {
+                "type": "string",
+                "description": "Official destination website URL."
+              }
+            }
+          },
+          "relationships": {
+            "type": "object",
+            "properties": {
+              "photos": {
+                "type": "object",
+                "properties": {
+                  "data": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "nearby_destinations": {
+                "type": "object",
+                "properties": {
+                  "data": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "IncludedResource": {
+        "type": "object",
+        "description": "Sideloaded resource (photo, destination, etc.) per JSON:API spec.",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "description": "Resource type (e.g., 'photos', 'destinations')."
+          },
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "image": {
+                "type": "object",
+                "description": "Image URLs at various sizes.",
+                "properties": {
+                  "full": {
+                    "type": "string"
+                  },
+                  "large": {
+                    "type": "string"
+                  },
+                  "medium": {
+                    "type": "string"
+                  },
+                  "small": {
+                    "type": "string"
+                  },
+                  "thumb": {
+                    "type": "string"
+                  }
+                }
+              },
+              "attribution": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "type": "string"
+                  },
+                  "source_url": {
+                    "type": "string"
+                  },
+                  "photographer": {
+                    "type": "string"
+                  },
+                  "license": {
+                    "type": "string"
+                  },
+                  "license_url": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "description": "HTTP status code."
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Error title."
+                },
+                "detail": {
+                  "type": "string",
+                  "description": "Detailed error message."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

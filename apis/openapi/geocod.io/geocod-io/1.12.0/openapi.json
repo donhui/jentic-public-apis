@@ -1,0 +1,1189 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Geocodio API",
+    "description": "Geocodio provides forward and reverse geocoding for US and Canadian addresses, plus data appending for congressional districts, census data, timezones, and more. Supports single lookups, batch processing, spreadsheet uploads, and distance calculations.",
+    "version": "1.12.0",
+    "contact": {
+      "name": "Geocodio Support",
+      "url": "https://www.geocod.io/contact/"
+    },
+    "x-jentic-source-url": "https://www.geocod.io/"
+  },
+  "servers": [
+    {
+      "url": "https://api.geocod.io/v1.12",
+      "description": "Geocodio Production API v1.12"
+    }
+  ],
+  "security": [
+    {
+      "apiKeyQuery": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Geocoding",
+      "description": "Forward geocoding (address to coordinates)"
+    },
+    {
+      "name": "Reverse Geocoding",
+      "description": "Reverse geocoding (coordinates to address)"
+    },
+    {
+      "name": "Lists",
+      "description": "Spreadsheet/CSV batch processing"
+    },
+    {
+      "name": "Distance",
+      "description": "Distance and driving time calculations"
+    }
+  ],
+  "paths": {
+    "/geocode": {
+      "get": {
+        "operationId": "geocodeSingle",
+        "summary": "Single Address Geocoding",
+        "description": "Geocode a single address or address components to latitude/longitude coordinates.",
+        "tags": ["Geocoding"],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Full address string to geocode. Use this OR individual address component parameters.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1109 N Highland St, Arlington, VA"
+          },
+          {
+            "name": "street",
+            "in": "query",
+            "description": "Street address component.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "description": "City component.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "description": "State component.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "postal_code",
+            "in": "query",
+            "description": "ZIP/postal code component.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "description": "Country (USA, CA, or MX).",
+            "schema": {
+              "type": "string",
+              "enum": ["USA", "CA", "MX"]
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "Comma-separated list of data fields to append (e.g. cd,stateleg,timezone,census).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results to return.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Response format. Use 'simple' for simplified output.",
+            "schema": {
+              "type": "string",
+              "enum": ["simple"]
+            }
+          },
+          {
+            "name": "api_key",
+            "in": "query",
+            "required": true,
+            "description": "Your Geocodio API key.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful geocoding",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeocodeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - invalid data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "geocodeBatch",
+        "summary": "Batch Address Geocoding",
+        "description": "Geocode up to 10,000 addresses in a single request.",
+        "tags": ["Geocoding"],
+        "parameters": [
+          {
+            "name": "api_key",
+            "in": "query",
+            "required": true,
+            "description": "Your Geocodio API key.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "Comma-separated list of data fields to append.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results per address.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Array of address strings."
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "Object mapping custom IDs to address strings."
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful batch geocoding",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchGeocodeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reverse": {
+      "get": {
+        "operationId": "reverseGeocodeSingle",
+        "summary": "Single Reverse Geocoding",
+        "description": "Look up one or more addresses by coordinate pair (latitude, longitude).",
+        "tags": ["Reverse Geocoding"],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Coordinate pair as 'latitude,longitude'.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "38.9002898,-76.9990361"
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "Comma-separated list of data fields to append.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results to return.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Response format. Use 'simple' for simplified output.",
+            "schema": {
+              "type": "string",
+              "enum": ["simple"]
+            }
+          },
+          {
+            "name": "api_key",
+            "in": "query",
+            "required": true,
+            "description": "Your Geocodio API key.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful reverse geocoding",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeocodeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "reverseGeocodeBatch",
+        "summary": "Batch Reverse Geocoding",
+        "description": "Reverse geocode up to 10,000 coordinate pairs in a single request.",
+        "tags": ["Reverse Geocoding"],
+        "parameters": [
+          {
+            "name": "api_key",
+            "in": "query",
+            "required": true,
+            "description": "Your Geocodio API key.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "Comma-separated list of data fields to append.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results per coordinate.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Array of coordinate strings ('lat,lng')."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful batch reverse geocoding",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchGeocodeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lists": {
+      "get": {
+        "operationId": "getAllLists",
+        "summary": "Get All Lists",
+        "description": "Retrieve all uploaded spreadsheet lists with pagination.",
+        "tags": ["Lists"],
+        "parameters": [
+          {
+            "name": "api_key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of uploaded lists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createList",
+        "summary": "Create List",
+        "description": "Upload a spreadsheet (CSV) for batch geocoding or reverse geocoding.",
+        "tags": ["Lists"],
+        "parameters": [
+          {
+            "name": "api_key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "Comma-separated list of data fields to append.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file", "direction", "format"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "CSV file to upload."
+                  },
+                  "filename": {
+                    "type": "string",
+                    "description": "Filename (required if file is inline string)."
+                  },
+                  "direction": {
+                    "type": "string",
+                    "enum": ["forward", "reverse"],
+                    "description": "Geocoding direction."
+                  },
+                  "format": {
+                    "type": "string",
+                    "description": "Column template using {{A}}, {{B}} notation."
+                  },
+                  "callback": {
+                    "type": "string",
+                    "description": "Webhook URL to notify when processing completes."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "List created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListCreateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid file or parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lists/{listId}": {
+      "get": {
+        "operationId": "getListStatus",
+        "summary": "Get List Status",
+        "description": "Check the processing status of an uploaded list.",
+        "tags": ["Lists"],
+        "parameters": [
+          {
+            "name": "listId",
+            "in": "path",
+            "required": true,
+            "description": "List identifier.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "api_key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List status details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListStatusResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "List not found"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteList",
+        "summary": "Delete List",
+        "description": "Delete an uploaded list.",
+        "tags": ["Lists"],
+        "parameters": [
+          {
+            "name": "listId",
+            "in": "path",
+            "required": true,
+            "description": "List identifier.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "api_key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lists/{listId}/download": {
+      "get": {
+        "operationId": "downloadList",
+        "summary": "Download List",
+        "description": "Download the geocoded results as a CSV file.",
+        "tags": ["Lists"],
+        "parameters": [
+          {
+            "name": "listId",
+            "in": "path",
+            "required": true,
+            "description": "List identifier.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "api_key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV file download",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/distance": {
+      "get": {
+        "operationId": "calculateDistance",
+        "summary": "Calculate Distance",
+        "description": "Calculate distance and driving time between origins and destinations.",
+        "tags": ["Distance"],
+        "parameters": [
+          {
+            "name": "origins[]",
+            "in": "query",
+            "required": true,
+            "description": "Origin addresses or coordinate pairs.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "destinations[]",
+            "in": "query",
+            "required": true,
+            "description": "Destination addresses or coordinate pairs.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "distance_units",
+            "in": "query",
+            "description": "Unit for distance measurement.",
+            "schema": {
+              "type": "string",
+              "enum": ["miles", "km"],
+              "default": "miles"
+            }
+          },
+          {
+            "name": "distance_mode",
+            "in": "query",
+            "description": "Mode of distance calculation.",
+            "schema": {
+              "type": "string",
+              "enum": ["driving", "straightline"],
+              "default": "driving"
+            }
+          },
+          {
+            "name": "api_key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Distance calculation results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistanceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "calculateDistanceBatch",
+        "summary": "Distance Matrix",
+        "description": "Calculate a distance matrix between multiple origins and destinations.",
+        "tags": ["Distance"],
+        "parameters": [
+          {
+            "name": "api_key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["origins", "destinations"],
+                "properties": {
+                  "origins": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Array of origin addresses or coordinates."
+                  },
+                  "destinations": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Array of destination addresses or coordinates."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Distance matrix results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistanceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyQuery": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "api_key",
+        "description": "Geocodio API key passed as a query parameter."
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Geocodio API key passed as a Bearer token in the Authorization header."
+      }
+    },
+    "schemas": {
+      "GeocodeResponse": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "object",
+            "properties": {
+              "address_components": {
+                "$ref": "#/components/schemas/AddressComponents"
+              },
+              "formatted_address": {
+                "type": "string"
+              }
+            }
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GeocodeResult"
+            }
+          }
+        }
+      },
+      "BatchGeocodeResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string",
+                  "description": "The original query address or coordinate."
+                },
+                "response": {
+                  "$ref": "#/components/schemas/GeocodeResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "GeocodeResult": {
+        "type": "object",
+        "properties": {
+          "address_components": {
+            "$ref": "#/components/schemas/AddressComponents"
+          },
+          "formatted_address": {
+            "type": "string",
+            "description": "Full formatted address string."
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "lat": {
+                "type": "number",
+                "format": "double",
+                "description": "Latitude."
+              },
+              "lng": {
+                "type": "number",
+                "format": "double",
+                "description": "Longitude."
+              }
+            }
+          },
+          "accuracy": {
+            "type": "number",
+            "description": "Accuracy score from 0 to 1."
+          },
+          "accuracy_type": {
+            "type": "string",
+            "description": "Type of accuracy.",
+            "enum": ["rooftop", "range_interpolation", "nearest_rooftop_match", "street_center", "place", "state", "county"]
+          },
+          "source": {
+            "type": "string",
+            "description": "Data source attribution."
+          },
+          "stable_address_key": {
+            "type": "string",
+            "description": "Permanent address identifier."
+          },
+          "fields": {
+            "type": "object",
+            "description": "Additional appended field data (varies based on fields parameter).",
+            "additionalProperties": true
+          }
+        }
+      },
+      "AddressComponents": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "string",
+            "description": "Street number."
+          },
+          "predirectional": {
+            "type": "string",
+            "description": "Street pre-directional (e.g. N, S, E, W)."
+          },
+          "street": {
+            "type": "string",
+            "description": "Street name."
+          },
+          "suffix": {
+            "type": "string",
+            "description": "Street suffix (e.g. St, Ave, Blvd)."
+          },
+          "postdirectional": {
+            "type": "string",
+            "description": "Street post-directional."
+          },
+          "formatted_street": {
+            "type": "string",
+            "description": "Full formatted street name."
+          },
+          "city": {
+            "type": "string",
+            "description": "City name."
+          },
+          "county": {
+            "type": "string",
+            "description": "County name."
+          },
+          "state": {
+            "type": "string",
+            "description": "State abbreviation."
+          },
+          "zip": {
+            "type": "string",
+            "description": "ZIP code."
+          },
+          "country": {
+            "type": "string",
+            "description": "Country code."
+          },
+          "secondaryunit": {
+            "type": "string",
+            "description": "Secondary unit type (e.g. Apt, Suite)."
+          },
+          "secondarynumber": {
+            "type": "string",
+            "description": "Secondary unit number."
+          }
+        }
+      },
+      "PaginatedListResponse": {
+        "type": "object",
+        "properties": {
+          "current_page": {
+            "type": "integer"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ListStatusResponse"
+            }
+          },
+          "first_page_url": {
+            "type": "string"
+          },
+          "last_page_url": {
+            "type": "string"
+          },
+          "next_page_url": {
+            "type": "string",
+            "nullable": true
+          },
+          "prev_page_url": {
+            "type": "string",
+            "nullable": true
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "ListCreateResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "List identifier."
+          },
+          "file": {
+            "type": "object",
+            "properties": {
+              "headers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "estimated_rows_count": {
+                "type": "integer"
+              },
+              "filename": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "ListStatusResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "List identifier."
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "file": {
+            "type": "object",
+            "properties": {
+              "headers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "estimated_rows_count": {
+                "type": "integer"
+              },
+              "filename": {
+                "type": "string"
+              }
+            }
+          },
+          "status": {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "description": "Processing state.",
+                "enum": ["pending", "processing", "completed", "failed"]
+              },
+              "progress": {
+                "type": "number",
+                "description": "Progress percentage (0-100)."
+              },
+              "message": {
+                "type": "string"
+              },
+              "time_left": {
+                "type": "string",
+                "nullable": true,
+                "description": "Estimated time remaining."
+              }
+            }
+          },
+          "download_url": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL to download results when completed."
+          },
+          "expires_at": {
+            "type": "string",
+            "nullable": true,
+            "description": "Expiration date for the results."
+          }
+        }
+      },
+      "DistanceResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "origin": {
+                  "type": "object",
+                  "properties": {
+                    "query": {
+                      "type": "string"
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/GeocodeResult"
+                      }
+                    }
+                  }
+                },
+                "destination": {
+                  "type": "object",
+                  "properties": {
+                    "query": {
+                      "type": "string"
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/GeocodeResult"
+                      }
+                    }
+                  }
+                },
+                "distance": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "number",
+                      "description": "Distance value."
+                    },
+                    "units": {
+                      "type": "string",
+                      "description": "Distance units (miles or km)."
+                    }
+                  }
+                },
+                "duration": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "number",
+                      "description": "Duration in seconds."
+                    },
+                    "text": {
+                      "type": "string",
+                      "description": "Human-readable duration."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message."
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,883 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ZipCodeAPI",
+    "description": "ZipCodeAPI provides US ZIP code distance calculations, radius searches, ZIP-to-location lookups, city-to-ZIP lookups, and Canadian postal code operations. The API key is embedded in the URL path for all requests.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "ZipCodeAPI",
+      "url": "https://www.zipcodeapi.com"
+    },
+    "x-jentic-source-url": "https://www.zipcodeapi.com"
+  },
+  "servers": [
+    {
+      "url": "https://www.zipcodeapi.com/rest/{api_key}",
+      "description": "ZipCodeAPI US endpoints",
+      "variables": {
+        "api_key": {
+          "default": "YOUR_API_KEY",
+          "description": "Your ZipCodeAPI API key"
+        }
+      }
+    }
+  ],
+  "tags": [
+    {
+      "name": "Distance",
+      "description": "Distance calculations between ZIP codes"
+    },
+    {
+      "name": "Radius",
+      "description": "Find ZIP codes within a radius"
+    },
+    {
+      "name": "Location",
+      "description": "ZIP code to location information"
+    },
+    {
+      "name": "City",
+      "description": "City/state to ZIP code lookups"
+    },
+    {
+      "name": "SQL",
+      "description": "SQL WHERE clause generation for radius queries"
+    }
+  ],
+  "paths": {
+    "/distance.{format}/{zip_code1}/{zip_code2}/{units}": {
+      "get": {
+        "tags": ["Distance"],
+        "summary": "Distance between two ZIP codes",
+        "description": "Calculate the distance between two US ZIP codes.",
+        "operationId": "getDistance",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "path",
+            "required": true,
+            "description": "Response format",
+            "schema": {
+              "type": "string",
+              "enum": ["json", "xml", "csv"]
+            }
+          },
+          {
+            "name": "zip_code1",
+            "in": "path",
+            "required": true,
+            "description": "First 5-digit US ZIP code",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]{5}$"
+            }
+          },
+          {
+            "name": "zip_code2",
+            "in": "path",
+            "required": true,
+            "description": "Second 5-digit US ZIP code",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]{5}$"
+            }
+          },
+          {
+            "name": "units",
+            "in": "path",
+            "required": true,
+            "description": "Distance units",
+            "schema": {
+              "type": "string",
+              "enum": ["km", "mile"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Distance result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistanceResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/multi-distance.{format}/{zip_code}/{other_zip_codes}/{units}": {
+      "get": {
+        "tags": ["Distance"],
+        "summary": "Distances from one ZIP code to multiple others",
+        "description": "Calculate distances from a base ZIP code to up to 100 other ZIP codes. Each ZIP code counts as a separate request.",
+        "operationId": "getMultiDistance",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["json", "xml", "csv"]
+            }
+          },
+          {
+            "name": "zip_code",
+            "in": "path",
+            "required": true,
+            "description": "Base 5-digit US ZIP code",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "other_zip_codes",
+            "in": "path",
+            "required": true,
+            "description": "Comma-separated list of ZIP codes (max 100)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "units",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["km", "mile"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Multiple distance results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MultiDistanceResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/radius.{format}/{zip_code}/{distance}/{units}": {
+      "get": {
+        "tags": ["Radius"],
+        "summary": "ZIP codes within a radius",
+        "description": "Find all ZIP codes within a given radius of a ZIP code. Capped at 500 miles unless minimal option is used.",
+        "operationId": "getZipCodesInRadius",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["json", "xml", "csv"]
+            }
+          },
+          {
+            "name": "zip_code",
+            "in": "path",
+            "required": true,
+            "description": "Center 5-digit US ZIP code",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "distance",
+            "in": "path",
+            "required": true,
+            "description": "Radius distance",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "units",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["km", "mile"]
+            }
+          },
+          {
+            "name": "minimal",
+            "in": "query",
+            "description": "Return only ZIP codes (no additional data)",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ZIP codes within radius",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RadiusResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/multi-radius.{format}/{distance}/{units}": {
+      "post": {
+        "tags": ["Radius"],
+        "summary": "ZIP codes within radius for multiple centers",
+        "description": "Find ZIP codes within a radius for multiple center ZIP codes (max 100).",
+        "operationId": "getMultiRadius",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["json", "xml", "csv"]
+            }
+          },
+          {
+            "name": "distance",
+            "in": "path",
+            "required": true,
+            "description": "Radius distance",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "units",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["km", "mile"]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "zip_codes": {
+                    "type": "string",
+                    "description": "One ZIP code per line (max 100)"
+                  },
+                  "addrs": {
+                    "type": "string",
+                    "description": "Addresses (alternative to zip_codes)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Multi-radius results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/RadiusResponse"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/match-close.{format}/{zip_codes}/{distance}/{units}": {
+      "get": {
+        "tags": ["Distance"],
+        "summary": "Find close ZIP code pairs",
+        "description": "Find pairs of ZIP codes from a list that are within a specified distance of each other.",
+        "operationId": "matchClose",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["json", "xml", "csv"]
+            }
+          },
+          {
+            "name": "zip_codes",
+            "in": "path",
+            "required": true,
+            "description": "Comma-separated list of ZIP codes (max 100)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "distance",
+            "in": "path",
+            "required": true,
+            "description": "Maximum distance threshold",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "units",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["km", "mile"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matched close pairs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchCloseResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/info.{format}/{zip_code}/{units}": {
+      "get": {
+        "tags": ["Location"],
+        "summary": "ZIP code to location info",
+        "description": "Get city, state, latitude, longitude, timezone, and alternative city names for a ZIP code.",
+        "operationId": "getZipCodeInfo",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["json", "xml", "csv"]
+            }
+          },
+          {
+            "name": "zip_code",
+            "in": "path",
+            "required": true,
+            "description": "5-digit US ZIP code",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "units",
+            "in": "path",
+            "required": true,
+            "description": "Coordinate units",
+            "schema": {
+              "type": "string",
+              "enum": ["degrees", "radians"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ZIP code location information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZipCodeInfo"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/multi-info.{format}/{zip_codes}/{units}": {
+      "get": {
+        "tags": ["Location"],
+        "summary": "Multiple ZIP codes to location info",
+        "description": "Get location information for up to 100 ZIP codes at once.",
+        "operationId": "getMultiZipCodeInfo",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["json", "xml", "csv"]
+            }
+          },
+          {
+            "name": "zip_codes",
+            "in": "path",
+            "required": true,
+            "description": "Comma-separated list of ZIP codes (max 100)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "units",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["degrees", "radians"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Multiple ZIP code location results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/ZipCodeInfo"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/city-zips.{format}/{city}/{state}": {
+      "get": {
+        "tags": ["City"],
+        "summary": "City/state to ZIP codes",
+        "description": "Get all ZIP codes for a given US city and state.",
+        "operationId": "getCityZipCodes",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["json", "xml", "csv"]
+            }
+          },
+          {
+            "name": "city",
+            "in": "path",
+            "required": true,
+            "description": "US city name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "path",
+            "required": true,
+            "description": "Two-letter US state code",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ZIP codes for the city",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CityZipsResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/state-zips.{format}/{state}": {
+      "get": {
+        "tags": ["City"],
+        "summary": "State to all ZIP codes",
+        "description": "Get all ZIP codes for a US state. Charged as multiple requests (every 10 ZIP codes = 1 request).",
+        "operationId": "getStateZipCodes",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["json", "xml", "csv"]
+            }
+          },
+          {
+            "name": "state",
+            "in": "path",
+            "required": true,
+            "description": "Two-letter US state code",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All ZIP codes for the state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CityZipsResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/radius-sql.{format}/{lat}/{long}/{lat_long_units}/{distance}/{units}/{lat_field_name}/{long_field_name}/{precision}": {
+      "get": {
+        "tags": ["SQL"],
+        "summary": "Generate SQL WHERE clause for radius search",
+        "description": "Generate a SQL WHERE clause for finding records within a radius of given coordinates.",
+        "operationId": "getRadiusSql",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["json", "xml", "csv"]
+            }
+          },
+          {
+            "name": "lat",
+            "in": "path",
+            "required": true,
+            "description": "Center latitude",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "long",
+            "in": "path",
+            "required": true,
+            "description": "Center longitude",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "lat_long_units",
+            "in": "path",
+            "required": true,
+            "description": "Coordinate units",
+            "schema": {
+              "type": "string",
+              "enum": ["degrees", "radians"]
+            }
+          },
+          {
+            "name": "distance",
+            "in": "path",
+            "required": true,
+            "description": "Radius distance",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "units",
+            "in": "path",
+            "required": true,
+            "description": "Distance units",
+            "schema": {
+              "type": "string",
+              "enum": ["km", "mile"]
+            }
+          },
+          {
+            "name": "lat_field_name",
+            "in": "path",
+            "required": true,
+            "description": "Name of the latitude field in your database",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "long_field_name",
+            "in": "path",
+            "required": true,
+            "description": "Name of the longitude field in your database",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "precision",
+            "in": "path",
+            "required": true,
+            "description": "Precision level (1-16, higher = more accurate but slower)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 16
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SQL WHERE clause",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RadiusSqlResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "path",
+        "name": "api_key",
+        "description": "API key embedded in the URL path. Obtain from zipcodeapi.com. Use JavaScript client keys (js-*) for browser requests."
+      }
+    },
+    "schemas": {
+      "DistanceResponse": {
+        "type": "object",
+        "properties": {
+          "distance": {
+            "type": "number",
+            "format": "double",
+            "description": "Distance between the two ZIP codes"
+          }
+        }
+      },
+      "MultiDistanceResponse": {
+        "type": "object",
+        "properties": {
+          "distances": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number",
+              "format": "double"
+            },
+            "description": "Map of ZIP code to distance"
+          }
+        }
+      },
+      "RadiusResponse": {
+        "type": "object",
+        "properties": {
+          "zip_codes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "zip_code": {
+                  "type": "string"
+                },
+                "distance": {
+                  "type": "number",
+                  "format": "double"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "MatchCloseResponse": {
+        "type": "object",
+        "properties": {
+          "zip_codes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "zip_code1": {
+                  "type": "string"
+                },
+                "zip_code2": {
+                  "type": "string"
+                },
+                "distance": {
+                  "type": "number",
+                  "format": "double"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ZipCodeInfo": {
+        "type": "object",
+        "properties": {
+          "zip_code": {
+            "type": "string",
+            "description": "5-digit ZIP code"
+          },
+          "lat": {
+            "type": "number",
+            "format": "double",
+            "description": "Latitude"
+          },
+          "lng": {
+            "type": "number",
+            "format": "double",
+            "description": "Longitude"
+          },
+          "city": {
+            "type": "string",
+            "description": "City name"
+          },
+          "state": {
+            "type": "string",
+            "description": "Two-letter state code"
+          },
+          "timezone": {
+            "type": "object",
+            "properties": {
+              "timezone_identifier": {
+                "type": "string"
+              },
+              "timezone_abbr": {
+                "type": "string"
+              },
+              "utc_offset_sec": {
+                "type": "integer"
+              },
+              "is_dst": {
+                "type": "string",
+                "enum": ["T", "F"]
+              }
+            }
+          },
+          "acceptable_city_names": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "city": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "CityZipsResponse": {
+        "type": "object",
+        "properties": {
+          "zip_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "RadiusSqlResponse": {
+        "type": "object",
+        "properties": {
+          "sql_fragment": {
+            "type": "string",
+            "description": "SQL WHERE clause for use in database queries"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error_code": {
+            "type": "integer"
+          },
+          "error_msg": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "responses": {
+      "ApiError": {
+        "description": "API error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+}

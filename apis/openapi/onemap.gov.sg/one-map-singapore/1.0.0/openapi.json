@@ -1,0 +1,1106 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "OneMap Singapore API",
+    "description": "OneMap is the authoritative national map of Singapore, providing a platform for users to search Singapore addresses, retrieve geographical coordinates, perform route calculations, and convert between coordinate systems (SVY21 and WGS84). The API offers search, reverse geocoding, routing, coordinate conversion, and themed data endpoints.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Singapore Land Authority",
+      "url": "https://www.onemap.gov.sg"
+    },
+    "x-jentic-source-url": "https://www.onemap.gov.sg/docs/"
+  },
+  "servers": [
+    {
+      "url": "https://www.onemap.gov.sg",
+      "description": "OneMap production server"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Token generation and management"
+    },
+    {
+      "name": "Search",
+      "description": "Search Singapore addresses and locations"
+    },
+    {
+      "name": "Reverse Geocode",
+      "description": "Reverse geocoding from coordinates to addresses"
+    },
+    {
+      "name": "Coordinate Conversion",
+      "description": "Convert between WGS84 (EPSG:4326), SVY21 (EPSG:3414), and EPSG:3857 coordinate systems"
+    },
+    {
+      "name": "Routing",
+      "description": "Route calculation for driving, walking, cycling, and public transport"
+    },
+    {
+      "name": "Themes",
+      "description": "Themed location data"
+    }
+  ],
+  "paths": {
+    "/api/auth/post/getToken": {
+      "post": {
+        "operationId": "getToken",
+        "summary": "Get Authentication Token",
+        "description": "Generate an authentication token using your registered email and password. Tokens are valid for 3 days.",
+        "tags": ["Authentication"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Registered OneMap account email."
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "Account password."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token generated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": {
+                      "type": "string",
+                      "description": "JWT access token."
+                    },
+                    "expiry_timestamp": {
+                      "type": "string",
+                      "description": "Token expiry timestamp."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/common/elastic/search": {
+      "get": {
+        "operationId": "search",
+        "summary": "Search Addresses",
+        "description": "Search for Singapore addresses, buildings, and locations. Returns results with both SVY21 (X, Y) and WGS84 (latitude, longitude) coordinates.",
+        "tags": ["Search"],
+        "parameters": [
+          {
+            "name": "searchVal",
+            "in": "query",
+            "required": true,
+            "description": "Search keyword (address, building name, postal code, or street name).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "revenue house"
+          },
+          {
+            "name": "returnGeom",
+            "in": "query",
+            "required": true,
+            "description": "Whether to return geometry (coordinates) in the response.",
+            "schema": {
+              "type": "string",
+              "enum": ["Y", "N"]
+            }
+          },
+          {
+            "name": "getAddrDetails",
+            "in": "query",
+            "required": true,
+            "description": "Whether to return detailed address information.",
+            "schema": {
+              "type": "string",
+              "enum": ["Y", "N"]
+            }
+          },
+          {
+            "name": "pageNum",
+            "in": "query",
+            "required": false,
+            "description": "Page number for pagination (starts at 1).",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful search response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication token missing or expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/revgeocodexy": {
+      "get": {
+        "operationId": "reverseGeocodeXY",
+        "summary": "Reverse Geocode (SVY21)",
+        "description": "Retrieve the address of a location by providing SVY21 X and Y coordinates.",
+        "tags": ["Reverse Geocode"],
+        "parameters": [
+          {
+            "name": "location",
+            "in": "query",
+            "required": true,
+            "description": "SVY21 coordinates in format 'Y,X' (e.g., '24291.97788882,33758.76149132').",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "buffer",
+            "in": "query",
+            "required": false,
+            "description": "Buffer radius in metres to search within.",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "addressType",
+            "in": "query",
+            "required": false,
+            "description": "Type of address to return.",
+            "schema": {
+              "type": "string",
+              "enum": ["All", "HDB"]
+            }
+          },
+          {
+            "name": "otherFeatures",
+            "in": "query",
+            "required": false,
+            "description": "Whether to return other nearby features.",
+            "schema": {
+              "type": "string",
+              "enum": ["Y", "N"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful reverse geocode response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReverseGeocodeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/revgeocode": {
+      "get": {
+        "operationId": "reverseGeocode",
+        "summary": "Reverse Geocode (WGS84)",
+        "description": "Retrieve the address of a location by providing WGS84 latitude and longitude coordinates.",
+        "tags": ["Reverse Geocode"],
+        "parameters": [
+          {
+            "name": "location",
+            "in": "query",
+            "required": true,
+            "description": "WGS84 coordinates in format 'latitude,longitude' (e.g., '1.3,103.8').",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "buffer",
+            "in": "query",
+            "required": false,
+            "description": "Buffer radius in metres.",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "addressType",
+            "in": "query",
+            "required": false,
+            "description": "Type of address to return.",
+            "schema": {
+              "type": "string",
+              "enum": ["All", "HDB"]
+            }
+          },
+          {
+            "name": "otherFeatures",
+            "in": "query",
+            "required": false,
+            "description": "Whether to return other nearby features.",
+            "schema": {
+              "type": "string",
+              "enum": ["Y", "N"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful reverse geocode response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReverseGeocodeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/common/convert/4326to3857": {
+      "get": {
+        "operationId": "convert4326To3857",
+        "summary": "Convert WGS84 to EPSG:3857",
+        "description": "Convert coordinates from WGS84 (EPSG:4326) to Web Mercator (EPSG:3857).",
+        "tags": ["Coordinate Conversion"],
+        "parameters": [
+          {
+            "name": "latitude",
+            "in": "query",
+            "required": true,
+            "description": "WGS84 latitude.",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "longitude",
+            "in": "query",
+            "required": true,
+            "description": "WGS84 longitude.",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Converted coordinates.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoordinateConversionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/common/convert/3857to4326": {
+      "get": {
+        "operationId": "convert3857To4326",
+        "summary": "Convert EPSG:3857 to WGS84",
+        "description": "Convert coordinates from Web Mercator (EPSG:3857) to WGS84 (EPSG:4326).",
+        "tags": ["Coordinate Conversion"],
+        "parameters": [
+          {
+            "name": "X",
+            "in": "query",
+            "required": true,
+            "description": "EPSG:3857 X coordinate.",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "Y",
+            "in": "query",
+            "required": true,
+            "description": "EPSG:3857 Y coordinate.",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Converted coordinates.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoordinateConversionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/common/convert/4326to3414": {
+      "get": {
+        "operationId": "convert4326To3414",
+        "summary": "Convert WGS84 to SVY21",
+        "description": "Convert coordinates from WGS84 (EPSG:4326) to SVY21 (EPSG:3414).",
+        "tags": ["Coordinate Conversion"],
+        "parameters": [
+          {
+            "name": "latitude",
+            "in": "query",
+            "required": true,
+            "description": "WGS84 latitude.",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "longitude",
+            "in": "query",
+            "required": true,
+            "description": "WGS84 longitude.",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Converted coordinates.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoordinateConversionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/common/convert/3414to4326": {
+      "get": {
+        "operationId": "convert3414To4326",
+        "summary": "Convert SVY21 to WGS84",
+        "description": "Convert coordinates from SVY21 (EPSG:3414) to WGS84 (EPSG:4326).",
+        "tags": ["Coordinate Conversion"],
+        "parameters": [
+          {
+            "name": "X",
+            "in": "query",
+            "required": true,
+            "description": "SVY21 X coordinate (Easting).",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "Y",
+            "in": "query",
+            "required": true,
+            "description": "SVY21 Y coordinate (Northing).",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Converted coordinates.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoordinateConversionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/routingsvc/route": {
+      "get": {
+        "operationId": "getRoute",
+        "summary": "Get Route",
+        "description": "Calculate a route between two points in Singapore with support for driving, walking, cycling, and public transport modes.",
+        "tags": ["Routing"],
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "description": "Starting point as 'latitude,longitude'.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1.319728,103.8421"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "description": "Ending point as 'latitude,longitude'.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1.319728905,103.8421581"
+          },
+          {
+            "name": "routeType",
+            "in": "query",
+            "required": true,
+            "description": "Mode of transport for route calculation.",
+            "schema": {
+              "type": "string",
+              "enum": ["drive", "walk", "cycle", "pt"]
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Date of travel in MM-DD-YYYY format (required for public transport).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "time",
+            "in": "query",
+            "required": false,
+            "description": "Time of travel in HH:MM:SS format (required for public transport).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "required": false,
+            "description": "Public transport mode preference.",
+            "schema": {
+              "type": "string",
+              "enum": ["TRANSIT", "BUS", "RAIL"]
+            }
+          },
+          {
+            "name": "maxWalkDistance",
+            "in": "query",
+            "required": false,
+            "description": "Maximum walking distance in metres for public transport routing.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "numItineraries",
+            "in": "query",
+            "required": false,
+            "description": "Number of itineraries to return (public transport only).",
+            "schema": {
+              "type": "integer",
+              "default": 3
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful routing response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/themesvc/getAllThemesInfo": {
+      "get": {
+        "operationId": "getAllThemesInfo",
+        "summary": "Get All Themes Info",
+        "description": "Retrieve a list of all available themed data layers and their details.",
+        "tags": ["Themes"],
+        "parameters": [
+          {
+            "name": "moreInfo",
+            "in": "query",
+            "required": false,
+            "description": "Whether to return extended theme information.",
+            "schema": {
+              "type": "string",
+              "enum": ["Y", "N"],
+              "default": "N"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of available themes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThemesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/themesvc/retrieveTheme": {
+      "get": {
+        "operationId": "retrieveTheme",
+        "summary": "Retrieve Theme Data",
+        "description": "Retrieve location data for a specific theme.",
+        "tags": ["Themes"],
+        "parameters": [
+          {
+            "name": "queryName",
+            "in": "query",
+            "required": true,
+            "description": "Name of the theme to query.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "extents",
+            "in": "query",
+            "required": false,
+            "description": "Bounding box extents in format 'minX,minY,maxX,maxY' (SVY21).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Theme data response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThemeDataResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token obtained from the /api/auth/post/getToken endpoint. Tokens are valid for 3 days."
+      }
+    },
+    "schemas": {
+      "SearchResponse": {
+        "type": "object",
+        "properties": {
+          "found": {
+            "type": "integer",
+            "description": "Total number of results found."
+          },
+          "totalNumPages": {
+            "type": "integer",
+            "description": "Total number of pages."
+          },
+          "pageNum": {
+            "type": "integer",
+            "description": "Current page number."
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchResult"
+            }
+          }
+        }
+      },
+      "SearchResult": {
+        "type": "object",
+        "properties": {
+          "SEARCHVAL": {
+            "type": "string",
+            "description": "Search value / building or landmark name."
+          },
+          "BLK_NO": {
+            "type": "string",
+            "description": "Block number."
+          },
+          "ROAD_NAME": {
+            "type": "string",
+            "description": "Road/street name."
+          },
+          "BUILDING": {
+            "type": "string",
+            "description": "Building name."
+          },
+          "ADDRESS": {
+            "type": "string",
+            "description": "Full address."
+          },
+          "POSTAL": {
+            "type": "string",
+            "description": "Postal code."
+          },
+          "X": {
+            "type": "string",
+            "description": "SVY21 X coordinate (Easting)."
+          },
+          "Y": {
+            "type": "string",
+            "description": "SVY21 Y coordinate (Northing)."
+          },
+          "LATITUDE": {
+            "type": "string",
+            "description": "WGS84 latitude."
+          },
+          "LONGITUDE": {
+            "type": "string",
+            "description": "WGS84 longitude."
+          }
+        }
+      },
+      "ReverseGeocodeResponse": {
+        "type": "object",
+        "properties": {
+          "GeocodeInfo": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "BUILDINGNAME": {
+                  "type": "string"
+                },
+                "BLOCK": {
+                  "type": "string"
+                },
+                "ROAD": {
+                  "type": "string"
+                },
+                "POSTALCODE": {
+                  "type": "string"
+                },
+                "XCOORD": {
+                  "type": "string"
+                },
+                "YCOORD": {
+                  "type": "string"
+                },
+                "LATITUDE": {
+                  "type": "string"
+                },
+                "LONGITUDE": {
+                  "type": "string"
+                },
+                "LONGTITUDE": {
+                  "type": "string",
+                  "description": "Alternative spelling field for longitude."
+                }
+              }
+            }
+          }
+        }
+      },
+      "CoordinateConversionResponse": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "format": "double",
+            "description": "Latitude in the target coordinate system."
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double",
+            "description": "Longitude in the target coordinate system."
+          },
+          "X": {
+            "type": "number",
+            "format": "double",
+            "description": "X coordinate in the target coordinate system."
+          },
+          "Y": {
+            "type": "number",
+            "format": "double",
+            "description": "Y coordinate in the target coordinate system."
+          }
+        }
+      },
+      "RoutingResponse": {
+        "type": "object",
+        "properties": {
+          "status_message": {
+            "type": "string"
+          },
+          "route_geometry": {
+            "type": "string",
+            "description": "Encoded polyline of the route geometry."
+          },
+          "status": {
+            "type": "integer"
+          },
+          "route_instructions": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {},
+              "description": "Array of route instruction tuples."
+            }
+          },
+          "route_name": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Road names along the route."
+          },
+          "route_summary": {
+            "type": "object",
+            "properties": {
+              "start_point": {
+                "type": "string"
+              },
+              "end_point": {
+                "type": "string"
+              },
+              "total_time": {
+                "type": "integer",
+                "description": "Total travel time in seconds."
+              },
+              "total_distance": {
+                "type": "integer",
+                "description": "Total distance in metres."
+              }
+            }
+          },
+          "phyroute": {
+            "type": "object",
+            "description": "Physical route details."
+          },
+          "plan": {
+            "type": "object",
+            "description": "Public transport plan details (for pt routeType).",
+            "properties": {
+              "itineraries": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "duration": {
+                      "type": "integer"
+                    },
+                    "startTime": {
+                      "type": "integer"
+                    },
+                    "endTime": {
+                      "type": "integer"
+                    },
+                    "walkTime": {
+                      "type": "integer"
+                    },
+                    "transitTime": {
+                      "type": "integer"
+                    },
+                    "waitingTime": {
+                      "type": "integer"
+                    },
+                    "transfers": {
+                      "type": "integer"
+                    },
+                    "legs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "mode": {
+                            "type": "string"
+                          },
+                          "route": {
+                            "type": "string"
+                          },
+                          "from": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "lat": {
+                                "type": "number"
+                              },
+                              "lon": {
+                                "type": "number"
+                              }
+                            }
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "lat": {
+                                "type": "number"
+                              },
+                              "lon": {
+                                "type": "number"
+                              }
+                            }
+                          },
+                          "duration": {
+                            "type": "integer"
+                          },
+                          "distance": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ThemesResponse": {
+        "type": "object",
+        "properties": {
+          "Theme_Names": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "THEMENAME": {
+                  "type": "string"
+                },
+                "QUERYNAME": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ThemeDataResponse": {
+        "type": "object",
+        "properties": {
+          "SrchResults": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "FeatCount": {
+                  "type": "integer"
+                },
+                "Theme_Name": {
+                  "type": "string"
+                },
+                "NAME": {
+                  "type": "string"
+                },
+                "DESCRIPTION": {
+                  "type": "string"
+                },
+                "ADDRESSBLOCKHOUSENUMBER": {
+                  "type": "string"
+                },
+                "ADDRESSSTREETNAME": {
+                  "type": "string"
+                },
+                "ADDRESSPOSTALCODE": {
+                  "type": "string"
+                },
+                "LatLng": {
+                  "type": "string"
+                },
+                "XY": {
+                  "type": "string"
+                },
+                "ICON_NAME": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Error message."
+          },
+          "error": {
+            "type": "string",
+            "description": "Error description."
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,1068 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Mojang API",
+    "description": "The Mojang API provides access to Minecraft player profiles, authentication, skin management, and server-related operations. It allows querying player UUIDs, managing skins and capes, checking name availability, and handling Microsoft/Xbox authentication for Minecraft.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://wiki.vg/Mojang_API"
+  },
+  "servers": [
+    {
+      "url": "https://api.mojang.com",
+      "description": "Mojang API server"
+    },
+    {
+      "url": "https://api.minecraftservices.com",
+      "description": "Minecraft Services API server"
+    },
+    {
+      "url": "https://sessionserver.mojang.com",
+      "description": "Minecraft Session server"
+    }
+  ],
+  "tags": [
+    { "name": "Players", "description": "Player profile lookups and queries" },
+    { "name": "Authentication", "description": "Microsoft/Xbox authentication flow" },
+    { "name": "Profile Management", "description": "Manage player profile, skins, capes, and settings" },
+    { "name": "Server", "description": "Server-related operations including join verification and blocked servers" }
+  ],
+  "paths": {
+    "/users/profiles/minecraft/{playerName}": {
+      "get": {
+        "operationId": "getPlayerByName",
+        "summary": "Get player UUID by username",
+        "description": "Returns the UUID and username for a given Minecraft player name. Case-insensitive lookup.",
+        "tags": ["Players"],
+        "parameters": [
+          {
+            "name": "playerName",
+            "in": "path",
+            "required": true,
+            "description": "Minecraft player name (case-insensitive)",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Player profile found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PlayerProfile" }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/profiles/minecraft": {
+      "post": {
+        "operationId": "getPlayersByNames",
+        "summary": "Batch query UUIDs by usernames",
+        "description": "Returns UUIDs for up to 10 player names in a single request.",
+        "tags": ["Players"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": { "type": "string" },
+                "maxItems": 10,
+                "example": ["Notch", "jeb_"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Array of player profiles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/PlayerProfile" }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - constraint violation (e.g., more than 10 names)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/session/minecraft/profile/{uuid}": {
+      "get": {
+        "operationId": "getPlayerSkinAndCape",
+        "summary": "Get player skin and cape textures",
+        "description": "Returns the player profile including Base64-encoded texture data for skin and cape. Rate limited to approximately 400 requests per 10 seconds.",
+        "tags": ["Players"],
+        "servers": [
+          { "url": "https://sessionserver.mojang.com" }
+        ],
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "description": "Player UUID (with or without dashes)",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "unsigned",
+            "in": "query",
+            "required": false,
+            "description": "Set to false to include signature in response",
+            "schema": { "type": "boolean", "default": true }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Player profile with textures",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProfileWithTextures" }
+              }
+            }
+          },
+          "204": {
+            "description": "UUID has no associated player"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/minecraft/profile": {
+      "get": {
+        "operationId": "getOwnProfile",
+        "summary": "Get the authenticated player's profile",
+        "description": "Returns the profile of the authenticated user, including skins and capes.",
+        "tags": ["Profile Management"],
+        "servers": [
+          { "url": "https://api.minecraftservices.com" }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Authenticated player's profile",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AuthenticatedProfile" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing bearer token",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/minecraft/profile/lookup/name/{playerName}": {
+      "get": {
+        "operationId": "lookupPlayerByName",
+        "summary": "Look up player by name (Minecraft Services)",
+        "description": "Alternative endpoint on Minecraft Services to look up a player by username.",
+        "tags": ["Players"],
+        "servers": [
+          { "url": "https://api.minecraftservices.com" }
+        ],
+        "parameters": [
+          {
+            "name": "playerName",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Player profile found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PlayerProfile" }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found"
+          }
+        }
+      }
+    },
+    "/minecraft/profile/lookup/{uuid}": {
+      "get": {
+        "operationId": "lookupPlayerByUuid",
+        "summary": "Look up player by UUID",
+        "description": "Look up a player profile by UUID via Minecraft Services.",
+        "tags": ["Players"],
+        "servers": [
+          { "url": "https://api.minecraftservices.com" }
+        ],
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Player profile found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PlayerProfile" }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found"
+          }
+        }
+      }
+    },
+    "/minecraft/profile/lookup/bulk/byname": {
+      "post": {
+        "operationId": "bulkLookupPlayersByName",
+        "summary": "Batch lookup players by name (Minecraft Services)",
+        "description": "Look up up to 10 player profiles by name via Minecraft Services.",
+        "tags": ["Players"],
+        "servers": [
+          { "url": "https://api.minecraftservices.com" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": { "type": "string" },
+                "maxItems": 10
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Array of player profiles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/PlayerProfile" }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        }
+      }
+    },
+    "/minecraft/profile/namechange": {
+      "get": {
+        "operationId": "getNameChangeInfo",
+        "summary": "Get name change information",
+        "description": "Returns information about the authenticated player's name change history and eligibility.",
+        "tags": ["Profile Management"],
+        "servers": [
+          { "url": "https://api.minecraftservices.com" }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Name change information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "changedAt": { "type": "string", "format": "date-time" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "nameChangeAllowed": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/minecraft/profile/name/{name}/available": {
+      "get": {
+        "operationId": "checkNameAvailability",
+        "summary": "Check if a name is available",
+        "description": "Check whether a Minecraft username is available for use. Rate limited to 20 requests per 5 minutes per account.",
+        "tags": ["Profile Management"],
+        "servers": [
+          { "url": "https://api.minecraftservices.com" }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Name availability status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["DUPLICATE", "AVAILABLE", "NOT_ALLOWED"]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/minecraft/profile/name/{newName}": {
+      "put": {
+        "operationId": "changeName",
+        "summary": "Change player name",
+        "description": "Change the authenticated player's Minecraft username.",
+        "tags": ["Profile Management"],
+        "servers": [
+          { "url": "https://api.minecraftservices.com" }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "newName",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Name changed successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AuthenticatedProfile" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid name"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Name change not allowed"
+          }
+        }
+      }
+    },
+    "/minecraft/profile/skins": {
+      "post": {
+        "operationId": "changeSkin",
+        "summary": "Change or upload skin",
+        "description": "Change skin by URL or upload a skin image file. Supports both JSON body (URL) and multipart form (file upload).",
+        "tags": ["Profile Management"],
+        "servers": [
+          { "url": "https://api.minecraftservices.com" }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["variant", "url"],
+                "properties": {
+                  "variant": {
+                    "type": "string",
+                    "enum": ["classic", "slim"],
+                    "description": "Skin model variant"
+                  },
+                  "url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "URL of the skin image"
+                  }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["variant", "file"],
+                "properties": {
+                  "variant": {
+                    "type": "string",
+                    "enum": ["classic", "slim"]
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "PNG skin image file"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Skin changed successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AuthenticatedProfile" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/minecraft/profile/skins/active": {
+      "delete": {
+        "operationId": "resetSkin",
+        "summary": "Reset skin to default",
+        "description": "Reset the authenticated player's skin to the default.",
+        "tags": ["Profile Management"],
+        "servers": [
+          { "url": "https://api.minecraftservices.com" }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Skin reset successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AuthenticatedProfile" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/minecraft/profile/capes/active": {
+      "put": {
+        "operationId": "showCape",
+        "summary": "Show a cape",
+        "description": "Set the active cape for the authenticated player.",
+        "tags": ["Profile Management"],
+        "servers": [
+          { "url": "https://api.minecraftservices.com" }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["capeId"],
+                "properties": {
+                  "capeId": {
+                    "type": "string",
+                    "description": "The ID of the cape to show"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cape activated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AuthenticatedProfile" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "hideCape",
+        "summary": "Hide the active cape",
+        "description": "Remove the active cape from the authenticated player's profile.",
+        "tags": ["Profile Management"],
+        "servers": [
+          { "url": "https://api.minecraftservices.com" }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Cape hidden",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AuthenticatedProfile" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/player/attributes": {
+      "get": {
+        "operationId": "getPlayerAttributes",
+        "summary": "Get player attributes",
+        "description": "Returns the authenticated player's attributes including privileges, profanity filter settings, and ban status.",
+        "tags": ["Profile Management"],
+        "servers": [
+          { "url": "https://api.minecraftservices.com" }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Player attributes",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PlayerAttributes" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "operationId": "updatePlayerAttributes",
+        "summary": "Update player attributes",
+        "description": "Modify the authenticated player's attributes such as profanity filter settings.",
+        "tags": ["Profile Management"],
+        "servers": [
+          { "url": "https://api.minecraftservices.com" }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "profanityFilterOn": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated attributes",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PlayerAttributes" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/privacy/blocklist": {
+      "get": {
+        "operationId": "getBlockedUsers",
+        "summary": "Get blocked users list",
+        "description": "Returns the list of UUIDs the authenticated player has blocked.",
+        "tags": ["Profile Management"],
+        "servers": [
+          { "url": "https://api.minecraftservices.com" }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "List of blocked player UUIDs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "blockedProfiles": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/player/certificates": {
+      "post": {
+        "operationId": "getPlayerCertificates",
+        "summary": "Get player key pair for chat signing",
+        "description": "Returns a key pair used for signing chat messages, including public key, private key, and signature.",
+        "tags": ["Profile Management"],
+        "servers": [
+          { "url": "https://api.minecraftservices.com" }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Key pair and certificates",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PlayerCertificates" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/entitlements/license": {
+      "get": {
+        "operationId": "checkOwnership",
+        "summary": "Check Minecraft game ownership",
+        "description": "Check whether the authenticated account owns Minecraft.",
+        "tags": ["Authentication"],
+        "servers": [
+          { "url": "https://api.minecraftservices.com" }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Entitlement information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": { "type": "string" },
+                          "source": { "type": "string" }
+                        }
+                      }
+                    },
+                    "signature": { "type": "string" },
+                    "keyId": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/authentication/login_with_xbox": {
+      "post": {
+        "operationId": "loginWithXbox",
+        "summary": "Get Minecraft access token via Xbox",
+        "description": "Exchange an XSTS token for a Minecraft access token.",
+        "tags": ["Authentication"],
+        "servers": [
+          { "url": "https://api.minecraftservices.com" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["identityToken"],
+                "properties": {
+                  "identityToken": {
+                    "type": "string",
+                    "description": "XSTS token in format: XBL3.0 x={userHash};{xstsToken}"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Minecraft access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "username": { "type": "string" },
+                    "roles": { "type": "array", "items": { "type": "string" } },
+                    "access_token": { "type": "string" },
+                    "token_type": { "type": "string" },
+                    "expires_in": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account suspended"
+          }
+        }
+      }
+    },
+    "/publickeys": {
+      "get": {
+        "operationId": "getPublicKeys",
+        "summary": "Get Mojang public keys",
+        "description": "Returns Mojang's public keys used for verifying profile property signatures and player certificates.",
+        "tags": ["Server"],
+        "servers": [
+          { "url": "https://api.minecraftservices.com" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public key arrays",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "profilePropertyKeys": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/PublicKey" }
+                    },
+                    "playerCertificateKeys": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/PublicKey" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blockedservers": {
+      "get": {
+        "operationId": "getBlockedServers",
+        "summary": "Get list of blocked servers",
+        "description": "Returns a newline-separated list of SHA-1 hashes of blocked server addresses.",
+        "tags": ["Server"],
+        "servers": [
+          { "url": "https://sessionserver.mojang.com" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of SHA-1 hashes of blocked servers",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "description": "Newline-separated SHA-1 hashes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/session/minecraft/join": {
+      "post": {
+        "operationId": "clientJoin",
+        "summary": "Client-side join verification",
+        "description": "Called by the Minecraft client to verify login with a server. Rate limited to 6 joins per 30 seconds per account.",
+        "tags": ["Server"],
+        "servers": [
+          { "url": "https://sessionserver.mojang.com" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["accessToken", "selectedProfile", "serverId"],
+                "properties": {
+                  "accessToken": { "type": "string" },
+                  "selectedProfile": {
+                    "type": "string",
+                    "description": "Player UUID without dashes"
+                  },
+                  "serverId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Join verified successfully"
+          },
+          "403": {
+            "description": "Authentication failed"
+          }
+        }
+      }
+    },
+    "/session/minecraft/hasJoined": {
+      "get": {
+        "operationId": "serverHasJoined",
+        "summary": "Server-side join verification",
+        "description": "Called by the Minecraft server to verify that a client has authenticated.",
+        "tags": ["Server"],
+        "servers": [
+          { "url": "https://sessionserver.mojang.com" }
+        ],
+        "parameters": [
+          {
+            "name": "username",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "serverId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "ip",
+            "in": "query",
+            "required": false,
+            "description": "Client IP address for additional verification",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Player profile with texture data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProfileWithTextures" }
+              }
+            }
+          },
+          "204": {
+            "description": "Player has not joined the server"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Minecraft access token obtained through Microsoft/Xbox authentication flow"
+      }
+    },
+    "schemas": {
+      "PlayerProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Player UUID without dashes"
+          },
+          "name": {
+            "type": "string",
+            "description": "Current player name"
+          },
+          "legacy": {
+            "type": "boolean",
+            "description": "True if the account has not migrated to Mojang"
+          },
+          "demo": {
+            "type": "boolean",
+            "description": "True if the account is a demo/unpaid account"
+          }
+        },
+        "required": ["id", "name"]
+      },
+      "ProfileWithTextures": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "properties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string", "example": "textures" },
+                "value": {
+                  "type": "string",
+                  "description": "Base64-encoded JSON containing texture URLs"
+                },
+                "signature": {
+                  "type": "string",
+                  "description": "Base64-encoded signature (only if unsigned=false)"
+                }
+              }
+            }
+          }
+        },
+        "required": ["id", "name", "properties"]
+      },
+      "AuthenticatedProfile": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "skins": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "state": { "type": "string", "enum": ["ACTIVE", "INACTIVE"] },
+                "url": { "type": "string", "format": "uri" },
+                "variant": { "type": "string", "enum": ["CLASSIC", "SLIM"] }
+              }
+            }
+          },
+          "capes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "state": { "type": "string", "enum": ["ACTIVE", "INACTIVE"] },
+                "url": { "type": "string", "format": "uri" },
+                "alias": { "type": "string" }
+              }
+            }
+          }
+        },
+        "required": ["id", "name", "skins", "capes"]
+      },
+      "PlayerAttributes": {
+        "type": "object",
+        "properties": {
+          "privileges": {
+            "type": "object",
+            "properties": {
+              "onlineChat": { "type": "object", "properties": { "enabled": { "type": "boolean" } } },
+              "multiplayerServer": { "type": "object", "properties": { "enabled": { "type": "boolean" } } },
+              "multiplayerRealms": { "type": "object", "properties": { "enabled": { "type": "boolean" } } },
+              "telemetry": { "type": "object", "properties": { "enabled": { "type": "boolean" } } }
+            }
+          },
+          "profanityFilterPreferences": {
+            "type": "object",
+            "properties": {
+              "profanityFilterOn": { "type": "boolean" }
+            }
+          },
+          "banStatus": {
+            "type": "object",
+            "properties": {
+              "bannedScopes": { "type": "object" }
+            }
+          }
+        }
+      },
+      "PlayerCertificates": {
+        "type": "object",
+        "properties": {
+          "keyPair": {
+            "type": "object",
+            "properties": {
+              "privateKey": { "type": "string" },
+              "publicKey": { "type": "string" }
+            }
+          },
+          "publicKeySignature": { "type": "string" },
+          "publicKeySignatureV2": { "type": "string" },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "refreshedAfter": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PublicKey": {
+        "type": "object",
+        "properties": {
+          "publicKey": {
+            "type": "string",
+            "description": "Base64-encoded DER public key"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" },
+          "errorMessage": { "type": "string" }
+        }
+      }
+    }
+  }
+}
