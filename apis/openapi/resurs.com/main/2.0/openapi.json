@@ -1,0 +1,972 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Resurs Bank Merchant API",
+    "version": "2.0",
+    "description": "Resurs Bank Merchant API for e-commerce payment processing. Supports payment creation, management, and store configuration with OAuth 2.0 authentication.",
+    "x-jentic-source-url": "http://developers.resurs.com/merchant-api-2.0/"
+  },
+  "servers": [
+    {
+      "url": "https://merchant-api.resurs.com",
+      "description": "Production"
+    },
+    {
+      "url": "https://merchant-api.integration.resurs.com",
+      "description": "Integration/Test"
+    }
+  ],
+  "paths": {
+    "/oauth2/token": {
+      "post": {
+        "operationId": "getAccessToken",
+        "summary": "Obtain an OAuth 2.0 access token",
+        "tags": [
+          "Authentication"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "client_id",
+                  "client_secret",
+                  "scope",
+                  "grant_type"
+                ],
+                "properties": {
+                  "client_id": {
+                    "type": "string",
+                    "description": "Client identifier"
+                  },
+                  "client_secret": {
+                    "type": "string",
+                    "description": "Client secret"
+                  },
+                  "scope": {
+                    "type": "string",
+                    "description": "API scope",
+                    "example": "merchant-api"
+                  },
+                  "grant_type": {
+                    "type": "string",
+                    "description": "OAuth grant type",
+                    "example": "client_credentials"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Access token issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/stores": {
+      "get": {
+        "operationId": "getStores",
+        "summary": "Get available stores",
+        "tags": [
+          "Stores"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Sort order"
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Number of results to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of available stores",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Store"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/stores/{storeId}/payment_methods": {
+      "post": {
+        "operationId": "getPaymentMethods",
+        "summary": "Get available payment methods for a store",
+        "tags": [
+          "Payment Methods"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "storeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Store identifier"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentMethodsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Available payment methods",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PaymentMethod"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/payments": {
+      "post": {
+        "operationId": "createPayment",
+        "summary": "Create a new payment",
+        "tags": [
+          "Payments"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/payments/{paymentId}": {
+      "get": {
+        "operationId": "getPayment",
+        "summary": "Get payment details",
+        "tags": [
+          "Payments"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "paymentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Payment identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Payment not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/payments/{paymentId}/capture": {
+      "post": {
+        "operationId": "capturePayment",
+        "summary": "Capture an authorized payment",
+        "tags": [
+          "Payment Management"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "paymentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Payment identifier"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptureRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment captured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/payments/{paymentId}/cancel": {
+      "post": {
+        "operationId": "cancelPayment",
+        "summary": "Cancel an authorized payment",
+        "tags": [
+          "Payment Management"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "paymentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Payment identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/payments/{paymentId}/refund": {
+      "post": {
+        "operationId": "refundPayment",
+        "summary": "Refund a captured payment",
+        "tags": [
+          "Payment Management"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "paymentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Payment identifier"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment refunded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "token_type": {
+            "type": "string",
+            "example": "Bearer"
+          },
+          "expires_in": {
+            "type": "integer",
+            "example": 3599
+          },
+          "scope": {
+            "type": "string"
+          }
+        }
+      },
+      "Store": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "countryCode": {
+            "type": "string"
+          }
+        }
+      },
+      "PaymentMethodsRequest": {
+        "type": "object",
+        "properties": {
+          "totalAmount": {
+            "type": "number",
+            "description": "Total cart amount for filtering available methods"
+          }
+        }
+      },
+      "PaymentMethod": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "termsUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "CreatePaymentRequest": {
+        "type": "object",
+        "required": [
+          "storeId",
+          "paymentMethodId",
+          "order",
+          "customer"
+        ],
+        "properties": {
+          "storeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "paymentMethodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "order": {
+            "$ref": "#/components/schemas/Order"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/Customer"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          },
+          "options": {
+            "$ref": "#/components/schemas/PaymentOptions"
+          }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "required": [
+          "orderLines"
+        ],
+        "properties": {
+          "orderLines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderLine"
+            }
+          },
+          "orderReference": {
+            "type": "string"
+          }
+        }
+      },
+      "OrderLine": {
+        "type": "object",
+        "required": [
+          "description",
+          "quantity",
+          "type",
+          "quantityUnit",
+          "vatRate",
+          "totalAmountIncludingVat"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "NORMAL",
+              "SHIPPING",
+              "DISCOUNT"
+            ]
+          },
+          "quantityUnit": {
+            "type": "string"
+          },
+          "vatRate": {
+            "type": "number"
+          },
+          "totalAmountIncludingVat": {
+            "type": "number"
+          }
+        }
+      },
+      "Customer": {
+        "type": "object",
+        "required": [
+          "customerType",
+          "governmentId"
+        ],
+        "properties": {
+          "customerType": {
+            "type": "string",
+            "enum": [
+              "NATURAL",
+              "LEGAL"
+            ]
+          },
+          "governmentId": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "mobilePhone": {
+            "type": "string"
+          },
+          "deliveryAddress": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "deviceInfo": {
+            "$ref": "#/components/schemas/DeviceInfo"
+          }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "addressRow1": {
+            "type": "string"
+          },
+          "postalCode": {
+            "type": "string"
+          },
+          "postalArea": {
+            "type": "string"
+          },
+          "countryCode": {
+            "type": "string"
+          }
+        }
+      },
+      "DeviceInfo": {
+        "type": "object",
+        "properties": {
+          "ip": {
+            "type": "string"
+          },
+          "userAgent": {
+            "type": "string"
+          }
+        }
+      },
+      "Metadata": {
+        "type": "object",
+        "properties": {
+          "creator": {
+            "type": "string"
+          }
+        }
+      },
+      "PaymentOptions": {
+        "type": "object",
+        "properties": {
+          "initiatedOnCustomersDevice": {
+            "type": "boolean"
+          },
+          "deliverLinks": {
+            "type": "boolean"
+          },
+          "handleFrozenPayments": {
+            "type": "boolean"
+          },
+          "handleManualInspection": {
+            "type": "boolean"
+          },
+          "automaticCapture": {
+            "type": "boolean"
+          },
+          "callbacks": {
+            "$ref": "#/components/schemas/Callbacks"
+          },
+          "redirectionUrls": {
+            "$ref": "#/components/schemas/RedirectionUrls"
+          },
+          "timeToLiveInMinutes": {
+            "type": "integer"
+          }
+        }
+      },
+      "Callbacks": {
+        "type": "object",
+        "properties": {
+          "authorization": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          },
+          "management": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        }
+      },
+      "RedirectionUrls": {
+        "type": "object",
+        "properties": {
+          "customer": {
+            "type": "object",
+            "properties": {
+              "successUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "failUrl": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        }
+      },
+      "CreatePaymentResponse": {
+        "type": "object",
+        "properties": {
+          "paymentId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "TASK_REDIRECTION_REQUIRED",
+              "AUTHORIZED",
+              "REJECTED",
+              "FROZEN",
+              "CAPTURED"
+            ]
+          },
+          "redirectUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "PaymentDetails": {
+        "type": "object",
+        "properties": {
+          "paymentId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "storeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "order": {
+            "$ref": "#/components/schemas/Order"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/Customer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CaptureRequest": {
+        "type": "object",
+        "properties": {
+          "orderLines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderLine"
+            }
+          },
+          "totalCaptureAmount": {
+            "type": "number"
+          },
+          "creatorName": {
+            "type": "string"
+          }
+        }
+      },
+      "RefundRequest": {
+        "type": "object",
+        "properties": {
+          "orderLines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderLine"
+            }
+          },
+          "totalRefundAmount": {
+            "type": "number"
+          },
+          "creatorName": {
+            "type": "string"
+          }
+        }
+      },
+      "ManagementResponse": {
+        "type": "object",
+        "properties": {
+          "paymentId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "errorDescription": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "OAuth 2.0 Bearer token obtained via client_credentials grant"
+      }
+    }
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ]
+}
