@@ -1,0 +1,712 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Salt REST CherryPy API",
+    "version": "1.0.0",
+    "description": "Salt's REST API interface via the CherryPy framework, providing HTTP access to Salt's execution, runner, and wheel modules.",
+    "x-jentic-source-url": "https://docs.saltproject.io/en/latest/ref/netapi/all/salt.netapi.rest_cherrypy.html"
+  },
+  "servers": [
+    {
+      "url": "https://{saltmaster}:8000",
+      "variables": {
+        "saltmaster": {
+          "default": "localhost",
+          "description": "Salt master hostname"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "getRoot",
+        "summary": "Get API documentation and navigation links",
+        "tags": ["Root"],
+        "responses": {
+          "200": {
+            "description": "API documentation",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "executeCommands",
+        "summary": "Execute Salt commands via RPC-style requests",
+        "tags": ["Root"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/SaltCommand" }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Command execution results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "return": {
+                      "type": "array",
+                      "items": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/login": {
+      "get": {
+        "operationId": "getLoginInterface",
+        "summary": "Display login interface",
+        "tags": ["Authentication"],
+        "responses": {
+          "200": {
+            "description": "Login interface",
+            "content": {
+              "text/html": {
+                "schema": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "login",
+        "summary": "Authenticate and obtain session token",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication successful",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LoginResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logout": {
+      "post": {
+        "operationId": "logout",
+        "summary": "Invalidate current session",
+        "tags": ["Authentication"],
+        "responses": {
+          "200": {
+            "description": "Session invalidated"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/minions": {
+      "get": {
+        "operationId": "listMinions",
+        "summary": "List all minions or get minion details",
+        "tags": ["Minions"],
+        "responses": {
+          "200": {
+            "description": "Minion listing with grains data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "return": {
+                      "type": "array",
+                      "items": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "executeAsyncMinion",
+        "summary": "Execute an async command on minions",
+        "tags": ["Minions"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SaltCommand" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Job ID for async execution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "return": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "jid": { "type": "string" },
+                          "minions": { "type": "array", "items": { "type": "string" } }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/minions/{mid}": {
+      "get": {
+        "operationId": "getMinion",
+        "summary": "Get details for a specific minion",
+        "tags": ["Minions"],
+        "parameters": [
+          {
+            "name": "mid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Minion ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Minion details with grains",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "return": { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs": {
+      "get": {
+        "operationId": "listJobs",
+        "summary": "List all cached jobs",
+        "tags": ["Jobs"],
+        "responses": {
+          "200": {
+            "description": "List of cached jobs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "return": { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs/{jid}": {
+      "get": {
+        "operationId": "getJob",
+        "summary": "Get job results by job ID",
+        "tags": ["Jobs"],
+        "parameters": [
+          {
+            "name": "jid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Job ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job return data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "return": { "type": "array", "items": { "type": "object" } },
+                    "info": { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run": {
+      "post": {
+        "operationId": "runCommand",
+        "summary": "Execute a command with inline authentication",
+        "tags": ["Execution"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RunCommand" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Command results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "return": { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events": {
+      "get": {
+        "operationId": "getEvents",
+        "summary": "Stream real-time Salt events via Server-Sent Events",
+        "tags": ["Events"],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Authentication token"
+          },
+          {
+            "name": "salt_token",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Salt authentication token"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SSE event stream",
+            "content": {
+              "text/event-stream": {
+                "schema": { "type": "string" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hook/{tag}": {
+      "post": {
+        "operationId": "fireWebhook",
+        "summary": "Fire an event on the Salt event bus via webhook",
+        "tags": ["Webhooks"],
+        "parameters": [
+          {
+            "name": "tag",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Event tag suffix (prefixed with salt/netapi/hook)"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "additionalProperties": true }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Event fired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/keys": {
+      "get": {
+        "operationId": "listKeys",
+        "summary": "List all minion keys",
+        "tags": ["Keys"],
+        "responses": {
+          "200": {
+            "description": "Minion key listing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "return": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "generateKeys",
+        "summary": "Generate and auto-accept minion key pair",
+        "tags": ["Keys"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mid": { "type": "string", "description": "Minion ID" }
+                },
+                "required": ["mid"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Key pair tarball",
+            "content": {
+              "application/x-tar": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/keys/{mid}": {
+      "get": {
+        "operationId": "getKey",
+        "summary": "Get key details for a specific minion",
+        "tags": ["Keys"],
+        "parameters": [
+          {
+            "name": "mid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Minion ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Minion key details",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats": {
+      "get": {
+        "operationId": "getStats",
+        "summary": "Get CherryPy server statistics",
+        "tags": ["System"],
+        "responses": {
+          "200": {
+            "description": "Server statistics",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" },
+          "return": { "type": "string" }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "username": { "type": "string" },
+          "password": { "type": "string" },
+          "eauth": { "type": "string", "description": "External authentication system (e.g., pam, ldap)" }
+        },
+        "required": ["username", "password", "eauth"]
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "return": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "token": { "type": "string" },
+                "expire": { "type": "number" },
+                "start": { "type": "number" },
+                "user": { "type": "string" },
+                "eauth": { "type": "string" },
+                "perms": { "type": "array", "items": { "type": "object" } }
+              }
+            }
+          }
+        }
+      },
+      "SaltCommand": {
+        "type": "object",
+        "properties": {
+          "client": { "type": "string", "description": "Salt client type (local, runner, wheel, ssh)", "enum": ["local", "local_async", "runner", "runner_async", "wheel", "wheel_async", "ssh"] },
+          "tgt": { "type": "string", "description": "Target minion expression" },
+          "fun": { "type": "string", "description": "Salt function to execute" },
+          "arg": { "type": "array", "items": { "type": "string" }, "description": "Positional arguments" },
+          "kwarg": { "type": "object", "description": "Keyword arguments" },
+          "tgt_type": { "type": "string", "description": "Target type (glob, list, grain, etc.)", "enum": ["glob", "list", "grain", "grain_pcre", "pillar", "nodegroup", "range", "compound"] }
+        },
+        "required": ["client", "fun"]
+      },
+      "RunCommand": {
+        "type": "object",
+        "properties": {
+          "client": { "type": "string" },
+          "tgt": { "type": "string" },
+          "fun": { "type": "string" },
+          "arg": { "type": "array", "items": { "type": "string" } },
+          "kwarg": { "type": "object" },
+          "username": { "type": "string" },
+          "password": { "type": "string" },
+          "eauth": { "type": "string" },
+          "token": { "type": "string" }
+        },
+        "required": ["client", "fun"]
+      }
+    },
+    "securitySchemes": {
+      "sessionAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Auth-Token",
+        "description": "Session token obtained from /login endpoint"
+      }
+    }
+  },
+  "security": [
+    {
+      "sessionAuth": []
+    }
+  ]
+}
