@@ -1,0 +1,2321 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "npm Registry API",
+    "description": "The npm public registry API. Provides endpoints for package publishing, retrieval, searching, user management, organization management, token management, and dist-tag operations.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://github.com/npm/registry/blob/main/docs/REGISTRY-API.md"
+  },
+  "servers": [
+    {
+      "url": "https://registry.npmjs.org"
+    }
+  ],
+  "paths": {
+    "/{package}": {
+      "get": {
+        "operationId": "getPackageMetadata",
+        "summary": "Get package metadata (packument)",
+        "description": "Returns the full package metadata document (packument) including all versions, dist-tags, and other metadata.",
+        "tags": [
+          "Package"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "package",
+            "in": "path",
+            "required": true,
+            "description": "The name of the package. For scoped packages use the format @scope%2fname.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Package metadata retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Packument"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Authentication is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Package not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "publishPackage",
+        "summary": "Publish a package",
+        "description": "Publishes a new package or a new version of an existing package to the registry.",
+        "tags": [
+          "Package"
+        ],
+        "parameters": [
+          {
+            "name": "package",
+            "in": "path",
+            "required": true,
+            "description": "The name of the package to publish.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishPackageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Package published successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. Invalid package data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Authentication is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. You do not have permission to publish this package.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{package}/{version}": {
+      "get": {
+        "operationId": "getPackageVersion",
+        "summary": "Get specific package version",
+        "description": "Returns the metadata for a specific version of a package.",
+        "tags": [
+          "Package"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "package",
+            "in": "path",
+            "required": true,
+            "description": "The name of the package.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "description": "A semver version number or 'latest'.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Version metadata retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Authentication is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Package or version not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/-/v1/search": {
+      "get": {
+        "operationId": "searchPackages",
+        "summary": "Search packages",
+        "description": "Search for packages in the registry. Supports full-text search and special qualifiers such as author, maintainer, scope, and keywords.",
+        "tags": [
+          "Search"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "text",
+            "in": "query",
+            "required": false,
+            "description": "Full-text search query. Supports special qualifiers: author, maintainer, scope, keywords, not:unstable, not:insecure, is:unstable, is:insecure, boost-exact.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "description": "Number of results to return (default 20, max 250).",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 250
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Offset to return results from.",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "quality",
+            "in": "query",
+            "required": false,
+            "description": "Weight of quality in search results (0.0 to 1.0).",
+            "schema": {
+              "type": "number",
+              "format": "float",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          {
+            "name": "popularity",
+            "in": "query",
+            "required": false,
+            "description": "Weight of popularity in search results (0.0 to 1.0).",
+            "schema": {
+              "type": "number",
+              "format": "float",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          {
+            "name": "maintenance",
+            "in": "query",
+            "required": false,
+            "description": "Weight of maintenance in search results (0.0 to 1.0).",
+            "schema": {
+              "type": "number",
+              "format": "float",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResults"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. Invalid search parameters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{package}/-/{tarball}/{revision}": {
+      "delete": {
+        "operationId": "unpublishPackage",
+        "summary": "Unpublish a package version",
+        "description": "Removes a specific tarball/version from the registry. Requires authentication and appropriate permissions.",
+        "tags": [
+          "Package"
+        ],
+        "parameters": [
+          {
+            "name": "package",
+            "in": "path",
+            "required": true,
+            "description": "The name of the package.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tarball",
+            "in": "path",
+            "required": true,
+            "description": "The tarball filename (e.g., package-1.0.0.tgz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "path",
+            "required": true,
+            "description": "The revision identifier for the package document.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Package version unpublished successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnpublishResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Authentication is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. You do not have permission to unpublish.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{package}/-/{tarball}": {
+      "get": {
+        "operationId": "downloadTarball",
+        "summary": "Download package tarball",
+        "description": "Downloads the tarball for a specific package version.",
+        "tags": [
+          "Download"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "package",
+            "in": "path",
+            "required": true,
+            "description": "The name of the package.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tarball",
+            "in": "path",
+            "required": true,
+            "description": "The tarball filename (e.g., package-1.0.0.tgz).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tarball returned successfully.",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tarball not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/-/npm/v1/user": {
+      "get": {
+        "operationId": "getUserProfile",
+        "summary": "Get user profile",
+        "description": "Retrieves the profile of the currently authenticated user.",
+        "tags": [
+          "User"
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Authentication is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "updateUserProfile",
+        "summary": "Update user profile",
+        "description": "Updates the profile of the currently authenticated user.",
+        "tags": [
+          "User"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserProfileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User profile updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. Invalid profile data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Authentication is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/-/user/org.couchdb.user:{username}": {
+      "put": {
+        "operationId": "createUserOrLogin",
+        "summary": "Create user or login",
+        "description": "Creates a new user account or authenticates an existing user. Returns an authentication token on success.",
+        "tags": [
+          "User"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "username",
+            "in": "path",
+            "required": true,
+            "description": "The username for the account.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created or authenticated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateUserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. Invalid user data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Invalid credentials.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict. Username already exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/-/user/token/{token}": {
+      "delete": {
+        "operationId": "logout",
+        "summary": "Logout (invalidate token)",
+        "description": "Invalidates the specified authentication token, effectively logging out the user.",
+        "tags": [
+          "User"
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "The authentication token to invalidate.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token invalidated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoutResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Authentication is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/-/npm/v1/tokens": {
+      "get": {
+        "operationId": "listTokens",
+        "summary": "List authentication tokens",
+        "description": "Lists all active authentication tokens for the currently authenticated user.",
+        "tags": [
+          "Token"
+        ],
+        "responses": {
+          "200": {
+            "description": "Tokens listed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Authentication is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createToken",
+        "summary": "Create authentication token",
+        "description": "Creates a new authentication token for the currently authenticated user.",
+        "tags": [
+          "Token"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedToken"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. Invalid token parameters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Authentication is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/-/npm/v1/tokens/token/{token}": {
+      "delete": {
+        "operationId": "deleteToken",
+        "summary": "Delete authentication token",
+        "description": "Deletes a specific authentication token.",
+        "tags": [
+          "Token"
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "The token key to delete.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token deleted successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Authentication is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Token not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/-/org/{org}/user": {
+      "get": {
+        "operationId": "listOrgMembers",
+        "summary": "List organization members",
+        "description": "Lists all members of the specified organization.",
+        "tags": [
+          "Organization"
+        ],
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "description": "The organization name.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organization members listed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgMembers"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Authentication is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. You are not a member of this organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "addOrgMember",
+        "summary": "Add organization member",
+        "description": "Adds a user to the specified organization or updates their role.",
+        "tags": [
+          "Organization"
+        ],
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "description": "The organization name.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddOrgMemberRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Member added or updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgMembership"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Authentication is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. You do not have permission to manage members.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeOrgMember",
+        "summary": "Remove organization member",
+        "description": "Removes a user from the specified organization.",
+        "tags": [
+          "Organization"
+        ],
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "description": "The organization name.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveOrgMemberRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Member removed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemoveOrgMemberResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Authentication is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. You do not have permission to manage members.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/-/package/{package}/dist-tags": {
+      "get": {
+        "operationId": "getDistTags",
+        "summary": "Get dist-tags",
+        "description": "Returns all distribution tags for the specified package.",
+        "tags": [
+          "DistTags"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "package",
+            "in": "path",
+            "required": true,
+            "description": "The name of the package.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dist-tags retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistTags"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Package not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/-/package/{package}/dist-tags/{tag}": {
+      "put": {
+        "operationId": "setDistTag",
+        "summary": "Set a dist-tag",
+        "description": "Sets a distribution tag to point to a specific version of the package.",
+        "tags": [
+          "DistTags"
+        ],
+        "parameters": [
+          {
+            "name": "package",
+            "in": "path",
+            "required": true,
+            "description": "The name of the package.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tag",
+            "in": "path",
+            "required": true,
+            "description": "The dist-tag name (e.g., latest, beta, next).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "The version string to tag, sent as a JSON string in the request body.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string",
+                "description": "The semver version to point the tag to.",
+                "example": "1.2.3"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Dist-tag set successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistTagUpdateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Authentication is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. You do not have permission to modify dist-tags.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeDistTag",
+        "summary": "Remove a dist-tag",
+        "description": "Removes a distribution tag from the package. The 'latest' tag cannot be removed.",
+        "tags": [
+          "DistTags"
+        ],
+        "parameters": [
+          {
+            "name": "package",
+            "in": "path",
+            "required": true,
+            "description": "The name of the package.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tag",
+            "in": "path",
+            "required": true,
+            "description": "The dist-tag name to remove.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dist-tag removed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistTagUpdateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Authentication is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. You do not have permission to modify dist-tags.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/-/whoami": {
+      "get": {
+        "operationId": "whoami",
+        "summary": "Get authenticated username",
+        "description": "Returns the username associated with the current authentication token.",
+        "tags": [
+          "Whoami"
+        ],
+        "responses": {
+          "200": {
+            "description": "Username returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhoamiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Authentication is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "npm authentication token. Obtain via `npm login` or create at https://www.npmjs.com/settings/tokens."
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "description": "Standard error response from the npm registry.",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error code or type."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Human-readable error message."
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "Packument": {
+        "type": "object",
+        "description": "Full package metadata document (packument).",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "The package name."
+          },
+          "_rev": {
+            "type": "string",
+            "description": "Latest CouchDB revision identifier."
+          },
+          "name": {
+            "type": "string",
+            "description": "The package name."
+          },
+          "description": {
+            "type": "string",
+            "description": "Package description from package.json."
+          },
+          "dist-tags": {
+            "$ref": "#/components/schemas/DistTags"
+          },
+          "versions": {
+            "type": "object",
+            "description": "Map of version numbers to version metadata objects.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/PackageVersion"
+            }
+          },
+          "time": {
+            "type": "object",
+            "description": "Map of version numbers to their publish timestamps, plus created and modified.",
+            "properties": {
+              "created": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "modified": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "additionalProperties": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "author": {
+            "$ref": "#/components/schemas/Person"
+          },
+          "repository": {
+            "$ref": "#/components/schemas/Repository"
+          },
+          "readme": {
+            "type": "string",
+            "description": "Full text of the latest version's README."
+          },
+          "readmeFilename": {
+            "type": "string",
+            "description": "Name of the README file."
+          },
+          "maintainers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Person"
+            }
+          },
+          "license": {
+            "type": "string",
+            "description": "SPDX license identifier."
+          },
+          "homepage": {
+            "type": "string",
+            "description": "URL of the package homepage."
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bugs": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "_id",
+          "name",
+          "dist-tags",
+          "versions"
+        ]
+      },
+      "PackageVersion": {
+        "type": "object",
+        "description": "Metadata for a specific version of a package.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Package name."
+          },
+          "version": {
+            "type": "string",
+            "description": "Semver version number."
+          },
+          "description": {
+            "type": "string",
+            "description": "Package description."
+          },
+          "homepage": {
+            "type": "string",
+            "description": "Homepage URL."
+          },
+          "repository": {
+            "$ref": "#/components/schemas/Repository"
+          },
+          "dependencies": {
+            "type": "object",
+            "description": "Map of dependency names to version ranges.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "devDependencies": {
+            "type": "object",
+            "description": "Map of dev dependency names to version ranges.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "peerDependencies": {
+            "type": "object",
+            "description": "Map of peer dependency names to version ranges.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "scripts": {
+            "type": "object",
+            "description": "Map of script names to commands.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "author": {
+            "$ref": "#/components/schemas/Person"
+          },
+          "license": {
+            "type": "string",
+            "description": "SPDX license identifier."
+          },
+          "readme": {
+            "type": "string",
+            "description": "Full text of README file."
+          },
+          "readmeFilename": {
+            "type": "string",
+            "description": "Name of the README file."
+          },
+          "_id": {
+            "type": "string",
+            "description": "Identifier in the form name@version."
+          },
+          "dist": {
+            "$ref": "#/components/schemas/Dist"
+          },
+          "_npmVersion": {
+            "type": "string",
+            "description": "Version of npm used to publish."
+          },
+          "_npmUser": {
+            "$ref": "#/components/schemas/Person"
+          },
+          "maintainers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Person"
+            }
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "engines": {
+            "type": "object",
+            "description": "Map of engine names to version ranges.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "version",
+          "dist"
+        ]
+      },
+      "Dist": {
+        "type": "object",
+        "description": "Distribution metadata for a package version.",
+        "properties": {
+          "shasum": {
+            "type": "string",
+            "description": "SHA-1 hash of the tarball."
+          },
+          "tarball": {
+            "type": "string",
+            "description": "URL of the tarball.",
+            "format": "uri"
+          },
+          "integrity": {
+            "type": "string",
+            "description": "Subresource Integrity hash (e.g., sha512-...)."
+          },
+          "fileCount": {
+            "type": "integer",
+            "description": "Number of files in the tarball."
+          },
+          "unpackedSize": {
+            "type": "integer",
+            "description": "Unpacked size in bytes."
+          },
+          "signatures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "keyid": {
+                  "type": "string"
+                },
+                "sig": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "shasum",
+          "tarball"
+        ]
+      },
+      "Person": {
+        "type": "object",
+        "description": "A person (author, maintainer, contributor).",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "Repository": {
+        "type": "object",
+        "description": "Source code repository information.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Repository type (e.g., git)."
+          },
+          "url": {
+            "type": "string",
+            "description": "Repository URL."
+          },
+          "directory": {
+            "type": "string",
+            "description": "Subdirectory within the repository."
+          }
+        }
+      },
+      "DistTags": {
+        "type": "object",
+        "description": "Map of dist-tag names to version strings. Always includes a 'latest' key.",
+        "properties": {
+          "latest": {
+            "type": "string",
+            "description": "The version tagged as latest."
+          }
+        },
+        "required": [
+          "latest"
+        ],
+        "additionalProperties": {
+          "type": "string"
+        }
+      },
+      "DistTagUpdateResponse": {
+        "type": "object",
+        "description": "Response after modifying a dist-tag.",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SearchResults": {
+        "type": "object",
+        "description": "Package search results.",
+        "properties": {
+          "objects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchResultObject"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "description": "Total number of matching packages."
+          },
+          "time": {
+            "type": "string",
+            "description": "Timestamp of the search."
+          }
+        },
+        "required": [
+          "objects",
+          "total",
+          "time"
+        ]
+      },
+      "SearchResultObject": {
+        "type": "object",
+        "description": "A single search result entry.",
+        "properties": {
+          "package": {
+            "$ref": "#/components/schemas/SearchResultPackage"
+          },
+          "score": {
+            "$ref": "#/components/schemas/SearchScore"
+          },
+          "searchScore": {
+            "type": "number",
+            "description": "Final search score."
+          }
+        }
+      },
+      "SearchResultPackage": {
+        "type": "object",
+        "description": "Package summary returned in search results.",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "links": {
+            "type": "object",
+            "properties": {
+              "npm": {
+                "type": "string",
+                "format": "uri"
+              },
+              "homepage": {
+                "type": "string",
+                "format": "uri"
+              },
+              "repository": {
+                "type": "string",
+                "format": "uri"
+              },
+              "bugs": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          },
+          "publisher": {
+            "$ref": "#/components/schemas/Person"
+          },
+          "maintainers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Person"
+            }
+          }
+        }
+      },
+      "SearchScore": {
+        "type": "object",
+        "description": "Quality, popularity, and maintenance scores.",
+        "properties": {
+          "final": {
+            "type": "number"
+          },
+          "detail": {
+            "type": "object",
+            "properties": {
+              "quality": {
+                "type": "number"
+              },
+              "popularity": {
+                "type": "number"
+              },
+              "maintenance": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      },
+      "PublishPackageRequest": {
+        "type": "object",
+        "description": "Request body for publishing a package. Follows the CouchDB document format used by the npm registry.",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "The package name."
+          },
+          "name": {
+            "type": "string",
+            "description": "The package name."
+          },
+          "description": {
+            "type": "string"
+          },
+          "dist-tags": {
+            "$ref": "#/components/schemas/DistTags"
+          },
+          "versions": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/PackageVersion"
+            }
+          },
+          "readme": {
+            "type": "string"
+          },
+          "_attachments": {
+            "type": "object",
+            "description": "Map of tarball filenames to attachment objects containing base64-encoded data.",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "content_type": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "string",
+                  "description": "Base64-encoded tarball data."
+                },
+                "length": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "name",
+          "versions",
+          "dist-tags",
+          "_attachments"
+        ]
+      },
+      "PublishResponse": {
+        "type": "object",
+        "description": "Response after publishing a package.",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UnpublishResponse": {
+        "type": "object",
+        "description": "Response after unpublishing a package version.",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UserProfile": {
+        "type": "object",
+        "description": "User profile information.",
+        "properties": {
+          "tfa": {
+            "description": "Two-factor authentication status. Can be a boolean, null, or an object with mode and status.",
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string"
+                  },
+                  "pending": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            ],
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "description": "The user's username."
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "email_verified": {
+            "type": "boolean"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cidr_whitelist": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "fullname": {
+            "type": "string"
+          },
+          "homepage": {
+            "type": "string"
+          },
+          "freenode": {
+            "type": "string"
+          },
+          "twitter": {
+            "type": "string"
+          },
+          "github": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateUserProfileRequest": {
+        "type": "object",
+        "description": "Request body for updating user profile fields.",
+        "properties": {
+          "fullname": {
+            "type": "string"
+          },
+          "homepage": {
+            "type": "string"
+          },
+          "freenode": {
+            "type": "string"
+          },
+          "twitter": {
+            "type": "string"
+          },
+          "github": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "object",
+            "properties": {
+              "old": {
+                "type": "string"
+              },
+              "new": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "old",
+              "new"
+            ]
+          },
+          "tfa": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "disable",
+                  "auth-only",
+                  "auth-and-writes"
+                ]
+              },
+              "password": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "password"
+            ]
+          }
+        }
+      },
+      "CreateUserRequest": {
+        "type": "object",
+        "description": "Request body for creating a user or logging in.",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "User document ID in the format org.couchdb.user:{username}."
+          },
+          "name": {
+            "type": "string",
+            "description": "The username."
+          },
+          "password": {
+            "type": "string",
+            "description": "The user's password."
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "The user's email address."
+          },
+          "type": {
+            "type": "string",
+            "description": "Always 'user'.",
+            "enum": [
+              "user"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "password"
+        ]
+      },
+      "CreateUserResponse": {
+        "type": "object",
+        "description": "Response after creating a user or logging in.",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "description": "User document ID."
+          },
+          "rev": {
+            "type": "string",
+            "description": "CouchDB revision."
+          },
+          "token": {
+            "type": "string",
+            "description": "Authentication token."
+          }
+        }
+      },
+      "LogoutResponse": {
+        "type": "object",
+        "description": "Response after logging out.",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TokenList": {
+        "type": "object",
+        "description": "List of authentication tokens.",
+        "properties": {
+          "objects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TokenInfo"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "description": "Total number of tokens."
+          },
+          "urls": {
+            "type": "object",
+            "description": "Pagination URLs.",
+            "properties": {
+              "next": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "TokenInfo": {
+        "type": "object",
+        "description": "Information about an authentication token.",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "The first characters of the token for identification."
+          },
+          "token": {
+            "type": "string",
+            "description": "Masked token value."
+          },
+          "cidr_whitelist": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "readonly": {
+            "type": "boolean",
+            "description": "Whether the token is read-only."
+          },
+          "automation": {
+            "type": "boolean",
+            "description": "Whether the token is an automation token."
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateTokenRequest": {
+        "type": "object",
+        "description": "Request body for creating a new authentication token.",
+        "properties": {
+          "password": {
+            "type": "string",
+            "description": "The user's current password."
+          },
+          "readonly": {
+            "type": "boolean",
+            "description": "Whether the token should be read-only."
+          },
+          "cidr_whitelist": {
+            "type": "array",
+            "description": "List of CIDR ranges to restrict token usage.",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "password"
+        ]
+      },
+      "CreatedToken": {
+        "type": "object",
+        "description": "Newly created authentication token. The full token value is only returned at creation time.",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string",
+            "description": "The full token value."
+          },
+          "cidr_whitelist": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "readonly": {
+            "type": "boolean"
+          },
+          "automation": {
+            "type": "boolean"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DeleteTokenResponse": {
+        "type": "object",
+        "description": "Response after deleting a token.",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          }
+        }
+      },
+      "OrgMembers": {
+        "type": "object",
+        "description": "Map of usernames to their roles within the organization.",
+        "additionalProperties": {
+          "type": "string",
+          "description": "The member's role (e.g., admin, developer, owner).",
+          "enum": [
+            "admin",
+            "developer",
+            "owner"
+          ]
+        }
+      },
+      "AddOrgMemberRequest": {
+        "type": "object",
+        "description": "Request body for adding or updating an organization member.",
+        "properties": {
+          "user": {
+            "type": "string",
+            "description": "The username to add."
+          },
+          "role": {
+            "type": "string",
+            "description": "The role to assign.",
+            "enum": [
+              "admin",
+              "developer",
+              "owner"
+            ]
+          }
+        },
+        "required": [
+          "user",
+          "role"
+        ]
+      },
+      "OrgMembership": {
+        "type": "object",
+        "description": "Organization membership details.",
+        "properties": {
+          "org": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "size": {
+                "type": "integer"
+              }
+            }
+          },
+          "user": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "developer",
+              "owner"
+            ]
+          }
+        }
+      },
+      "RemoveOrgMemberRequest": {
+        "type": "object",
+        "description": "Request body for removing an organization member.",
+        "properties": {
+          "user": {
+            "type": "string",
+            "description": "The username to remove."
+          }
+        },
+        "required": [
+          "user"
+        ]
+      },
+      "RemoveOrgMemberResponse": {
+        "type": "object",
+        "description": "Response after removing an organization member.",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          }
+        }
+      },
+      "WhoamiResponse": {
+        "type": "object",
+        "description": "Response containing the authenticated user's username.",
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "The authenticated user's username."
+          }
+        },
+        "required": [
+          "username"
+        ]
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Package",
+      "description": "Package metadata retrieval, publishing, and unpublishing"
+    },
+    {
+      "name": "Search",
+      "description": "Package search"
+    },
+    {
+      "name": "DistTags",
+      "description": "Distribution tag management"
+    },
+    {
+      "name": "Download",
+      "description": "Tarball downloads"
+    },
+    {
+      "name": "User",
+      "description": "User profile and authentication"
+    },
+    {
+      "name": "Token",
+      "description": "Authentication token management"
+    },
+    {
+      "name": "Organization",
+      "description": "Organization member management"
+    },
+    {
+      "name": "Whoami",
+      "description": "Identity verification"
+    }
+  ]
+}
