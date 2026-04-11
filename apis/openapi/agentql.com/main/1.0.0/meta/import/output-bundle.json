@@ -1,0 +1,319 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AgentQL API",
+    "version": "1.0.0",
+    "description": "AgentQL is a tool for extracting structured data from any web page or document. It provides endpoints for querying web pages using AgentQL query syntax or natural language, managing remote browser sessions, and extracting data from documents.",
+    "x-jentic-source-url": "https://docs.agentql.com/rest-api/api-reference"
+  },
+  "servers": [
+    {
+      "url": "https://api.agentql.com/v1"
+    }
+  ],
+  "paths": {
+    "/query-data": {
+      "post": {
+        "summary": "Query data from a web page",
+        "operationId": "queryData",
+        "tags": [
+          "Data Extraction"
+        ],
+        "description": "Extract structured data from a public web page using AgentQL query syntax or natural language prompts.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryDataRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully extracted data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryDataResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tetra/sessions": {
+      "post": {
+        "summary": "Create a remote browser session",
+        "operationId": "createBrowserSession",
+        "tags": [
+          "Browser Sessions"
+        ],
+        "description": "Create a new remote browser session for use with AgentQL queries.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserSession"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/query-document": {
+      "post": {
+        "summary": "Query data from a document",
+        "operationId": "queryDocument",
+        "tags": [
+          "Data Extraction"
+        ],
+        "description": "Extract structured data from a PDF or image file (JPEG, JPG, PNG). Consumes 1 API call per image file or per PDF page.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryDocumentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully extracted data from document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryDocumentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "QueryDataRequest": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "AgentQL query syntax for structured extraction"
+          },
+          "prompt": {
+            "type": "string",
+            "description": "Natural language description of data to extract"
+          },
+          "url": {
+            "type": "string",
+            "description": "Public web page URL to query"
+          },
+          "html": {
+            "type": "string",
+            "description": "Raw HTML content to query"
+          },
+          "params": {
+            "$ref": "#/components/schemas/QueryParams"
+          }
+        }
+      },
+      "QueryParams": {
+        "type": "object",
+        "properties": {
+          "wait_for": {
+            "type": "number",
+            "description": "Seconds to wait before querying. Defaults to 0.",
+            "default": 0
+          },
+          "is_scroll_to_bottom_enabled": {
+            "type": "boolean",
+            "description": "Scroll page before extraction. Defaults to false.",
+            "default": false
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "fast"
+            ],
+            "description": "standard for deep analysis or fast for speed. Defaults to fast.",
+            "default": "fast"
+          },
+          "is_screenshot_enabled": {
+            "type": "boolean",
+            "description": "Capture screenshot as Base64. Defaults to false.",
+            "default": false
+          },
+          "browser_profile": {
+            "type": "string",
+            "enum": [
+              "light",
+              "stealth"
+            ],
+            "description": "Browser profile mode. Defaults to light.",
+            "default": "light"
+          },
+          "proxy": {
+            "type": "object",
+            "description": "Tetra or custom proxy configuration",
+            "properties": {
+              "country_code": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "QueryDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "Extracted data matching the query"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "request_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "screenshot": {
+                "type": "string",
+                "nullable": true,
+                "description": "Base64-encoded screenshot if enabled"
+              }
+            }
+          }
+        }
+      },
+      "CreateSessionRequest": {
+        "type": "object",
+        "properties": {
+          "browser_ua_preset": {
+            "type": "string",
+            "enum": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "default": "linux",
+            "description": "User agent preset"
+          },
+          "browser_profile": {
+            "type": "string",
+            "enum": [
+              "light",
+              "stealth"
+            ],
+            "default": "light",
+            "description": "Browser profile mode"
+          },
+          "inactivity_timeout_seconds": {
+            "type": "integer",
+            "default": 300,
+            "description": "Session timeout in seconds"
+          },
+          "proxy": {
+            "type": "object",
+            "description": "Proxy configuration"
+          },
+          "shutdown_mode": {
+            "type": "string",
+            "enum": [
+              "on_disconnect",
+              "on_inactivity_timeout"
+            ],
+            "description": "When to shut down the session"
+          }
+        }
+      },
+      "BrowserSession": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cdp_url": {
+            "type": "string",
+            "description": "WebSocket URL for Chrome DevTools Protocol"
+          },
+          "base_url": {
+            "type": "string",
+            "description": "Base URL for the session"
+          }
+        }
+      },
+      "QueryDocumentRequest": {
+        "type": "object",
+        "required": [
+          "file",
+          "body"
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "description": "PDF or image file (JPEG, JPG, PNG)"
+          },
+          "body": {
+            "type": "string",
+            "description": "Stringified JSON with query, prompt, and params fields"
+          }
+        }
+      },
+      "QueryDocumentResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "Extracted document data"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "request_id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "name": "X-API-Key",
+        "in": "header",
+        "description": "API key from the AgentQL Dev Portal"
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKey": []
+    }
+  ]
+}
