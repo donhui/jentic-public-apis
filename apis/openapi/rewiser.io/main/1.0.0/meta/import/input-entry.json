@@ -1,0 +1,487 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Rewiser",
+    "version": "1.0.0",
+    "description": "Rewiser is a smart finance tool to manage budgets, track transactions, and automate your financial workflow. The API features multi-layer protection including rate limiting (20 requests per 5 minutes), duplicate detection within 24-hour windows, request fingerprinting, and AI-powered data normalization for handling inconsistent input formats.",
+    "x-jentic-source-url": "https://www.rewiser.io/api"
+  },
+  "servers": [
+    {
+      "url": "https://api.rewiser.io/functions/v1",
+      "description": "Rewiser API Server"
+    }
+  ],
+  "paths": {
+    "/verify-auth": {
+      "post": {
+        "operationId": "verifyAuth",
+        "summary": "Verify authentication",
+        "description": "Validates the API key and retrieves user information",
+        "tags": [
+          "Authentication"
+        ],
+        "responses": {
+          "200": {
+            "description": "Authentication successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-recent-transactions": {
+      "get": {
+        "operationId": "getRecentTransactions",
+        "summary": "Get recent transactions",
+        "description": "Retrieves recent transactions with Zapier optimization. Supports dual authentication methods (Bearer token in header or API key in query parameter). Rate limited to 20 requests per 5 minutes.",
+        "tags": [
+          "Transactions"
+        ],
+        "parameters": [
+          {
+            "name": "folder_mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Folder mode filter"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "income",
+                "expense"
+              ]
+            },
+            "description": "Transaction type filter"
+          },
+          {
+            "name": "folder_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter transactions by folder ID"
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Response format (default is Zapier-optimized)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of recent transactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Transaction"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests - rate limit exceeded (20 requests per 5 minutes)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/create_multiple_transactions": {
+      "post": {
+        "operationId": "createMultipleTransactions",
+        "summary": "Create multiple transactions",
+        "description": "Creates multiple transactions with duplicate protection within 24-hour windows. Features AI-powered data normalization for handling inconsistent input formats. Rate limited to 20 requests per 5 minutes.",
+        "tags": [
+          "Transactions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransactionBatchInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Transactions created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionBatchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid input or duplicate transaction detected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests - rate limit exceeded (20 requests per 5 minutes)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-folders": {
+      "get": {
+        "operationId": "getFolders",
+        "summary": "Get folders",
+        "description": "Lists all accessible folders in Zapier-optimized format",
+        "tags": [
+          "Folders"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of folders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Folder"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer token authentication. Note: Some endpoints also support API key in query parameter as an alternative authentication method."
+      }
+    },
+    "schemas": {
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "description": "Whether the authentication is valid"
+          },
+          "user": {
+            "type": "object",
+            "description": "User information",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "User ID"
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "description": "User email"
+              },
+              "name": {
+                "type": "string",
+                "description": "User name"
+              }
+            }
+          }
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Transaction ID"
+          },
+          "folder_id": {
+            "type": "string",
+            "description": "Folder ID"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "income",
+              "expense"
+            ],
+            "description": "Transaction type"
+          },
+          "name": {
+            "type": "string",
+            "description": "Transaction name/description"
+          },
+          "amount": {
+            "type": "number",
+            "format": "float",
+            "description": "Transaction amount"
+          },
+          "planned_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Planned transaction date"
+          },
+          "is_paid": {
+            "type": "boolean",
+            "description": "Whether the transaction has been paid"
+          },
+          "note": {
+            "type": "string",
+            "description": "Optional transaction note"
+          },
+          "repeat_type": {
+            "type": "string",
+            "description": "Recurrence type for repeating transactions"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Transaction creation timestamp"
+          }
+        }
+      },
+      "TransactionInput": {
+        "type": "object",
+        "required": [
+          "folder_id",
+          "type",
+          "name",
+          "amount",
+          "planned_date"
+        ],
+        "properties": {
+          "folder_id": {
+            "type": "string",
+            "description": "Folder ID where the transaction will be created"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "income",
+              "expense"
+            ],
+            "description": "Transaction type"
+          },
+          "name": {
+            "type": "string",
+            "description": "Transaction name/description"
+          },
+          "amount": {
+            "type": "number",
+            "format": "float",
+            "description": "Transaction amount"
+          },
+          "planned_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Planned transaction date"
+          },
+          "is_paid": {
+            "type": "boolean",
+            "description": "Whether the transaction has been paid (optional)"
+          },
+          "note": {
+            "type": "string",
+            "description": "Optional transaction note"
+          },
+          "repeat_type": {
+            "type": "string",
+            "description": "Recurrence type for repeating transactions (optional)"
+          }
+        }
+      },
+      "TransactionBatchInput": {
+        "type": "object",
+        "required": [
+          "transactions"
+        ],
+        "properties": {
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionInput"
+            },
+            "description": "Array of transactions to create"
+          }
+        }
+      },
+      "TransactionBatchResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the batch creation was successful"
+          },
+          "created": {
+            "type": "integer",
+            "description": "Number of transactions successfully created"
+          },
+          "duplicates": {
+            "type": "integer",
+            "description": "Number of duplicate transactions detected and skipped"
+          },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Transaction"
+            },
+            "description": "Array of created transactions"
+          }
+        }
+      },
+      "Folder": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Folder ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Folder name"
+          },
+          "type": {
+            "type": "string",
+            "description": "Folder type"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Folder creation timestamp"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error code or type"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message"
+          },
+          "details": {
+            "type": "object",
+            "description": "Additional error details"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}
