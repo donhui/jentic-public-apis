@@ -1,0 +1,667 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "TheTeller API",
+    "version": "1.1.0",
+    "description": "TheTeller payment gateway API for processing card payments, mobile money transactions, bank transfers, and managing payment checkouts in Ghana and Africa.",
+    "x-jentic-source-url": "https://theteller.net/documentation"
+  },
+  "servers": [
+    {
+      "url": "https://test.theteller.net",
+      "description": "Test Environment"
+    },
+    {
+      "url": "https://prod.theteller.net",
+      "description": "Production Environment"
+    },
+    {
+      "url": "https://checkout-test.theteller.net",
+      "description": "Checkout Test Environment"
+    },
+    {
+      "url": "https://checkout.theteller.net",
+      "description": "Checkout Production Environment"
+    }
+  ],
+  "security": [
+    {
+      "basicAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Checkout",
+      "description": "Payment checkout initialization and management"
+    },
+    {
+      "name": "Transactions",
+      "description": "Transaction processing and status checks"
+    },
+    {
+      "name": "Bank Transfers",
+      "description": "Bank account validation and transfers"
+    },
+    {
+      "name": "Reversals",
+      "description": "Transaction reversal operations"
+    }
+  ],
+  "paths": {
+    "/checkout/initiate": {
+      "post": {
+        "operationId": "initiatePayment",
+        "summary": "Initiate Payment",
+        "description": "Initiates a payment and returns a checkout URL for the customer to complete the payment",
+        "tags": ["Checkout"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InitiatePaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment initiated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InitiatePaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid or missing parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid authentication credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.1/users/transactions/{transaction_id}/status": {
+      "get": {
+        "operationId": "getTransactionStatus",
+        "summary": "Check Transaction Status",
+        "description": "Retrieves the status of a completed transaction",
+        "tags": ["Transactions"],
+        "security": [
+          {
+            "merchantId": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "transaction_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Transaction identifier"
+          },
+          {
+            "name": "Cache-Control",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["no-cache"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction status retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Transaction not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.1/transaction/process": {
+      "post": {
+        "operationId": "processTransaction",
+        "summary": "Process Transaction",
+        "description": "Processes card payments, mobile money transactions, or fund transfers",
+        "tags": ["Transactions"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/CardTransactionRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/MobileMoneyTransactionRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BankNameEnquiryRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transaction processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TransactionProcessResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BankNameEnquiryResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid transaction data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.1/transaction/bank/ftc/authorize": {
+      "post": {
+        "operationId": "authorizeBankTransfer",
+        "summary": "Authorize Bank Transfer",
+        "description": "Completes a bank transfer after name enquiry validation",
+        "tags": ["Bank Transfers"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankTransferAuthorizeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bank transfer authorized successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankTransferAuthorizeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rest/resources/card/reversal": {
+      "post": {
+        "operationId": "reverseCardTransaction",
+        "summary": "Reverse Card Transaction",
+        "description": "Reverses a previously processed card transaction",
+        "tags": ["Reversals"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CardReversalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transaction reversed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionProcessResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Base64 encoded API_USERNAME:API_KEY from merchant dashboard"
+      },
+      "merchantId": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Merchant-Id",
+        "description": "Merchant ID from dashboard"
+      }
+    },
+    "schemas": {
+      "InitiatePaymentRequest": {
+        "type": "object",
+        "required": ["merchant_id", "transaction_id", "desc", "amount", "redirect_url", "email"],
+        "properties": {
+          "merchant_id": {
+            "type": "string",
+            "description": "Merchant identifier"
+          },
+          "transaction_id": {
+            "type": "string",
+            "description": "Unique transaction identifier (12 digits)",
+            "pattern": "^[0-9]{12}$"
+          },
+          "desc": {
+            "type": "string",
+            "description": "Payment description"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Payment amount"
+          },
+          "redirect_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to redirect after payment"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Customer email address"
+          }
+        }
+      },
+      "InitiatePaymentResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "success"
+          },
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "reason": {
+            "type": "string",
+            "example": "Token successfully generated"
+          },
+          "token": {
+            "type": "string",
+            "description": "Payment token"
+          },
+          "checkout_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to redirect customer for payment"
+          }
+        }
+      },
+      "TransactionStatusResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Status code (000 for success)"
+          },
+          "status": {
+            "type": "string",
+            "description": "Transaction status (approved, declined, etc.)"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Status reason description"
+          },
+          "transaction_id": {
+            "type": "string",
+            "description": "Transaction identifier"
+          },
+          "r_switch": {
+            "type": "string",
+            "description": "Payment switch used"
+          },
+          "subscriber_number": {
+            "type": "string",
+            "description": "Customer phone number"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Transaction amount"
+          }
+        }
+      },
+      "CardTransactionRequest": {
+        "type": "object",
+        "required": ["merchant_id", "transaction_id", "amount", "desc", "processing_code", "pan", "exp_month", "exp_year", "cvv", "r-switch"],
+        "properties": {
+          "merchant_id": {
+            "type": "string"
+          },
+          "transaction_id": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "desc": {
+            "type": "string"
+          },
+          "processing_code": {
+            "type": "string",
+            "enum": ["000000"],
+            "description": "Processing code for card transactions"
+          },
+          "pan": {
+            "type": "string",
+            "description": "Card number"
+          },
+          "exp_month": {
+            "type": "string",
+            "description": "Card expiry month (MM)"
+          },
+          "exp_year": {
+            "type": "string",
+            "description": "Card expiry year (YY)"
+          },
+          "cvv": {
+            "type": "string",
+            "description": "Card CVV code"
+          },
+          "r-switch": {
+            "type": "string",
+            "enum": ["VIS", "MAS"],
+            "description": "Card network (VIS for Visa, MAS for Mastercard)"
+          }
+        }
+      },
+      "MobileMoneyTransactionRequest": {
+        "type": "object",
+        "required": ["merchant_id", "transaction_id", "amount", "desc", "processing_code", "subscriber_number", "r-switch"],
+        "properties": {
+          "merchant_id": {
+            "type": "string"
+          },
+          "transaction_id": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "desc": {
+            "type": "string"
+          },
+          "processing_code": {
+            "type": "string",
+            "enum": ["000200", "404000"],
+            "description": "000200 for mobile money payment, 404000 for mobile transfer"
+          },
+          "subscriber_number": {
+            "type": "string",
+            "description": "Customer mobile number"
+          },
+          "r-switch": {
+            "type": "string",
+            "description": "Mobile money provider switch"
+          },
+          "pass_code": {
+            "type": "string",
+            "description": "Optional pass code for transfers"
+          }
+        }
+      },
+      "BankNameEnquiryRequest": {
+        "type": "object",
+        "required": ["merchant_id", "transaction_id", "processing_code", "account_number", "account_bank", "account_issuer"],
+        "properties": {
+          "merchant_id": {
+            "type": "string"
+          },
+          "transaction_id": {
+            "type": "string"
+          },
+          "processing_code": {
+            "type": "string",
+            "enum": ["404020"],
+            "description": "Processing code for bank account enquiry"
+          },
+          "account_number": {
+            "type": "string",
+            "description": "Bank account number"
+          },
+          "account_bank": {
+            "type": "string",
+            "description": "Bank code"
+          },
+          "account_issuer": {
+            "type": "string",
+            "enum": ["GIP"],
+            "description": "Account issuer (GIP for Ghana Interbank)"
+          }
+        }
+      },
+      "BankNameEnquiryResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "successful"
+          },
+          "code": {
+            "type": "string",
+            "example": "000"
+          },
+          "reference_id": {
+            "type": "string",
+            "description": "Reference ID for authorization"
+          },
+          "account_name": {
+            "type": "string",
+            "description": "Account holder name"
+          },
+          "reason": {
+            "type": "string",
+            "example": "Success"
+          }
+        }
+      },
+      "BankTransferAuthorizeRequest": {
+        "type": "object",
+        "required": ["merchant_id", "reference_id"],
+        "properties": {
+          "merchant_id": {
+            "type": "string"
+          },
+          "reference_id": {
+            "type": "string",
+            "description": "Reference ID from name enquiry"
+          }
+        }
+      },
+      "BankTransferAuthorizeResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "TransactionProcessResponse": {
+        "type": "object",
+        "properties": {
+          "transaction_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "example": "approved"
+          },
+          "code": {
+            "type": "string",
+            "example": "000"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "CardReversalRequest": {
+        "type": "object",
+        "required": ["merchant_id", "transaction_id", "amount"],
+        "properties": {
+          "merchant_id": {
+            "type": "string"
+          },
+          "transaction_id": {
+            "type": "string",
+            "description": "Original transaction ID to reverse"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Amount to reverse"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "error"
+          },
+          "code": {
+            "type": "string",
+            "description": "Error code"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Error description"
+          }
+        }
+      }
+    }
+  }
+}
