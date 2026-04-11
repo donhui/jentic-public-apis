@@ -1,0 +1,390 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "3Scribe API",
+    "version": "1.0",
+    "description": "3Scribe is the most accurate, automated text transcription service. Convert audio and video files to text with near human accuracy at automated prices.",
+    "x-jentic-source-url": "https://helpcentre.3scri.be/developers/api/",
+    "contact": {
+      "name": "3Scribe Support",
+      "email": "support@3scri.be"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.3scri.be",
+      "description": "Production API"
+    }
+  ],
+  "security": [
+    {
+      "apiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Jobs",
+      "description": "Transcription job management"
+    },
+    {
+      "name": "Transcribe",
+      "description": "Submit new transcription jobs"
+    }
+  ],
+  "paths": {
+    "/jobs": {
+      "get": {
+        "operationId": "listTranscriptionJobs",
+        "summary": "List transcription jobs",
+        "description": "Retrieve a list of transcription jobs. Returns a page of 10 records by default, sorted by job name ascending.",
+        "tags": [
+          "Jobs"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number to retrieve",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "perpage",
+            "in": "query",
+            "description": "Number of records per page. Allowed values: 10, 25, 50, 100",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                10,
+                25,
+                50,
+                100
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "description": "Field to order by. 1=Job Name, 2=Duration, 3=Job Status, 4=Date Created",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                1,
+                2,
+                3,
+                4
+              ]
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "description": "Sort direction. 1=Ascending, 2=Descending",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                1,
+                2
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of transcription job items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TranscriptionJobListItem"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid API key"
+          }
+        }
+      }
+    },
+    "/jobs/{jobId}": {
+      "get": {
+        "operationId": "getTranscriptionJob",
+        "summary": "Retrieve a transcription job",
+        "description": "Retrieve the details for a specific transcription job including its transcript.",
+        "tags": [
+          "Jobs"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifying code for the transcription job",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transcription job details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptionJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid API key"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteTranscriptionJob",
+        "summary": "Delete a transcription job",
+        "description": "Delete the specified job. All files and transcripts will be completely removed and cannot be restored.",
+        "tags": [
+          "Jobs"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifying code for the transcription job",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job deleted successfully"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid API key"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/transcribe": {
+      "post": {
+        "operationId": "createTranscriptionJob",
+        "summary": "Create a new transcription job",
+        "description": "Submit a new file for transcription. The file can be provided via a pre-signed upload URL or a publicly available URL.",
+        "tags": [
+          "Transcribe"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranscribeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transcription job created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptionJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid API key"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "APIKey",
+        "description": "API key found in the 3Scribe portal API key page"
+      }
+    },
+    "schemas": {
+      "TranscriptionJob": {
+        "type": "object",
+        "properties": {
+          "jobid": {
+            "type": "string",
+            "description": "Unique identifying code for the transcription job"
+          },
+          "jobname": {
+            "type": "string",
+            "description": "Name provided to identify the job"
+          },
+          "url": {
+            "type": "string",
+            "nullable": true,
+            "description": "Pre-signed upload URL if applicable"
+          },
+          "jobstatus": {
+            "type": "string",
+            "description": "Current status: Completed, Inactive, Requested, Processing, Error"
+          },
+          "creationdate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC creation time in ISO-8601 format"
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Length of the uploaded file in seconds"
+          },
+          "language": {
+            "type": "string",
+            "description": "Language code used for transcription"
+          },
+          "source": {
+            "type": "string",
+            "description": "Source of the job request (e.g., Direct, Zapier, Zendesk)"
+          },
+          "errormessage": {
+            "type": "string",
+            "nullable": true,
+            "description": "Error explanation if unable to retrieve data"
+          },
+          "transcription": {
+            "$ref": "#/components/schemas/Transcription"
+          }
+        }
+      },
+      "TranscriptionJobListItem": {
+        "type": "object",
+        "properties": {
+          "jobid": {
+            "type": "string",
+            "description": "Unique identifying code for the transcription job"
+          },
+          "jobname": {
+            "type": "string",
+            "description": "Name provided to identify the job"
+          },
+          "creationdate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC creation time in ISO-8601 format"
+          },
+          "jobstatus": {
+            "type": "string",
+            "description": "Current status: Completed, Inactive, Requested, Processing, Error"
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Length of the uploaded file in seconds"
+          },
+          "language": {
+            "type": "string",
+            "description": "Language code used for transcription"
+          },
+          "source": {
+            "type": "string",
+            "description": "Source of the job request"
+          }
+        }
+      },
+      "Transcription": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Raw text transcript"
+          },
+          "words": {
+            "type": "array",
+            "description": "Array of word objects with timing and speaker info",
+            "items": {
+              "$ref": "#/components/schemas/Word"
+            }
+          }
+        }
+      },
+      "Word": {
+        "type": "object",
+        "properties": {
+          "word": {
+            "type": "string",
+            "description": "The individual word with punctuation"
+          },
+          "speaker": {
+            "type": "integer",
+            "description": "Speaker identifier"
+          },
+          "confidence": {
+            "type": "number",
+            "format": "double",
+            "description": "Confidence percentage (1.0 = 100%)"
+          },
+          "timing": {
+            "type": "integer",
+            "description": "Milliseconds from audio start to word start"
+          }
+        }
+      },
+      "TranscribeRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Descriptive title for the transcription job"
+          },
+          "requesturl": {
+            "type": "string",
+            "description": "Filename to upload (for pre-signed URL method)"
+          },
+          "url": {
+            "type": "string",
+            "description": "Publicly available URL to a media file"
+          },
+          "language": {
+            "type": "string",
+            "description": "ISO language and country code (e.g., en-US, fr-FR)"
+          },
+          "detectlanguage": {
+            "type": "boolean",
+            "description": "Override language setting and auto-detect language"
+          }
+        }
+      }
+    }
+  }
+}
