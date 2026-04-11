@@ -1,0 +1,372 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Remember The Milk",
+    "version": "1.0.0",
+    "description": "REST API for the Remember The Milk task management service. All methods are called via a single REST endpoint with the method name as a query parameter. Authentication uses API key with MD5 signature and auth tokens.",
+    "x-jentic-source-url": "https://www.rememberthemilk.com/services/api/"
+  },
+  "servers": [
+    {
+      "url": "https://api.rememberthemilk.com/services"
+    }
+  ],
+  "paths": {
+    "/rest/": {
+      "get": {
+        "operationId": "callMethod",
+        "summary": "Call an RTM API method",
+        "description": "Generic REST endpoint for all Remember The Milk API methods. The specific method is selected via the 'method' query parameter.",
+        "tags": ["General"],
+        "parameters": [
+          {
+            "name": "method",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "API method name (e.g., rtm.tasks.getList)"
+          },
+          {
+            "name": "api_key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Your API key"
+          },
+          {
+            "name": "auth_token",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Authentication token (required for most methods)"
+          },
+          {
+            "name": "api_sig",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "MD5 signature of the request parameters"
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["rest", "json"],
+              "default": "rest"
+            },
+            "description": "Response format (rest=XML, json=JSON)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized - invalid API key or auth token"
+          }
+        }
+      }
+    },
+    "/auth/": {
+      "get": {
+        "operationId": "authorize",
+        "summary": "Redirect user to authorization page",
+        "description": "Redirects the user to the RTM authorization page. After authorization, the user is redirected back with a frob parameter.",
+        "tags": ["Authentication"],
+        "parameters": [
+          {
+            "name": "api_key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Your API key"
+          },
+          {
+            "name": "perms",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["read", "write", "delete"]
+            },
+            "description": "Permission level requested"
+          },
+          {
+            "name": "frob",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Frob from rtm.auth.getFrob (required for desktop apps)"
+          },
+          {
+            "name": "api_sig",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "MD5 signature of the request parameters"
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to authorization page"
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiResponse": {
+        "type": "object",
+        "properties": {
+          "rsp": {
+            "type": "object",
+            "properties": {
+              "stat": {
+                "type": "string",
+                "enum": ["ok", "fail"],
+                "description": "Response status"
+              },
+              "err": {
+                "$ref": "#/components/schemas/ApiError"
+              }
+            },
+            "required": ["stat"]
+          }
+        }
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Error code"
+          },
+          "msg": {
+            "type": "string",
+            "description": "Error message"
+          }
+        }
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Task ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Task name"
+          },
+          "due": {
+            "type": "string",
+            "description": "Due date"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["1", "2", "3", "N"],
+            "description": "Priority (1=high, 2=medium, 3=low, N=none)"
+          },
+          "completed": {
+            "type": "string",
+            "description": "Completion date"
+          },
+          "url": {
+            "type": "string",
+            "description": "Associated URL"
+          },
+          "estimate": {
+            "type": "string",
+            "description": "Time estimate"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Tags associated with the task"
+          }
+        }
+      },
+      "TaskList": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "List ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "List name"
+          },
+          "deleted": {
+            "type": "string",
+            "description": "Whether the list is deleted"
+          },
+          "locked": {
+            "type": "string",
+            "description": "Whether the list is locked"
+          },
+          "archived": {
+            "type": "string",
+            "description": "Whether the list is archived"
+          },
+          "sort_order": {
+            "type": "string",
+            "description": "Sort order"
+          }
+        }
+      },
+      "Contact": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Contact ID"
+          },
+          "fullname": {
+            "type": "string",
+            "description": "Full name"
+          },
+          "username": {
+            "type": "string",
+            "description": "Username"
+          }
+        }
+      },
+      "Group": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Group ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Group name"
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contact"
+            },
+            "description": "Contacts in the group"
+          }
+        }
+      },
+      "Note": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Note ID"
+          },
+          "title": {
+            "type": "string",
+            "description": "Note title"
+          },
+          "body": {
+            "type": "string",
+            "description": "Note body text"
+          },
+          "created": {
+            "type": "string",
+            "description": "Creation date"
+          },
+          "modified": {
+            "type": "string",
+            "description": "Last modified date"
+          }
+        }
+      },
+      "Location": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Location ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Location name"
+          },
+          "longitude": {
+            "type": "string",
+            "description": "Longitude"
+          },
+          "latitude": {
+            "type": "string",
+            "description": "Latitude"
+          },
+          "zoom": {
+            "type": "string",
+            "description": "Map zoom level"
+          },
+          "address": {
+            "type": "string",
+            "description": "Address"
+          },
+          "viewable": {
+            "type": "string",
+            "description": "Whether location is viewable"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "api_key",
+        "description": "API key obtained from Remember The Milk. Requests must also include api_sig (MD5 signature computed from shared secret and sorted parameters)."
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "General",
+      "description": "Generic REST method invocation endpoint"
+    },
+    {
+      "name": "Authentication",
+      "description": "Authentication and authorization flow"
+    }
+  ]
+}
