@@ -1,0 +1,773 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Rollbar API",
+    "version": "1.0.0",
+    "description": "Rollbar error tracking and monitoring API. Provides endpoints for managing items, occurrences, deployments, metrics, projects, teams, and users.",
+    "x-jentic-source-url": "https://docs.rollbar.com/reference/getting-started-1"
+  },
+  "servers": [
+    {
+      "url": "https://api.rollbar.com/api/1"
+    }
+  ],
+  "paths": {
+    "/status/ping": {
+      "get": {
+        "operationId": "healthCheck",
+        "summary": "Test API connectivity",
+        "description": "Returns 'pong' to verify the API is reachable.",
+        "tags": [
+          "Health"
+        ],
+        "responses": {
+          "200": {
+            "description": "API is reachable",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "pong"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/item/": {
+      "post": {
+        "operationId": "createItem",
+        "summary": "Create an item occurrence",
+        "description": "Report an error, message, or crash to Rollbar.",
+        "tags": [
+          "Items"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Item created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateItemResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid token"
+          },
+          "413": {
+            "description": "Request too large - max 1024 KB"
+          }
+        }
+      }
+    },
+    "/items/": {
+      "get": {
+        "operationId": "listItems",
+        "summary": "List all items",
+        "description": "Retrieve a paginated list of items for the project.",
+        "tags": [
+          "Items"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by item status (e.g., active)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "description": "Filter by severity level",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "critical",
+                "error",
+                "warning",
+                "info",
+                "debug"
+              ]
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "description": "Filter by environment",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number (100 items per page)",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/item/{id}": {
+      "get": {
+        "operationId": "getItemById",
+        "summary": "Get item by ID",
+        "tags": [
+          "Items"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Item"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Item not found"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateItem",
+        "summary": "Update an item",
+        "tags": [
+          "Items"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string"
+                  },
+                  "level": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "assigned_user_id": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Item updated"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/instances": {
+      "get": {
+        "operationId": "listOccurrences",
+        "summary": "List project occurrences",
+        "tags": [
+          "Occurrences"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of occurrences"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/item/{id}/instances": {
+      "get": {
+        "operationId": "listItemOccurrences",
+        "summary": "List occurrences for a specific item",
+        "tags": [
+          "Occurrences"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of occurrences for the item"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/instance/{id}": {
+      "get": {
+        "operationId": "getOccurrence",
+        "summary": "Get a single occurrence",
+        "tags": [
+          "Occurrences"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Occurrence details"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteOccurrence",
+        "summary": "Delete an occurrence",
+        "tags": [
+          "Occurrences"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Occurrence deleted"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/deploy/": {
+      "post": {
+        "operationId": "createDeployment",
+        "summary": "Report a deployment",
+        "tags": [
+          "Deployments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "environment": {
+                    "type": "string"
+                  },
+                  "revision": {
+                    "type": "string"
+                  },
+                  "rollbar_username": {
+                    "type": "string"
+                  },
+                  "local_username": {
+                    "type": "string"
+                  },
+                  "comment": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "environment",
+                  "revision"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deployment recorded"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listDeployments",
+        "summary": "List deployments",
+        "tags": [
+          "Deployments"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of deployments"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/deploy/{id}": {
+      "get": {
+        "operationId": "getDeployment",
+        "summary": "Get deployment details",
+        "tags": [
+          "Deployments"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deployment details"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateDeployment",
+        "summary": "Update a deployment",
+        "tags": [
+          "Deployments"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "comment": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deployment updated"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/metrics/items": {
+      "post": {
+        "operationId": "getItemMetrics",
+        "summary": "Get item metrics",
+        "tags": [
+          "Metrics"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Item metrics"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/metrics/occurrences": {
+      "post": {
+        "operationId": "getOccurrenceMetrics",
+        "summary": "Get occurrence metrics",
+        "tags": [
+          "Metrics"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Occurrence metrics"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/metrics/ttr": {
+      "post": {
+        "operationId": "getResolutionTimeMetrics",
+        "summary": "Get time-to-resolution metrics",
+        "tags": [
+          "Metrics"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "TTR metrics"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateItemRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "environment",
+              "body"
+            ],
+            "properties": {
+              "environment": {
+                "type": "string",
+                "maxLength": 255,
+                "description": "Environment name (e.g., production)"
+              },
+              "body": {
+                "type": "object",
+                "description": "Main data payload containing trace, trace_chain, message, or crash_report"
+              },
+              "level": {
+                "type": "string",
+                "enum": [
+                  "critical",
+                  "error",
+                  "warning",
+                  "info",
+                  "debug"
+                ]
+              },
+              "timestamp": {
+                "type": "integer",
+                "description": "Unix timestamp"
+              },
+              "code_version": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "platform": {
+                "type": "string"
+              },
+              "language": {
+                "type": "string"
+              },
+              "framework": {
+                "type": "string"
+              },
+              "context": {
+                "type": "string"
+              },
+              "fingerprint": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 255
+              },
+              "uuid": {
+                "type": "string",
+                "maxLength": 36
+              },
+              "custom": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      },
+      "CreateItemResponse": {
+        "type": "object",
+        "properties": {
+          "err": {
+            "type": "integer"
+          },
+          "result": {
+            "type": "object",
+            "properties": {
+              "uuid": {
+                "type": "string"
+              },
+              "id": {
+                "type": "integer",
+                "nullable": true
+              }
+            }
+          }
+        }
+      },
+      "Item": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "counter": {
+            "type": "integer"
+          },
+          "environment": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "total_occurrences": {
+            "type": "integer"
+          }
+        }
+      },
+      "ItemListResponse": {
+        "type": "object",
+        "properties": {
+          "err": {
+            "type": "integer"
+          },
+          "result": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Item"
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "err": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "accessToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Rollbar-Access-Token",
+        "description": "Rollbar project or account access token"
+      }
+    }
+  },
+  "security": [
+    {
+      "accessToken": []
+    }
+  ]
+}
