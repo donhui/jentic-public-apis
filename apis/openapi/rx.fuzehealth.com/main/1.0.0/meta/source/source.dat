@@ -1,0 +1,1907 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "FuzeRx Pharmacy & Telehealth API",
+    "description": "The FuzeRx API provides access to pharmacy and telehealth infrastructure including patient management, prescription handling, fill requests, transfers, insurance, copay requests, coverage requests, and prior authorizations.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://rx.fuzehealth.com/api-docs/introduction"
+  },
+  "servers": [
+    {
+      "url": "https://rxapi.fuzehealth.com/v1",
+      "description": "Production"
+    },
+    {
+      "url": "https://rxapi.sandbox.fuzehealth.com/v1",
+      "description": "Sandbox"
+    }
+  ],
+  "security": [
+    {
+      "apiKeyAuth": []
+    }
+  ],
+  "tags": [
+    { "name": "Patients", "description": "Patient record management" },
+    { "name": "Prescriptions", "description": "Prescription retrieval and management" },
+    { "name": "Fill Requests", "description": "Medication fill request operations" },
+    { "name": "Transfers", "description": "Prescription transfer requests" },
+    { "name": "Direct Transfers", "description": "Direct prescription transfers between pharmacies" },
+    { "name": "Insurance", "description": "Insurance management" },
+    { "name": "Copay Requests", "description": "Copay request operations" },
+    { "name": "Coverage Requests", "description": "Coverage/eligibility request operations" },
+    { "name": "Prior Authorization", "description": "Prior authorization operations" },
+    { "name": "Patient Safety", "description": "Drug, allergy, and condition search" },
+    { "name": "Webhook Events", "description": "Webhook event retrieval" }
+  ],
+  "paths": {
+    "/patient": {
+      "put": {
+        "operationId": "createPatient",
+        "summary": "Create a patient",
+        "description": "Generates a patient record in the FuzeRx ecosystem. Returns a patient_token for subsequent API requests.",
+        "tags": ["Patients"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePatientRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Patient created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePatientResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - validation errors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "findPatient",
+        "summary": "Find a patient",
+        "description": "Search for patient information by demographic fields without a patient_token.",
+        "tags": ["Patients"],
+        "parameters": [
+          {
+            "name": "first_name",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Legal patient first name"
+          },
+          {
+            "name": "last_name",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Legal patient last name"
+          },
+          {
+            "name": "dob",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Date of birth in YYYYMMDD format"
+          },
+          {
+            "name": "gender",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "enum": ["male", "female"] },
+            "description": "Assigned gender at birth"
+          },
+          {
+            "name": "zip",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Patient zip code"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Patient found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindPatientResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patient/{patient_token}": {
+      "get": {
+        "operationId": "getPatient",
+        "summary": "Get a patient",
+        "description": "Retrieve patient information using the patient_token.",
+        "tags": ["Patients"],
+        "parameters": [
+          {
+            "name": "patient_token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Token referencing the patient record"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Patient details returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatientDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Patient does not belong to this customer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "updatePatient",
+        "summary": "Update a patient",
+        "description": "Updates a patient record. Only non-required fields can be updated (first_name, last_name, dob, gender cannot be changed).",
+        "tags": ["Patients"],
+        "parameters": [
+          {
+            "name": "patient_token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Token referencing the patient record"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePatientRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Patient updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdatePatientResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - restricted field or validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patient/{patient_token}/prescriptions": {
+      "get": {
+        "operationId": "getPatientPrescriptions",
+        "summary": "Get patient prescriptions",
+        "description": "Retrieve the list of a patient's prescriptions including prescription token, medication details, and fill status.",
+        "tags": ["Prescriptions"],
+        "parameters": [
+          {
+            "name": "patient_token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Token referencing the patient record"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of patient prescriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatientPrescriptionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patient/{patient_token}/patient_survey": {
+      "get": {
+        "operationId": "getPatientSurvey",
+        "summary": "Get a patient survey",
+        "description": "Retrieve the patient safety survey information for a patient.",
+        "tags": ["Patient Safety"],
+        "parameters": [
+          {
+            "name": "patient_token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Token referencing the patient record"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Patient survey returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prescription/{prescription_token}": {
+      "get": {
+        "operationId": "getPrescription",
+        "summary": "Get a prescription",
+        "description": "Retrieve detailed prescription information using the prescription token.",
+        "tags": ["Prescriptions"],
+        "parameters": [
+          {
+            "name": "prescription_token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Token referencing the prescription"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prescription details returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrescriptionDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prescription/{prescription_token}/fill/{fill_number}/claims": {
+      "get": {
+        "operationId": "getInsuranceClaimDetails",
+        "summary": "Get insurance claim details",
+        "description": "Retrieve insurance claim details for a specific prescription fill.",
+        "tags": ["Insurance"],
+        "parameters": [
+          {
+            "name": "prescription_token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Token referencing the prescription"
+          },
+          {
+            "name": "fill_number",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Fill number for the prescription"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Claim details returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/transfer_request": {
+      "post": {
+        "operationId": "createTransferRequest",
+        "summary": "Create a transfer request",
+        "description": "Create a prescription transfer request to transfer a patient's prescription from another pharmacy to FuzeRx.",
+        "tags": ["Transfers"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferRequestBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transfer request created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferRequestResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listTransferRequests",
+        "summary": "List transfer requests",
+        "description": "Retrieve a list of transfer requests with optional pagination.",
+        "tags": ["Transfers"],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer" },
+            "description": "Page number for pagination"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of transfer requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/transfer_request/{transfer_token}": {
+      "get": {
+        "operationId": "getTransferRequest",
+        "summary": "Get a transfer request",
+        "description": "Retrieve details of a specific transfer request by its token.",
+        "tags": ["Transfers"],
+        "parameters": [
+          {
+            "name": "transfer_token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Token referencing the transfer request"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transfer request details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/direct_transfer": {
+      "post": {
+        "operationId": "createDirectTransfer",
+        "summary": "Create a direct transfer",
+        "description": "Programmatic transfer of a prescription from your pharmacy to FuzeRx pharmacy.",
+        "tags": ["Direct Transfers"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DirectTransferRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Direct transfer created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectTransferResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fill_request": {
+      "post": {
+        "operationId": "createFillRequest",
+        "summary": "Create a fill request",
+        "description": "Create a medication fill request to dispense and ship medications to a patient.",
+        "tags": ["Fill Requests"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FillRequestBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fill request created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FillRequestResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fill_request/{request_id}": {
+      "get": {
+        "operationId": "getFillRequest",
+        "summary": "Get a fill request",
+        "description": "Retrieve details of a specific fill request.",
+        "tags": ["Fill Requests"],
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Fill request identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fill request details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fill_request/{request_id}/webhook_events": {
+      "get": {
+        "operationId": "getFillRequestWebhookEvents",
+        "summary": "Get fill request webhook events",
+        "description": "Retrieve webhook events associated with a fill request.",
+        "tags": ["Fill Requests"],
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Fill request identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook events for the fill request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/WebhookEvent"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fill_request/{fill_request_id}/stripe_payment": {
+      "put": {
+        "operationId": "updateFillRequestPaymentIntent",
+        "summary": "Update fill request payment intent",
+        "description": "Update the Stripe payment intent for a fill request.",
+        "tags": ["Fill Requests"],
+        "parameters": [
+          {
+            "name": "fill_request_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Fill request identifier"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment intent updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/update_request": {
+      "post": {
+        "operationId": "updateFillRequest",
+        "summary": "Update a fill request",
+        "description": "Update an existing fill request.",
+        "tags": ["Fill Requests"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fill request updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cancel_request": {
+      "post": {
+        "operationId": "cancelFillRequest",
+        "summary": "Cancel a fill request",
+        "description": "Cancel an existing fill request.",
+        "tags": ["Fill Requests"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "request_id": {
+                    "type": "string",
+                    "description": "Fill request identifier to cancel"
+                  }
+                },
+                "required": ["request_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fill request cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/insurance": {
+      "post": {
+        "operationId": "createInsurance",
+        "summary": "Create an insurance record",
+        "description": "Create an insurance record for a patient.",
+        "tags": ["Insurance"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInsuranceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Insurance record created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/insurance/{insurance_token}": {
+      "get": {
+        "operationId": "getInsuranceDetails",
+        "summary": "Get insurance details",
+        "description": "Retrieve insurance details by insurance token.",
+        "tags": ["Insurance"],
+        "parameters": [
+          {
+            "name": "insurance_token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Token referencing the insurance record"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Insurance details returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/copay_request": {
+      "post": {
+        "operationId": "createCopayRequest",
+        "summary": "Create a copay request",
+        "description": "Create a copay request for a patient's prescription.",
+        "tags": ["Copay Requests"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopayRequestBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Copay request created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CopayRequestResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/copay_request/cancel": {
+      "post": {
+        "operationId": "cancelCopayRequest",
+        "summary": "Cancel a copay request",
+        "description": "Cancel an existing copay request.",
+        "tags": ["Copay Requests"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Copay request cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coverage_request": {
+      "post": {
+        "operationId": "createCoverageRequest",
+        "summary": "Create a coverage request",
+        "description": "Create a coverage request to investigate whether a patient has valid insurance plans or benefit details.",
+        "tags": ["Coverage Requests"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoverageRequestBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Coverage request created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverageRequestResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prior_authorization": {
+      "post": {
+        "operationId": "createPriorAuthorization",
+        "summary": "Create a prior authorization request",
+        "description": "Create a prior authorization request for a patient's prescription.",
+        "tags": ["Prior Authorization"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Prior authorization request created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patient_safety/allergies": {
+      "get": {
+        "operationId": "searchAllergies",
+        "summary": "Search allergies",
+        "description": "Search for allergies by keyword.",
+        "tags": ["Patient Safety"],
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Search term for allergies"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Allergy search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patient_safety/conditions": {
+      "get": {
+        "operationId": "searchConditions",
+        "summary": "Search conditions",
+        "description": "Search for medical conditions by keyword.",
+        "tags": ["Patient Safety"],
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Search term for conditions"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Condition search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patient_safety/medications": {
+      "get": {
+        "operationId": "searchMedications",
+        "summary": "Search medications",
+        "description": "Search for medications by keyword.",
+        "tags": ["Patient Safety"],
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Search term for medications"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Medication search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhook_events/{webhook_type}": {
+      "get": {
+        "operationId": "getWebhookEvents",
+        "summary": "Get webhook events",
+        "description": "Retrieve webhook events by type with optional query filters. Supports filtering by id, timestamp, next, and status using operators like $lt, $gt, $lte, $gte, $eq.",
+        "tags": ["Webhook Events"],
+        "parameters": [
+          {
+            "name": "webhook_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["notify_rx"]
+            },
+            "description": "Type of webhook events to retrieve"
+          },
+          {
+            "name": "timestamp",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Filter by timestamp using operators (e.g. $gt:1625177120)"
+          },
+          {
+            "name": "next",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Pagination token from previous response next_page_token"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Filter by delivery status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook events returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEventsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "API key authentication. Format: 'ApiKey {YOUR_API_KEY}'"
+      }
+    },
+    "schemas": {
+      "CreatePatientRequest": {
+        "type": "object",
+        "required": ["first_name", "last_name", "dob", "gender"],
+        "properties": {
+          "first_name": { "type": "string", "description": "Legal patient first name" },
+          "last_name": { "type": "string", "description": "Legal patient last name" },
+          "guardian": { "type": "string", "description": "Pet owner first name", "nullable": true },
+          "dob": { "type": "string", "description": "Date of birth in YYYYMMDD format" },
+          "gender": { "type": "string", "enum": ["male", "female"], "description": "Assigned gender at birth" },
+          "ssn": { "type": "string", "description": "Social Security Number (e.g. 123456789)" },
+          "communications_opt_in": { "type": "boolean", "description": "Communications opt in" },
+          "id_image": { "type": "string", "description": "URL for image of user ID" },
+          "ssn_serial": { "type": "string", "description": "Last 4 digits of SSN" },
+          "mbi": { "type": "string", "description": "Medicare Beneficiary ID" },
+          "zip": { "type": "string", "description": "Patient zip code" },
+          "company": { "type": "string", "description": "Company name" },
+          "street1": { "type": "string", "description": "Street address line 1" },
+          "street2": { "type": "string", "description": "Street address line 2" },
+          "city": { "type": "string", "description": "City" },
+          "state": { "type": "string", "description": "Two-letter state abbreviation" },
+          "country": { "type": "string", "description": "Country code" },
+          "phone": { "type": "string", "description": "Phone number" },
+          "email": { "type": "string", "description": "Email address" },
+          "language_preference": { "type": "string", "description": "Preferred language (English or Spanish)" },
+          "species": { "type": "string", "description": "Patient species. Default is HUMAN." },
+          "viewed_notice_of_privacy_practices": { "type": "boolean", "description": "Received Notice of Privacy Practices" },
+          "viewed_notice_of_privacy_practices_date": { "type": "string", "description": "Date in YYYYMMDD format" }
+        }
+      },
+      "CreatePatientResponse": {
+        "type": "object",
+        "properties": {
+          "patient_token": { "type": "string", "description": "Token to reference the patient record" }
+        }
+      },
+      "UpdatePatientRequest": {
+        "type": "object",
+        "properties": {
+          "ssn": { "type": "string" },
+          "communications_opt_in": { "type": "boolean" },
+          "id_image": { "type": "string" },
+          "ssn_serial": { "type": "string" },
+          "mbi": { "type": "string" },
+          "zip": { "type": "string" },
+          "company": { "type": "string" },
+          "street1": { "type": "string" },
+          "street2": { "type": "string" },
+          "city": { "type": "string" },
+          "state": { "type": "string" },
+          "phone": { "type": "string" },
+          "email": { "type": "string" },
+          "language_preference": { "type": "string" },
+          "viewed_notice_of_privacy_practices": { "type": "boolean" },
+          "viewed_notice_of_privacy_practices_date": { "type": "string" }
+        }
+      },
+      "UpdatePatientResponse": {
+        "type": "object",
+        "properties": {
+          "patient_token": { "type": "string" },
+          "timestamp": { "type": "integer" },
+          "status": { "type": "string" },
+          "details": {
+            "type": "object",
+            "properties": {
+              "message": { "type": "string" }
+            }
+          }
+        }
+      },
+      "FindPatientResponse": {
+        "type": "object",
+        "properties": {
+          "first_name": { "type": "string" },
+          "last_name": { "type": "string" },
+          "guardian": { "type": "string" },
+          "gender": { "type": "string" },
+          "dob": { "type": "string" },
+          "communications_opt_in": { "type": "boolean" },
+          "patient_token": { "type": "string" },
+          "species": { "type": "string" }
+        }
+      },
+      "PatientDetail": {
+        "type": "object",
+        "properties": {
+          "first_name": { "type": "string" },
+          "last_name": { "type": "string" },
+          "guardian": { "type": "string" },
+          "gender": { "type": "string" },
+          "dob": { "type": "string" },
+          "mbi": { "type": "string" },
+          "address": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "street1": { "type": "string" },
+              "street2": { "type": "string" },
+              "city": { "type": "string" },
+              "state": { "type": "string" },
+              "zip": { "type": "string" },
+              "company": { "type": "string", "nullable": true },
+              "country": { "type": "string" },
+              "phone": { "type": "string" },
+              "email": { "type": "string" },
+              "communications_opt_in": { "type": "boolean" }
+            }
+          },
+          "patient_token": { "type": "string" }
+        }
+      },
+      "PatientPrescriptionsResponse": {
+        "type": "object",
+        "properties": {
+          "patient_token": { "type": "string" },
+          "prescriptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Prescription"
+            }
+          }
+        }
+      },
+      "Prescription": {
+        "type": "object",
+        "properties": {
+          "prescription_token": { "type": "string" },
+          "fillable": { "type": "boolean" },
+          "is_refill": { "type": "integer" },
+          "medication_name": { "type": "string" },
+          "rx_number": { "type": "string" },
+          "medication_id": { "type": "string" },
+          "origin": { "type": "string" },
+          "prescribed_brand_name": { "type": "string" },
+          "prescribed_drug_strength": { "type": "string" },
+          "prescribed_generic_name": { "type": "string" },
+          "prescribed_written_name": { "type": "string" },
+          "prescribed_quantity": { "type": "integer" },
+          "prescribed_quantity_unit": { "type": "string" },
+          "prescribed_ndc": { "type": "string" },
+          "original_prescribed_ndc": { "type": "string", "nullable": true },
+          "medication_sig": { "type": "string" },
+          "prescriber": { "type": "string" },
+          "prescriber_npi": { "type": "string" },
+          "prescriber_order_number": { "type": "string" },
+          "date_written": { "type": "string" },
+          "date_filled_utc": { "type": "string" },
+          "last_filled_date": { "type": "string" },
+          "expiration_date_utc": { "type": "string" },
+          "days_supply": { "type": "string" },
+          "number_of_refills_allowed": { "type": "integer" },
+          "refills_remaining": { "type": "integer" },
+          "quantity_remaining": { "type": "integer" },
+          "current_rx_status_text": { "type": "string" }
+        }
+      },
+      "PrescriptionDetailResponse": {
+        "type": "object",
+        "properties": {
+          "prescription": {
+            "$ref": "#/components/schemas/PrescriptionDetail"
+          }
+        }
+      },
+      "PrescriptionDetail": {
+        "type": "object",
+        "properties": {
+          "date_written": { "type": "string" },
+          "expiration_date": { "type": "string" },
+          "days_supply": { "type": "string" },
+          "is_refill": { "type": "integer" },
+          "last_filled_date": { "type": "string", "nullable": true },
+          "medication_sig": { "type": "string" },
+          "number_of_refills_allowed": { "type": "integer" },
+          "origin": { "type": "string" },
+          "prescribed_brand_name": { "type": "string" },
+          "prescribed_drug_strength": { "type": "string" },
+          "prescribed_generic_name": { "type": "string" },
+          "prescribed_ndc": { "type": "string" },
+          "prescribed_quantity": { "type": "integer" },
+          "prescribed_written_name": { "type": "string" },
+          "prescriber": { "type": "string" },
+          "prescriber_address": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "company": { "type": "string", "nullable": true },
+              "street1": { "type": "string" },
+              "street2": { "type": "string", "nullable": true },
+              "city": { "type": "string" },
+              "state": { "type": "string" },
+              "zip": { "type": "string" },
+              "country": { "type": "string" },
+              "phone": { "type": "string" },
+              "email": { "type": "string" }
+            }
+          },
+          "prescriber_npi": { "type": "string" },
+          "prescriber_order_number": { "type": "string" },
+          "quantity_remaining": { "type": "integer" },
+          "refills_remaining": { "type": "integer" },
+          "rx_number": { "type": "string" }
+        }
+      },
+      "TransferRequestBody": {
+        "type": "object",
+        "required": ["patient_token"],
+        "properties": {
+          "patient_token": { "type": "string", "description": "Token referencing the patient" },
+          "metadata": { "type": "string", "description": "Customer-side identifier" }
+        }
+      },
+      "TransferRequestResponse": {
+        "type": "object",
+        "properties": {
+          "request_id": { "type": "string" },
+          "timestamp": { "type": "integer" },
+          "status": { "type": "string" }
+        }
+      },
+      "DirectTransferRequest": {
+        "type": "object",
+        "required": ["patient_token"],
+        "properties": {
+          "patient_token": { "type": "string", "description": "Token referencing the patient" },
+          "metadata": { "type": "string", "description": "Customer-side identifier" }
+        }
+      },
+      "DirectTransferResponse": {
+        "type": "object",
+        "properties": {
+          "request_id": { "type": "string" },
+          "timestamp": { "type": "integer" },
+          "status": { "type": "string" }
+        }
+      },
+      "FillRequestBody": {
+        "type": "object",
+        "required": ["patient_token", "prescription_token", "metadata"],
+        "properties": {
+          "patient_token": { "type": "string", "description": "Token referencing the patient" },
+          "prescription_token": { "type": "string", "description": "Token referencing the prescription" },
+          "metadata": { "type": "string", "description": "Customer-side identifier" }
+        }
+      },
+      "FillRequestResponse": {
+        "type": "object",
+        "properties": {
+          "request_id": { "type": "string" },
+          "timestamp": { "type": "integer" },
+          "status": { "type": "string" },
+          "details": {
+            "type": "object",
+            "properties": {
+              "message": { "type": "string" }
+            }
+          }
+        }
+      },
+      "CreateInsuranceRequest": {
+        "type": "object",
+        "required": ["patient_token"],
+        "properties": {
+          "patient_token": { "type": "string", "description": "Token referencing the patient" }
+        }
+      },
+      "CopayRequestBody": {
+        "type": "object",
+        "required": ["patient_token", "prescription_token", "metadata"],
+        "properties": {
+          "patient_token": { "type": "string", "description": "Token referencing the patient" },
+          "prescription_token": { "type": "string", "description": "Token referencing the prescription" },
+          "metadata": { "type": "string", "description": "Customer-side identifier" }
+        }
+      },
+      "CopayRequestResponse": {
+        "type": "object",
+        "properties": {
+          "request_id": { "type": "string" },
+          "timestamp": { "type": "integer" },
+          "status": { "type": "string" },
+          "details": {
+            "type": "object",
+            "properties": {
+              "message": { "type": "string" }
+            }
+          }
+        }
+      },
+      "CoverageRequestBody": {
+        "type": "object",
+        "required": ["patient_token", "metadata"],
+        "properties": {
+          "patient_token": { "type": "string", "description": "Token referencing the patient" },
+          "metadata": { "type": "string", "description": "Customer-side identifier" }
+        }
+      },
+      "CoverageRequestResponse": {
+        "type": "object",
+        "properties": {
+          "request_id": { "type": "string" },
+          "timestamp": { "type": "integer" },
+          "status": { "type": "string" },
+          "details": {
+            "type": "object",
+            "properties": {
+              "coverage_request_token": { "type": "string" },
+              "message": { "type": "string" }
+            }
+          }
+        }
+      },
+      "WebhookEventsResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WebhookEvent"
+            }
+          },
+          "next_page_token": { "type": "string", "description": "Token for retrieving next page of results" }
+        }
+      },
+      "WebhookEvent": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "timestamp": { "type": "integer" },
+              "callback_type": { "type": "string" },
+              "details": { "type": "object" }
+            }
+          },
+          "delivery_data": {
+            "type": "object",
+            "properties": {
+              "status": { "type": "string" },
+              "status_code": { "type": "integer" }
+            }
+          }
+        }
+      },
+      "ValidationErrorResponse": {
+        "type": "object",
+        "properties": {
+          "statusCode": { "type": "integer", "example": 400 },
+          "error": { "type": "string", "example": "Bad Request" },
+          "validation_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "statusCode": { "type": "integer" },
+          "error": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      },
+      "UnauthorizedResponse": {
+        "type": "object",
+        "properties": {
+          "statusCode": { "type": "integer", "example": 401 },
+          "error": { "type": "string", "example": "Unauthorized" },
+          "message": { "type": "string", "example": "Please Send a Valid Api-Key" }
+        }
+      }
+    }
+  }
+}
