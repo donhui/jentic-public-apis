@@ -1,0 +1,988 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Savio API",
+    "description": "Savio tracks feature requests from survey and NPS tools, help desks, CRMs, or from any customer-facing tool where you receive them. This API allows managing feedback, feature requests, contacts, and companies.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://savio.io/help/api/"
+  },
+  "servers": [
+    {
+      "url": "https://www.savio.io/app/api",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/create-feedback/": {
+      "post": {
+        "operationId": "createFeedback",
+        "summary": "Create feedback",
+        "description": "Create a new feedback entry. Optionally link to a person, company, or feature request.",
+        "tags": [
+          "Feedback"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFeedbackRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Feedback created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateFeedbackResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - failed to create feedback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feedback/": {
+      "get": {
+        "operationId": "listFeedback",
+        "summary": "List feedback",
+        "description": "Retrieve a paginated list of feedback entries with optional filtering and sorting.",
+        "tags": [
+          "Feedback"
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Filter by feedback text or company",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "description": "Filter by state",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "PENDING",
+                "ARCHIVED"
+              ]
+            }
+          },
+          {
+            "name": "product",
+            "in": "query",
+            "description": "Filter by product slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "product_area",
+            "in": "query",
+            "description": "Filter by product area slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ordering",
+            "in": "query",
+            "description": "Sort field (user, feature_request, created, updated). Prefix with - for descending.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "expand",
+            "in": "query",
+            "description": "Expand related objects (comma-separated: user, feature_request)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of feedback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feedback/{id}/": {
+      "get": {
+        "operationId": "getFeedback",
+        "summary": "Get feedback by ID",
+        "description": "Retrieve a single feedback entry by its ID.",
+        "tags": [
+          "Feedback"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Feedback ID",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "expand",
+            "in": "query",
+            "description": "Expand related objects (user, feature_request)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include_meta",
+            "in": "query",
+            "description": "Set to 1 to include attribute schema metadata",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feedback details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Feedback"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Feedback not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feature-requests/": {
+      "get": {
+        "operationId": "listFeatureRequests",
+        "summary": "List feature requests",
+        "description": "Retrieve a paginated list of feature requests with optional filtering and sorting.",
+        "tags": [
+          "Feature Requests"
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Filter by title",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "description": "Filter by state",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "UNTRIAGED",
+                "UNDER_CONSIDERATION",
+                "PLANNED",
+                "IN_PROGRESS",
+                "SHIPPED",
+                "CUSTOMER_NOTIFIED",
+                "WONT_DO"
+              ]
+            }
+          },
+          {
+            "name": "ordering",
+            "in": "query",
+            "description": "Sort field (title, created, updated). Prefix with - for descending.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "product",
+            "in": "query",
+            "description": "Filter by product slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "product_area",
+            "in": "query",
+            "description": "Filter by product area slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "description": "Filter by tag title (exact match)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "roadmap",
+            "in": "query",
+            "description": "Filter by roadmap title (exact match)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of feature requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureRequestListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feature-requests/{id}/": {
+      "get": {
+        "operationId": "getFeatureRequest",
+        "summary": "Get feature request by ID",
+        "description": "Retrieve a single feature request by its ID.",
+        "tags": [
+          "Feature Requests"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Feature request ID",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "include_meta",
+            "in": "query",
+            "description": "Set to 1 to include column schema metadata",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feature request details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Feature request not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/": {
+      "get": {
+        "operationId": "listContacts",
+        "summary": "List contacts",
+        "description": "Retrieve a paginated list of contacts.",
+        "tags": [
+          "Contacts"
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search by email or name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ordering",
+            "in": "query",
+            "description": "Sort field (name, email, created, updated). Prefix with - for descending.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of contacts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "upsertContact",
+        "summary": "Create or update a contact",
+        "description": "Upsert a contact by internal_id. If a contact with the given internal_id exists, it will be updated.",
+        "tags": [
+          "Contacts"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertContactRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Contact created or updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contact"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/companies/": {
+      "get": {
+        "operationId": "listCompanies",
+        "summary": "List companies",
+        "description": "Retrieve a paginated list of companies.",
+        "tags": [
+          "Companies"
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search by company name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ordering",
+            "in": "query",
+            "description": "Sort field (name, created, updated). Prefix with - for descending.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of companies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "upsertCompany",
+        "summary": "Create or update a company",
+        "description": "Upsert a company by internal_id. If a company with the given internal_id exists, it will be updated.",
+        "tags": [
+          "Companies"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertCompanyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Company created or updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "tokenAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Token-based authentication. Format: 'Token YOUR_TOKEN_VALUE'"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "string",
+            "description": "Error message"
+          }
+        }
+      },
+      "CreateFeedbackRequest": {
+        "type": "object",
+        "required": [
+          "problem"
+        ],
+        "properties": {
+          "problem": {
+            "type": "string",
+            "description": "The feedback text"
+          },
+          "feedback_type": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "CHURNED",
+              "INTERNAL",
+              "LOST DEAL",
+              "PROSPECT",
+              "OTHER"
+            ],
+            "description": "Type of feedback"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PENDING",
+              "ARCHIVED"
+            ],
+            "default": "ACTIVE",
+            "description": "Feedback state"
+          },
+          "person_email": {
+            "type": "string",
+            "format": "email",
+            "description": "Email of the person giving feedback. Auto-links or creates contact."
+          },
+          "person_name": {
+            "type": "string",
+            "description": "Name of the person giving feedback"
+          },
+          "company_name": {
+            "type": "string",
+            "description": "Company name. Auto-links or creates company."
+          },
+          "feature_request_title": {
+            "type": "string",
+            "description": "Title of a feature request to link to. Creates if not found."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of tag titles"
+          },
+          "source_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL where the feedback originated"
+          },
+          "source_username": {
+            "type": "string",
+            "description": "Username in the source tool"
+          }
+        }
+      },
+      "CreateFeedbackResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "ID of the created feedback"
+          }
+        }
+      },
+      "Feedback": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "problem": {
+            "type": "string"
+          },
+          "feedback_type": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "person_email": {
+            "type": "string"
+          },
+          "person_name": {
+            "type": "string"
+          },
+          "company_name": {
+            "type": "string"
+          },
+          "feature_request_title": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "source_url": {
+            "type": "string"
+          },
+          "source_username": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "FeedbackListResponse": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "next": {
+            "type": "string",
+            "nullable": true
+          },
+          "previous": {
+            "type": "string",
+            "nullable": true
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Feedback"
+            }
+          },
+          "_meta": {
+            "type": "object",
+            "properties": {
+              "attributes": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "FeatureRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "product": {
+            "type": "string"
+          },
+          "product_area": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "FeatureRequestListResponse": {
+        "type": "object",
+        "properties": {
+          "next": {
+            "type": "string",
+            "nullable": true
+          },
+          "previous": {
+            "type": "string",
+            "nullable": true
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeatureRequest"
+            }
+          },
+          "_meta": {
+            "type": "object",
+            "properties": {
+              "columns": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "Contact": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "internal_id": {
+            "type": "string"
+          },
+          "company": {
+            "type": "integer",
+            "nullable": true
+          },
+          "company_internal_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "filterable_attributes": {
+            "type": "object"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UpsertContactRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "internal_id"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Contact name"
+          },
+          "internal_id": {
+            "type": "string",
+            "description": "Your system's contact ID"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Contact email"
+          },
+          "company": {
+            "type": "integer",
+            "description": "Savio company ID"
+          },
+          "company_internal_id": {
+            "type": "string",
+            "description": "Your system's company ID"
+          },
+          "filterable_attributes": {
+            "type": "object",
+            "description": "Custom filterable attributes"
+          }
+        }
+      },
+      "ContactListResponse": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "next": {
+            "type": "string",
+            "nullable": true
+          },
+          "previous": {
+            "type": "string",
+            "nullable": true
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contact"
+            }
+          }
+        }
+      },
+      "Company": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "internal_id": {
+            "type": "string"
+          },
+          "filterable_attributes": {
+            "type": "object"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UpsertCompanyRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "internal_id"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name"
+          },
+          "internal_id": {
+            "type": "string",
+            "description": "Your system's company ID"
+          },
+          "filterable_attributes": {
+            "type": "object",
+            "description": "Custom filterable attributes"
+          }
+        }
+      },
+      "CompanyListResponse": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "next": {
+            "type": "string",
+            "nullable": true
+          },
+          "previous": {
+            "type": "string",
+            "nullable": true
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Company"
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "tokenAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Feedback",
+      "description": "Manage customer feedback"
+    },
+    {
+      "name": "Feature Requests",
+      "description": "Manage feature requests"
+    },
+    {
+      "name": "Contacts",
+      "description": "Manage contacts/users"
+    },
+    {
+      "name": "Companies",
+      "description": "Manage companies"
+    }
+  ]
+}
