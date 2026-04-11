@@ -1,0 +1,1140 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "TitleTrackr API",
+    "description": "API documentation for TitleTrackr's external integrations.\n\nTitleTrackr is a title abstract management platform that helps title companies\nmanage orders, abstracts, and projects.\n\n## Authentication\n\nThis API uses OAuth 2.0 Authorization Code flow for authentication.\nAfter obtaining an access token, include it in requests as a Bearer token:\n\n```\nAuthorization: Bearer <access_token>\n```\n\n## Webhooks\n\nTitleTrackr supports real-time notifications via webhooks. Subscribe to events\nto receive HTTP POST requests when actions occur in your account.\n\n| Event Type | Description |\n|------------|-------------|\n| `order.created` | Triggered when a new order is created |\n| `abstract.created` | Triggered when a new title abstract is created |\n| `project.created` | Triggered when a new project is created |\n",
+    "version": "1.0.0",
+    "contact": {
+      "name": "TitleTrackr Support",
+      "url": "https://titletrackr.com/support",
+      "email": "support@titletrackr.com"
+    },
+    "x-jentic-source-url": "https://app.titletrackr.com/openapi.yaml"
+  },
+  "servers": [
+    {
+      "url": "https://app.titletrackr.com",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/oauth/authorize": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Authorization Request",
+        "description": "Redirects the user to the TitleTrackr login/authorization page.\nAfter the user authorizes, they are redirected back to the `redirect_uri`\nwith an authorization code.\n",
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Your application's client ID"
+          },
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URL to redirect after authorization"
+          },
+          {
+            "name": "response_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "code"
+              ]
+            },
+            "description": "Must be \"code\" for authorization code flow"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Random string to prevent CSRF attacks"
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirects to login page or back to redirect_uri with code"
+          }
+        }
+      }
+    },
+    "/api/oauth/token": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Token Exchange",
+        "description": "Exchange an authorization code for an access token, or refresh an existing token.\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AuthorizationCodeRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/RefreshTokenRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/me": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Get Current User",
+        "description": "Returns information about the authenticated user and their tenant.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/hooks/{eventType}/subscribe": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Subscribe to Webhook",
+        "description": "Subscribe to receive webhook notifications for a specific event type.\nWhen the event occurs, TitleTrackr will send an HTTP POST request to your hook URL.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "eventType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "order.created",
+                "abstract.created",
+                "project.created"
+              ]
+            },
+            "description": "The type of event to subscribe to"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "hookUrl"
+                ],
+                "properties": {
+                  "hookUrl": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "URL to receive webhook notifications",
+                    "example": "https://hooks.zapier.com/hooks/catch/123456/abcdef/"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Subscription created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Unique subscription identifier",
+                      "example": "zapier_abc123def456"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid event type or missing hookUrl",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/hooks/{eventType}/unsubscribe": {
+      "delete": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Unsubscribe from Webhook",
+        "description": "Remove a webhook subscription.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "eventType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "order.created",
+                "abstract.created",
+                "project.created"
+              ]
+            },
+            "description": "The type of event to unsubscribe from"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "The subscription ID returned when subscribing",
+                    "example": "zapier_abc123def456"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Unsubscribe result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the subscription was found and deleted"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid event type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/hooks": {
+      "get": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "List Webhook Subscriptions",
+        "description": "Get all active webhook subscriptions for the current tenant.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of active subscriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookSubscription"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/samples/orders": {
+      "get": {
+        "tags": [
+          "Samples"
+        ],
+        "summary": "Get Sample Orders",
+        "description": "Returns the 3 most recent orders for the tenant.\nUsed by Zapier for trigger testing and sample data.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of sample orders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Order"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/samples/abstracts": {
+      "get": {
+        "tags": [
+          "Samples"
+        ],
+        "summary": "Get Sample Abstracts",
+        "description": "Returns the 3 most recent title abstracts for the tenant.\nUsed by Zapier for trigger testing and sample data.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of sample abstracts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Abstract"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zapier/samples/projects": {
+      "get": {
+        "tags": [
+          "Samples"
+        ],
+        "summary": "Get Sample Projects",
+        "description": "Returns the 3 most recent projects for the tenant.\nUsed by Zapier for trigger testing and sample data.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of sample projects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Project"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/order-fields": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Get Order Fields",
+        "description": "Returns the available fields for creating orders, including core fields\nand custom fields configured by the tenant.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order field definitions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "core_fields": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/FieldDefinition"
+                      }
+                    },
+                    "custom_fields": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CustomFieldDefinition"
+                      }
+                    },
+                    "tenant": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No tenant found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders": {
+      "post": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Create Order",
+        "description": "Create a new order with optional custom field values.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "order_number"
+                ],
+                "properties": {
+                  "order_number": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "description": "Unique order identifier",
+                    "example": "ORD-2024-001"
+                  },
+                  "due_date": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true,
+                    "description": "Order due date",
+                    "example": "2024-12-31"
+                  },
+                  "custom_fields": {
+                    "type": "object",
+                    "nullable": true,
+                    "additionalProperties": true,
+                    "description": "Custom field values keyed by field key",
+                    "example": {
+                      "client_name": "Acme Corp",
+                      "property_type": "residential"
+                    }
+                  },
+                  "email_subject": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Original email subject if imported from email"
+                  },
+                  "email_from": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Original email sender if imported from email"
+                  },
+                  "email_body": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Original email body if imported from email"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "order_id": {
+                      "type": "string",
+                      "description": "Obfuscated order ID",
+                      "example": "abc123xyz"
+                    },
+                    "order_number": {
+                      "type": "string",
+                      "example": "ORD-2024-001"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Order created successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error or no tenant found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "OAuth 2.0 Bearer token"
+      }
+    },
+    "schemas": {
+      "AuthorizationCodeRequest": {
+        "type": "object",
+        "required": [
+          "grant_type",
+          "code"
+        ],
+        "properties": {
+          "grant_type": {
+            "type": "string",
+            "enum": [
+              "authorization_code"
+            ]
+          },
+          "code": {
+            "type": "string",
+            "description": "Authorization code received from the authorize endpoint"
+          },
+          "redirect_uri": {
+            "type": "string",
+            "format": "uri",
+            "description": "Must match the redirect_uri used in the authorization request"
+          },
+          "client_id": {
+            "type": "string"
+          },
+          "client_secret": {
+            "type": "string"
+          }
+        }
+      },
+      "RefreshTokenRequest": {
+        "type": "object",
+        "required": [
+          "grant_type",
+          "refresh_token"
+        ],
+        "properties": {
+          "grant_type": {
+            "type": "string",
+            "enum": [
+              "refresh_token"
+            ]
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "Refresh token from a previous token response"
+          },
+          "client_id": {
+            "type": "string"
+          },
+          "client_secret": {
+            "type": "string"
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "description": "Bearer token to use for API requests"
+          },
+          "token_type": {
+            "type": "string",
+            "enum": [
+              "Bearer"
+            ]
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Token lifetime in seconds",
+            "example": 31536000
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "Token to use for refreshing the access token"
+          }
+        }
+      },
+      "OAuthError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "invalid_request",
+              "invalid_grant",
+              "unsupported_grant_type"
+            ]
+          },
+          "error_description": {
+            "type": "string"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message",
+            "example": "No tenant found"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "User ID",
+            "example": 123
+          },
+          "name": {
+            "type": "string",
+            "description": "User's full name",
+            "example": "John Doe"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "User's email address",
+            "example": "john@example.com"
+          },
+          "tenant_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Current tenant ID",
+            "example": 1
+          },
+          "tenant_name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Current tenant name",
+            "example": "Acme Title Company"
+          }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Obfuscated order ID",
+            "example": "abc123xyz"
+          },
+          "order_number": {
+            "type": "string",
+            "description": "Human-readable order number",
+            "example": "ORD-2024-001"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Order due date in ISO 8601 format",
+            "example": "2024-12-31T00:00:00Z"
+          },
+          "status": {
+            "type": "string",
+            "description": "Order status",
+            "enum": [
+              "active",
+              "processing",
+              "completed",
+              "cancelled"
+            ],
+            "example": "active"
+          },
+          "link": {
+            "type": "string",
+            "format": "uri",
+            "description": "Direct link to view the order in TitleTrackr",
+            "example": "https://app.titletrackr.com/orders/abc123xyz"
+          }
+        }
+      },
+      "Abstract": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Obfuscated abstract ID",
+            "example": "def456uvw"
+          },
+          "name": {
+            "type": "string",
+            "description": "Abstract name/title",
+            "example": "123 Main Street Title Abstract"
+          },
+          "address": {
+            "type": "string",
+            "description": "Property street address",
+            "example": "123 Main Street"
+          },
+          "city": {
+            "type": "string",
+            "description": "Property city",
+            "example": "Springfield"
+          },
+          "state": {
+            "type": "string",
+            "description": "Property state (2-letter code)",
+            "example": "IL"
+          },
+          "county": {
+            "type": "string",
+            "description": "Property county",
+            "example": "Sangamon"
+          },
+          "tax_map": {
+            "type": "string",
+            "nullable": true,
+            "description": "Tax map/parcel number",
+            "example": "12-34-567-890"
+          },
+          "pages": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Number of pages in the abstract",
+            "example": 42
+          },
+          "words": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Word count of the abstract",
+            "example": 15000
+          },
+          "project_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "Obfuscated ID of the associated project",
+            "example": "ghi789rst"
+          },
+          "link": {
+            "type": "string",
+            "format": "uri",
+            "description": "Direct link to view the abstract in TitleTrackr",
+            "example": "https://app.titletrackr.com/abstracts/def456uvw"
+          },
+          "project_link": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "description": "Direct link to view the associated project",
+            "example": "https://app.titletrackr.com/projects/ghi789rst"
+          }
+        }
+      },
+      "Project": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Obfuscated project ID",
+            "example": "ghi789rst"
+          },
+          "project_id": {
+            "type": "string",
+            "description": "Human-readable project identifier",
+            "example": "PROJ-2024-001"
+          },
+          "name": {
+            "type": "string",
+            "description": "Project name",
+            "example": "Main Street Development"
+          },
+          "location_full_address": {
+            "type": "string",
+            "nullable": true,
+            "description": "Full property address",
+            "example": "123 Main Street, Springfield, IL 62701"
+          },
+          "location_city": {
+            "type": "string",
+            "nullable": true,
+            "description": "Property city",
+            "example": "Springfield"
+          },
+          "location_state": {
+            "type": "string",
+            "nullable": true,
+            "description": "Property state",
+            "example": "IL"
+          },
+          "link": {
+            "type": "string",
+            "format": "uri",
+            "description": "Direct link to view the project in TitleTrackr",
+            "example": "https://app.titletrackr.com/projects/ghi789rst"
+          }
+        }
+      },
+      "WebhookSubscription": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique subscription identifier",
+            "example": "zapier_abc123def456"
+          },
+          "event_type": {
+            "type": "string",
+            "description": "Type of event subscribed to",
+            "enum": [
+              "order.created",
+              "abstract.created",
+              "project.created"
+            ],
+            "example": "order.created"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the subscription was created",
+            "example": "2024-01-15T10:30:00Z"
+          },
+          "last_triggered_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When the webhook was last triggered",
+            "example": "2024-01-20T14:45:00Z"
+          },
+          "trigger_count": {
+            "type": "integer",
+            "description": "Number of times this webhook has been triggered",
+            "example": 42
+          }
+        }
+      },
+      "FieldDefinition": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Field identifier",
+            "example": "order_number"
+          },
+          "label": {
+            "type": "string",
+            "description": "Display label",
+            "example": "Order #"
+          },
+          "type": {
+            "type": "string",
+            "description": "Field type",
+            "enum": [
+              "text",
+              "date"
+            ],
+            "example": "text"
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Whether the field is required",
+            "example": true
+          }
+        }
+      },
+      "CustomFieldDefinition": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Custom field ID",
+            "example": 1
+          },
+          "key": {
+            "type": "string",
+            "description": "Field identifier (used as key in custom_fields object)",
+            "example": "client_name"
+          },
+          "label": {
+            "type": "string",
+            "description": "Display label",
+            "example": "Client Name"
+          },
+          "type": {
+            "type": "string",
+            "description": "Field type",
+            "enum": [
+              "text",
+              "date",
+              "select",
+              "multiselect",
+              "file",
+              "people",
+              "company",
+              "product"
+            ],
+            "example": "text"
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Whether the field is required",
+            "example": false
+          },
+          "options": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "string"
+            },
+            "description": "Available options for select/multiselect fields",
+            "example": [
+              "Option 1",
+              "Option 2"
+            ]
+          },
+          "default_value": {
+            "nullable": true,
+            "description": "Default value for the field"
+          },
+          "help_text": {
+            "type": "string",
+            "nullable": true,
+            "description": "Help text shown to users",
+            "example": "Enter the client's full legal name"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "OAuth 2.0 authentication endpoints"
+    },
+    {
+      "name": "User",
+      "description": "User and account information"
+    },
+    {
+      "name": "Webhooks",
+      "description": "Webhook subscription management"
+    },
+    {
+      "name": "Orders",
+      "description": "Order management"
+    },
+    {
+      "name": "Samples",
+      "description": "Sample data for trigger testing"
+    }
+  ]
+}
