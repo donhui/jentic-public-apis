@@ -1,0 +1,374 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Payabl SPEI API",
+    "description": "Payabl SPEI (Sistema de Pagos Electronicos Interbancarios) API for processing payments, refunds, and payouts via the Mexican electronic transfer system. Supports MXN currency transactions.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://docs.payabl.com/docs/spei"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.payabl.com/pay/backoffice",
+      "description": "Sandbox server"
+    }
+  ],
+  "paths": {
+    "/payment_preauthorize": {
+      "post": {
+        "operationId": "preauthorizepayment",
+        "summary": "Pre-authorize a SPEI payment",
+        "description": "Initiate a SPEI payment pre-authorization. Returns a redirect URL for customer completion.",
+        "tags": [
+          "Payments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentPreauthorizeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment pre-authorized successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentPreauthorizeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters"
+          },
+          "401": {
+            "description": "Unauthorized - invalid signature"
+          }
+        }
+      }
+    },
+    "/payment_refund": {
+      "post": {
+        "operationId": "refundpayment",
+        "summary": "Refund a SPEI payment",
+        "description": "Process a refund for a previously completed SPEI transaction",
+        "tags": [
+          "Refunds"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentRefundRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Refund processed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters"
+          },
+          "401": {
+            "description": "Unauthorized - invalid signature"
+          }
+        }
+      }
+    },
+    "/payment_cft": {
+      "post": {
+        "operationId": "creditfundtransfer",
+        "summary": "Initiate a credit fund transfer (payout)",
+        "description": "Process a payout/credit fund transfer to a customer bank account (CLABE, debit, or phone format)",
+        "tags": [
+          "Payouts"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CreditFundTransferRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payout initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayoutResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters"
+          },
+          "401": {
+            "description": "Unauthorized - invalid signature"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PaymentPreauthorizeRequest": {
+        "type": "object",
+        "required": [
+          "merchantid",
+          "amount",
+          "currency",
+          "payment_method",
+          "signature",
+          "email",
+          "custom2",
+          "nationalid",
+          "nationaltype"
+        ],
+        "properties": {
+          "merchantid": {
+            "type": "string",
+            "description": "Merchant identification"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Transaction total amount"
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 currency code",
+            "enum": [
+              "MXN"
+            ]
+          },
+          "payment_method": {
+            "type": "integer",
+            "description": "Payment method ID (130 or 126)",
+            "enum": [
+              130,
+              126
+            ]
+          },
+          "signature": {
+            "type": "string",
+            "description": "SHA-1 hexadecimal checksum (40 characters)"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Customer email"
+          },
+          "custom2": {
+            "type": "string",
+            "description": "Must be 'spei'",
+            "enum": [
+              "spei"
+            ]
+          },
+          "nationalid": {
+            "type": "string",
+            "description": "RFC (13 chars) or CURP (18 chars)"
+          },
+          "nationaltype": {
+            "type": "string",
+            "description": "National ID type",
+            "enum": [
+              "RFC",
+              "CURP"
+            ]
+          },
+          "orderid": {
+            "type": "string",
+            "description": "Merchant order reference"
+          }
+        }
+      },
+      "PaymentPreauthorizeResponse": {
+        "type": "object",
+        "properties": {
+          "transactionid": {
+            "type": "string",
+            "description": "Transaction ID"
+          },
+          "status": {
+            "type": "string",
+            "description": "Transaction status"
+          },
+          "redirect_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL for customer to complete payment"
+          }
+        }
+      },
+      "PaymentRefundRequest": {
+        "type": "object",
+        "required": [
+          "merchantid",
+          "transactionid",
+          "amount",
+          "currency",
+          "signature"
+        ],
+        "properties": {
+          "merchantid": {
+            "type": "string",
+            "description": "Merchant identification"
+          },
+          "transactionid": {
+            "type": "string",
+            "description": "Original transaction ID"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Refund amount"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "MXN"
+            ]
+          },
+          "language": {
+            "type": "string",
+            "description": "Response language"
+          },
+          "signature": {
+            "type": "string",
+            "description": "SHA-1 hexadecimal checksum"
+          }
+        }
+      },
+      "RefundResponse": {
+        "type": "object",
+        "properties": {
+          "transactionid": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "CreditFundTransferRequest": {
+        "type": "object",
+        "required": [
+          "merchantid",
+          "amount",
+          "currency",
+          "signature"
+        ],
+        "properties": {
+          "merchantid": {
+            "type": "string",
+            "description": "Merchant identification"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Payout amount"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "MXN"
+            ]
+          },
+          "signature": {
+            "type": "string",
+            "description": "SHA-1 hexadecimal checksum"
+          },
+          "account_number": {
+            "type": "string",
+            "description": "Customer bank account (CLABE, debit, or phone format)"
+          },
+          "document_type": {
+            "type": "string",
+            "description": "Document type identifier"
+          },
+          "bank_code": {
+            "type": "string",
+            "description": "Bank code"
+          }
+        }
+      },
+      "PayoutResponse": {
+        "type": "object",
+        "properties": {
+          "transactionid": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "description": "Error message"
+              },
+              "code": {
+                "type": "string",
+                "description": "Error code"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "signatureAuth": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "signature",
+        "description": "SHA-1 hexadecimal checksum signature for request authentication"
+      }
+    }
+  },
+  "security": [
+    {
+      "signatureAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Payments",
+      "description": "Operations related to Payments"
+    },
+    {
+      "name": "Payouts",
+      "description": "Operations related to Payouts"
+    },
+    {
+      "name": "Refunds",
+      "description": "Operations related to Refunds"
+    }
+  ]
+}
