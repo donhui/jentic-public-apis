@@ -1,0 +1,4097 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Taqtics External API",
+    "version": "1.0.0",
+    "description": "Collection of all APIs endpoint",
+    "x-jentic-source-url": "https://landmark.taqtics.co/api/v1/external-api-docs/"
+  },
+  "servers": [
+    {
+      "url": "https://landmark.taqtics.co",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "openapi": {
+      "0": "3",
+      "1": ".",
+      "2": "0",
+      "3": ".",
+      "4": "0"
+    },
+    "info": {
+      "title": "External API",
+      "version": "1.0.0",
+      "description": "External API endpoints for third-party integrations with Taqtics platform. These endpoints allow external systems to manage users, stores, designations, tickets, webhooks, processes, and retrieve data exports."
+    },
+    "servers": {
+      "0": {
+        "url": "https://{workspace}.taqtics.co",
+        "description": "Taqtics API server",
+        "variables": {
+          "workspace": {
+            "default": "demo",
+            "description": "Your workspace subdomain"
+          }
+        },
+        "operationId": "0Servers",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external/auth": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Generate authentication token",
+        "description": "Generates a JWT authentication token for accessing external API endpoints.\n\n**Rate Limit:** 20 requests per time window\n\nUse the returned token in the Authorization header for all subsequent API calls.\n",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "User email address",
+                    "example": "user@example.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "User password",
+                    "example": "SecurePass123!"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": {
+                      "type": "string",
+                      "description": "JWT authentication token"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Authentication successful"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid input or company configuration issues",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "subdomainError": {
+                    "value": {
+                      "message": "Subdomain is not provided"
+                    }
+                  },
+                  "companyInfoError": {
+                    "value": {
+                      "message": "Could not get Company Info"
+                    }
+                  },
+                  "apiAccessError": {
+                    "value": {
+                      "message": "API is not accessible for company: {companyId}, Please contact Taqtics"
+                    }
+                  },
+                  "missingCredentials": {
+                    "value": {
+                      "message": "Invalid login credential."
+                    }
+                  },
+                  "accountLocked": {
+                    "value": {
+                      "message": "Your account is locked, please contact admin"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "message": "Invalid Credentials!"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "userNotFound": {
+                    "value": {
+                      "message": "User not found"
+                    }
+                  },
+                  "noPasswordHash": {
+                    "value": {
+                      "message": "User not found!"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "postAuth"
+      }
+    },
+    "/api/v1/external/users": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Create a new user",
+        "description": "Creates a new user in the system with the specified details.\n\n**Rate Limit:** 20 requests per time window\n\n**Password Requirements:** Minimum 8 characters with at least one uppercase letter, one lowercase letter, one digit, and one special character.\n\n**Country Codes:** Valid values are 91, 971, 973, 965, 974, 966, 968\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "email"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Full name of the user",
+                    "example": "John Doe"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Email address of the user (will be converted to lowercase)",
+                    "example": "john.doe@example.com"
+                  },
+                  "countryCode": {
+                    "type": "integer",
+                    "description": "Country code for phone number",
+                    "enum": [
+                      62,
+                      91,
+                      971,
+                      973,
+                      965,
+                      974,
+                      966,
+                      968
+                    ],
+                    "example": 91
+                  },
+                  "phoneNumber": {
+                    "type": "string",
+                    "description": "Phone number (7-10 digits)",
+                    "pattern": "^\\d{7,10}$",
+                    "example": "9876543210"
+                  },
+                  "empId": {
+                    "type": "string",
+                    "description": "Employee ID",
+                    "example": "EMP001"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "User password (min 8 chars, must contain uppercase, lowercase, digit, and special character)",
+                    "minLength": 8,
+                    "example": "SecurePass123!"
+                  },
+                  "designation": {
+                    "type": "string",
+                    "description": "User designation/role",
+                    "example": "Store Manager"
+                  },
+                  "storeName": {
+                    "type": "string",
+                    "description": "Store name where user is assigned",
+                    "example": "Downtown Store"
+                  },
+                  "supervisorEmail": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Email of the user's supervisor",
+                    "example": "supervisor@example.com"
+                  },
+                  "validEmail": {
+                    "type": "boolean",
+                    "description": "Whether the email is valid/verified",
+                    "example": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "email": {
+                          "type": "string",
+                          "example": "john.doe@example.com"
+                        },
+                        "employeeId": {
+                          "type": "string",
+                          "example": "EMP001"
+                        },
+                        "password": {
+                          "type": "string",
+                          "description": "Auto-generated password (only returned if validEmail is false and no password provided)",
+                          "example": "TempPass123!"
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "User created successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Validation error or creation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "userLimitError": {
+                    "value": {
+                      "message": "User Limit Exceeded. Please contact Taqtics"
+                    }
+                  },
+                  "validationError": {
+                    "value": {
+                      "message": "Validation error message from core"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "postUsers"
+      },
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get user information",
+        "description": "Retrieves user information for the company.\n\nQuery behavior:\n- If `userEmail` is provided, returns the matching user.\n- If `employeeId` is provided, returns the matching user.\n- If both are provided, `userEmail` is used.\n- If neither is provided, returns all users.\n\nResponse notes:\n- The `data` field is always an array.\n- For single-user queries, the array contains one user object.\n\n**Rate Limit:** 20 requests per time window\n",
+        "parameters": [
+          {
+            "name": "userEmail",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "email"
+            },
+            "description": "Email address of the user",
+            "example": "john.doe@example.com"
+          },
+          {
+            "name": "employeeId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Employee ID for filtering user data",
+            "example": "EMP001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User details retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Company id not found or user not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "userError": {
+                    "value": {
+                      "message": "User specific error message"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getUsers"
+      }
+    },
+    "/api/v1/external/users/{userEmail}": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Update user",
+        "description": "Updates user details for the specified email address.\n\n**Rate Limit:** 20 requests per time window\n",
+        "parameters": [
+          {
+            "name": "userEmail",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "email"
+            },
+            "description": "Email address of the user to update",
+            "example": "john.doe@example.com"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Full name of the user",
+                    "example": "John Doe Updated"
+                  },
+                  "countryCode": {
+                    "type": "integer",
+                    "description": "Country code for phone number",
+                    "enum": [
+                      62,
+                      91,
+                      971,
+                      973,
+                      965,
+                      974,
+                      966,
+                      968
+                    ],
+                    "example": 91
+                  },
+                  "phoneNumber": {
+                    "type": "string",
+                    "description": "Phone number (7-10 digits)",
+                    "pattern": "^\\d{7,10}$",
+                    "example": "9876543210"
+                  },
+                  "empId": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Employee ID (can be set to null)",
+                    "example": "EMP001"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "New password for the user",
+                    "example": "NewSecurePass123!"
+                  },
+                  "designation": {
+                    "type": "string",
+                    "description": "User designation/role",
+                    "example": "Senior Manager"
+                  },
+                  "storeName": {
+                    "type": "string",
+                    "description": "Store name where user is assigned",
+                    "example": "Uptown Store"
+                  },
+                  "supervisorEmail": {
+                    "type": "string",
+                    "format": "email",
+                    "nullable": true,
+                    "description": "Email of the user's supervisor (can be set to null)",
+                    "example": "newsupervisor@example.com"
+                  },
+                  "resetPassword": {
+                    "type": "boolean",
+                    "description": "Whether to reset the user's password",
+                    "example": false
+                  },
+                  "validEmail": {
+                    "type": "boolean",
+                    "description": "Whether the email is valid/verified",
+                    "example": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "User updated successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Validation error or update failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "updateError": {
+                    "value": {
+                      "message": "Update validation or execution error"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "putUsersByUseremail"
+      },
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Delete user",
+        "description": "Deletes a user from the system.\n\n**Rate Limit:** 20 requests per time window\n\n**Note:** Users with ownership of resources cannot be deleted.\n",
+        "parameters": [
+          {
+            "name": "userEmail",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "email"
+            },
+            "description": "Email address of the user to delete",
+            "example": "john.doe@example.com"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "User deleted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Cannot delete user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "ownershipError": {
+                    "value": {
+                      "message": "User has ownership and cannot be deleted"
+                    }
+                  },
+                  "deleteError": {
+                    "value": {
+                      "message": "User deletion error message"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "deleteUsersByUseremail"
+      }
+    },
+    "/api/v1/external/stores": {
+      "post": {
+        "tags": [
+          "Stores"
+        ],
+        "summary": "Create a new store",
+        "description": "Creates a new store/location in the system.\n\n**Rate Limit:** 20 requests per time window\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "address",
+                  "area",
+                  "city",
+                  "country",
+                  "state",
+                  "storeName",
+                  "entityId"
+                ],
+                "properties": {
+                  "storeName": {
+                    "type": "string",
+                    "description": "Name of the store",
+                    "example": "Downtown Store"
+                  },
+                  "entityId": {
+                    "type": "string",
+                    "description": "Unique entity identifier for the store",
+                    "example": "STORE001"
+                  },
+                  "address": {
+                    "type": "string",
+                    "description": "Street address of the store",
+                    "example": "123 Main Street"
+                  },
+                  "area": {
+                    "type": "string",
+                    "description": "Area or locality",
+                    "example": "Downtown"
+                  },
+                  "city": {
+                    "type": "string",
+                    "description": "City name",
+                    "example": "New York"
+                  },
+                  "state": {
+                    "type": "string",
+                    "description": "State or province",
+                    "example": "NY"
+                  },
+                  "country": {
+                    "type": "string",
+                    "description": "Country name",
+                    "example": "USA"
+                  },
+                  "storeRadius": {
+                    "type": "number",
+                    "description": "Geofence radius for the store in meters",
+                    "example": 100
+                  },
+                  "tags": {
+                    "type": "object",
+                    "description": "Custom tags for the store",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "example": {
+                      "region": "North",
+                      "type": "Retail"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Store created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "entityId": {
+                          "type": "string",
+                          "example": "STORE001"
+                        },
+                        "storeName": {
+                          "type": "string",
+                          "example": "Downtown Store"
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Store created successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Validation error or creation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "storeLimitError": {
+                    "value": {
+                      "message": "Store Limit Exceeded. Please contact Taqtics"
+                    }
+                  },
+                  "validationError": {
+                    "value": {
+                      "message": "Store creation error message"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "postStores"
+      },
+      "get": {
+        "tags": [
+          "Stores"
+        ],
+        "summary": "Get store by entity ID",
+        "description": "Retrieves store details.\n\nIf `storeEntityId` is provided, it fetches specific store information.\n\nIf `storeEntityId` is not provided, it fetches all store information.\n\n**Rate Limit:** 20 requests per time window\n",
+        "parameters": [
+          {
+            "name": "storeEntityId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Entity ID of the store",
+            "example": "STORE001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Store details retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Store"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Store fetched successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Company id not found or store not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "storeError": {
+                    "value": {
+                      "message": "Store specific error message"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Store not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "message": "Store with entityId: {entityId} not found"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getStores"
+      }
+    },
+    "/api/v1/external/stores/tags": {
+      "get": {
+        "tags": [
+          "Stores"
+        ],
+        "summary": "Get store tags",
+        "description": "Retrieves all available store tags for the company.\n\n**Rate Limit:** 20 requests per time window\n",
+        "responses": {
+          "200": {
+            "description": "Tags fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": [
+                        "region",
+                        "type",
+                        "zone"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Tags fetched successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Unable to fetch tags",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "message": "Unable to fetch the Tags"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getStoresTags"
+      }
+    },
+    "/api/v1/external/stores/{storeEntityId}": {
+      "put": {
+        "tags": [
+          "Stores"
+        ],
+        "summary": "Update store",
+        "description": "Updates store details for the specified entity ID.\n\n**Rate Limit:** 20 requests per time window\n",
+        "parameters": [
+          {
+            "name": "storeEntityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Entity ID of the store to update",
+            "example": "STORE001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "storeName": {
+                    "type": "string",
+                    "description": "Name of the store",
+                    "example": "Downtown Store Updated"
+                  },
+                  "address": {
+                    "type": "string",
+                    "description": "Street address of the store",
+                    "example": "456 Main Street"
+                  },
+                  "area": {
+                    "type": "string",
+                    "description": "Area or locality",
+                    "example": "Downtown West"
+                  },
+                  "city": {
+                    "type": "string",
+                    "description": "City name",
+                    "example": "New York"
+                  },
+                  "state": {
+                    "type": "string",
+                    "description": "State or province",
+                    "example": "NY"
+                  },
+                  "country": {
+                    "type": "string",
+                    "description": "Country name",
+                    "example": "USA"
+                  },
+                  "region": {
+                    "type": "string",
+                    "description": "Region classification",
+                    "example": "North Region"
+                  },
+                  "tags": {
+                    "type": "object",
+                    "description": "Custom tags for the store",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "example": {
+                      "region": "North",
+                      "type": "Flagship"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Store updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Store updated successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Validation error or update failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "tagValidationError": {
+                    "value": {
+                      "message": "Tag validation error from core"
+                    }
+                  },
+                  "updateError": {
+                    "value": {
+                      "message": "Store not Updated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Store not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "message": "Store with entityId: {entityId} not found"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "putStoresByStoreentityid"
+      },
+      "delete": {
+        "tags": [
+          "Stores"
+        ],
+        "summary": "Delete store",
+        "description": "Deletes a store from the system.\n\n**Rate Limit:** 20 requests per time window\n\n**Note:** Stores with assigned staff cannot be deleted.\n",
+        "parameters": [
+          {
+            "name": "storeEntityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Entity ID of the store to delete",
+            "example": "STORE001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Store deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Store deleted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Cannot delete store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "storeNotFound": {
+                    "value": {
+                      "message": "Store with entityId: {entityId} not found"
+                    }
+                  },
+                  "hasStaff": {
+                    "value": {
+                      "message": "Store has staff that needs to be transfereed to another store"
+                    }
+                  },
+                  "deleteError": {
+                    "value": {
+                      "message": "Store not deleted"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "deleteStoresByStoreentityid"
+      }
+    },
+    "/api/v1/external/designations": {
+      "get": {
+        "tags": [
+          "Designations"
+        ],
+        "summary": "Get all designations",
+        "description": "Retrieves all designations/roles configured for the company.\n\n**Rate Limit:** 20 requests per time window\n",
+        "responses": {
+          "200": {
+            "description": "Designations retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Designation"
+                      }
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Roles fetched successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Cannot fetch roles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "fetchError": {
+                    "value": {
+                      "message": " Roles not fetched  "
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getDesignations"
+      },
+      "post": {
+        "tags": [
+          "Designations"
+        ],
+        "summary": "Create a new designation",
+        "description": "Creates a new designation/role in the system.\n\n**Rate Limit:** 20 requests per time window\n\n**Valid User Roles:** admin, companyAdmin, areaManager, storeEmployee, nonCreatorCompanyAdmin, nonCreatorAreaManager, nonCreatorStoreManager, processManager, userManager, storeManager\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "designation",
+                  "userRole"
+                ],
+                "properties": {
+                  "designation": {
+                    "type": "string",
+                    "description": "Name of the designation",
+                    "example": "Senior Manager"
+                  },
+                  "userRole": {
+                    "type": "string",
+                    "description": "System role assigned to this designation",
+                    "enum": [
+                      "admin",
+                      "companyAdmin",
+                      "areaManager",
+                      "storeEmployee",
+                      "nonCreatorCompanyAdmin",
+                      "nonCreatorAreaManager",
+                      "nonCreatorStoreManager",
+                      "processManager",
+                      "userManager",
+                      "storeManager"
+                    ],
+                    "example": "storeManager"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Designation created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Designation created successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Validation error or creation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "roleLimitError": {
+                    "value": {
+                      "message": "Role Limit Exceeded. Please contact Taqtics"
+                    }
+                  },
+                  "roleExists": {
+                    "value": {
+                      "message": "Role: [Senior Manager] already Exist"
+                    }
+                  },
+                  "validationError": {
+                    "value": {
+                      "message": "Role validation error from core"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "postDesignations"
+      }
+    },
+    "/api/v1/external/designations/{designation}": {
+      "delete": {
+        "tags": [
+          "Designations"
+        ],
+        "summary": "Delete designation",
+        "description": "Deletes a designation/role from the system.\n\n**Rate Limit:** 20 requests per time window\n",
+        "parameters": [
+          {
+            "name": "designation",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Designation name to delete",
+            "example": "Senior Manager"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Designation deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Designation deleted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Cannot delete designation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "notFound": {
+                    "value": {
+                      "message": "Input role not found"
+                    }
+                  },
+                  "deleteError": {
+                    "value": {
+                      "message": "Designation deletion error from core"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "deleteDesignationsByDesignation"
+      }
+    },
+    "/api/v1/external/tickets": {
+      "post": {
+        "tags": [
+          "Tickets"
+        ],
+        "summary": "Create a new ticket",
+        "description": "Creates a new ticket in the system.\n\n**Rate Limit:** 20 requests per time window\n\n**Priority Values:** highest, high, medium, low, lowest\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "description",
+                  "priority"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "Ticket title",
+                    "example": "Equipment malfunction"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Detailed description of the ticket",
+                    "example": "The coffee machine is not working properly"
+                  },
+                  "entityId": {
+                    "type": "string",
+                    "description": "Store entity ID associated with the ticket",
+                    "example": "STORE001"
+                  },
+                  "assigneesEmail": {
+                    "type": "string",
+                    "description": "Email of the assignee",
+                    "example": "assignee@example.com"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "description": "Priority level of the ticket",
+                    "enum": [
+                      "highest",
+                      "high",
+                      "medium",
+                      "low",
+                      "lowest"
+                    ],
+                    "example": "high"
+                  },
+                  "attachments": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Array of attachment URLs",
+                    "example": [
+                      "https://example.com/image1.jpg"
+                    ]
+                  },
+                  "deadlineAction": {
+                    "type": "string",
+                    "description": "Action on deadline",
+                    "example": "escalate"
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Due date for the ticket",
+                    "example": "2026-01-15T10:00:00Z"
+                  },
+                  "submissionType": {
+                    "type": "string",
+                    "description": "Type of submission",
+                    "example": "manual"
+                  },
+                  "tags": {
+                    "type": "object",
+                    "description": "Custom tags for the ticket",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "example": {
+                      "category": "Maintenance"
+                    }
+                  },
+                  "assigneeType": {
+                    "type": "string",
+                    "description": "Type of assignee",
+                    "example": "individual"
+                  },
+                  "category": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Ticket categories",
+                    "example": [
+                      "Equipment",
+                      "Urgent"
+                    ]
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Creator email",
+                    "example": "creator@example.com"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ticket created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "ticketId": {
+                          "type": "string",
+                          "example": "TKT123456"
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Ticket created successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Validation error or creation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "creationFailed": {
+                    "value": {
+                      "message": "Ticket Creation Failed"
+                    }
+                  },
+                  "noAssignee": {
+                    "value": {
+                      "message": "Neither store nor assignee could be determined for the ticket, and no default assignee is set"
+                    }
+                  },
+                  "validationError": {
+                    "value": {
+                      "message": "Validation error from core"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "postTickets"
+      }
+    },
+    "/api/v1/external/tickets/tags": {
+      "get": {
+        "tags": [
+          "Tickets"
+        ],
+        "summary": "Get ticket tags",
+        "description": "Retrieves all available ticket tags for the company.\n\n**Rate Limit:** 20 requests per time window\n",
+        "responses": {
+          "200": {
+            "description": "Tags fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": [
+                        "category",
+                        "urgency",
+                        "department"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Tags fetched successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Unable to fetch tags",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "fetchError": {
+                    "value": {
+                      "message": "Unable to fetch tags"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getTicketsTags"
+      }
+    },
+    "/api/v1/external/tickets/auto": {
+      "get": {
+        "tags": [
+          "Tickets"
+        ],
+        "summary": "Get auto ticket configuration",
+        "description": "Retrieves the automatic ticket generation configuration.\n\n**Rate Limit:** 20 requests per time window\n",
+        "responses": {
+          "200": {
+            "description": "Auto ticket configuration retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "description": "Auto ticket configuration data"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Auto ticket config fetched successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Cannot fetch configuration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "fetchError": {
+                    "value": {
+                      "message": "Unable to fetch auto ticket configuration"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getTicketsAuto"
+      }
+    },
+    "/api/v1/external/tickets/{ticketId}": {
+      "get": {
+        "tags": [
+          "Tickets"
+        ],
+        "summary": "Get ticket by ID",
+        "description": "Retrieves ticket details by ticket ID.\n\n**Rate Limit:** 20 requests per time window\n",
+        "parameters": [
+          {
+            "name": "ticketId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Ticket ID",
+            "example": "TKT123456"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ticket details retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Ticket"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Ticket fetched successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Ticket not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "ticketError": {
+                    "value": {
+                      "message": "Ticket error message from core"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getTicketsByTicketid"
+      },
+      "put": {
+        "tags": [
+          "Tickets"
+        ],
+        "summary": "Update ticket",
+        "description": "Updates ticket details for the specified ticket ID.\n\n**Rate Limit:** 20 requests per time window\n\n**Status Values:** open, closed, inProgress, onHold, completed\n\n**Priority Values:** highest, high, medium, low, lowest\n",
+        "parameters": [
+          {
+            "name": "ticketId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Ticket ID to update",
+            "example": "TKT123456"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "assigneesEmail": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Email of the assignee",
+                    "example": "newassignee@example.com"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "description": "Priority level of the ticket",
+                    "enum": [
+                      "highest",
+                      "high",
+                      "medium",
+                      "low",
+                      "lowest"
+                    ],
+                    "example": "medium"
+                  },
+                  "commentAttachment": {
+                    "type": "string",
+                    "description": "Attachment URL for comment",
+                    "example": "https://example.com/attachment.jpg"
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Due date for the ticket",
+                    "example": "2026-01-20T10:00:00Z"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "Current status of the ticket",
+                    "enum": [
+                      "open",
+                      "closed",
+                      "inProgress",
+                      "onHold",
+                      "completed"
+                    ],
+                    "example": "inProgress"
+                  },
+                  "cost": {
+                    "type": "number",
+                    "description": "Cost associated with the ticket",
+                    "example": 150.5
+                  },
+                  "comment": {
+                    "type": "string",
+                    "description": "Comment to add to the ticket",
+                    "example": "Work in progress"
+                  },
+                  "invoiceAttachment": {
+                    "type": "string",
+                    "description": "Invoice attachment URL",
+                    "example": "https://example.com/invoice.pdf"
+                  },
+                  "updatedBy": {
+                    "type": "string",
+                    "description": "Email of the person updating the ticket",
+                    "example": "updater@example.com"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ticket updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Ticket updated successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Update failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "updateError": {
+                    "value": {
+                      "message": "Auto ticket error message from core"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "putTicketsByTicketid"
+      },
+      "delete": {
+        "tags": [
+          "Tickets"
+        ],
+        "summary": "Delete ticket",
+        "description": "Deletes a ticket from the system.\n\n**Rate Limit:** 20 requests per time window\n",
+        "parameters": [
+          {
+            "name": "ticketId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Ticket ID to delete",
+            "example": "TKT123456"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ticket deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Ticket deleted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Cannot delete ticket",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "deleteError": {
+                    "value": {
+                      "message": "Ticket error message from core"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "deleteTicketsByTicketid"
+      }
+    },
+    "/api/v1/external/webhooks/tickets/sample": {
+      "get": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Get ticket webhook sample data",
+        "description": "Retrieves sample webhook payload data for ticket events.\n\n**Rate Limit:** 20 requests per time window\n\nThis endpoint returns example payloads that will be sent to your webhook URL when ticket events occur.\n",
+        "responses": {
+          "200": {
+            "description": "Sample ticket webhook payloads retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TicketWebhookPayload"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Cannot fetch sample data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "noTickets": {
+                    "value": {
+                      "message": "Recent tickets not found"
+                    }
+                  },
+                  "fetchError": {
+                    "value": {
+                      "message": "Error fetching recent tickets from core"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getWebhooksTicketsSample"
+      }
+    },
+    "/api/v1/external/webhooks/submissions/sample": {
+      "get": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Get submission webhook sample data",
+        "description": "Retrieves sample webhook payload data for form submission events.\n\n**Rate Limit:** 20 requests per time window\n\nThis endpoint returns an example payload that will be sent to your webhook URL when form submissions occur.\n",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Form ID to get sample submission data for",
+            "example": "form123"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sample submission webhook payload retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubmissionWebhookPayload"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Cannot fetch sample data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "formNotFound": {
+                    "value": {
+                      "message": "Form not found"
+                    }
+                  },
+                  "submissionNotFound": {
+                    "value": {
+                      "message": "Form submission not found"
+                    }
+                  },
+                  "blobTokenError": {
+                    "value": {
+                      "message": "Something went wrong"
+                    }
+                  },
+                  "storeNotFound": {
+                    "value": {
+                      "message": "Store Not Found"
+                    }
+                  },
+                  "storeTagsNotFound": {
+                    "value": {
+                      "message": "Store Tags Not Found"
+                    }
+                  },
+                  "payloadError": {
+                    "value": {
+                      "message": "Submission payload not created"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getWebhooksSubmissionsSample"
+      }
+    },
+    "/api/v1/external/webhooks/action-points/sample": {
+      "get": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Get action point webhook sample data",
+        "description": "Retrieves sample webhook payload data for action point events.\n\n**Rate Limit:** 20 requests per time window\n\nThis endpoint returns an example payload that will be sent to your webhook URL when action point events occur.\n",
+        "responses": {
+          "200": {
+            "description": "Sample action point webhook payload retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActionPointWebhookPayload"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Cannot fetch sample data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "noActionPoints": {
+                    "value": {
+                      "message": "No action points found"
+                    }
+                  },
+                  "coreError": {
+                    "value": {
+                      "message": "Error from core"
+                    }
+                  },
+                  "noTickets": {
+                    "value": {
+                      "message": "No Tickets found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getWebhooksAction-pointsSample"
+      }
+    },
+    "/api/v1/external/webhooks/subscribe": {
+      "put": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Subscribe to webhook",
+        "description": "Subscribes a webhook URL to receive events for specific event types.\n\n**Rate Limit:** 20 requests per time window\n\n**Event Types:** process, ticket, actionPoint, asset\n\n**Note:** For 'process' type, formId is required.\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "webhookUrl",
+                  "type"
+                ],
+                "properties": {
+                  "webhookUrl": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "URL to receive webhook events",
+                    "example": "https://example.com/webhook"
+                  },
+                  "type": {
+                    "type": "string",
+                    "description": "Type of events to subscribe to",
+                    "enum": [
+                      "process",
+                      "ticket",
+                      "actionPoint",
+                      "asset"
+                    ],
+                    "example": "ticket"
+                  },
+                  "formId": {
+                    "type": "string",
+                    "description": "Form ID (required for 'process' type)",
+                    "example": "form123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook subscribed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Webhook subscribed successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Subscription failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "formIdRequired": {
+                    "value": {
+                      "message": "FormId is required"
+                    }
+                  },
+                  "webhookUrlMissing": {
+                    "value": {
+                      "message": "Webhook url not found"
+                    }
+                  },
+                  "subscriptionFailed": {
+                    "value": {
+                      "message": "Failed to subscribe url for form submission"
+                    }
+                  },
+                  "coreError": {
+                    "value": {
+                      "message": "Error from core"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "putWebhooksSubscribe"
+      }
+    },
+    "/api/v1/external/webhooks/unsubscribe": {
+      "put": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Unsubscribe from webhook",
+        "description": "Unsubscribes from receiving webhook events for specific event types.\n\n**Rate Limit:** 20 requests per time window\n\n**Event Types:** process, ticket, actionPoint, asset\n\n**Note:** For 'process' type, formId is required.\n",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "process",
+                "ticket",
+                "actionPoint",
+                "asset"
+              ]
+            },
+            "description": "Type of events to unsubscribe from",
+            "example": "ticket"
+          },
+          {
+            "name": "formId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Form ID (required for 'process' type)",
+            "example": "form123"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook unsubscribed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Webhook unsubscribed successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Unsubscription failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "companyIdError": {
+                    "value": {
+                      "message": "Company id is not generated"
+                    }
+                  },
+                  "formIdRequired": {
+                    "value": {
+                      "message": "FormId is required"
+                    }
+                  },
+                  "unsubscribeFailed": {
+                    "value": {
+                      "message": "Failed to subscribe url for form submission"
+                    }
+                  },
+                  "coreError": {
+                    "value": {
+                      "message": "Error from core"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "putWebhooksUnsubscribe"
+      }
+    },
+    "/api/v1/external/processes/{formIndex}/reviewers": {
+      "get": {
+        "tags": [
+          "Processes"
+        ],
+        "summary": "Get process reviewers",
+        "description": "Retrieves the list of reviewers configured for a specific form/process.\n\n**Rate Limit:** 20 requests per time window\n",
+        "parameters": [
+          {
+            "name": "formIndex",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Form index/ID",
+            "example": "form123"
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Store entity ID for filtering reviewers",
+            "example": "STORE001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reviewers retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "description": "Reviewer configuration data",
+                      "properties": {
+                        "reviewers": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "level": {
+                                "type": "integer",
+                                "example": 1
+                              },
+                              "email": {
+                                "type": "string",
+                                "example": "reviewer@example.com"
+                              },
+                              "name": {
+                                "type": "string",
+                                "example": "John Reviewer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Reviewers fetched successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Cannot fetch reviewers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "formNotFound": {
+                    "value": {
+                      "message": "Form not found"
+                    }
+                  },
+                  "noReviewConfig": {
+                    "value": {
+                      "message": "Form {formIndex} does not have review configurations"
+                    }
+                  },
+                  "noReviewers": {
+                    "value": {
+                      "message": "Submission Failed, No Reviewers found"
+                    }
+                  },
+                  "invalidReview": {
+                    "value": {
+                      "message": "Invalid review details"
+                    }
+                  },
+                  "coreError": {
+                    "value": {
+                      "message": "Reviewers error from core"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getProcessesByFormindexReviewers"
+      }
+    },
+    "/api/v1/external/processes/{formIndex}/payload": {
+      "get": {
+        "tags": [
+          "Processes"
+        ],
+        "summary": "Get form payload",
+        "description": "Retrieves the form structure and payload for a specific form/process.\n\n**Rate Limit:** 20 requests per time window\n",
+        "parameters": [
+          {
+            "name": "formIndex",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Form index/ID",
+            "example": "form123"
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Store entity ID",
+            "example": "STORE001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Form payload retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "description": "Form structure and configuration",
+                      "properties": {
+                        "formId": {
+                          "type": "string",
+                          "example": "form123"
+                        },
+                        "title": {
+                          "type": "string",
+                          "example": "Daily Checklist"
+                        },
+                        "questions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "description": "Form questions"
+                          }
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Form payload fetched successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Cannot fetch form payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "storeNotFound": {
+                    "value": {
+                      "message": "Store with Entity ID: {entityId} not found"
+                    }
+                  },
+                  "formNotFound": {
+                    "value": {
+                      "message": "Form not found"
+                    }
+                  },
+                  "coreError": {
+                    "value": {
+                      "message": "Form error from core"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getProcessesByFormindexPayload"
+      }
+    },
+    "/api/v1/external/processes/{formIndex}/submissions": {
+      "post": {
+        "tags": [
+          "Processes"
+        ],
+        "summary": "Submit form",
+        "description": "Submits a completed form/process for a specific store.\n\n**Rate Limit:** 50 requests per time window\n\n**Note:** This endpoint has a higher rate limit due to the nature of form submissions.\n\n**Date Format:** Submission date should be in yyyy-mm-dd format (e.g., \"2026-01-05\")\n",
+        "parameters": [
+          {
+            "name": "formIndex",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Form index/ID",
+            "example": "form123"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "entityId",
+                  "answerSheet"
+                ],
+                "properties": {
+                  "entityId": {
+                    "type": "string",
+                    "description": "Store entity ID where form is being submitted",
+                    "example": "STORE001"
+                  },
+                  "submissionDate": {
+                    "type": "string",
+                    "format": "date",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                    "description": "Date of submission in yyyy-mm-dd format",
+                    "example": "2026-01-05"
+                  },
+                  "answerSheet": {
+                    "type": "array",
+                    "description": "Array of question responses",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "questionId": {
+                          "type": "string",
+                          "description": "Question identifier",
+                          "example": "q1"
+                        },
+                        "response": {
+                          "description": "Answer to the question (type varies by question type)",
+                          "example": "Yes"
+                        },
+                        "score": {
+                          "type": "number",
+                          "description": "Score for the answer",
+                          "example": 10
+                        },
+                        "attachment": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Attachment URLs for the answer",
+                          "example": [
+                            "https://example.com/photo.jpg"
+                          ]
+                        }
+                      }
+                    },
+                    "example": [
+                      {
+                        "questionId": "q1",
+                        "response": "Yes",
+                        "score": 10
+                      },
+                      {
+                        "questionId": "q2",
+                        "response": "Completed",
+                        "score": 5,
+                        "attachment": [
+                          "https://example.com/proof.jpg"
+                        ]
+                      }
+                    ]
+                  },
+                  "reviewers": {
+                    "type": "array",
+                    "description": "Array of reviewers (required if form has review process)",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "level": {
+                          "type": "integer",
+                          "description": "Review level",
+                          "example": 1
+                        },
+                        "email": {
+                          "type": "string",
+                          "format": "email",
+                          "description": "Reviewer email",
+                          "example": "reviewer@example.com"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Form submitted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "submissionId": {
+                          "type": "string",
+                          "example": "sub123456"
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Form submitted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Submission failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "formNotFound": {
+                    "value": {
+                      "message": "Form with form Index: {formIndex} not found"
+                    }
+                  },
+                  "storeNotFound": {
+                    "value": {
+                      "message": "Store with Entity ID: {entityId} not found"
+                    }
+                  },
+                  "userNotFound": {
+                    "value": {
+                      "message": "User with Email: {email} not found"
+                    }
+                  },
+                  "duplicateSubmission": {
+                    "value": {
+                      "message": "Process Record is already available for this period"
+                    }
+                  },
+                  "validationSchemaNotFound": {
+                    "value": {
+                      "message": "Form validation schema with form Index: {formIndex} not found"
+                    }
+                  },
+                  "coreError": {
+                    "value": {
+                      "message": "Submission error from core"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "postProcessesByFormindexSubmissions"
+      }
+    },
+    "/api/v1/external/blobs/csvs/monthly": {
+      "get": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "Get monthly CSV data export",
+        "description": "Retrieves monthly CSV dump file for a specific form/process.\n\n**Rate Limit:** 10 requests per time window\n\n**Note:** This endpoint has a lower rate limit due to the size of data exports.\n\n**Date Format:** monthYear should be in MM-YYYY format (e.g., \"01-2026\" for January 2026)\n",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Form ID to get CSV data for",
+            "example": "form123"
+          },
+          {
+            "name": "monthYear",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{2}-\\d{4}$"
+            },
+            "description": "Month and year in MM-YYYY format",
+            "example": "01-2026"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV file retrieved successfully",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "description": "CSV file content"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "File not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "fileNotFound": {
+                    "value": {
+                      "message": "The requested file could not be found for {formId}/{monthYear}"
+                    }
+                  },
+                  "notFoundError": {
+                    "value": {
+                      "message": "File not found error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getBlobsCsvsMonthly"
+      }
+    },
+    "security": {
+      "0": {
+        "bearerAuth": [],
+        "operationId": "0Security",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AccessToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "access-token",
+        "description": "JWT token without Bearer prefix"
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Error message describing what went wrong"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "john.doe@example.com"
+          },
+          "name": {
+            "type": "string",
+            "example": "John Doe"
+          },
+          "empId": {
+            "type": "string",
+            "example": "EMP001"
+          },
+          "countryCode": {
+            "type": "integer",
+            "example": 91
+          },
+          "phoneNumber": {
+            "type": "string",
+            "example": "9876543210"
+          },
+          "designation": {
+            "type": "string",
+            "example": "Store Manager"
+          },
+          "storeName": {
+            "type": "string",
+            "example": "Downtown Store"
+          },
+          "manager": {
+            "type": "string",
+            "example": "John Doe"
+          },
+          "validEmail": {
+            "type": "boolean",
+            "example": true
+          },
+          "entityId": {
+            "type": "string",
+            "example": "STORE001"
+          },
+          "inActive": {
+            "type": "boolean",
+            "example": false
+          },
+          "lastLogin": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T10:00:00Z"
+          }
+        }
+      },
+      "Store": {
+        "type": "object",
+        "properties": {
+          "entityId": {
+            "type": "string",
+            "example": "STORE001"
+          },
+          "storeName": {
+            "type": "string",
+            "example": "Downtown Store"
+          },
+          "address": {
+            "type": "string",
+            "example": "123 Main Street"
+          },
+          "area": {
+            "type": "string",
+            "example": "Downtown"
+          },
+          "city": {
+            "type": "string",
+            "example": "New York"
+          },
+          "state": {
+            "type": "string",
+            "example": "NY"
+          },
+          "country": {
+            "type": "string",
+            "example": "USA"
+          },
+          "region": {
+            "type": "string",
+            "example": "North Region"
+          },
+          "storeRadius": {
+            "type": "number",
+            "example": 100
+          },
+          "tags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "example": {
+              "region": "North",
+              "type": "Retail"
+            }
+          }
+        }
+      },
+      "Designation": {
+        "type": "object",
+        "properties": {
+          "designation": {
+            "type": "string",
+            "example": "Store Manager"
+          },
+          "userRole": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "companyAdmin",
+              "areaManager",
+              "storeEmployee",
+              "nonCreatorCompanyAdmin",
+              "nonCreatorAreaManager",
+              "nonCreatorStoreManager",
+              "processManager",
+              "userManager",
+              "storeManager"
+            ],
+            "example": "storeManager"
+          }
+        }
+      },
+      "Ticket": {
+        "type": "object",
+        "properties": {
+          "ticketId": {
+            "type": "string",
+            "example": "TKT123456"
+          },
+          "title": {
+            "type": "string",
+            "example": "Equipment malfunction"
+          },
+          "description": {
+            "type": "string",
+            "example": "The coffee machine is not working properly"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "closed",
+              "inProgress",
+              "onHold",
+              "completed"
+            ],
+            "example": "open"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "highest",
+              "high",
+              "medium",
+              "low",
+              "lowest"
+            ],
+            "example": "high"
+          },
+          "entityId": {
+            "type": "string",
+            "example": "STORE001"
+          },
+          "assigneesEmail": {
+            "type": "string",
+            "example": "assignee@example.com"
+          },
+          "createdBy": {
+            "type": "string",
+            "example": "creator@example.com"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-15T10:00:00Z"
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "https://example.com/image1.jpg"
+            ]
+          },
+          "tags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "example": {
+              "category": "Maintenance"
+            }
+          }
+        }
+      },
+      "TicketWebhookPayload": {
+        "type": "object",
+        "description": "Webhook payload sent when ticket events occur",
+        "properties": {
+          "payloadType": {
+            "type": "string",
+            "enum": [
+              "ticket",
+              "auto_ticket",
+              "asset_ticket"
+            ],
+            "example": "ticket"
+          },
+          "version": {
+            "type": "string",
+            "example": "2.0"
+          },
+          "body": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "example": "Equipment Issue"
+              },
+              "description": {
+                "type": "string",
+                "example": "Machine not working"
+              },
+              "status": {
+                "type": "string",
+                "example": "open"
+              },
+              "createdBy": {
+                "type": "string",
+                "example": "user@example.com"
+              },
+              "claimedBy": {
+                "type": "string",
+                "example": "assignee@example.com"
+              },
+              "assignee": {
+                "type": "string",
+                "description": "Comma-separated assignee emails",
+                "example": "assignee1@example.com,assignee2@example.com"
+              },
+              "priority": {
+                "type": "string",
+                "example": "high"
+              },
+              "sla": {
+                "type": "string",
+                "example": "24 hours"
+              },
+              "completedTAT": {
+                "type": "string",
+                "example": "12 hours"
+              },
+              "closedTAT": {
+                "type": "string",
+                "example": "14 hours"
+              },
+              "reopen": {
+                "type": "integer",
+                "example": 0
+              },
+              "isEscalated": {
+                "type": "boolean",
+                "example": false
+              },
+              "attachments": {
+                "type": "string",
+                "example": "https://example.com/file.jpg"
+              },
+              "ticketId": {
+                "type": "string",
+                "nullable": true,
+                "example": "TKT123456"
+              },
+              "actionPointId": {
+                "type": "string",
+                "nullable": true,
+                "example": null
+              },
+              "closureAssignees": {
+                "type": "string",
+                "example": "closer@example.com"
+              },
+              "comment": {
+                "type": "string",
+                "example": "Working on it"
+              },
+              "timeData": {
+                "type": "object",
+                "properties": {
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-01-05T10:00:00Z"
+                  },
+                  "claimedAt": {
+                    "type": "string",
+                    "example": "2026-01-05T11:00:00Z"
+                  },
+                  "completedAt": {
+                    "type": "string",
+                    "example": "--"
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "example": "2026-01-06T10:00:00Z"
+                  },
+                  "lastUpdated": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-01-05T12:00:00Z"
+                  },
+                  "closedAt": {
+                    "type": "string",
+                    "example": "--"
+                  }
+                }
+              },
+              "categoryInfo": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "example": "Maintenance"
+                  },
+                  "subCategory1": {
+                    "type": "string",
+                    "example": "Equipment"
+                  },
+                  "subCategory2": {
+                    "type": "string",
+                    "example": "--"
+                  },
+                  "subCategory3": {
+                    "type": "string",
+                    "example": "--"
+                  }
+                }
+              },
+              "assetInfo": {
+                "type": "object",
+                "nullable": true,
+                "properties": {
+                  "assetItemId": {
+                    "type": "string",
+                    "example": "ASSET001"
+                  },
+                  "assetTableId": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": null
+                  }
+                }
+              },
+              "processInfo": {
+                "type": "object",
+                "nullable": true,
+                "example": null
+              },
+              "storeInfo": {
+                "type": "object",
+                "properties": {
+                  "storeName": {
+                    "type": "string",
+                    "example": "Downtown Store"
+                  },
+                  "entityId": {
+                    "type": "string",
+                    "example": "STORE001"
+                  },
+                  "address": {
+                    "type": "string",
+                    "example": "123 Main Street"
+                  },
+                  "area": {
+                    "type": "string",
+                    "example": "Downtown"
+                  },
+                  "city": {
+                    "type": "string",
+                    "example": "New York"
+                  },
+                  "state": {
+                    "type": "string",
+                    "example": "NY"
+                  },
+                  "country": {
+                    "type": "string",
+                    "example": "USA"
+                  }
+                }
+              },
+              "storeTags": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "example": {
+                  "region": "North",
+                  "type": "Retail"
+                }
+              },
+              "tags": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "example": {
+                  "urgency": "high",
+                  "department": "maintenance"
+                }
+              },
+              "eventType": {
+                "type": "string",
+                "example": "open"
+              }
+            }
+          }
+        }
+      },
+      "SubmissionWebhookPayload": {
+        "type": "object",
+        "description": "Webhook payload sent when form submission events occur",
+        "properties": {
+          "payloadType": {
+            "type": "string",
+            "enum": [
+              "audit",
+              "process"
+            ],
+            "example": "process"
+          },
+          "version": {
+            "type": "string",
+            "example": "2.0"
+          },
+          "body": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "example": "Daily Checklist"
+              },
+              "formId": {
+                "type": "string",
+                "example": "form123"
+              },
+              "progress": {
+                "type": "number",
+                "example": 100
+              },
+              "userName": {
+                "type": "string",
+                "example": "John Doe"
+              },
+              "submittedFor": {
+                "type": "string",
+                "example": "2026-01-05"
+              },
+              "status": {
+                "type": "string",
+                "example": "completed"
+              },
+              "email": {
+                "type": "string",
+                "example": "user@example.com"
+              },
+              "submissionId": {
+                "type": "string",
+                "example": "sub123456"
+              },
+              "actionPointCount": {
+                "type": "integer",
+                "example": 2
+              },
+              "deviceinfo": {
+                "type": "object",
+                "properties": {
+                  "deviceType": {
+                    "type": "string",
+                    "example": "mobile"
+                  },
+                  "os": {
+                    "type": "string",
+                    "example": "iOS"
+                  }
+                }
+              },
+              "scoring": {
+                "type": "object",
+                "properties": {
+                  "maxScore": {
+                    "type": "number",
+                    "example": 100
+                  },
+                  "totalScore": {
+                    "type": "number",
+                    "example": 85
+                  },
+                  "compliance": {
+                    "type": "number",
+                    "example": 85
+                  },
+                  "nonCompliances": {
+                    "type": "integer",
+                    "example": 3
+                  },
+                  "NAcount": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "NAscore": {
+                    "type": "number",
+                    "example": 5
+                  }
+                }
+              },
+              "auditInfo": {
+                "type": "object",
+                "nullable": true,
+                "properties": {
+                  "CQcount": {
+                    "type": "integer",
+                    "example": 5
+                  },
+                  "CQtriggered": {
+                    "type": "integer",
+                    "example": 2
+                  },
+                  "auditCompliance": {
+                    "type": "number",
+                    "example": 90
+                  },
+                  "auditScore": {
+                    "type": "number",
+                    "example": 90
+                  },
+                  "auditStatus": {
+                    "type": "string",
+                    "example": "passed"
+                  }
+                }
+              },
+              "timeData": {
+                "type": "object",
+                "properties": {
+                  "timeZone": {
+                    "type": "string",
+                    "example": "America/New_York"
+                  },
+                  "submissionDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-01-05T10:00:00Z"
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-01-05T09:00:00Z"
+                  },
+                  "completedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-01-05T10:30:00Z"
+                  }
+                }
+              },
+              "properties": {
+                "type": "object",
+                "properties": {
+                  "formPriority": {
+                    "type": "string",
+                    "example": "high"
+                  },
+                  "periodicity": {
+                    "type": "string",
+                    "example": "daily"
+                  },
+                  "submissionBy": {
+                    "type": "string",
+                    "example": "John Doe"
+                  },
+                  "responseAfterEndTime": {
+                    "type": "string",
+                    "enum": [
+                      "accept",
+                      "reject"
+                    ],
+                    "example": "accept"
+                  },
+                  "noOfResponses": {
+                    "type": "string",
+                    "example": "single response"
+                  },
+                  "period": {
+                    "type": "string",
+                    "example": "2026-01-05T00:00:00Z-2026-01-05T23:59:59Z"
+                  }
+                }
+              },
+              "approvalInfo": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "level": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "submittedBy": {
+                      "type": "string",
+                      "example": "reviewer@example.com"
+                    },
+                    "submittedOn": {
+                      "type": "string",
+                      "format": "date",
+                      "example": "2026-01-05"
+                    },
+                    "totalScore": {
+                      "type": "number",
+                      "example": 85
+                    },
+                    "maxScore": {
+                      "type": "number",
+                      "example": 100
+                    },
+                    "compliance": {
+                      "type": "number",
+                      "example": 85
+                    },
+                    "startDate": {
+                      "type": "string",
+                      "format": "date",
+                      "example": "2026-01-05"
+                    },
+                    "endDate": {
+                      "type": "string",
+                      "format": "date",
+                      "example": "2026-01-05"
+                    }
+                  }
+                }
+              },
+              "storeInfo": {
+                "type": "object",
+                "properties": {
+                  "storeName": {
+                    "type": "string",
+                    "example": "Downtown Store"
+                  },
+                  "address": {
+                    "type": "string",
+                    "example": "123 Main Street"
+                  },
+                  "area": {
+                    "type": "string",
+                    "example": "Downtown"
+                  },
+                  "city": {
+                    "type": "string",
+                    "example": "New York"
+                  },
+                  "state": {
+                    "type": "string",
+                    "example": "NY"
+                  },
+                  "country": {
+                    "type": "string",
+                    "example": "USA"
+                  },
+                  "entityId": {
+                    "type": "string",
+                    "example": "STORE001"
+                  }
+                }
+              },
+              "storeTags": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "example": {
+                  "region": "North",
+                  "type": "Retail"
+                }
+              },
+              "form": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "question": {
+                      "type": "string",
+                      "example": "Is the equipment working?"
+                    },
+                    "type": {
+                      "type": "string",
+                      "example": "yes/no"
+                    },
+                    "questionId": {
+                      "type": "string",
+                      "example": "q1"
+                    },
+                    "maxMarks": {
+                      "type": "number",
+                      "example": 10
+                    },
+                    "questionComment": {
+                      "type": "string",
+                      "example": "Check thoroughly"
+                    },
+                    "NAresponse": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "questionScore": {
+                      "type": "number",
+                      "example": 10
+                    },
+                    "attachmentUrl": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": [
+                        "https://example.com/photo.jpg?token=abc123"
+                      ]
+                    },
+                    "questionAttachments": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": [
+                        "https://example.com/reference.jpg?token=def456"
+                      ]
+                    },
+                    "response": {
+                      "description": "Response varies by question type",
+                      "example": "Yes"
+                    },
+                    "actionPointId": {
+                      "type": "string",
+                      "example": "AP123"
+                    },
+                    "rows": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": {
+                            "type": "string",
+                            "example": "Row 1"
+                          }
+                        }
+                      }
+                    },
+                    "columns": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": {
+                            "type": "string",
+                            "example": "Column 1"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ActionPointWebhookPayload": {
+        "type": "object",
+        "description": "Webhook payload sent when action point events occur",
+        "properties": {
+          "payloadType": {
+            "type": "string",
+            "enum": [
+              "actionPoint"
+            ],
+            "example": "actionPoint"
+          },
+          "version": {
+            "type": "string",
+            "example": "2.0"
+          },
+          "body": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "example": "Fix equipment"
+              },
+              "description": {
+                "type": "string",
+                "example": "Equipment needs repair"
+              },
+              "status": {
+                "type": "string",
+                "example": "open"
+              },
+              "createdBy": {
+                "type": "string",
+                "example": "user@example.com"
+              },
+              "claimedBy": {
+                "type": "string",
+                "example": "assignee@example.com"
+              },
+              "assignee": {
+                "type": "string",
+                "description": "Comma-separated assignee emails",
+                "example": "assignee@example.com"
+              },
+              "priority": {
+                "type": "string",
+                "example": "high"
+              },
+              "sla": {
+                "type": "string",
+                "example": "24 hours"
+              },
+              "completedTAT": {
+                "type": "string",
+                "example": "12 hours"
+              },
+              "closedTAT": {
+                "type": "string",
+                "example": "14 hours"
+              },
+              "reopen": {
+                "type": "integer",
+                "example": 0
+              },
+              "isEscalated": {
+                "type": "boolean",
+                "example": false
+              },
+              "attachments": {
+                "type": "string",
+                "example": "https://example.com/file.jpg"
+              },
+              "ticketId": {
+                "type": "string",
+                "nullable": true,
+                "example": null
+              },
+              "actionPointId": {
+                "type": "string",
+                "example": "AP123456"
+              },
+              "closureAssignees": {
+                "type": "string",
+                "example": "closer@example.com"
+              },
+              "comment": {
+                "type": "string",
+                "example": "Working on it"
+              },
+              "timeData": {
+                "type": "object",
+                "properties": {
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-01-05T10:00:00Z"
+                  },
+                  "claimedAt": {
+                    "type": "string",
+                    "example": "2026-01-05T11:00:00Z"
+                  },
+                  "completedAt": {
+                    "type": "string",
+                    "example": "--"
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "example": "2026-01-06T10:00:00Z"
+                  },
+                  "lastUpdated": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-01-05T12:00:00Z"
+                  },
+                  "closedAt": {
+                    "type": "string",
+                    "example": "--"
+                  }
+                }
+              },
+              "categoryInfo": {
+                "type": "object",
+                "nullable": true,
+                "example": null
+              },
+              "assetInfo": {
+                "type": "object",
+                "nullable": true,
+                "example": null
+              },
+              "processInfo": {
+                "type": "object",
+                "properties": {
+                  "submissionId": {
+                    "type": "string",
+                    "example": "sub123456"
+                  },
+                  "processName": {
+                    "type": "string",
+                    "example": "Daily Checklist"
+                  },
+                  "question": {
+                    "type": "string",
+                    "example": "Is the equipment working?"
+                  },
+                  "response": {
+                    "type": "string",
+                    "example": "No"
+                  }
+                }
+              },
+              "storeInfo": {
+                "type": "object",
+                "properties": {
+                  "storeName": {
+                    "type": "string",
+                    "example": "Downtown Store"
+                  },
+                  "entityId": {
+                    "type": "string",
+                    "example": "STORE001"
+                  },
+                  "address": {
+                    "type": "string",
+                    "example": "123 Main Street"
+                  },
+                  "area": {
+                    "type": "string",
+                    "example": "Downtown"
+                  },
+                  "city": {
+                    "type": "string",
+                    "example": "New York"
+                  },
+                  "state": {
+                    "type": "string",
+                    "example": "NY"
+                  },
+                  "country": {
+                    "type": "string",
+                    "example": "USA"
+                  }
+                }
+              },
+              "storeTags": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "example": {
+                  "region": "North",
+                  "type": "Retail"
+                }
+              },
+              "tags": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "example": {
+                  "urgency": "high",
+                  "department": "maintenance"
+                }
+              },
+              "eventType": {
+                "type": "string",
+                "example": "open"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "AccessToken": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Authentication and token management endpoints"
+    },
+    {
+      "name": "Users",
+      "description": "User management operations"
+    },
+    {
+      "name": "Stores",
+      "description": "Store management operations"
+    },
+    {
+      "name": "Designations",
+      "description": "Designation/Role management operations"
+    },
+    {
+      "name": "Tickets",
+      "description": "Ticket management operations"
+    },
+    {
+      "name": "Webhooks",
+      "description": "Webhook subscription and sample data endpoints"
+    },
+    {
+      "name": "Processes",
+      "description": "Process/Form submission and configuration endpoints"
+    },
+    {
+      "name": "Files",
+      "description": "File and data export endpoints"
+    }
+  ],
+  "externalDocs": {
+    "description": "Download all API endpoints in JSON",
+    "url": "/api/v1/external-swagger-download"
+  },
+  "schemes": [
+    "https"
+  ],
+  "produces": [
+    "application/json"
+  ]
+}
