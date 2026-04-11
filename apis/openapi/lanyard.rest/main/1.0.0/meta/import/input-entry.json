@@ -1,0 +1,636 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Lanyard API",
+    "description": "Lanyard is a service that makes it easy to export your live Discord presence to an API endpoint. Provides Discord user presence data and a key-value store for each user.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Lanyard",
+      "url": "https://github.com/Phineas/lanyard"
+    },
+    "x-jentic-source-url": "https://github.com/Phineas/lanyard"
+  },
+  "servers": [
+    {
+      "url": "https://api.lanyard.rest",
+      "description": "Lanyard API server"
+    }
+  ],
+  "paths": {
+    "/v1/users/{userId}": {
+      "get": {
+        "operationId": "getuserpresence",
+        "summary": "Get user presence",
+        "description": "Retrieve the Discord presence data for a user, including their online status, activities, Spotify listening status, and key-value store data. No authentication required.",
+        "tags": [
+          "Presence"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "The Discord user ID.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User presence data retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresenceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid user ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found or not being monitored by Lanyard.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/{userId}/kv/{key}": {
+      "put": {
+        "operationId": "setkvpair",
+        "summary": "Set a key-value pair",
+        "description": "Set a single key-value pair for the authenticated user. Keys must be alphanumeric and max 255 characters. Values max 30,000 characters. Max 512 KV pairs per user.",
+        "tags": [
+          "Key-Value Store"
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "The Discord user ID.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "description": "The alphanumeric key (max 255 characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The value to store. Will be string-encoded.",
+          "required": true,
+          "content": {
+            "text/plain": {
+              "schema": {
+                "type": "string",
+                "maxLength": 30000
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "KV pair set successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresenceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid key or value.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deletekvpair",
+        "summary": "Delete a key-value pair",
+        "description": "Delete a single key-value pair for the authenticated user.",
+        "tags": [
+          "Key-Value Store"
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "The Discord user ID.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "description": "The key to delete.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "KV pair deleted successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresenceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Key not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/{userId}/kv": {
+      "patch": {
+        "operationId": "setmultiplekvpairs",
+        "summary": "Set multiple key-value pairs",
+        "description": "Set multiple key-value pairs at once for the authenticated user. Request body is a flat JSON object with key-value pairs (max depth 1).",
+        "tags": [
+          "Key-Value Store"
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "The Discord user ID.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "A flat JSON object with key-value pairs to set.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "KV pairs set successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresenceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{userId}.{fileType}": {
+      "get": {
+        "operationId": "getUserAvatar",
+        "summary": "Get user avatar image",
+        "description": "Retrieves the Discord user's avatar image in the specified format.",
+        "tags": [
+          "Presence"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "The Discord user ID.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fileType",
+            "in": "path",
+            "required": true,
+            "description": "Image format for the avatar.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "png",
+                "gif",
+                "webp",
+                "jpg",
+                "jpeg"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User avatar image.",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/gif": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found or avatar not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "API key obtained by DMing the Lanyard Discord bot with '.apikey'. Required for KV store operations."
+      }
+    },
+    "schemas": {
+      "PresenceResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the request was successful."
+          },
+          "data": {
+            "$ref": "#/components/schemas/PresenceData"
+          }
+        }
+      },
+      "PresenceData": {
+        "type": "object",
+        "properties": {
+          "active_on_discord_mobile": {
+            "type": "boolean",
+            "description": "Whether the user is active on Discord mobile."
+          },
+          "active_on_discord_desktop": {
+            "type": "boolean",
+            "description": "Whether the user is active on Discord desktop."
+          },
+          "active_on_discord_web": {
+            "type": "boolean",
+            "description": "Whether the user is active on Discord web."
+          },
+          "listening_to_spotify": {
+            "type": "boolean",
+            "description": "Whether the user is currently listening to Spotify."
+          },
+          "kv": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "The user's key-value store data."
+          },
+          "spotify": {
+            "$ref": "#/components/schemas/SpotifyData"
+          },
+          "discord_user": {
+            "$ref": "#/components/schemas/DiscordUser"
+          },
+          "discord_status": {
+            "type": "string",
+            "description": "The user's Discord status.",
+            "enum": [
+              "online",
+              "idle",
+              "dnd",
+              "offline"
+            ]
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Activity"
+            },
+            "description": "List of user's current Discord activities."
+          }
+        }
+      },
+      "SpotifyData": {
+        "type": "object",
+        "nullable": true,
+        "description": "Spotify listening data, null if not listening.",
+        "properties": {
+          "track_id": {
+            "type": "string",
+            "description": "Spotify track ID."
+          },
+          "timestamps": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "integer",
+                "description": "Start timestamp in milliseconds."
+              },
+              "end": {
+                "type": "integer",
+                "description": "End timestamp in milliseconds."
+              }
+            }
+          },
+          "song": {
+            "type": "string",
+            "description": "Song title."
+          },
+          "artist": {
+            "type": "string",
+            "description": "Artist name."
+          },
+          "album_art_url": {
+            "type": "string",
+            "description": "URL of the album art."
+          },
+          "album": {
+            "type": "string",
+            "description": "Album name."
+          }
+        }
+      },
+      "DiscordUser": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Discord user ID."
+          },
+          "username": {
+            "type": "string",
+            "description": "Discord username."
+          },
+          "discriminator": {
+            "type": "string",
+            "description": "Discord discriminator."
+          },
+          "avatar": {
+            "type": "string",
+            "nullable": true,
+            "description": "Avatar hash."
+          },
+          "public_flags": {
+            "type": "integer",
+            "description": "Public user flags."
+          },
+          "display_name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Discord display name."
+          },
+          "global_name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Discord global display name."
+          },
+          "avatar_decoration_data": {
+            "type": "object",
+            "nullable": true,
+            "description": "Avatar decoration data."
+          }
+        }
+      },
+      "Activity": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Activity name."
+          },
+          "type": {
+            "type": "integer",
+            "description": "Activity type."
+          },
+          "state": {
+            "type": "string",
+            "description": "Activity state text."
+          },
+          "details": {
+            "type": "string",
+            "description": "Activity details text."
+          },
+          "timestamps": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "integer"
+              },
+              "end": {
+                "type": "integer"
+              }
+            }
+          },
+          "application_id": {
+            "type": "string",
+            "description": "Application ID."
+          },
+          "assets": {
+            "type": "object",
+            "properties": {
+              "large_image": {
+                "type": "string"
+              },
+              "large_text": {
+                "type": "string"
+              },
+              "small_image": {
+                "type": "string"
+              },
+              "small_text": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Always false for errors."
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "description": "Error message."
+              },
+              "code": {
+                "type": "string",
+                "description": "Error code."
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {},
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Presence",
+      "description": "Discord presence data endpoints"
+    },
+    {
+      "name": "Key-Value Store",
+      "description": "User key-value store CRUD operations"
+    }
+  ]
+}
