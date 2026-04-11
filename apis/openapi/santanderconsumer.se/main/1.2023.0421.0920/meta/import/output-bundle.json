@@ -1,0 +1,739 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Santander Checkout API",
+    "description": "Santander Consumer Bank Nordic auto e-commerce checkout API. Provides loan application creation, status updates, and authentication verification for vehicle financing across Nordic countries.",
+    "version": "1.2023.0421.0920",
+    "x-jentic-source-url": "https://developer.santanderconsumer.se/our-open-apis/Autoe-CommerceAPIs/CheckoutAPI"
+  },
+  "servers": [
+    {
+      "url": "https://api.santanderconsumer.se",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/api/v2/CreateApplication": {
+      "post": {
+        "operationId": "createApplication",
+        "summary": "Create Loan Application",
+        "description": "Create a URL to the loan application form for the specified product and financial details. The returned link has a limited lifetime.",
+        "tags": [
+          "Application"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApplicationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success - link to application form returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateApplicationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "One or more bad parameters in the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v2/UpdateStatus": {
+      "post": {
+        "operationId": "updateStatus",
+        "summary": "Update Application Status",
+        "description": "Forward status updates for loan applications to partners. Used internally to notify partners of application status changes.",
+        "tags": [
+          "Application"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentStatusNotificationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success - updated status forwarded to partner"
+          },
+          "400": {
+            "description": "One or more bad parameters in the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The specified loan application cannot be found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v2/VerifyAuthentication": {
+      "post": {
+        "operationId": "verifyAuthentication",
+        "summary": "Verify Authentication Token",
+        "description": "Test if the authentication token is still valid and has not expired.",
+        "tags": [
+          "Authentication"
+        ],
+        "responses": {
+          "200": {
+            "description": "Token is still valid"
+          },
+          "401": {
+            "description": "Unauthorized - missing token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Token expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateApplicationRequest": {
+        "type": "object",
+        "required": [
+          "applicationArea",
+          "redirectionURL",
+          "applicants",
+          "vehicleInfo"
+        ],
+        "properties": {
+          "applicationArea": {
+            "$ref": "#/components/schemas/ApplicationArea"
+          },
+          "requestMetadata": {
+            "$ref": "#/components/schemas/RequestMetadata"
+          },
+          "redirectionURL": {
+            "type": "string",
+            "description": "URL to redirect customer after application completion"
+          },
+          "applicants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Applicant"
+            }
+          },
+          "vehicleInfo": {
+            "$ref": "#/components/schemas/VehicleInfo"
+          },
+          "financialDataRequested": {
+            "$ref": "#/components/schemas/FinancialDataRequested"
+          },
+          "simulationId": {
+            "type": "string",
+            "description": "Reference to a previous simulation"
+          }
+        }
+      },
+      "ApplicationArea": {
+        "type": "object",
+        "properties": {
+          "sender": {
+            "$ref": "#/components/schemas/Sender"
+          },
+          "creationDateTime": {
+            "type": "string"
+          }
+        }
+      },
+      "Sender": {
+        "type": "object",
+        "required": [
+          "partnerId"
+        ],
+        "properties": {
+          "partnerId": {
+            "type": "string",
+            "description": "Partner identifier"
+          },
+          "dealerCode": {
+            "type": "string",
+            "description": "Dealer code"
+          },
+          "sellerId": {
+            "type": "string",
+            "description": "Seller identifier"
+          }
+        }
+      },
+      "RequestMetadata": {
+        "type": "object",
+        "required": [
+          "callerTransactionId",
+          "orderId",
+          "countryCode",
+          "language"
+        ],
+        "properties": {
+          "callerTransactionId": {
+            "type": "string",
+            "description": "Unique transaction ID for tracing"
+          },
+          "orderId": {
+            "type": "string",
+            "description": "Order identifier"
+          },
+          "countryCode": {
+            "type": "string",
+            "description": "Country code (NO, SE, FI, DK)"
+          },
+          "language": {
+            "type": "string",
+            "description": "Language code"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency code"
+          }
+        }
+      },
+      "Applicant": {
+        "type": "object",
+        "required": [
+          "applicantType",
+          "customerType"
+        ],
+        "properties": {
+          "customerId": {
+            "type": "string"
+          },
+          "applicantType": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0,
+              1,
+              2
+            ],
+            "description": "Applicant type"
+          },
+          "customerType": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0,
+              1
+            ],
+            "description": "Customer type (individual/company)"
+          },
+          "salutation": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0,
+              1,
+              2
+            ]
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "companyName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "address": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "properties": {
+          "street": {
+            "type": "string"
+          },
+          "houseNumber": {
+            "type": "string"
+          },
+          "additionalInfo": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "postalCode": {
+            "type": "string"
+          },
+          "stateOrProvince": {
+            "type": "string"
+          },
+          "countryCode": {
+            "type": "string"
+          }
+        }
+      },
+      "VehicleInfo": {
+        "type": "object",
+        "required": [
+          "category",
+          "manufacturer",
+          "vehiclePriceBreakdown",
+          "vehicleType"
+        ],
+        "properties": {
+          "category": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
+          },
+          "vehicleType": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0,
+              1,
+              2
+            ],
+            "description": "Vehicle type (new, used, demo)"
+          },
+          "manufacturer": {
+            "type": "string",
+            "description": "Vehicle manufacturer"
+          },
+          "assetId": {
+            "type": "string"
+          },
+          "trimYear": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "vin": {
+            "type": "string",
+            "description": "Vehicle identification number"
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/Odometer"
+          },
+          "registration": {
+            "$ref": "#/components/schemas/Registration"
+          },
+          "vehiclePriceBreakdown": {
+            "$ref": "#/components/schemas/VehiclePriceBreakdown"
+          },
+          "pictureURL": {
+            "type": "string"
+          }
+        }
+      },
+      "Odometer": {
+        "type": "object",
+        "properties": {
+          "numUnits": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "uom": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0,
+              1
+            ],
+            "description": "Unit of measurement (km/miles)"
+          }
+        }
+      },
+      "Registration": {
+        "type": "object",
+        "properties": {
+          "plate": {
+            "type": "string"
+          },
+          "firstDate": {
+            "type": "string"
+          }
+        }
+      },
+      "VehiclePriceBreakdown": {
+        "type": "object",
+        "required": [
+          "basePrice",
+          "retailPrice",
+          "includesVAT"
+        ],
+        "properties": {
+          "basePrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "retailPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "adjustedVehiclePrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "accessories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Accessory"
+            }
+          },
+          "standardAccessoryPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "optionalAccesoryPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "includesVAT": {
+            "type": "boolean"
+          },
+          "fees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeeType"
+            }
+          },
+          "incentives": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Incentive"
+            }
+          }
+        }
+      },
+      "Accessory": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rv": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "FeeType": {
+        "type": "object",
+        "properties": {
+          "typeOfFee": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "Incentive": {
+        "type": "object",
+        "properties": {
+          "typeOfIncentive": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              1,
+              2,
+              3,
+              4
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "FinancialDataRequested": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string"
+          },
+          "productType": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0,
+              1,
+              2,
+              3,
+              4
+            ]
+          },
+          "durationOfContract": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "timeUnit": {
+                "type": "string"
+              }
+            }
+          },
+          "downPayment": {
+            "type": "number",
+            "format": "double"
+          },
+          "deposit": {
+            "type": "object",
+            "properties": {
+              "partExchange": {
+                "type": "number",
+                "format": "double"
+              },
+              "dealer": {
+                "type": "number",
+                "format": "double"
+              }
+            }
+          },
+          "totalAmountFinanced": {
+            "type": "number",
+            "format": "double"
+          },
+          "amountOfCredit": {
+            "type": "number",
+            "format": "double"
+          },
+          "netAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalAmountPayable": {
+            "type": "number",
+            "format": "double"
+          },
+          "guaranteedFutureValue": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "CreateApplicationResponse": {
+        "type": "object",
+        "properties": {
+          "applicationFunnel": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "URL to the loan application form"
+              },
+              "lifeSpan": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Link lifetime in seconds"
+              }
+            }
+          },
+          "financeId": {
+            "type": "string",
+            "description": "Finance application identifier"
+          }
+        }
+      },
+      "AgentStatusNotificationRequest": {
+        "type": "object",
+        "required": [
+          "externalReference",
+          "caseNumber"
+        ],
+        "properties": {
+          "externalReference": {
+            "type": "string",
+            "description": "External reference identifier"
+          },
+          "caseNumber": {
+            "type": "string",
+            "description": "Loan application case number"
+          },
+          "decision": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16
+            ],
+            "description": "Decision status code"
+          },
+          "changedDateTime": {
+            "type": "string",
+            "description": "Timestamp of status change"
+          },
+          "additionalInformationList": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Authentication token for API access"
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKeyAuth": []
+    }
+  ]
+}
