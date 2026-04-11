@@ -1,0 +1,295 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Magic Heidi Swiss Invoice QR Code API",
+    "description": "Magic Heidi is a Swiss invoicing and bookkeeping tool for freelancers. This API enables generation of valid Swiss invoices with QR codes in PDF format.",
+    "version": "1.0.0",
+    "contact": {
+      "email": "hello@magicheidi.ch"
+    },
+    "x-jentic-source-url": "https://github.com/magic-heidi/swiss-invoice-qr-code-api"
+  },
+  "servers": [
+    {
+      "url": "https://europe-west6-magic-heidi.cloudfunctions.net",
+      "description": "Production server (Google Cloud Functions)"
+    }
+  ],
+  "paths": {
+    "/create_invoice_abstract_v1d": {
+      "post": {
+        "operationId": "createInvoice",
+        "summary": "Create Swiss Invoice with QR Code",
+        "description": "Generates a valid Swiss invoice with a QR code in PDF format. The invoice is stored temporarily and a download URL is returned. The file expires 24 hours after creation. Can be tested for free without an API key.",
+        "tags": [
+          "Invoices"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInvoiceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invoice created successfully. Returns a URL to download the PDF.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceSuccessResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing JSON body or invalid JSON format"
+          },
+          "401": {
+            "description": "Unauthorized - invalid API key"
+          },
+          "422": {
+            "description": "Unprocessable entity - something wrong with the provided data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "key",
+        "description": "API key for authentication. Request an API key at hello@magicheidi.ch. Free testing is available without a key."
+      }
+    },
+    "schemas": {
+      "CreateInvoiceRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/InvoiceData"
+          }
+        }
+      },
+      "InvoiceData": {
+        "type": "object",
+        "required": [
+          "user_details",
+          "customer_details",
+          "invoice_items"
+        ],
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the invoice"
+          },
+          "logo_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to logo image to include on the invoice"
+          },
+          "language": {
+            "type": "string",
+            "description": "Invoice language code (e.g., 'fr', 'de', 'en', 'it')",
+            "example": "fr"
+          },
+          "file_name": {
+            "type": "string",
+            "description": "Name of the generated PDF file (without extension)",
+            "example": "test"
+          },
+          "invoice_number": {
+            "type": "integer",
+            "description": "Invoice number",
+            "example": 11
+          },
+          "invoice_date": {
+            "type": "string",
+            "description": "Invoice date in ISO 8601 format or dd/MM/yyyy",
+            "example": "2020-07-19T18:00:00.000Z"
+          },
+          "vat_enabled": {
+            "type": "boolean",
+            "description": "Whether VAT should be calculated and displayed"
+          },
+          "vat_percentage": {
+            "type": "number",
+            "format": "float",
+            "description": "VAT percentage rate",
+            "example": 2.5
+          },
+          "vat_number": {
+            "type": "string",
+            "description": "VAT registration number (CHE format)",
+            "example": "CHE-123.456.789"
+          },
+          "user_details": {
+            "$ref": "#/components/schemas/UserDetails"
+          },
+          "customer_details": {
+            "$ref": "#/components/schemas/CustomerDetails"
+          },
+          "invoice_items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InvoiceItem"
+            },
+            "description": "List of items to include on the invoice"
+          }
+        }
+      },
+      "UserDetails": {
+        "type": "object",
+        "required": [
+          "name",
+          "address",
+          "zip",
+          "city",
+          "iban"
+        ],
+        "description": "Details of the invoice issuer",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the person or company issuing the invoice"
+          },
+          "address": {
+            "type": "string",
+            "description": "Street address"
+          },
+          "zip": {
+            "type": "string",
+            "description": "Postal/ZIP code"
+          },
+          "city": {
+            "type": "string",
+            "description": "City name"
+          },
+          "iban": {
+            "type": "string",
+            "description": "Swiss IBAN number for payment",
+            "example": "CH0700700112900411647"
+          }
+        }
+      },
+      "CustomerDetails": {
+        "type": "object",
+        "required": [
+          "name",
+          "address",
+          "zip",
+          "city"
+        ],
+        "description": "Details of the invoice recipient (the payer)",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the customer"
+          },
+          "address": {
+            "type": "string",
+            "description": "Street address"
+          },
+          "zip": {
+            "type": "string",
+            "description": "Postal/ZIP code"
+          },
+          "city": {
+            "type": "string",
+            "description": "City name"
+          }
+        }
+      },
+      "InvoiceItem": {
+        "type": "object",
+        "required": [
+          "description",
+          "quantity",
+          "unit_price"
+        ],
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Description of the line item"
+          },
+          "quantity": {
+            "type": "number",
+            "format": "float",
+            "description": "Quantity of the item",
+            "example": 1.5
+          },
+          "unit_price": {
+            "type": "number",
+            "format": "float",
+            "description": "Price per unit",
+            "example": 100.5
+          }
+        }
+      },
+      "InvoiceSuccessResponse": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier of the generated invoice"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to download the generated PDF invoice"
+          },
+          "expires": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unix timestamp (milliseconds) when the file will expire (24 hours after creation)"
+          }
+        }
+      },
+      "ValidationErrorResponse": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string",
+                "description": "Description of the validation error"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Invoices",
+      "description": "Swiss invoice generation with QR codes"
+    }
+  ]
+}
