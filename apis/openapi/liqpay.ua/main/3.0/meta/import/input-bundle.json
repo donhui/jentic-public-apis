@@ -1,0 +1,638 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "LiqPay Payment Gateway API",
+    "version": "3.0",
+    "description": "LiqPay payment processing API for internet acquiring, card transfers, P2P payments, tokenization, and verification operations in Ukraine. Supports UAH, USD, and EUR currencies.",
+    "x-jentic-source-url": "https://liqpay.ua/uk/doc"
+  },
+  "servers": [
+    {
+      "url": "https://www.liqpay.ua/api",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/request": {
+      "post": {
+        "operationId": "serverToServerRequest",
+        "summary": "Server-to-server API request",
+        "description": "Universal endpoint for server-to-server API operations. Action is specified in the request body.",
+        "tags": [
+          "Internet Acquiring"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": {
+                    "type": "string",
+                    "description": "Base64-encoded JSON string containing request parameters"
+                  },
+                  "signature": {
+                    "type": "string",
+                    "description": "Base64-encoded SHA3-256 hash: base64(sha3-256(private_key + data + private_key))"
+                  }
+                },
+                "required": [
+                  "data",
+                  "signature"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid signature"
+          }
+        }
+      }
+    },
+    "/3/checkout": {
+      "post": {
+        "operationId": "clientCheckout",
+        "summary": "Client-server checkout",
+        "description": "Redirect or embedded checkout for payment processing",
+        "tags": [
+          "Internet Acquiring"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": {
+                    "type": "string",
+                    "description": "Base64-encoded JSON with payment parameters including action, amount, currency, description, order_id"
+                  },
+                  "signature": {
+                    "type": "string",
+                    "description": "Request signature"
+                  }
+                },
+                "required": [
+                  "data",
+                  "signature"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Checkout page displayed or payment processed"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "signatureAuth": {
+        "type": "apiKey",
+        "in": "body",
+        "name": "signature",
+        "description": "Signature-based authentication using public_key and private_key. Signature calculated as: base64_encode(sha3-256(private_key + data + private_key)) where data is base64-encoded JSON of request parameters."
+      }
+    },
+    "schemas": {
+      "ApiResponse": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Action performed"
+          },
+          "status": {
+            "type": "string",
+            "description": "Operation status",
+            "enum": [
+              "success",
+              "failure",
+              "error",
+              "processing",
+              "wait_accept",
+              "wait_card"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "description": "API version"
+          },
+          "result": {
+            "type": "string",
+            "description": "Result code"
+          },
+          "payment_id": {
+            "type": "integer",
+            "description": "Payment identifier"
+          },
+          "order_id": {
+            "type": "string",
+            "description": "Merchant order ID"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Payment amount"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency code",
+            "enum": [
+              "UAH",
+              "USD",
+              "EUR"
+            ]
+          },
+          "err_code": {
+            "type": "string",
+            "description": "Error code if status is error"
+          },
+          "err_description": {
+            "type": "string",
+            "description": "Error description"
+          }
+        }
+      },
+      "PaymentRequest": {
+        "type": "object",
+        "description": "Payment request parameters (encoded in data field)",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "description": "API version",
+            "example": 3
+          },
+          "public_key": {
+            "type": "string",
+            "description": "Merchant public key"
+          },
+          "action": {
+            "type": "string",
+            "description": "Operation type",
+            "enum": [
+              "pay",
+              "hold",
+              "subscribe",
+              "paydonate",
+              "auth",
+              "regular"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "description": "Payment amount"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency code",
+            "enum": [
+              "UAH",
+              "USD",
+              "EUR"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "Payment description",
+            "maxLength": 500
+          },
+          "order_id": {
+            "type": "string",
+            "description": "Unique order identifier",
+            "maxLength": 255
+          },
+          "result_url": {
+            "type": "string",
+            "description": "URL to redirect after payment"
+          },
+          "server_url": {
+            "type": "string",
+            "description": "Callback URL for payment notifications"
+          },
+          "language": {
+            "type": "string",
+            "description": "Interface language",
+            "enum": [
+              "uk",
+              "en",
+              "ru"
+            ]
+          },
+          "customer": {
+            "type": "string",
+            "description": "Customer identifier for recurring payments"
+          },
+          "card": {
+            "type": "string",
+            "description": "Card token for recurring payments"
+          },
+          "card_cvv": {
+            "type": "string",
+            "description": "CVV code (for certain operations)"
+          }
+        },
+        "required": [
+          "version",
+          "public_key",
+          "action",
+          "amount",
+          "currency",
+          "description",
+          "order_id"
+        ]
+      },
+      "StatusRequest": {
+        "type": "object",
+        "description": "Status check request parameters",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "example": 3
+          },
+          "public_key": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "status"
+            ]
+          },
+          "order_id": {
+            "type": "string",
+            "description": "Order ID to check status"
+          }
+        },
+        "required": [
+          "version",
+          "public_key",
+          "action",
+          "order_id"
+        ]
+      },
+      "RefundRequest": {
+        "type": "object",
+        "description": "Refund request parameters",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "example": 3
+          },
+          "public_key": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "refund"
+            ]
+          },
+          "order_id": {
+            "type": "string",
+            "description": "Order ID to refund"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Refund amount (optional, full refund if not specified)"
+          }
+        },
+        "required": [
+          "version",
+          "public_key",
+          "action",
+          "order_id"
+        ]
+      },
+      "PayoutRequest": {
+        "type": "object",
+        "description": "Payout to card request",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "example": 3
+          },
+          "public_key": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "payout"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "description": "Payout amount"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "UAH",
+              "USD",
+              "EUR"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "Payout description"
+          },
+          "order_id": {
+            "type": "string",
+            "description": "Unique order identifier"
+          },
+          "card": {
+            "type": "string",
+            "description": "Recipient card number"
+          }
+        },
+        "required": [
+          "version",
+          "public_key",
+          "action",
+          "amount",
+          "currency",
+          "description",
+          "order_id",
+          "card"
+        ]
+      },
+      "InvoiceRequest": {
+        "type": "object",
+        "description": "Invoice creation request",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "example": 3
+          },
+          "public_key": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "invoice_send"
+            ]
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "UAH",
+              "USD",
+              "EUR"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "order_id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "description": "Customer email"
+          },
+          "phone": {
+            "type": "string",
+            "description": "Customer phone"
+          }
+        },
+        "required": [
+          "version",
+          "public_key",
+          "action",
+          "amount",
+          "currency",
+          "description",
+          "order_id"
+        ]
+      },
+      "SubscribeRequest": {
+        "type": "object",
+        "description": "Recurring payment subscription",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "example": 3
+          },
+          "public_key": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "subscribe"
+            ]
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "UAH",
+              "USD",
+              "EUR"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "order_id": {
+            "type": "string"
+          },
+          "subscribe": {
+            "type": "integer",
+            "description": "1 to enable subscription"
+          },
+          "subscribe_date_start": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Subscription start date"
+          },
+          "subscribe_periodicity": {
+            "type": "string",
+            "description": "Periodicity: month, year, etc.",
+            "enum": [
+              "month",
+              "year"
+            ]
+          }
+        },
+        "required": [
+          "version",
+          "public_key",
+          "action",
+          "amount",
+          "currency",
+          "description",
+          "order_id",
+          "subscribe"
+        ]
+      },
+      "P2PDebitRequest": {
+        "type": "object",
+        "description": "Card to account transfer",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "example": 3
+          },
+          "public_key": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "p2pcredit"
+            ]
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "UAH",
+              "USD",
+              "EUR"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "order_id": {
+            "type": "string"
+          },
+          "receiver_card": {
+            "type": "string",
+            "description": "Receiver card number"
+          }
+        },
+        "required": [
+          "version",
+          "public_key",
+          "action",
+          "amount",
+          "currency",
+          "description",
+          "order_id",
+          "receiver_card"
+        ]
+      },
+      "VerificationRequest": {
+        "type": "object",
+        "description": "Card verification request",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "example": 3
+          },
+          "public_key": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "auth"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "description": "Verification amount (typically small)"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "UAH",
+              "USD",
+              "EUR"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "order_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "public_key",
+          "action",
+          "amount",
+          "currency",
+          "description",
+          "order_id"
+        ]
+      }
+    }
+  },
+  "security": [
+    {
+      "signatureAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Internet Acquiring",
+      "description": "Payment acceptance operations"
+    },
+    {
+      "name": "Card Transfers",
+      "description": "Transfer funds from account to cards"
+    },
+    {
+      "name": "P2P Payments",
+      "description": "Card-to-account transfers"
+    },
+    {
+      "name": "Tokens",
+      "description": "Card tokenization operations"
+    },
+    {
+      "name": "Verification",
+      "description": "Card verification and payment confirmation"
+    },
+    {
+      "name": "Information",
+      "description": "Report and payment information retrieval"
+    },
+    {
+      "name": "Partnership",
+      "description": "Company management operations"
+    },
+    {
+      "name": "Public",
+      "description": "Public information APIs"
+    }
+  ]
+}
