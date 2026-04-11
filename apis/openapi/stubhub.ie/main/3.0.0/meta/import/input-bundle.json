@@ -1,0 +1,453 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "StubHub International API",
+    "description": "API for managing event ticket listings, authentication, and webhook subscriptions on the StubHub International platform. Tokens require refresh every 6 months. Webhook setup requires 24-48 hour approval.",
+    "version": "3.0.0",
+    "x-jentic-source-url": "https://developer.stubhub.ie/get-started"
+  },
+  "servers": [
+    {
+      "url": "https://api.stubcloudprod.com",
+      "description": "StubHub International production server"
+    }
+  ],
+  "paths": {
+    "/sellers/oauth/accesstoken": {
+      "post": {
+        "operationId": "generateAccessToken",
+        "summary": "Generate an OAuth2 access token",
+        "description": "Authenticates a seller using Basic Auth credentials and returns an OAuth2 bearer token. The returned token must be refreshed every 6 months.",
+        "tags": [
+          "Authentication"
+        ],
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "grant_type",
+            "in": "query",
+            "required": true,
+            "description": "The OAuth2 grant type. Must be 'client_credentials'.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "client_credentials"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccessTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Access token generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters or request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid Basic Auth credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sellers/inventory/listings/v3": {
+      "post": {
+        "operationId": "createListing",
+        "summary": "Create a new event ticket listing",
+        "description": "Creates a new inventory listing for event tickets including products, pricing, and stock details.",
+        "tags": [
+          "Listings"
+        ],
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "required": false,
+            "description": "Preferred language for the response.",
+            "schema": {
+              "type": "string",
+              "default": "en-US"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateListingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Listing created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateListingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid listing data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partners/webhooks/v3": {
+      "post": {
+        "operationId": "createWebhookSubscription",
+        "summary": "Create a webhook subscription",
+        "description": "Registers a new webhook subscription for receiving event notifications. Webhook setup requires 24-48 hour approval before callbacks begin.",
+        "tags": [
+          "Webhooks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscriptionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook subscription created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSubscriptionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid subscription data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Basic Auth using Base64-encoded consumer_key:consumer_secret"
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "OAuth2 access token",
+        "description": "Bearer token obtained from the generateAccessToken endpoint"
+      }
+    },
+    "schemas": {
+      "AccessTokenRequest": {
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "The seller account username"
+          },
+          "password": {
+            "type": "string",
+            "description": "The seller account password"
+          }
+        }
+      },
+      "AccessTokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "description": "The OAuth2 bearer token"
+          },
+          "token_type": {
+            "type": "string",
+            "description": "The type of token issued, typically 'Bearer'"
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Token lifetime in seconds"
+          }
+        }
+      },
+      "CreateListingRequest": {
+        "type": "object",
+        "required": [
+          "event",
+          "products",
+          "pricing"
+        ],
+        "properties": {
+          "event": {
+            "$ref": "#/components/schemas/EventDetails"
+          },
+          "products": {
+            "type": "array",
+            "description": "List of ticket products in the listing",
+            "items": {
+              "$ref": "#/components/schemas/Product"
+            }
+          },
+          "pricing": {
+            "$ref": "#/components/schemas/Pricing"
+          },
+          "stock": {
+            "$ref": "#/components/schemas/Stock"
+          }
+        }
+      },
+      "EventDetails": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The StubHub event identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the event"
+          }
+        }
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "section": {
+            "type": "string",
+            "description": "Venue section for the ticket"
+          },
+          "row": {
+            "type": "string",
+            "description": "Row within the section"
+          },
+          "seat": {
+            "type": "string",
+            "description": "Seat number"
+          },
+          "type": {
+            "type": "string",
+            "description": "Ticket type (e.g., standard, VIP)"
+          }
+        }
+      },
+      "Pricing": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "double",
+            "description": "Price per ticket"
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 currency code (e.g., EUR, GBP)"
+          }
+        }
+      },
+      "Stock": {
+        "type": "object",
+        "properties": {
+          "quantity": {
+            "type": "integer",
+            "description": "Number of tickets available"
+          },
+          "splitOption": {
+            "type": "string",
+            "description": "How tickets can be split for sale"
+          }
+        }
+      },
+      "CreateListingResponse": {
+        "type": "object",
+        "properties": {
+          "listingId": {
+            "type": "string",
+            "description": "Unique identifier for the created listing"
+          },
+          "status": {
+            "type": "string",
+            "description": "Current status of the listing"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the listing was created"
+          }
+        }
+      },
+      "WebhookSubscriptionRequest": {
+        "type": "object",
+        "required": [
+          "callback_url",
+          "subscriptions"
+        ],
+        "properties": {
+          "callback_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The URL to receive webhook notifications"
+          },
+          "auth": {
+            "$ref": "#/components/schemas/WebhookAuth"
+          },
+          "subscriptions": {
+            "type": "array",
+            "description": "List of event types to subscribe to",
+            "items": {
+              "$ref": "#/components/schemas/WebhookSubscriptionType"
+            }
+          }
+        }
+      },
+      "WebhookAuth": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Authentication type for the webhook callback (e.g., bearer, basic)"
+          },
+          "value": {
+            "type": "string",
+            "description": "Authentication value or token for the webhook callback"
+          }
+        }
+      },
+      "WebhookSubscriptionType": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The event type to subscribe to",
+            "enum": [
+              "listing_sale"
+            ]
+          }
+        }
+      },
+      "WebhookSubscriptionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the webhook subscription"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error code or type"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "OAuth2 token generation and management"
+    },
+    {
+      "name": "Listings",
+      "description": "Inventory listing creation and management"
+    },
+    {
+      "name": "Webhooks",
+      "description": "Webhook subscription management"
+    }
+  ]
+}
