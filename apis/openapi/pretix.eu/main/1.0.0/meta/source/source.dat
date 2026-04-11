@@ -1,0 +1,1142 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "pretix Orders API",
+    "version": "1.0.0",
+    "description": "pretix REST API for managing event ticketing orders. Covers order lifecycle including creation, payment status, cancellation, approval, and invoice generation.",
+    "x-jentic-source-url": "https://docs.pretix.eu/en/latest/api/index.html"
+  },
+  "servers": [
+    {
+      "url": "https://pretix.eu",
+      "description": "pretix Production Server"
+    }
+  ],
+  "paths": {
+    "/api/v1/organizers/{organizer}/events/{event}/orders/": {
+      "get": {
+        "operationId": "listEventOrders",
+        "summary": "List all orders for an event",
+        "description": "Retrieves all orders within a specific event.",
+        "tags": ["Orders"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Organizer" },
+          { "$ref": "#/components/parameters/Event" },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer" },
+            "description": "Page number"
+          },
+          {
+            "name": "ordering",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["datetime", "code", "last_modified", "status", "cancellation_date"] },
+            "description": "Sort field"
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Filter by order code"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["n", "p", "e", "c"] },
+            "description": "Filter by status (n=pending, p=paid, e=expired, c=canceled)"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Search names, emails, companies"
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Filter by email"
+          },
+          {
+            "name": "testmode",
+            "in": "query",
+            "schema": { "type": "boolean" },
+            "description": "Filter test mode orders"
+          },
+          {
+            "name": "modified_since",
+            "in": "query",
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "Filter by modification date"
+          },
+          {
+            "name": "created_since",
+            "in": "query",
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "Filter by creation date start"
+          },
+          {
+            "name": "item",
+            "in": "query",
+            "schema": { "type": "integer" },
+            "description": "Filter by item ID"
+          },
+          {
+            "name": "subevent",
+            "in": "query",
+            "schema": { "type": "integer" },
+            "description": "Filter by subevent"
+          },
+          {
+            "name": "sales_channel",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Filter by sales channel"
+          },
+          {
+            "name": "include_canceled_positions",
+            "in": "query",
+            "schema": { "type": "boolean" },
+            "description": "Include canceled positions"
+          },
+          {
+            "name": "include_canceled_fees",
+            "in": "query",
+            "schema": { "type": "boolean" },
+            "description": "Include canceled fees"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of orders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createOrder",
+        "summary": "Create a new order",
+        "description": "Creates a new order with positions, fees, and optional payment.",
+        "tags": ["Orders"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Organizer" },
+          { "$ref": "#/components/parameters/Event" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Order created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizers/{organizer}/orders/": {
+      "get": {
+        "operationId": "listOrganizerOrders",
+        "summary": "List all orders for an organizer",
+        "description": "Lists orders across all events of an organizer.",
+        "tags": ["Orders"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Organizer" },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of orders",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OrderList" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizers/{organizer}/events/{event}/orders/{code}/": {
+      "get": {
+        "operationId": "getOrder",
+        "summary": "Fetch an individual order",
+        "description": "Retrieves details for a specific order.",
+        "tags": ["Orders"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Organizer" },
+          { "$ref": "#/components/parameters/Event" },
+          { "$ref": "#/components/parameters/OrderCode" },
+          {
+            "name": "include_canceled_positions",
+            "in": "query",
+            "schema": { "type": "boolean" }
+          },
+          {
+            "name": "include_canceled_fees",
+            "in": "query",
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateOrder",
+        "summary": "Update order fields",
+        "description": "Updates specific order attributes.",
+        "tags": ["Orders"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Organizer" },
+          { "$ref": "#/components/parameters/Event" },
+          { "$ref": "#/components/parameters/OrderCode" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteOrder",
+        "summary": "Delete an order",
+        "description": "Deletes an order (only works for test mode orders).",
+        "tags": ["Orders"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Organizer" },
+          { "$ref": "#/components/parameters/Event" },
+          { "$ref": "#/components/parameters/OrderCode" }
+        ],
+        "responses": {
+          "204": {
+            "description": "Order deleted"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizers/{organizer}/events/{event}/orders/{code}/download/{output}/": {
+      "get": {
+        "operationId": "downloadOrderTickets",
+        "summary": "Download order tickets",
+        "description": "Downloads tickets for an order in specified format.",
+        "tags": ["Orders"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Organizer" },
+          { "$ref": "#/components/parameters/Event" },
+          { "$ref": "#/components/parameters/OrderCode" },
+          {
+            "name": "output",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Output provider (e.g., pdf)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ticket file download",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizers/{organizer}/events/{event}/orders/{code}/regenerate_secrets/": {
+      "post": {
+        "operationId": "regenerateOrderSecrets",
+        "summary": "Regenerate order secrets",
+        "description": "Generates new ticket validation codes for order and positions.",
+        "tags": ["Orders"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Organizer" },
+          { "$ref": "#/components/parameters/Event" },
+          { "$ref": "#/components/parameters/OrderCode" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Secrets regenerated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizers/{organizer}/events/{event}/orders/{code}/mark_paid/": {
+      "post": {
+        "operationId": "markOrderPaid",
+        "summary": "Mark order as paid",
+        "description": "Changes pending order status to paid.",
+        "tags": ["Order Actions"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Organizer" },
+          { "$ref": "#/components/parameters/Event" },
+          { "$ref": "#/components/parameters/OrderCode" }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "send_email": {
+                    "type": "boolean",
+                    "description": "Send email notification"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order marked as paid",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizers/{organizer}/events/{event}/orders/{code}/mark_canceled/": {
+      "post": {
+        "operationId": "markOrderCanceled",
+        "summary": "Mark order as canceled",
+        "description": "Cancels an order with optional cancellation fee.",
+        "tags": ["Order Actions"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Organizer" },
+          { "$ref": "#/components/parameters/Event" },
+          { "$ref": "#/components/parameters/OrderCode" }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "send_email": { "type": "boolean" },
+                  "comment": { "type": "string" },
+                  "cancellation_fee": { "type": "string", "description": "Cancellation fee amount" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order canceled",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizers/{organizer}/events/{event}/orders/{code}/reactivate/": {
+      "post": {
+        "operationId": "reactivateOrder",
+        "summary": "Reactivate a canceled order",
+        "description": "Reactivates a canceled order.",
+        "tags": ["Order Actions"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Organizer" },
+          { "$ref": "#/components/parameters/Event" },
+          { "$ref": "#/components/parameters/OrderCode" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order reactivated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizers/{organizer}/events/{event}/orders/{code}/mark_pending/": {
+      "post": {
+        "operationId": "markOrderPending",
+        "summary": "Mark order as pending",
+        "description": "Changes paid order to unpaid status.",
+        "tags": ["Order Actions"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Organizer" },
+          { "$ref": "#/components/parameters/Event" },
+          { "$ref": "#/components/parameters/OrderCode" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order marked as pending",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizers/{organizer}/events/{event}/orders/{code}/mark_expired/": {
+      "post": {
+        "operationId": "markOrderExpired",
+        "summary": "Mark order as expired",
+        "description": "Sets unpaid order to expired status.",
+        "tags": ["Order Actions"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Organizer" },
+          { "$ref": "#/components/parameters/Event" },
+          { "$ref": "#/components/parameters/OrderCode" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order marked as expired",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizers/{organizer}/events/{event}/orders/{code}/extend/": {
+      "post": {
+        "operationId": "extendOrderExpiration",
+        "summary": "Extend order expiration",
+        "description": "Extends payment deadline for pending order.",
+        "tags": ["Order Actions"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Organizer" },
+          { "$ref": "#/components/parameters/Event" },
+          { "$ref": "#/components/parameters/OrderCode" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["expires"],
+                "properties": {
+                  "expires": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "New expiry date"
+                  },
+                  "force": {
+                    "type": "boolean",
+                    "description": "Force extension"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Expiration extended",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizers/{organizer}/events/{event}/orders/{code}/approve/": {
+      "post": {
+        "operationId": "approveOrder",
+        "summary": "Approve order",
+        "description": "Approves order pending approval.",
+        "tags": ["Order Actions"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Organizer" },
+          { "$ref": "#/components/parameters/Event" },
+          { "$ref": "#/components/parameters/OrderCode" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order approved",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizers/{organizer}/events/{event}/orders/{code}/deny/": {
+      "post": {
+        "operationId": "denyOrder",
+        "summary": "Deny order",
+        "description": "Denies order pending approval.",
+        "tags": ["Order Actions"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Organizer" },
+          { "$ref": "#/components/parameters/Event" },
+          { "$ref": "#/components/parameters/OrderCode" }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "send_email": { "type": "boolean" },
+                  "comment": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order denied",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizers/{organizer}/events/{event}/orders/{code}/create_invoice/": {
+      "post": {
+        "operationId": "createOrderInvoice",
+        "summary": "Create invoice for order",
+        "description": "Generates invoice for order without existing invoice.",
+        "tags": ["Order Actions"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Organizer" },
+          { "$ref": "#/components/parameters/Event" },
+          { "$ref": "#/components/parameters/OrderCode" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invoice created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Invoice" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizers/{organizer}/events/{event}/orderpositions/{id}/regenerate_secrets/": {
+      "post": {
+        "operationId": "regeneratePositionSecrets",
+        "summary": "Regenerate position secrets",
+        "description": "Generates new validation codes for a single order position.",
+        "tags": ["Order Positions"],
+        "parameters": [
+          { "$ref": "#/components/parameters/Organizer" },
+          { "$ref": "#/components/parameters/Event" },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Position ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Secrets regenerated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OrderPosition" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "tokenAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Token-based authentication. Use 'Token YOUR_TOKEN' format."
+      }
+    },
+    "parameters": {
+      "Organizer": {
+        "name": "organizer",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" },
+        "description": "Organizer slug"
+      },
+      "Event": {
+        "name": "event",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" },
+        "description": "Event slug"
+      },
+      "OrderCode": {
+        "name": "code",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" },
+        "description": "Order code"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "string",
+            "description": "Error detail message"
+          }
+        }
+      },
+      "OrderList": {
+        "type": "object",
+        "properties": {
+          "count": { "type": "integer", "description": "Total count" },
+          "next": { "type": "string", "nullable": true, "description": "Next page URL" },
+          "previous": { "type": "string", "nullable": true, "description": "Previous page URL" },
+          "results": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Order" }
+          }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string", "description": "Order code" },
+          "status": { "type": "string", "enum": ["n", "p", "e", "c"], "description": "Order status" },
+          "testmode": { "type": "boolean" },
+          "email": { "type": "string" },
+          "phone": { "type": "string", "nullable": true },
+          "locale": { "type": "string" },
+          "datetime": { "type": "string", "format": "date-time" },
+          "expires": { "type": "string", "format": "date-time" },
+          "last_modified": { "type": "string", "format": "date-time" },
+          "total": { "type": "string", "description": "Total amount" },
+          "comment": { "type": "string" },
+          "custom_followup_at": { "type": "string", "format": "date", "nullable": true },
+          "checkin_attention": { "type": "boolean" },
+          "checkin_text": { "type": "string", "nullable": true },
+          "require_approval": { "type": "boolean" },
+          "sales_channel": { "type": "string" },
+          "invoice_address": { "$ref": "#/components/schemas/InvoiceAddress" },
+          "positions": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/OrderPosition" }
+          },
+          "fees": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/OrderFee" }
+          },
+          "payments": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Payment" }
+          },
+          "refunds": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Refund" }
+          }
+        }
+      },
+      "OrderCreate": {
+        "type": "object",
+        "required": ["positions"],
+        "properties": {
+          "code": { "type": "string" },
+          "status": { "type": "string", "enum": ["n", "p"] },
+          "customer": { "type": "string" },
+          "testmode": { "type": "boolean" },
+          "email": { "type": "string" },
+          "locale": { "type": "string" },
+          "sales_channel": { "type": "string" },
+          "payment_provider": { "type": "string" },
+          "payment_info": { "type": "object" },
+          "payment_date": { "type": "string", "format": "date-time" },
+          "comment": { "type": "string" },
+          "custom_followup_at": { "type": "string", "format": "date" },
+          "checkin_attention": { "type": "boolean" },
+          "checkin_text": { "type": "string" },
+          "require_approval": { "type": "boolean" },
+          "valid_if_pending": { "type": "boolean" },
+          "invoice_address": { "$ref": "#/components/schemas/InvoiceAddress" },
+          "positions": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/OrderPositionCreate" }
+          },
+          "fees": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/OrderFeeCreate" }
+          },
+          "force": { "type": "boolean" },
+          "send_email": { "type": "boolean" },
+          "simulate": { "type": "boolean" }
+        }
+      },
+      "OrderUpdate": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string" },
+          "phone": { "type": "string" },
+          "checkin_attention": { "type": "boolean" },
+          "checkin_text": { "type": "string" },
+          "locale": { "type": "string" },
+          "comment": { "type": "string" },
+          "custom_followup_at": { "type": "string", "format": "date" },
+          "invoice_address": { "$ref": "#/components/schemas/InvoiceAddress" },
+          "valid_if_pending": { "type": "boolean" },
+          "expires": { "type": "string", "format": "date-time" }
+        }
+      },
+      "OrderPosition": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "order": { "type": "string" },
+          "positionid": { "type": "integer" },
+          "item": { "type": "integer" },
+          "variation": { "type": "integer", "nullable": true },
+          "price": { "type": "string" },
+          "attendee_name": { "type": "string", "nullable": true },
+          "attendee_email": { "type": "string", "nullable": true },
+          "secret": { "type": "string" },
+          "subevent": { "type": "integer", "nullable": true },
+          "seat": { "type": "string", "nullable": true },
+          "canceled": { "type": "boolean" }
+        }
+      },
+      "OrderPositionCreate": {
+        "type": "object",
+        "required": ["item"],
+        "properties": {
+          "positionid": { "type": "integer" },
+          "item": { "type": "integer" },
+          "variation": { "type": "integer" },
+          "price": { "type": "string" },
+          "seat": { "type": "string" },
+          "attendee_name": { "type": "string" },
+          "attendee_email": { "type": "string" },
+          "company": { "type": "string" },
+          "street": { "type": "string" },
+          "zipcode": { "type": "string" },
+          "city": { "type": "string" },
+          "country": { "type": "string" },
+          "state": { "type": "string" },
+          "secret": { "type": "string" },
+          "addon_to": { "type": "integer" },
+          "subevent": { "type": "integer" },
+          "voucher": { "type": "string" },
+          "answers": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Answer" }
+          }
+        }
+      },
+      "Answer": {
+        "type": "object",
+        "required": ["question", "answer"],
+        "properties": {
+          "question": { "type": "integer" },
+          "answer": { "type": "string" },
+          "options": {
+            "type": "array",
+            "items": { "type": "integer" }
+          }
+        }
+      },
+      "OrderFee": {
+        "type": "object",
+        "properties": {
+          "fee_type": { "type": "string" },
+          "value": { "type": "string" },
+          "description": { "type": "string" },
+          "internal_type": { "type": "string" },
+          "tax_rate": { "type": "string" },
+          "tax_value": { "type": "string" },
+          "canceled": { "type": "boolean" }
+        }
+      },
+      "OrderFeeCreate": {
+        "type": "object",
+        "required": ["fee_type", "value"],
+        "properties": {
+          "fee_type": { "type": "string" },
+          "value": { "type": "string" },
+          "description": { "type": "string" },
+          "internal_type": { "type": "string" },
+          "tax_rule": { "type": "integer" }
+        }
+      },
+      "InvoiceAddress": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "is_business": { "type": "boolean" },
+          "company": { "type": "string" },
+          "name": { "type": "string" },
+          "name_parts": { "type": "object" },
+          "street": { "type": "string" },
+          "zipcode": { "type": "string" },
+          "city": { "type": "string" },
+          "country": { "type": "string" },
+          "state": { "type": "string" },
+          "vat_id": { "type": "string" },
+          "internal_reference": { "type": "string" }
+        }
+      },
+      "Payment": {
+        "type": "object",
+        "properties": {
+          "local_id": { "type": "integer" },
+          "state": { "type": "string" },
+          "amount": { "type": "string" },
+          "created": { "type": "string", "format": "date-time" },
+          "payment_date": { "type": "string", "format": "date-time", "nullable": true },
+          "provider": { "type": "string" }
+        }
+      },
+      "Refund": {
+        "type": "object",
+        "properties": {
+          "local_id": { "type": "integer" },
+          "state": { "type": "string" },
+          "source": { "type": "string" },
+          "amount": { "type": "string" },
+          "created": { "type": "string", "format": "date-time" },
+          "provider": { "type": "string" }
+        }
+      },
+      "Invoice": {
+        "type": "object",
+        "properties": {
+          "number": { "type": "string" },
+          "order": { "type": "string" },
+          "is_cancellation": { "type": "boolean" },
+          "invoice_from": { "type": "string" },
+          "invoice_to": { "type": "string" },
+          "date": { "type": "string", "format": "date" },
+          "refers": { "type": "string", "nullable": true },
+          "locale": { "type": "string" },
+          "introductory_text": { "type": "string" },
+          "additional_text": { "type": "string" },
+          "payment_provider_text": { "type": "string" },
+          "footer_text": { "type": "string" }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "tokenAuth": []
+    }
+  ]
+}
