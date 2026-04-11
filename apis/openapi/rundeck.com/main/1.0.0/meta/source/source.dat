@@ -1,0 +1,4775 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Rundeck API",
+    "version": "1.0.0",
+    "description": "Rundeck API for job scheduling and runbook automation. Provides endpoints for managing jobs, executions, projects, system configuration, storage, users, and metrics.",
+    "x-jentic-source-url": "https://github.com/rundeck/rundeck-api-specs",
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://{rundeck_host}",
+      "description": "Rundeck server",
+      "variables": {
+        "rundeck_host": {
+          "default": "localhost:4443",
+          "description": "Rundeck server hostname and port"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/api/26/project/{project}/jobs": {
+      "get": {
+        "summary": "List the jobs that exist for a project",
+        "tags": [
+          "project",
+          "job"
+        ],
+        "operationId": "jobList",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "description": "Project name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idList",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated list of Job IDs to include",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "groupPath",
+            "in": "query",
+            "required": false,
+            "description": "Group or partial group path to include all jobs within that group path. Set to the special value \"-\" to match the top level jobs only.",
+            "schema": {
+              "type": "string",
+              "default": "*"
+            }
+          },
+          {
+            "name": "jobFilter",
+            "in": "query",
+            "required": false,
+            "description": "A filter for the job name. Matches any job name that contains this value.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "jobExactFilter",
+            "in": "query",
+            "required": false,
+            "description": "An exact job name to match.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "groupPathExact",
+            "in": "query",
+            "required": false,
+            "description": "An exact group path to match. Set to the special value \"-\" to match the top level jobs only.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scheduledFilter",
+            "in": "query",
+            "required": false,
+            "description": "Specify whether to return only scheduled or only not scheduled jobs.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "serverNodeUUIDFilter",
+            "in": "query",
+            "required": false,
+            "description": "In cluster mode, use to select scheduled jobs assigned to the server with the given UUID.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Job"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/job/{id}/executions": {
+      "get": {
+        "summary": "List job executions",
+        "tags": [
+          "job",
+          "execution"
+        ],
+        "operationId": "jobExecutionList",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Job ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of executions for job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "summary": "Run the specified job",
+        "tags": [
+          "job",
+          "execution"
+        ],
+        "operationId": "jobExecutionRun",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Job ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExecuteJobRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Expected response for a valid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Execution"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete all job executions",
+        "tags": [
+          "job",
+          "execution"
+        ],
+        "operationId": "jobExecutionDelete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Job ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Content deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobExecutionDelete"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/job/{jobID}/retry/{executionID}": {
+      "post": {
+        "summary": "Retry a failed job execution on failed nodes only or on the same as the execution. This is the same functionality as the `Retry Failed Nodes ...` button on the execution page.",
+        "tags": [
+          "job",
+          "execution"
+        ],
+        "operationId": "jobRetryExecution",
+        "parameters": [
+          {
+            "name": "jobID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "executionID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetryExecutionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Exected response to a valid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/job/{id}": {
+      "get": {
+        "summary": "Export a single job definition in XML or YAML formats.",
+        "tags": [
+          "job"
+        ],
+        "operationId": "jobGet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the job to export.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "xml",
+                "yaml"
+              ],
+              "default": "xml"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "format": "file"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job does not exist"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a single job definition.",
+        "tags": [
+          "job"
+        ],
+        "operationId": "jobDelete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of job to delete.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Job was deleted."
+          },
+          "404": {
+            "description": "Job not found."
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/job/{id}/info": {
+      "get": {
+        "summary": "Get metadata about a specific job.",
+        "tags": [
+          "job"
+        ],
+        "operationId": "jobInfoGet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobMetadata"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/jobs/delete": {
+      "post": {
+        "summary": "Delete multiple job definitions at once",
+        "tags": [
+          "job",
+          "bulk"
+        ],
+        "operationId": "jobBulkDelete",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "ids"
+                ],
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Job deleted response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobBulkOperationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/job/{id}/execution/enable": {
+      "post": {
+        "summary": "Enable executions for a job. (ACL requires toggle_execution action for a job.)",
+        "tags": [
+          "job",
+          "execution"
+        ],
+        "operationId": "jobExecutionEnable",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job executions enabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/job/{id}/execution/disable": {
+      "post": {
+        "summary": "Disable all executions for a job (scheduled or manual). (ACL requires toggle_execution action for a job.)",
+        "tags": [
+          "job",
+          "execution"
+        ],
+        "operationId": "jobExecutionDisable",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job executions disabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/job/{id}/schedule/enable": {
+      "post": {
+        "summary": "Enable the schedule for a job. (ACL requires toggle_schedule action for a job.)",
+        "tags": [
+          "job",
+          "schedule"
+        ],
+        "operationId": "jobScheduleEnable",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job schedule enabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/job/{id}/schedule/disable": {
+      "post": {
+        "summary": "Disable the schedule for a job. (ACL requires toggle_schedule action for a job.)",
+        "tags": [
+          "job",
+          "schedule"
+        ],
+        "operationId": "jobScheduleDisable",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job schedules disabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/jobs/execution/enable": {
+      "post": {
+        "summary": "Bulk enable job executions",
+        "tags": [
+          "job",
+          "execution"
+        ],
+        "operationId": "jobExecutionBulkEnable",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "ids"
+                ],
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Job deleted response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobBulkOperationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/jobs/execution/disable": {
+      "post": {
+        "summary": "Bulk disable job executions",
+        "tags": [
+          "job",
+          "execution"
+        ],
+        "operationId": "jobExecutionBulkDisable",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "ids"
+                ],
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Job toggle execution response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobBulkOperationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/jobs/schedule/enable": {
+      "post": {
+        "summary": "Bulk enable job schedule",
+        "tags": [
+          "job",
+          "schedule"
+        ],
+        "operationId": "jobScheduleBulkEnable",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "ids"
+                ],
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Job toggle schedule response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobBulkOperationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/jobs/schedule/disable": {
+      "post": {
+        "summary": "Bulk disable job schedule",
+        "tags": [
+          "job",
+          "schedule"
+        ],
+        "operationId": "jobScheduleBulkDisable",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "ids"
+                ],
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Job toggle schedule response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobBulkOperationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/job/{id}/input/file": {
+      "post": {
+        "summary": "Upload file as job option",
+        "tags": [
+          "job"
+        ],
+        "operationId": "jobInputFileUpload",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "optionName",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fileName",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "format": "file"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Yay"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/job/{id}/input/files": {
+      "get": {
+        "summary": "List uploaded input files for job",
+        "tags": [
+          "job"
+        ],
+        "operationId": "jobInputFileUpload",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of input files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobInputFileListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/jobs/file/{id}": {
+      "get": {
+        "summary": "Get job input file info",
+        "tags": [
+          "job"
+        ],
+        "operationId": "jobInputFileInfoGet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job input file info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobInputFileInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/34/job/{id}/workflow": {
+      "get": {
+        "summary": "Get job workflow tree.",
+        "tags": [
+          "job"
+        ],
+        "operationId": "jobWorkflowGet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "workflow"
+                  ],
+                  "properties": {
+                    "workflow": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/WorkflowStep"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/execution/{id}": {
+      "get": {
+        "summary": "Get the status of an execution by ID",
+        "tags": [
+          "execution"
+        ],
+        "operationId": "executionStatusGet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Execution status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Execution"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete an exeuction by ID",
+        "tags": [
+          "execution"
+        ],
+        "operationId": "executionDelete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/executions/delete": {
+      "post": {
+        "summary": "Bulk delete executions",
+        "tags": [
+          "execution"
+        ],
+        "operationId": "executionBulkDelete",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "ids"
+                ],
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Execution deleted response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobExecutionDelete"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/execution/{id}/state": {
+      "get": {
+        "summary": "Get detail about the node and step state of an execution by ID. The execution can be currently running or completed.",
+        "tags": [
+          "execution"
+        ],
+        "operationId": "executionStateGet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/execution/{id}/input/files": {
+      "get": {
+        "summary": "List input files for an execution",
+        "tags": [
+          "file",
+          "execution"
+        ],
+        "operationId": "executionInputFilesList",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of execution input files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "files"
+                  ],
+                  "properties": {
+                    "files": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/JobInputFileInfo"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/project/{project}/executions/running": {
+      "get": {
+        "summary": "List job executions",
+        "tags": [
+          "project",
+          "execution"
+        ],
+        "operationId": "executionListRunning",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "description": "Project name or * for all projects",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of executions for job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/project/{project}/executions": {
+      "get": {
+        "summary": "Query for Executions based on Job or Execution details",
+        "tags": [
+          "execution"
+        ],
+        "operationId": "executionQuery",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "statusFilter",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "running",
+                "succeeded",
+                "failed",
+                "aborted",
+                "timedout",
+                "failed-with-retry",
+                "scheduled",
+                "other"
+              ]
+            }
+          },
+          {
+            "name": "abortedbyFilter",
+            "in": "query",
+            "description": "Username who aborted an execution",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userFilter",
+            "in": "query",
+            "description": "Username who started the execution",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "recentFilter",
+            "in": "query",
+            "description": "Use a simple text format to filter executions that completed within a period of time. The format is \u201cXY\u201d where X is an integer, and \u201cY\u201d is one of:\n* h: hour\n* d: day\n",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "olderFilter",
+            "in": "query",
+            "description": "(same format as recentFilter) return executions that completed before the specified relative period of time",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "begin",
+            "in": "query",
+            "description": "Specify exact date for earliest execution completion time",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "adhoc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/execution/{id}/output": {
+      "get": {
+        "summary": "List input files for an execution",
+        "tags": [
+          "file",
+          "execution"
+        ],
+        "operationId": "executionOutputGet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "maxlines",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 5000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of execution input files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionOutput"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/projects": {
+      "get": {
+        "summary": "List projects",
+        "tags": [
+          "project"
+        ],
+        "operationId": "projectList",
+        "responses": {
+          "200": {
+            "description": "List of projects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "url": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new project",
+        "tags": [
+          "project"
+        ],
+        "operationId": "projectCreate",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "config": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Project created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/project/{project}": {
+      "get": {
+        "summary": "Get information about a project",
+        "tags": [
+          "project"
+        ],
+        "operationId": "projectGet",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Project does not exist"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete project",
+        "operationId": "projectDelete",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Content deleted"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/project/{project}/config": {
+      "get": {
+        "summary": "Get project config",
+        "operationId": "projectConfigGet",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Project does not exist"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update project config",
+        "operationId": "projectConfigUpdate",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Project config updated"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/project/{project}/config/{key}": {
+      "get": {
+        "summary": "Get project config key",
+        "operationId": "projectConfigKeyGet",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project config key and value",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "summary": "Get project config key",
+        "operationId": "projectConfigKeySet",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Project config key set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete project config key",
+        "operationId": "projectConfigKeyDelete",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Content deleted"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/project/{project}/jobs/export": {
+      "get": {
+        "summary": "Export the job definitions in XML or YAML formats.",
+        "tags": [
+          "job",
+          "project"
+        ],
+        "operationId": "projectJobsExport",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "description": "The project to export jobs for.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "description": "XML or YAML format for exported jobs.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "xml",
+                "yaml"
+              ],
+              "default": "xml"
+            }
+          },
+          {
+            "name": "idlist",
+            "in": "query",
+            "required": false,
+            "description": "A comma-separated list of Job IDs to export.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "groupPath",
+            "in": "query",
+            "required": false,
+            "description": "Group or partial group path to include all jobs within that group path.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "jobFilter",
+            "in": "query",
+            "required": false,
+            "description": "Filter for the job Name.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/project/{project}/jobs/import": {
+      "post": {
+        "summary": "Import job definitions in XML or YAML formats.",
+        "tags": [
+          "job",
+          "project"
+        ],
+        "operationId": "projectJobsImport",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "description": "Name of the project to import jobs into.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "content-type",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "application/xml"
+            }
+          },
+          {
+            "name": "accept",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "application/xml"
+            }
+          },
+          {
+            "name": "fileFormat",
+            "in": "query",
+            "required": false,
+            "x-ms-parameter-grouping": {
+              "name": "job-import-options"
+            },
+            "schema": {
+              "type": "string",
+              "default": "xml"
+            }
+          },
+          {
+            "name": "dupeOption",
+            "in": "query",
+            "required": false,
+            "x-ms-parameter-grouping": {
+              "name": "job-import-options"
+            },
+            "schema": {
+              "type": "string",
+              "default": "create"
+            }
+          },
+          {
+            "name": "uuidOption",
+            "in": "query",
+            "required": false,
+            "x-ms-parameter-grouping": {
+              "name": "job-import-options"
+            },
+            "schema": {
+              "type": "string",
+              "default": "preserve"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "format": "file"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "format": "file"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/project/{project}/import": {
+      "put": {
+        "summary": "Import project archive.",
+        "tags": [
+          "job",
+          "project"
+        ],
+        "operationId": "projectArchiveImport",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "description": "Name of the project to import jobs into.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "jobUuidOption",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "preserve",
+                "remove"
+              ],
+              "default": "remove"
+            }
+          },
+          {
+            "name": "importExecutions",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "importConfig",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "importACL",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "format": "file"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/project/{project}/export": {
+      "get": {
+        "summary": "Export archive of project synchronously",
+        "operationId": "projectArchiveExportSync",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "description": "Name of the project to import jobs into.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "executionIds",
+            "in": "query",
+            "description": "A list (comma-separated) of execution IDs. If this is specified then the archive will contain only executions that are specified, and will not contain Jobs, ACLs, or project configuration/readme files.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "exportAll",
+            "in": "query",
+            "description": "Export all project resources",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          {
+            "name": "exportJobs",
+            "in": "query",
+            "description": "Export all project resources",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "exportExecutions",
+            "in": "query",
+            "description": "Export all project resources",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "exportConfigs",
+            "in": "query",
+            "description": "Export all project resources",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "exportReadmes",
+            "in": "query",
+            "description": "Export all project resources",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "exportAcls",
+            "in": "query",
+            "description": "Export all project resources",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Zip archive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "format": "file"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/project/{project}/readme.md": {
+      "get": {
+        "summary": "Get the readme.md contents",
+        "operationId": "projectReadmeGet",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "description": "Name of the project to import jobs into.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "readme.md contents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "contents": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The file does not exist"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "summary": "Create or modify project README.md",
+        "operationId": "projectReadmePut",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "description": "Name of the project to import jobs into.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "contents": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete project README.md",
+        "operationId": "projectReadmeDelete",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "description": "Name of the project to import jobs into.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/project/{project}/motd.md": {
+      "get": {
+        "summary": "Get the readme.md contents",
+        "operationId": "projectMotdGet",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "description": "Name of the project to import jobs into.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "motd.md contents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "contents": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The file does not exist"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "summary": "Create or modify project MOTD.md",
+        "operationId": "projectMotdPut",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "description": "Name of the project to import jobs into.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "contents": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request."
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete project motd.md",
+        "operationId": "projectMotdDelete",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "description": "Name of the project to import jobs into.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/system/info": {
+      "get": {
+        "summary": "Get Rundeck server information and stats",
+        "tags": [
+          "system"
+        ],
+        "operationId": "systemInfoGet",
+        "responses": {
+          "200": {
+            "description": "System info response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/system/logstorage": {
+      "get": {
+        "summary": "Get Log Storage information and stats",
+        "tags": [
+          "system",
+          "log"
+        ],
+        "operationId": "systemLogStorageInfoGet",
+        "responses": {
+          "200": {
+            "description": "Expected reponse to a valid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogStorage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/system/logstorage/incomplete": {
+      "get": {
+        "summary": "List all executions with incomplete log storage",
+        "tags": [
+          "system",
+          "execution",
+          "log"
+        ],
+        "operationId": "systemIncompleteLogStorageExecutionsGet",
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncompleteLogExecutions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/system/logstorage/incomplete/resume": {
+      "post": {
+        "summary": "Resume processing incomplete Log Storage uploads",
+        "tags": [
+          "system",
+          "execution",
+          "log"
+        ],
+        "operationId": "systemIncompleteLogStorageExecutionsResume",
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "resumed": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/system/executions/enable": {
+      "post": {
+        "summary": "Enables executions, allowing adhoc and manual and scheduled jobs to be run",
+        "tags": [
+          "system",
+          "execution"
+        ],
+        "operationId": "systemExecutionsEnable",
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "executionMode": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/system/executions/disable": {
+      "post": {
+        "summary": "Disables executions, preventing adhoc and manual and scheduled jobs from running.",
+        "tags": [
+          "system",
+          "execution"
+        ],
+        "operationId": "systemExecutionsDisable",
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "executionMode": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/scheduler/takeover": {
+      "put": {
+        "summary": "Tell a Rundeck server in cluster mode to claim all scheduled jobs from another cluster server",
+        "tags": [
+          "scheduler",
+          "cluster",
+          "job"
+        ],
+        "operationId": "systemSchedulerTakeover",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "server": {
+                    "type": "object",
+                    "required": [
+                      "uuid",
+                      "all"
+                    ],
+                    "properties": {
+                      "uuid": {
+                        "type": "string"
+                      },
+                      "all": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "project": {
+                    "type": "string"
+                  },
+                  "job": {
+                    "type": "object",
+                    "required": [
+                      "id"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TakeoverScheduleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/scheduler/server/{uuid}/jobs": {
+      "get": {
+        "summary": "List the scheduled Jobs with their schedule owned by the cluster server with the specified UUID",
+        "tags": [
+          "scheduler",
+          "cluster",
+          "job"
+        ],
+        "operationId": "systemScheduledJobsForServer",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "description": "The ID of the user to retrieve profile information for",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Job"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/scheduler/jobs": {
+      "get": {
+        "summary": "List the scheduled Jobs with their schedule owned by the cluster server",
+        "tags": [
+          "scheduler",
+          "cluster",
+          "job"
+        ],
+        "operationId": "systemScheduledJobsList",
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Job"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/system/acl/": {
+      "get": {
+        "summary": "List ACL Policies",
+        "tags": [
+          "system",
+          "acl"
+        ],
+        "operationId": "systemAclPolicyList",
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AclList"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ACL does not exist"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/system/acl/{policyName}": {
+      "get": {
+        "summary": "Retrieve the YAML texas of the ACL Policy file",
+        "tags": [
+          "system",
+          "acl"
+        ],
+        "operationId": "systemAclPolicyGet",
+        "parameters": [
+          {
+            "name": "policyName",
+            "in": "path",
+            "required": true,
+            "description": "Policy file name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AclPolicyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Policy not found"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a policy",
+        "tags": [
+          "system",
+          "acl"
+        ],
+        "operationId": "systemAclPolicyCreate",
+        "parameters": [
+          {
+            "name": "policyName",
+            "in": "path",
+            "required": true,
+            "description": "Policy file name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "contents"
+                ],
+                "properties": {
+                  "contents": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AclPolicyResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidAclPolicyResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update policy",
+        "tags": [
+          "system",
+          "acl"
+        ],
+        "operationId": "systemAclPolicyUpdate",
+        "parameters": [
+          {
+            "name": "policyName",
+            "in": "path",
+            "required": true,
+            "description": "Policy file name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "contents"
+                ],
+                "properties": {
+                  "contents": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AclPolicyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Policy not found"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete policy",
+        "tags": [
+          "system",
+          "acl"
+        ],
+        "operationId": "systemAclPolicyDelete",
+        "parameters": [
+          {
+            "name": "policyName",
+            "in": "path",
+            "required": true,
+            "description": "Policy file name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Policy deleted"
+          },
+          "404": {
+            "description": "Policy not found"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/storage/keys/{keyPath}": {
+      "get": {
+        "summary": "Get key material at the specified PATH",
+        "description": "This enpoint is impossible to describe properly in OAPI 2.0 .  \nDepending on resources type and accepts header GET can return a list of key metadata,\nsingle metadata, or the key contents.\n",
+        "tags": [
+          "storage"
+        ],
+        "operationId": "storageKeyGetMaterial",
+        "parameters": [
+          {
+            "name": "keyPath",
+            "in": "path",
+            "required": true,
+            "description": "Key path",
+            "x-ms-skip-url-encoding": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "accept",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "*/*"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "format": "file"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No content found at this location"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/storage/keys/{path}": {
+      "get": {
+        "summary": "List resources at the specified PATH",
+        "description": "This enpoint is impossible to describe properly in OAPI 2.0 .  \nDepending on resources type and accepts header GET can return a list of key metadata,\nsingle metadata, or the key contents.\n",
+        "tags": [
+          "storage"
+        ],
+        "operationId": "storageKeyGetMetadata",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "description": "Key path",
+            "x-ms-skip-url-encoding": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "accept",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "application/json"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageKeyListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No content found at this location"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "summary": "Set storage key contents",
+        "tags": [
+          "storage"
+        ],
+        "operationId": "storageKeyCreate",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "description": "Key path",
+            "x-ms-skip-url-encoding": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "content-type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/pgp-keys"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "format": "file"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Content created"
+          },
+          "409": {
+            "description": "Resource already exists"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "summary": "Set storage key contents",
+        "tags": [
+          "storage"
+        ],
+        "operationId": "storageKeyUpdate",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "description": "Key path",
+            "x-ms-skip-url-encoding": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "content-type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/pgp-keys"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "format": "file"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Content updated"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Deletes the file if it exists and returns 204 response.",
+        "tags": [
+          "storage"
+        ],
+        "operationId": "storageKeyDelete",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "description": "Key path",
+            "x-ms-skip-url-encoding": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Content deleted"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/user/list": {
+      "get": {
+        "summary": "List user profiles",
+        "tags": [
+          "user"
+        ],
+        "operationId": "userList",
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/user/info": {
+      "get": {
+        "summary": "Get same user profile data",
+        "tags": [
+          "user"
+        ],
+        "operationId": "userProfileGet",
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "summary": "Modify same user profile data",
+        "tags": [
+          "user"
+        ],
+        "operationId": "userProfileUpdate",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModifyUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/user/info/{userID}": {
+      "get": {
+        "summary": "Get another user's profile data",
+        "tags": [
+          "user"
+        ],
+        "operationId": "userProfileGetById",
+        "parameters": [
+          {
+            "name": "userID",
+            "in": "path",
+            "required": true,
+            "description": "The ID of the user to retrieve profile information for",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "summary": "Modify another user's profile data",
+        "tags": [
+          "user"
+        ],
+        "operationId": "userProfileUpdateById",
+        "parameters": [
+          {
+            "name": "userID",
+            "in": "path",
+            "required": true,
+            "description": "The ID of the user to retrieve profile information for",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModifyUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/user/roles": {
+      "get": {
+        "summary": "List the roles of the authenticated user",
+        "tags": [
+          "user",
+          "roles"
+        ],
+        "operationId": "userRoleList",
+        "responses": {
+          "200": {
+            "description": "Expected response to a valid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "roles"
+                  ],
+                  "properties": {
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/26/metrics": {
+      "get": {
+        "summary": "List links to enabled Metrics endpoints",
+        "operationId": "metricList",
+        "responses": {
+          "200": {
+            "description": "List of Metrics endpoint links",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "_links"
+                  ],
+                  "properties": {
+                    "_links": {
+                      "type": "object",
+                      "required": [
+                        "metrics",
+                        "ping",
+                        "threads",
+                        "healthcheck"
+                      ],
+                      "properties": {
+                        "metrics": {
+                          "properties": {
+                            "href": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "href"
+                          ]
+                        },
+                        "ping": {
+                          "properties": {
+                            "href": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "href"
+                          ]
+                        },
+                        "threads": {
+                          "properties": {
+                            "href": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "href"
+                          ]
+                        },
+                        "healthcheck": {
+                          "properties": {
+                            "href": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "href"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "User": {
+        "properties": {
+          "login": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        }
+      },
+      "ModifyUserRequest": {
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        }
+      },
+      "SystemInfo": {
+        "properties": {
+          "system": {
+            "properties": {
+              "timestamp": {
+                "properties": {
+                  "epoch": {
+                    "type": "number"
+                  },
+                  "unit": {
+                    "type": "string"
+                  },
+                  "datetime": {
+                    "type": "string"
+                  }
+                }
+              },
+              "rundeck": {
+                "properties": {
+                  "version": {
+                    "type": "string"
+                  },
+                  "build": {
+                    "type": "string"
+                  },
+                  "node": {
+                    "type": "string"
+                  },
+                  "base": {
+                    "type": "string"
+                  },
+                  "apiversion": {
+                    "type": "number"
+                  },
+                  "serverUUID": {
+                    "type": "string"
+                  }
+                }
+              },
+              "executions": {
+                "properties": {
+                  "active": {
+                    "type": "boolean"
+                  },
+                  "executionMode": {
+                    "type": "string"
+                  }
+                }
+              },
+              "os": {
+                "properties": {
+                  "arch": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  }
+                }
+              },
+              "jvm": {
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "vendor": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  },
+                  "implementationVersion": {
+                    "type": "string"
+                  }
+                }
+              },
+              "stats": {
+                "properties": {
+                  "uptime": {
+                    "properties": {
+                      "duration": {
+                        "type": "number"
+                      },
+                      "unit": {
+                        "type": "string"
+                      },
+                      "since": {
+                        "properties": {
+                          "epoch": {
+                            "type": "number"
+                          },
+                          "unit": {
+                            "type": "string"
+                          },
+                          "datetime": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "cpu": {
+                    "properties": {
+                      "loadAverage": {
+                        "properties": {
+                          "unit": {
+                            "type": "string"
+                          },
+                          "average": {
+                            "type": "number"
+                          }
+                        }
+                      },
+                      "processors": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "memory": {
+                    "properties": {
+                      "unit": {
+                        "type": "string"
+                      },
+                      "max": {
+                        "type": "number"
+                      },
+                      "free": {
+                        "type": "number"
+                      },
+                      "total": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "scheduler": {
+                    "properties": {
+                      "running": {
+                        "type": "number"
+                      },
+                      "threadPoolSize": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "threads": {
+                    "properties": {
+                      "active": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                }
+              },
+              "metrics": {
+                "properties": {
+                  "href": {
+                    "type": "string"
+                  },
+                  "contentType": {
+                    "type": "string"
+                  }
+                }
+              },
+              "threadDump": {
+                "properties": {
+                  "href": {
+                    "type": "string"
+                  },
+                  "contentType": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "LogStorage": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "True if plugin is configured"
+          },
+          "pluginName": {
+            "type": "string",
+            "description": "Name of the configured plugin"
+          },
+          "succeededCount": {
+            "type": "number",
+            "description": "Number of successful storage requests"
+          },
+          "failedCount": {
+            "type": "number",
+            "description": "Number of failed storage requests"
+          },
+          "queuedCount": {
+            "type": "number",
+            "description": "Number of queued storage requests"
+          },
+          "totalCount": {
+            "type": "number",
+            "description": "Total number of storage requests (currently queued plus previously processed)"
+          },
+          "incompleteCount": {
+            "type": "number",
+            "description": "Number of storage requests which have not completed successfully"
+          },
+          "missingCount": {
+            "type": "number",
+            "description": "Number of executions for this cluster node which have no associated storage requests"
+          }
+        }
+      },
+      "IncompleteLogExecution": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "project": {
+            "type": "string"
+          },
+          "href": {
+            "type": "string"
+          },
+          "permalink": {
+            "type": "string"
+          },
+          "storage": {
+            "properties": {
+              "localFilesPresent": {
+                "type": "boolean"
+              },
+              "incompleteFiletypes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "queued": {
+                "type": "boolean"
+              },
+              "failed": {
+                "type": "boolean"
+              },
+              "date": {
+                "type": "string"
+              }
+            }
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "IncompleteFileType": {
+        "type": "string",
+        "enum": [
+          "rdlog",
+          "state.json",
+          "execution.xml"
+        ],
+        "description": "Comma-separated list of filetypes which have not be uploaded, e.g. rdlog,state.json. Types are rdlog (log output), state.json (workflow state data), execution.xml (execution definition)"
+      },
+      "IncompleteLogExecutions": {
+        "required": [
+          "total",
+          "max",
+          "offset",
+          "executions"
+        ],
+        "properties": {
+          "total": {
+            "type": "number"
+          },
+          "max": {
+            "type": "number"
+          },
+          "offset": {
+            "type": "number"
+          },
+          "executions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncompleteLogExecution"
+            }
+          }
+        }
+      },
+      "TakeoverScheduleRequest": {
+        "properties": {
+          "server": {
+            "properties": {
+              "uuid": {
+                "type": "string"
+              },
+              "all": {
+                "type": "boolean"
+              }
+            }
+          },
+          "project": {
+            "type": "string"
+          },
+          "job": {
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "JobReference": {
+        "properties": {
+          "href": {
+            "type": "string"
+          },
+          "permalink": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "pervious-owner": {
+            "type": "string"
+          }
+        }
+      },
+      "TakeoverScheduleResponse": {
+        "properties": {
+          "takeoverSchedule": {
+            "properties": {
+              "project": {
+                "type": "string"
+              },
+              "jobs": {
+                "properties": {
+                  "failed": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/JobReference"
+                    }
+                  },
+                  "successfull": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/JobReference"
+                    }
+                  },
+                  "total": {
+                    "type": "number"
+                  }
+                }
+              },
+              "server": {
+                "properties": {
+                  "uuid": {
+                    "type": "string"
+                  },
+                  "all": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          },
+          "self": {
+            "properties": {
+              "server": {
+                "properties": {
+                  "uuid": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "message": {
+            "type": "string"
+          },
+          "apiversion": {
+            "type": "number"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Project": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "config": {
+            "type": "object"
+          }
+        }
+      },
+      "Job": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "group": {
+            "type": "string"
+          },
+          "project": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "href": {
+            "type": "string"
+          },
+          "permalink": {
+            "type": "string"
+          },
+          "scheduled": {
+            "type": "boolean"
+          },
+          "scheduleEnabled": {
+            "type": "boolean"
+          },
+          "serverNodeUUID": {
+            "type": "string"
+          },
+          "serverOwner": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "JobMetadata": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "group": {
+            "type": "string"
+          },
+          "project": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "href": {
+            "type": "string"
+          },
+          "permalink": {
+            "type": "string"
+          },
+          "scheduled": {
+            "type": "boolean"
+          },
+          "scheduleEnabled": {
+            "type": "boolean"
+          },
+          "averageDuration": {
+            "type": "number"
+          },
+          "options": {
+            "type": "object"
+          }
+        }
+      },
+      "JobBulkOperationResponse": {
+        "required": [
+          "requestCount",
+          "allsuccessful"
+        ],
+        "properties": {
+          "requestCount": {
+            "description": "The number of job IDs that were in the delete request.",
+            "type": "number"
+          },
+          "allsuccessful": {
+            "type": "boolean"
+          },
+          "succeeded": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkJobSucceededInfo"
+            }
+          },
+          "failed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkJobFailedInfo"
+            }
+          }
+        }
+      },
+      "JobInputFileListResponse": {
+        "required": [
+          "paging",
+          "files"
+        ],
+        "properties": {
+          "paging": {
+            "$ref": "#/components/schemas/Paging"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JobInputFileInfo"
+            }
+          }
+        }
+      },
+      "JobInputFileInfo": {
+        "required": [
+          "id",
+          "user",
+          "fileState",
+          "sha",
+          "jobId",
+          "dateCreated",
+          "serverNodeUUID",
+          "fileName",
+          "expirationDate",
+          "exec"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "user": {
+            "type": "string"
+          },
+          "fileState": {
+            "type": "string",
+            "enum": [
+              "temp",
+              "deleted",
+              "expired",
+              "retained"
+            ]
+          },
+          "sha": {
+            "type": "string"
+          },
+          "jobId": {
+            "type": "string"
+          },
+          "dateCreated": {
+            "type": "string"
+          },
+          "serverNodeUUID": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "expirationDate": {
+            "type": "string"
+          },
+          "execId": {
+            "type": "string"
+          }
+        }
+      },
+      "BulkJobSucceededInfo": {
+        "required": [
+          "id",
+          "message"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "BulkJobFailedInfo": {
+        "required": [
+          "id",
+          "message",
+          "errorCode"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ExecutionList": {
+        "properties": {
+          "paging": {
+            "$ref": "#/components/schemas/Paging"
+          },
+          "executions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Execution"
+            }
+          }
+        }
+      },
+      "Execution": {
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "href": {
+            "type": "string"
+          },
+          "permalink": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "succeeded",
+              "failed",
+              "aborted",
+              "timedout",
+              "failed-with-retry",
+              "scheduled",
+              "other"
+            ]
+          },
+          "customStatus": {
+            "type": "string"
+          },
+          "project": {
+            "type": "string"
+          },
+          "user": {
+            "type": "string"
+          },
+          "serverUUID": {
+            "type": "string"
+          },
+          "date-started": {
+            "properties": {
+              "unixtime": {
+                "type": "number"
+              },
+              "date": {
+                "type": "string"
+              }
+            }
+          },
+          "job": {
+            "$ref": "#/components/schemas/JobMetadata"
+          },
+          "description": {
+            "type": "string"
+          },
+          "argstring": {
+            "type": "string"
+          },
+          "successfulNodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "JobExecutionDelete": {
+        "properties": {
+          "failedCount": {
+            "type": "number"
+          },
+          "successCount": {
+            "type": "number"
+          },
+          "allsuccessful": {
+            "type": "boolean"
+          },
+          "requestCount": {
+            "type": "number"
+          },
+          "failures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AclReference": {
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "href": {
+            "type": "string"
+          }
+        }
+      },
+      "AclList": {
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "href": {
+            "type": "string"
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AclReference"
+            }
+          }
+        }
+      },
+      "AclPolicyResponse": {
+        "required": [
+          "contents"
+        ],
+        "properties": {
+          "contents": {
+            "type": "string",
+            "description": "Policy as JSON encoded YAML string"
+          }
+        }
+      },
+      "InvalidAclPolicyResponse": {
+        "properties": {
+          "valid": {
+            "type": "boolean"
+          },
+          "policies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "policy": {
+                  "type": "string"
+                },
+                "errors": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "RetryExecutionRequest": {
+        "properties": {
+          "argString": {
+            "description": "Argument string to pass to the job, of the form `-opt value -opt2 value ...`",
+            "type": "string"
+          },
+          "loglevel": {
+            "description": "Loglevel to use",
+            "type": "string",
+            "enum": [
+              "DEBUG",
+              "VERBOSE",
+              "INFO",
+              "WARN",
+              "ERROR"
+            ]
+          },
+          "asUser": {
+            "description": "A username identifying the user who ran the job. Requires `runAs` permission.",
+            "type": "string"
+          },
+          "options": {
+            "description": "Option value for option named `OPTNAME`. If specified the `argString` value is ignored (*API v18* or later).",
+            "type": "object"
+          }
+        }
+      },
+      "ExecuteJobRequest": {
+        "properties": {
+          "argString": {
+            "description": "Argument string to pass to the job, of the form `-opt value -opt2 value ...`",
+            "type": "string"
+          },
+          "loglevel": {
+            "description": "Loglevel to use",
+            "type": "string",
+            "enum": [
+              "DEBUG",
+              "VERBOSE",
+              "INFO",
+              "WARN",
+              "ERROR"
+            ]
+          },
+          "asUser": {
+            "description": "A username identifying the user who ran the job. Requires `runAs` permission.",
+            "type": "string"
+          },
+          "filter": {
+            "description": "A node filter string.",
+            "type": "string"
+          },
+          "runAtTime": {
+            "description": "Specify a time to run the job (*API v18* or later). `ISO-8601` format with optional milliseconds.",
+            "type": "string"
+          },
+          "options": {
+            "description": "Option value for option named `OPTNAME`. If specified the `argString` value is ignored (*API v18* or later).",
+            "type": "object"
+          }
+        }
+      },
+      "StorageKeyMetaType": {
+        "type": "string",
+        "enum": [
+          "private",
+          "public"
+        ],
+        "x-ms-enum": {
+          "name": "StorageKeyMetaType"
+        }
+      },
+      "StorageKeyMetadata": {
+        "properties": {
+          "meta": {
+            "properties": {
+              "Rundeck-key-type": {
+                "$ref": "#/components/schemas/StorageKeyMetaType"
+              },
+              "Rundeck-content-mask": {
+                "type": "string"
+              },
+              "Rundeck-content-size": {
+                "type": "string"
+              },
+              "Rundeck-content-type": {
+                "type": "string"
+              }
+            }
+          },
+          "url": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        }
+      },
+      "StorageKeyListResponse": {
+        "properties": {
+          "resources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StorageKeyMetadata"
+            }
+          },
+          "meta": {
+            "properties": {
+              "Rundeck-key-type": {
+                "$ref": "#/components/schemas/StorageKeyMetaType"
+              },
+              "Rundeck-content-mask": {
+                "type": "string"
+              },
+              "Rundeck-content-size": {
+                "type": "string"
+              },
+              "Rundeck-content-type": {
+                "type": "string"
+              }
+            }
+          },
+          "url": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        }
+      },
+      "Paging": {
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "max": {
+            "type": "integer"
+          }
+        }
+      },
+      "ExecutionOutput": {
+        "required": [
+          "id",
+          "offset",
+          "completed",
+          "execCompleted",
+          "hasFailedNodes",
+          "execState",
+          "lastModified",
+          "execDuration",
+          "totalSize",
+          "retryBackoff",
+          "clusterExec",
+          "compacted",
+          "entries"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "empty": {
+            "type": "boolean"
+          },
+          "offset": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "execCompleted": {
+            "type": "boolean"
+          },
+          "hasFailedNodes": {
+            "type": "boolean"
+          },
+          "execState": {
+            "type": "string"
+          },
+          "lastModified": {
+            "type": "string"
+          },
+          "execDuration": {
+            "type": "number"
+          },
+          "percentLoaded": {
+            "type": "number"
+          },
+          "totalSize": {
+            "type": "number"
+          },
+          "retryBackoff": {
+            "type": "number"
+          },
+          "clusterExec": {
+            "type": "boolean"
+          },
+          "compacted": {
+            "type": "boolean"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExecutionOutputEntry"
+            }
+          }
+        }
+      },
+      "ExecutionState": {
+        "required": [
+          "executionId",
+          "serverNode",
+          "completed"
+        ],
+        "properties": {
+          "executionId": {
+            "type": "number"
+          },
+          "serverNode": {
+            "type": "string"
+          },
+          "executionState": {
+            "$ref": "#/components/schemas/ExecutionStateState"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "targetNodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allNodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "stepCount": {
+            "type": "number"
+          },
+          "updateTime": {
+            "type": "string"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "endTime": {
+            "type": "string"
+          },
+          "nodes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ExecutionStateNodeState"
+              }
+            }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExecutionStateStep"
+            }
+          }
+        }
+      },
+      "ExecutionStateState": {
+        "type": "string",
+        "enum": [
+          "SUCCEEDED",
+          "FAILED",
+          "RUNNING",
+          "WAITING"
+        ],
+        "description": "State value as used in execution state output",
+        "x-ms-enum": {
+          "name": "ExecutionStateState"
+        }
+      },
+      "ExecutionStateWorkflow": {
+        "required": [
+          "completed"
+        ],
+        "properties": {
+          "completed": {
+            "type": "boolean"
+          },
+          "updateTime": {
+            "type": "string"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "endTime": {
+            "type": "string"
+          },
+          "stepCount": {
+            "type": "number"
+          },
+          "targetNodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allNodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExecutionStateStep"
+            }
+          }
+        }
+      },
+      "ExecutionStateNodeState": {
+        "required": [
+          "executionState",
+          "stepctx"
+        ],
+        "properties": {
+          "executionState": {
+            "$ref": "#/components/schemas/ExecutionStateState"
+          },
+          "stepctx": {
+            "type": "string"
+          }
+        }
+      },
+      "ExecutionStateStep": {
+        "required": [
+          "id",
+          "stepctx",
+          "nodeStep",
+          "executionState",
+          "duration"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "stepctx": {
+            "type": "string"
+          },
+          "nodeStep": {
+            "type": "boolean"
+          },
+          "executionState": {
+            "$ref": "#/components/schemas/ExecutionStateState"
+          },
+          "duration": {
+            "type": "number"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "endTime": {
+            "type": "string"
+          },
+          "updateTime": {
+            "type": "string"
+          },
+          "nodeStates": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ExecutionStateStepNodeState"
+            }
+          },
+          "hasSubworkflow": {
+            "type": "boolean"
+          },
+          "workflow": {
+            "$ref": "#/components/schemas/ExecutionStateWorkflow"
+          },
+          "parameters": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "parameterStates": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ExecutionStateStep"
+            }
+          }
+        }
+      },
+      "ExecutionStateStepNodeState": {
+        "required": [
+          "executionState",
+          "duration"
+        ],
+        "properties": {
+          "executionState": {
+            "$ref": "#/components/schemas/ExecutionStateState"
+          },
+          "duration": {
+            "type": "number"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "updateTime": {
+            "type": "string"
+          },
+          "endTime": {
+            "type": "string"
+          }
+        }
+      },
+      "ExecutionOutputEntry": {
+        "properties": {
+          "time": {
+            "type": "string"
+          },
+          "absolute_time": {
+            "type": "string"
+          },
+          "log": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "stepctx": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          }
+        }
+      },
+      "WorkflowStep": {
+        "properties": {
+          "jobref": {
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "group": {
+                "type": "string"
+              },
+              "uuid": {
+                "type": "string"
+              },
+              "nodeStep": {
+                "type": "string"
+              },
+              "importOptions": {
+                "type": "boolean"
+              }
+            }
+          },
+          "jobId": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "exec": {
+            "type": "string"
+          },
+          "script": {
+            "type": "string"
+          },
+          "scriptfile": {
+            "type": "string"
+          },
+          "scripturl": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "nodeStep": {
+            "type": "string"
+          },
+          "workflow": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkflowStep"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Rundeck-Auth-Token"
+      }
+    }
+  },
+  "security": [
+    {
+      "apiToken": []
+    }
+  ]
+}
