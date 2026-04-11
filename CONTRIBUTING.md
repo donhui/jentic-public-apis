@@ -31,7 +31,7 @@ We welcome contributions in the following areas:
 
 ### For OpenAPI Specifications
 
-- Must be valid OpenAPI 3.0 or higher
+- Should be valid OpenAPI 3.0 or higher (OpenAPI 2.0 is accepted and converted during import)
 - Must include comprehensive schema definitions
 - All endpoints must have accurate descriptions and example responses
 - Authentication methods must be clearly documented
