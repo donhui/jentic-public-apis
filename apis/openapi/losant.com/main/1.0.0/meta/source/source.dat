@@ -1,0 +1,823 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Losant REST API",
+    "version": "1.0.0",
+    "description": "Losant IoT Platform REST API for managing applications, devices, device state, commands, and data export.",
+    "x-jentic-source-url": "https://docs.losant.com/rest-api/overview/"
+  },
+  "servers": [
+    {
+      "url": "https://api.losant.com"
+    }
+  ],
+  "paths": {
+    "/auth/user": {
+      "post": {
+        "operationId": "authenticateUser",
+        "summary": "Authenticate User",
+        "description": "Authenticates a user and returns an access token.",
+        "tags": ["Authentication"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "description": "User email" },
+                  "password": { "type": "string", "description": "User password" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": { "type": "string", "description": "Bearer token" },
+                    "userId": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Invalid credentials", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/auth/device": {
+      "post": {
+        "operationId": "authenticateDevice",
+        "summary": "Authenticate Device",
+        "description": "Authenticates a device and returns an access token.",
+        "tags": ["Authentication"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["deviceId", "key", "secret"],
+                "properties": {
+                  "deviceId": { "type": "string" },
+                  "key": { "type": "string" },
+                  "secret": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": { "type": "string" },
+                    "deviceId": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Invalid credentials", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/applications/{applicationId}": {
+      "get": {
+        "operationId": "getApplication",
+        "summary": "Get Application",
+        "description": "Retrieves information on an application.",
+        "tags": ["Application"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "summaryExclude", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Comma-separated list of summary fields to exclude" },
+          { "name": "summaryInclude", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Comma-separated list of summary fields to include" }
+        ],
+        "responses": {
+          "200": { "description": "Application details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Application" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Application not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "patch": {
+        "operationId": "updateApplication",
+        "summary": "Update Application",
+        "description": "Updates information about an application.",
+        "tags": ["Application"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "description": { "type": "string" },
+                  "endpointSlug": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Application updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Application" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Application not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "delete": {
+        "operationId": "deleteApplication",
+        "summary": "Delete Application",
+        "description": "Deletes an application.",
+        "tags": ["Application"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Application deleted" },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Application not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/applications/{applicationId}/clone": {
+      "post": {
+        "operationId": "cloneApplication",
+        "summary": "Clone Application",
+        "description": "Copy an application into a new application.",
+        "tags": ["Application"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "includeFiles": { "type": "boolean" },
+                  "includeDevices": { "type": "boolean" },
+                  "ownerType": { "type": "string" },
+                  "ownerId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Application cloned", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Application" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/applications/{applicationId}/export": {
+      "post": {
+        "operationId": "exportApplication",
+        "summary": "Export Application",
+        "description": "Export an application and all of its resources.",
+        "tags": ["Application"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "includeFiles": { "type": "boolean" },
+                  "includeDevices": { "type": "boolean" },
+                  "email": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": { "description": "Export job enqueued", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobEnqueuedResult" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/applications/{applicationId}/search": {
+      "get": {
+        "operationId": "searchApplication",
+        "summary": "Search Application Resources",
+        "description": "Search across an application's resources by target identifier.",
+        "tags": ["Application"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "filter", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Search filter string" }
+        ],
+        "responses": {
+          "200": { "description": "Search results", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/applications/{applicationId}/payloadCounts": {
+      "get": {
+        "operationId": "getApplicationPayloadCounts",
+        "summary": "Get Application Payload Counts",
+        "description": "Returns payload counts for the time range specified for this application.",
+        "tags": ["Application"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "start", "in": "query", "required": false, "schema": { "type": "integer" }, "description": "Start time in ms since epoch" },
+          { "name": "end", "in": "query", "required": false, "schema": { "type": "integer" }, "description": "End time in ms since epoch" },
+          { "name": "asBytes", "in": "query", "required": false, "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": { "description": "Payload counts", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/applications/{applicationId}/devices": {
+      "get": {
+        "operationId": "listDevices",
+        "summary": "List Devices",
+        "description": "Returns the devices for an application.",
+        "tags": ["Devices"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "sortField", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Sort by: name, id, creationDate" },
+          { "name": "sortDirection", "in": "query", "required": false, "schema": { "type": "string", "enum": ["asc", "desc"] } },
+          { "name": "page", "in": "query", "required": false, "schema": { "type": "integer" }, "description": "Page number" },
+          { "name": "perPage", "in": "query", "required": false, "schema": { "type": "integer" }, "description": "Items per page" },
+          { "name": "filterField", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "filter", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "deviceClass", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Devices list", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DevicesList" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "post": {
+        "operationId": "createDevice",
+        "summary": "Create Device",
+        "description": "Create a new device for an application.",
+        "tags": ["Devices"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Device created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Device" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "patch": {
+        "operationId": "bulkUpdateDevices",
+        "summary": "Bulk Update Devices",
+        "description": "Update the fields of one or more devices.",
+        "tags": ["Devices"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "updateFields": { "type": "object" },
+                  "deviceIds": { "type": "array", "items": { "type": "string" } },
+                  "query": { "type": "object" },
+                  "email": { "type": "string" }
+                },
+                "required": ["email"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Devices updated" },
+          "202": { "description": "Job enqueued", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobEnqueuedResult" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/applications/{applicationId}/devices/{deviceId}": {
+      "get": {
+        "operationId": "getDevice",
+        "summary": "Get Device",
+        "description": "Retrieves information on a device.",
+        "tags": ["Device"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "deviceId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "excludeConnectionInfo", "in": "query", "required": false, "schema": { "type": "boolean" } },
+          { "name": "tagsAsObject", "in": "query", "required": false, "schema": { "type": "boolean" } },
+          { "name": "attributesAsObject", "in": "query", "required": false, "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": { "description": "Device details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Device" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Device not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "patch": {
+        "operationId": "updateDevice",
+        "summary": "Update Device",
+        "description": "Updates information about a device.",
+        "tags": ["Device"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "deviceId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DeviceInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Device updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Device" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Device not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "delete": {
+        "operationId": "deleteDevice",
+        "summary": "Delete Device",
+        "description": "Deletes a device.",
+        "tags": ["Device"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "deviceId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Device deleted" },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Device not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/applications/{applicationId}/devices/{deviceId}/state": {
+      "get": {
+        "operationId": "getDeviceState",
+        "summary": "Get Device State",
+        "description": "Retrieve the last known state(s) of the device.",
+        "tags": ["Device"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "deviceId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "default": 1 } },
+          { "name": "sortDirection", "in": "query", "required": false, "schema": { "type": "string", "enum": ["asc", "desc"], "default": "desc" } },
+          { "name": "duration", "in": "query", "required": false, "schema": { "type": "integer" }, "description": "Time range in ms" },
+          { "name": "start", "in": "query", "required": false, "schema": { "type": "integer" }, "description": "Start time in ms since epoch" },
+          { "name": "end", "in": "query", "required": false, "schema": { "type": "integer" }, "description": "End time in ms since epoch" }
+        ],
+        "responses": {
+          "200": { "description": "Device states", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/DeviceState" } } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Device not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "post": {
+        "operationId": "sendDeviceState",
+        "summary": "Send Device State",
+        "description": "Send the current state of the device.",
+        "tags": ["Device"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "deviceId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceStateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "State sent successfully" },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Device not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/applications/{applicationId}/devices/{deviceId}/command": {
+      "get": {
+        "operationId": "getDeviceCommands",
+        "summary": "Get Device Commands",
+        "description": "Retrieve the last known commands sent to the device.",
+        "tags": ["Device"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "deviceId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "default": 1 } },
+          { "name": "sortDirection", "in": "query", "required": false, "schema": { "type": "string", "enum": ["asc", "desc"], "default": "desc" } },
+          { "name": "start", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "end", "in": "query", "required": false, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Device commands", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/DeviceCommand" } } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Device not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "post": {
+        "operationId": "sendDeviceCommand",
+        "summary": "Send Device Command",
+        "description": "Send a command to a device.",
+        "tags": ["Device"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "deviceId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceCommandInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Command sent successfully" },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Device not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/applications/{applicationId}/devices/{deviceId}/compositeState": {
+      "get": {
+        "operationId": "getDeviceCompositeState",
+        "summary": "Get Device Composite State",
+        "description": "Retrieve the composite last complete state of the device.",
+        "tags": ["Device"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "deviceId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "start", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "end", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "attributes", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Comma-separated attribute list" }
+        ],
+        "responses": {
+          "200": { "description": "Composite state", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Device not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/applications/{applicationId}/devices/{deviceId}/logs": {
+      "get": {
+        "operationId": "getDeviceLogs",
+        "summary": "Get Device Logs",
+        "description": "Retrieve the recent log entries about the device.",
+        "tags": ["Device"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "deviceId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "default": 1 } },
+          { "name": "sortDirection", "in": "query", "required": false, "schema": { "type": "string", "enum": ["asc", "desc"] } },
+          { "name": "start", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "end", "in": "query", "required": false, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Device logs", "content": { "application/json": { "schema": { "type": "array", "items": { "type": "object" } } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Device not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/applications/{applicationId}/devices/{deviceId}/export": {
+      "post": {
+        "operationId": "exportDeviceData",
+        "summary": "Export Device Data",
+        "description": "Creates a device data export. Defaults to all data.",
+        "tags": ["Device"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "deviceId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string" },
+                  "callbackUrl": { "type": "string" },
+                  "start": { "type": "integer" },
+                  "end": { "type": "integer" },
+                  "includeBlobData": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": { "description": "Export job enqueued", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobEnqueuedResult" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Device not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/applications/{applicationId}/devices/{deviceId}/payloadCounts": {
+      "get": {
+        "operationId": "getDevicePayloadCounts",
+        "summary": "Get Device Payload Counts",
+        "description": "Returns payload counts for the time range specified for this device.",
+        "tags": ["Device"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "deviceId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "start", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "end", "in": "query", "required": false, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Payload counts", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Device not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/applications/{applicationId}/devices/{deviceId}/data": {
+      "delete": {
+        "operationId": "removeDeviceData",
+        "summary": "Remove Device Data",
+        "description": "Removes all device data for the specified time range. Defaults to all data.",
+        "tags": ["Device"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "deviceId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "start", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "end", "in": "query", "required": false, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "202": { "description": "Data removal job enqueued", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobEnqueuedResult" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Device not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/applications/{applicationId}/devices/{deviceId}/setConnectionStatus": {
+      "post": {
+        "operationId": "setDeviceConnectionStatus",
+        "summary": "Set Connection Status",
+        "description": "Set the current connection status of the device.",
+        "tags": ["Device"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "deviceId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["status"],
+                "properties": {
+                  "status": { "type": "string", "enum": ["connected", "disconnected"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Connection status set" },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Device not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/applications/{applicationId}/devices/command": {
+      "post": {
+        "operationId": "sendBulkDeviceCommand",
+        "summary": "Send Command to Multiple Devices",
+        "description": "Send a command to multiple devices.",
+        "tags": ["Devices"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "time": { "type": "string" },
+                  "name": { "type": "string" },
+                  "payload": {},
+                  "deviceTags": { "type": "array", "items": { "type": "object" } },
+                  "deviceIds": { "type": "array", "items": { "type": "string" } }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Command sent" },
+          "202": { "description": "Job enqueued" },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/applications/{applicationId}/devices/attributeNames": {
+      "get": {
+        "operationId": "getDeviceAttributeNames",
+        "summary": "Get Device Attribute Names",
+        "description": "Gets the attribute names that match the given query. Maximum 1K returned.",
+        "tags": ["Devices"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "query", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Device filter JSON" },
+          { "name": "dataType", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Filter by attribute data type" },
+          { "name": "startsWith", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Filter by name prefix" }
+        ],
+        "responses": {
+          "200": { "description": "Attribute names", "content": { "application/json": { "schema": { "type": "object", "properties": { "attributeNames": { "type": "array", "items": { "type": "string" } } } } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/applications/{applicationId}/devices/tagKeys": {
+      "get": {
+        "operationId": "getDeviceTagKeys",
+        "summary": "Get Device Tag Keys",
+        "description": "Gets the unique tag keys for devices that match the given query.",
+        "tags": ["Devices"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "query", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "startsWith", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Tag keys", "content": { "application/json": { "schema": { "type": "object", "properties": { "tagKeys": { "type": "array", "items": { "type": "string" } } } } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/applications/{applicationId}/devices/tagValues": {
+      "get": {
+        "operationId": "getDeviceTagValues",
+        "summary": "Get Device Tag Values",
+        "description": "Gets the unique tag values for the given key for devices that match the query.",
+        "tags": ["Devices"],
+        "parameters": [
+          { "name": "applicationId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "key", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Tag key" },
+          { "name": "query", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "startsWith", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Tag values", "content": { "application/json": { "schema": { "type": "object", "properties": { "key": { "type": "string" }, "values": { "type": "array", "items": { "type": "string" } } } } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Application": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "endpointSlug": { "type": "string" },
+          "creationDate": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Device": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "deviceClass": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "object", "properties": { "key": { "type": "string" }, "value": { "type": "string" } } } },
+          "attributes": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "dataType": { "type": "string" } } } },
+          "creationDate": { "type": "string", "format": "date-time" }
+        }
+      },
+      "DeviceInput": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "deviceClass": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "object", "properties": { "key": { "type": "string" }, "value": { "type": "string" } } } },
+          "attributes": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "dataType": { "type": "string" } } } },
+          "gatewayId": { "type": "string" },
+          "parentId": { "type": "string" }
+        }
+      },
+      "DevicesList": {
+        "type": "object",
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/Device" } },
+          "count": { "type": "integer" },
+          "totalCount": { "type": "integer" },
+          "perPage": { "type": "integer" },
+          "page": { "type": "integer" }
+        }
+      },
+      "DeviceState": {
+        "type": "object",
+        "properties": {
+          "time": { "type": "string", "format": "date-time" },
+          "data": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "DeviceStateInput": {
+        "type": "object",
+        "properties": {
+          "time": { "type": "string", "format": "date-time" },
+          "data": { "type": "object", "additionalProperties": true },
+          "meta": { "type": "object" },
+          "flowVersion": { "type": "string" }
+        }
+      },
+      "DeviceCommand": {
+        "type": "object",
+        "properties": {
+          "time": { "type": "string", "format": "date-time" },
+          "name": { "type": "string" },
+          "payload": {}
+        }
+      },
+      "DeviceCommandInput": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "time": { "type": "string" },
+          "name": { "type": "string" },
+          "payload": {}
+        }
+      },
+      "JobEnqueuedResult": {
+        "type": "object",
+        "properties": {
+          "jobId": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer token obtained from /auth/user or /auth/device"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}
