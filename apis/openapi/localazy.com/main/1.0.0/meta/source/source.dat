@@ -1,0 +1,888 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Localazy API",
+    "version": "1.0.0",
+    "description": "Localazy REST API for managing localization projects, importing/exporting translations, managing source keys, glossary terms, and webhooks.",
+    "x-jentic-source-url": "https://localazy.com/docs/api/introduction"
+  },
+  "servers": [
+    {
+      "url": "https://api.localazy.com",
+      "description": "Localazy API"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {"name": "Projects", "description": "Project management"},
+    {"name": "Import", "description": "Import content and formats"},
+    {"name": "Files", "description": "File management and content retrieval"},
+    {"name": "Source Keys", "description": "Source key management"},
+    {"name": "Glossary", "description": "Glossary term management"},
+    {"name": "Webhooks", "description": "Webhook configuration"}
+  ],
+  "paths": {
+    "/projects": {
+      "get": {
+        "operationId": "listProjects",
+        "summary": "List all projects",
+        "tags": ["Projects"],
+        "parameters": [
+          {
+            "name": "organization",
+            "in": "query",
+            "schema": {"type": "boolean"},
+            "description": "Include organization information"
+          },
+          {
+            "name": "languages",
+            "in": "query",
+            "schema": {"type": "boolean"},
+            "description": "Include language details"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of projects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {"$ref": "#/components/schemas/Project"}
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      },
+      "post": {
+        "operationId": "createProject",
+        "summary": "Create a new project",
+        "description": "Requires an organization token. Project tokens cannot create projects.",
+        "tags": ["Projects"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/CreateProjectRequest"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Project created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "projectId": {"type": "string"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/projects/{projectId}/import": {
+      "post": {
+        "operationId": "importContent",
+        "summary": "Import content to a project",
+        "tags": ["Import"],
+        "parameters": [
+          {"$ref": "#/components/parameters/ProjectId"}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/ImportRequest"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Import initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "string",
+                      "description": "Import batch ID"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/import/formats": {
+      "get": {
+        "operationId": "listImportFormats",
+        "summary": "List available file types for import",
+        "tags": ["Import"],
+        "responses": {
+          "200": {
+            "description": "List of available formats",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {"$ref": "#/components/schemas/ImportFormat"}
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/projects/{projectId}/files": {
+      "get": {
+        "operationId": "listFiles",
+        "summary": "List files in a project",
+        "tags": ["Files"],
+        "parameters": [
+          {"$ref": "#/components/parameters/ProjectId"}
+        ],
+        "responses": {
+          "200": {
+            "description": "List of files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {"$ref": "#/components/schemas/File"}
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/projects/{projectId}/files/{fileId}/keys/{lang}": {
+      "get": {
+        "operationId": "listFileContent",
+        "summary": "Get translations for a file in a specific language",
+        "tags": ["Files"],
+        "parameters": [
+          {"$ref": "#/components/parameters/ProjectId"},
+          {"$ref": "#/components/parameters/FileId"},
+          {
+            "name": "lang",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Locale code in ll-Scrp-RR format"
+          },
+          {
+            "name": "deprecated",
+            "in": "query",
+            "schema": {"type": "boolean"},
+            "description": "Include deprecated keys"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "maximum": 1000, "default": 1000},
+            "description": "Results per page (max 1000)"
+          },
+          {
+            "name": "next",
+            "in": "query",
+            "schema": {"type": "string"},
+            "description": "Pagination key for next page"
+          },
+          {
+            "name": "extra_info",
+            "in": "query",
+            "schema": {"type": "boolean"},
+            "description": "Return metadata (hidden, limit, deprecated, comment)"
+          },
+          {
+            "name": "no_content",
+            "in": "query",
+            "schema": {"type": "boolean"},
+            "description": "Exclude translation content"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File content with keys and translations",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/FileContentResponse"}
+              }
+            }
+          },
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/projects/{projectId}/files/{fileId}/download/{lang}": {
+      "get": {
+        "operationId": "downloadFile",
+        "summary": "Download a file in a specific language",
+        "tags": ["Files"],
+        "parameters": [
+          {"$ref": "#/components/parameters/ProjectId"},
+          {"$ref": "#/components/parameters/FileId"},
+          {
+            "name": "lang",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Locale code in ll-Scrp-RR format"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Raw file contents",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "File not found or type not specified during import",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+              }
+            }
+          },
+          "401": {"description": "Unauthorized"}
+        }
+      }
+    },
+    "/projects/{projectId}/keys/{keyId}": {
+      "delete": {
+        "operationId": "deleteSourceKey",
+        "summary": "Delete a source key",
+        "tags": ["Source Keys"],
+        "parameters": [
+          {"$ref": "#/components/parameters/ProjectId"},
+          {"$ref": "#/components/parameters/KeyId"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Key deleted",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ResultResponse"}
+              }
+            }
+          },
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      },
+      "put": {
+        "operationId": "updateSourceKey",
+        "summary": "Update source key properties",
+        "tags": ["Source Keys"],
+        "parameters": [
+          {"$ref": "#/components/parameters/ProjectId"},
+          {"$ref": "#/components/parameters/KeyId"}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/UpdateSourceKeyRequest"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Key updated",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ResultResponse"}
+              }
+            }
+          },
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/projects/{projectId}/glossary": {
+      "get": {
+        "operationId": "listGlossaryTerms",
+        "summary": "List all glossary terms",
+        "tags": ["Glossary"],
+        "parameters": [
+          {"$ref": "#/components/parameters/ProjectId"}
+        ],
+        "responses": {
+          "200": {
+            "description": "List of glossary terms",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "glossaries": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/GlossaryTerm"}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      },
+      "post": {
+        "operationId": "createGlossaryTerm",
+        "summary": "Create a new glossary term",
+        "description": "Maximum 1000 glossary terms per project.",
+        "tags": ["Glossary"],
+        "parameters": [
+          {"$ref": "#/components/parameters/ProjectId"}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/GlossaryTermInput"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Term created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "string",
+                      "description": "Created term ID"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/projects/{projectId}/glossary/{glossaryId}": {
+      "get": {
+        "operationId": "getGlossaryTerm",
+        "summary": "Get a single glossary term",
+        "tags": ["Glossary"],
+        "parameters": [
+          {"$ref": "#/components/parameters/ProjectId"},
+          {"$ref": "#/components/parameters/GlossaryId"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Glossary term details",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/GlossaryTerm"}
+              }
+            }
+          },
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      },
+      "put": {
+        "operationId": "updateGlossaryTerm",
+        "summary": "Update a glossary term",
+        "tags": ["Glossary"],
+        "parameters": [
+          {"$ref": "#/components/parameters/ProjectId"},
+          {"$ref": "#/components/parameters/GlossaryId"}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/GlossaryTermInput"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Term updated",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ResultResponse"}
+              }
+            }
+          },
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      },
+      "delete": {
+        "operationId": "deleteGlossaryTerm",
+        "summary": "Delete a glossary term",
+        "tags": ["Glossary"],
+        "parameters": [
+          {"$ref": "#/components/parameters/ProjectId"},
+          {"$ref": "#/components/parameters/GlossaryId"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Term deleted",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ResultResponse"}
+              }
+            }
+          },
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/projects/{projectId}/webhooks": {
+      "get": {
+        "operationId": "listWebhooks",
+        "summary": "List webhook configuration",
+        "tags": ["Webhooks"],
+        "parameters": [
+          {"$ref": "#/components/parameters/ProjectId"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook configuration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/Webhook"}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      },
+      "post": {
+        "operationId": "updateWebhooks",
+        "summary": "Update webhook configuration",
+        "description": "Maximum 30 webhooks per project. URL max 1024 characters. Max 50 events per webhook.",
+        "tags": ["Webhooks"],
+        "parameters": [
+          {"$ref": "#/components/parameters/ProjectId"}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["items"],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "maxItems": 30,
+                    "items": {"$ref": "#/components/schemas/WebhookInput"}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhooks updated",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ResultResponse"}
+              }
+            }
+          },
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/projects/{projectId}/webhooks/secret": {
+      "get": {
+        "operationId": "getWebhookSecret",
+        "summary": "Get the webhook secret for signature verification",
+        "tags": ["Webhooks"],
+        "parameters": [
+          {"$ref": "#/components/parameters/ProjectId"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "secret": {"type": "string"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "Bad request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Project token or organization token obtained from https://localazy.com/developer/tokens"
+      }
+    },
+    "parameters": {
+      "ProjectId": {
+        "name": "projectId",
+        "in": "path",
+        "required": true,
+        "schema": {"type": "string"},
+        "description": "Project ID or slug"
+      },
+      "FileId": {
+        "name": "fileId",
+        "in": "path",
+        "required": true,
+        "schema": {"type": "string"},
+        "description": "File ID"
+      },
+      "KeyId": {
+        "name": "keyId",
+        "in": "path",
+        "required": true,
+        "schema": {"type": "string"},
+        "description": "Source key ID"
+      },
+      "GlossaryId": {
+        "name": "glossaryId",
+        "in": "path",
+        "required": true,
+        "schema": {"type": "string"},
+        "description": "Glossary term ID"
+      }
+    },
+    "schemas": {
+      "Project": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "orgId": {"type": "string"},
+          "name": {"type": "string"},
+          "slug": {"type": "string"},
+          "image": {"type": "string"},
+          "url": {"type": "string"},
+          "description": {"type": "string"},
+          "type": {
+            "type": "string",
+            "enum": ["public", "private", "restricted"]
+          },
+          "tone": {
+            "type": "string",
+            "enum": ["not_specified", "formal", "informal"]
+          },
+          "role": {
+            "type": "string",
+            "enum": ["none", "translator", "trusted_translator", "reviewer", "manager", "owner", "developer"]
+          },
+          "sourceLanguage": {"type": "integer"},
+          "organization": {
+            "type": "object",
+            "description": "Organization details (included when organization=true)"
+          },
+          "languages": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/Language"},
+            "description": "Language details (included when languages=true)"
+          }
+        }
+      },
+      "Language": {
+        "type": "object",
+        "properties": {
+          "language": {"type": "integer"},
+          "name": {"type": "string"},
+          "code": {"type": "string"}
+        }
+      },
+      "CreateProjectRequest": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {"type": "string"},
+          "slug": {"type": "string", "description": "Auto-generated if not provided"},
+          "description": {"type": "string"},
+          "sourceLanguage": {"type": "string", "default": "en"},
+          "type": {
+            "type": "string",
+            "enum": ["public", "restricted"],
+            "default": "restricted"
+          },
+          "tone": {
+            "type": "string",
+            "enum": ["formal", "informal", "not_specified"],
+            "default": "not_specified"
+          },
+          "useShareTM": {"type": "boolean", "default": true}
+        }
+      },
+      "ImportRequest": {
+        "type": "object",
+        "required": ["files"],
+        "properties": {
+          "importAsNew": {"type": "boolean", "default": false},
+          "forceCurrent": {"type": "boolean", "default": false},
+          "filterSource": {"type": "boolean", "default": true},
+          "forceSource": {"type": "boolean", "default": false},
+          "files": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/ImportFile"}
+          }
+        }
+      },
+      "ImportFile": {
+        "type": "object",
+        "required": ["name", "content"],
+        "properties": {
+          "name": {"type": "string"},
+          "path": {"type": "string"},
+          "module": {"type": "string"},
+          "library": {"type": "string"},
+          "buildType": {"type": "string"},
+          "productFlavors": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "content": {
+            "type": "object",
+            "properties": {
+              "type": {"type": "string", "default": "api"},
+              "plural": {"type": "string"},
+              "array": {"type": "string"},
+              "keyTransformer": {"type": "string"},
+              "params": {"type": "object"},
+              "features": {
+                "type": "array",
+                "items": {"type": "string"}
+              }
+            },
+            "additionalProperties": true,
+            "description": "Content object with language codes as additional properties"
+          }
+        }
+      },
+      "ImportFormat": {
+        "type": "object",
+        "properties": {
+          "type": {"type": "string"},
+          "name": {"type": "string"},
+          "supportStrings": {"type": "boolean"},
+          "supportPlurals": {"type": "boolean"},
+          "supportArrays": {"type": "boolean"},
+          "supportStructuredKeys": {"type": "boolean"},
+          "plurals": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "arrays": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "keyTransformers": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      },
+      "File": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "type": {"type": "string"},
+          "name": {"type": "string"},
+          "path": {"type": "string"},
+          "module": {"type": "string"},
+          "productFlavors": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "buildType": {"type": "string"}
+        }
+      },
+      "FileContentResponse": {
+        "type": "object",
+        "properties": {
+          "keys": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {"type": "string"},
+                "key": {
+                  "type": "array",
+                  "items": {"type": "string"}
+                },
+                "value": {"type": "object"},
+                "hidden": {"type": "boolean"},
+                "deprecated": {"type": "integer"},
+                "limit": {"type": "integer"},
+                "comment": {"type": "string"}
+              }
+            }
+          },
+          "next": {
+            "type": "string",
+            "description": "Pagination key for next page"
+          }
+        }
+      },
+      "UpdateSourceKeyRequest": {
+        "type": "object",
+        "properties": {
+          "deprecated": {
+            "type": "integer",
+            "description": "Set >= 0 to mark deprecated in version; -1 to unmark"
+          },
+          "hidden": {
+            "type": "boolean",
+            "description": "True to hide from translators"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Custom comment for translators"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Character limit; -1 to disable"
+          }
+        }
+      },
+      "GlossaryTerm": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "description": {"type": "string"},
+          "translateTerm": {"type": "boolean"},
+          "caseSensitive": {"type": "boolean"},
+          "exactMatch": {"type": "boolean"},
+          "term": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "lang": {"type": "string"},
+                "term": {"type": "string"}
+              }
+            }
+          }
+        }
+      },
+      "GlossaryTermInput": {
+        "type": "object",
+        "required": ["term"],
+        "properties": {
+          "description": {"type": "string"},
+          "translateTerm": {"type": "boolean"},
+          "caseSensitive": {"type": "boolean"},
+          "exactMatch": {"type": "boolean"},
+          "term": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["lang", "term"],
+              "properties": {
+                "lang": {"type": "string"},
+                "term": {"type": "string"}
+              }
+            }
+          }
+        }
+      },
+      "Webhook": {
+        "type": "object",
+        "properties": {
+          "enabled": {"type": "boolean"},
+          "customId": {"type": "string"},
+          "description": {"type": "string"},
+          "url": {"type": "string", "format": "uri"},
+          "events": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      },
+      "WebhookInput": {
+        "type": "object",
+        "required": ["url", "events"],
+        "properties": {
+          "enabled": {"type": "boolean"},
+          "customId": {"type": "string"},
+          "description": {"type": "string"},
+          "url": {"type": "string", "format": "uri", "maxLength": 1024},
+          "events": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {"type": "string", "maxLength": 32}
+          }
+        }
+      },
+      "ResultResponse": {
+        "type": "object",
+        "properties": {
+          "result": {"type": "boolean"}
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {"type": "boolean"},
+          "code": {"type": "integer"},
+          "error": {"type": "string"}
+        }
+      }
+    }
+  }
+}
