@@ -1,0 +1,329 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "LiqPay API",
+    "description": "LiqPay payment gateway API for processing payments, holds, subscriptions, donations, and fund transfers in Ukraine. All requests use signature-based authentication with Base64-encoded JSON data and SHA256 signature.",
+    "version": "3.0.0",
+    "x-jentic-source-url": "https://liqpay.ua/en/doc"
+  },
+  "servers": [
+    {
+      "url": "https://www.liqpay.ua/api",
+      "description": "LiqPay API Production"
+    }
+  ],
+  "security": [
+    {
+      "signatureAuth": []
+    }
+  ],
+  "tags": [
+    { "name": "Payments", "description": "Payment processing, holds, and subscriptions" },
+    { "name": "Checkout", "description": "Client-side checkout flow" },
+    { "name": "Information", "description": "Payment status and order information" }
+  ],
+  "paths": {
+    "/request": {
+      "post": {
+        "operationId": "createPayment",
+        "summary": "Process a server-to-server payment",
+        "description": "Create a payment, hold, subscription, donation, or authorization via the server-to-server API. The action field determines the operation type.",
+        "tags": ["Payments"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["data", "signature"],
+                "properties": {
+                  "data": {
+                    "type": "string",
+                    "description": "Base64-encoded JSON string containing the payment parameters."
+                  },
+                  "signature": {
+                    "type": "string",
+                    "description": "Base64-encoded SHA256 hash: base64_encode(sha256(private_key + data + private_key))."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment processed. Response varies by action type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid signature or public key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/3/checkout": {
+      "post": {
+        "operationId": "createCheckout",
+        "summary": "Create a client-side checkout",
+        "description": "Redirect the customer to the LiqPay payment page for checkout. Typically used via an HTML form submission.",
+        "tags": ["Checkout"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["data", "signature"],
+                "properties": {
+                  "data": {
+                    "type": "string",
+                    "description": "Base64-encoded JSON string containing checkout parameters."
+                  },
+                  "signature": {
+                    "type": "string",
+                    "description": "Base64-encoded SHA256 hash for request verification."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "description": "Redirect to LiqPay payment page."
+          },
+          "400": {
+            "description": "Invalid request parameters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid signature or public key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "signatureAuth": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "signature",
+        "description": "Signature-based authentication. All requests require 'data' (Base64-encoded JSON with public_key) and 'signature' (Base64-encoded SHA256 hash computed as: base64_encode(sha256(private_key + data + private_key)))."
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "string",
+            "description": "Result status.",
+            "example": "error"
+          },
+          "err_code": {
+            "type": "string",
+            "description": "Error code."
+          },
+          "err_description": {
+            "type": "string",
+            "description": "Human-readable error description."
+          }
+        }
+      },
+      "PaymentDataPayload": {
+        "type": "object",
+        "description": "JSON payload to be Base64-encoded as the 'data' parameter.",
+        "required": ["version", "public_key", "action", "amount", "currency", "description", "order_id"],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "description": "API protocol version.",
+            "example": 3
+          },
+          "public_key": {
+            "type": "string",
+            "description": "Merchant public key identifier."
+          },
+          "action": {
+            "type": "string",
+            "enum": ["pay", "hold", "subscribe", "paydonate", "auth"],
+            "description": "Payment action type: pay (payment), hold (two-step), subscribe (recurring), paydonate (donation), auth (pre-authorization)."
+          },
+          "amount": {
+            "type": "number",
+            "description": "Payment amount."
+          },
+          "currency": {
+            "type": "string",
+            "enum": ["USD", "EUR", "UAH"],
+            "description": "Payment currency code."
+          },
+          "description": {
+            "type": "string",
+            "description": "Payment purpose description."
+          },
+          "order_id": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Unique order identifier from the merchant system."
+          },
+          "card": {
+            "type": "string",
+            "description": "Card number (for server-to-server payments)."
+          },
+          "card_exp_month": {
+            "type": "string",
+            "description": "Card expiration month (MM)."
+          },
+          "card_exp_year": {
+            "type": "string",
+            "description": "Card expiration year (YY)."
+          },
+          "card_cvv": {
+            "type": "string",
+            "description": "Card CVV code."
+          },
+          "result_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to redirect the customer after payment."
+          },
+          "server_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL for server-to-server callback notifications."
+          },
+          "sandbox": {
+            "type": "integer",
+            "enum": [0, 1],
+            "description": "Enable sandbox/test mode (1 = sandbox)."
+          },
+          "language": {
+            "type": "string",
+            "enum": ["uk", "en"],
+            "description": "Payment page language."
+          }
+        }
+      },
+      "PaymentResponse": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "string",
+            "description": "Result status (ok, error)."
+          },
+          "action": {
+            "type": "string",
+            "description": "Action performed."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["success", "error", "failure", "reversed", "sandbox", "wait_accept", "wait_card", "processing", "prepared", "wait_compensation", "subscribed"],
+            "description": "Payment status."
+          },
+          "version": {
+            "type": "integer",
+            "description": "API version."
+          },
+          "payment_id": {
+            "type": "integer",
+            "description": "LiqPay payment ID."
+          },
+          "order_id": {
+            "type": "string",
+            "description": "Merchant order ID."
+          },
+          "amount": {
+            "type": "number",
+            "description": "Payment amount."
+          },
+          "currency": {
+            "type": "string",
+            "description": "Payment currency."
+          },
+          "description": {
+            "type": "string",
+            "description": "Payment description."
+          },
+          "sender_card_mask2": {
+            "type": "string",
+            "description": "Masked sender card number."
+          },
+          "sender_card_bank": {
+            "type": "string",
+            "description": "Sender's bank name."
+          },
+          "sender_card_type": {
+            "type": "string",
+            "description": "Card type (visa, mastercard)."
+          },
+          "sender_card_country": {
+            "type": "integer",
+            "description": "Sender card country code."
+          },
+          "transaction_id": {
+            "type": "integer",
+            "description": "Transaction ID."
+          },
+          "err_code": {
+            "type": "string",
+            "description": "Error code (if status is error)."
+          },
+          "err_description": {
+            "type": "string",
+            "description": "Error description."
+          },
+          "create_date": {
+            "type": "integer",
+            "description": "Transaction creation timestamp (milliseconds)."
+          },
+          "end_date": {
+            "type": "integer",
+            "description": "Transaction completion timestamp (milliseconds)."
+          },
+          "public_key": {
+            "type": "string",
+            "description": "Merchant public key."
+          }
+        }
+      }
+    }
+  }
+}
