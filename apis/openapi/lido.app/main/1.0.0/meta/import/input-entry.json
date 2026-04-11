@@ -1,0 +1,472 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Lido Data Extraction API",
+    "description": "The Lido Data Extraction API provides a simple, RESTful interface for extracting structured data from documents and images. Our API is designed to be developer-friendly with consistent patterns and comprehensive error handling. The API can extract structured data from PDF documents, images, spreadsheets, and text documents.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://web-api.lido.app/documentation/docs/"
+  },
+  "servers": [
+    {
+      "url": "https://sheets.lido.app/api/v1",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/extract-file-data": {
+      "post": {
+        "tags": [
+          "Data Extraction"
+        ],
+        "summary": "Extract file data",
+        "description": "Processes documents and returns a job ID for tracking the extraction progress. You can specify exactly what data fields you need, provide custom instructions, and choose from multiple upload methods (base64 or multipart form data).",
+        "operationId": "extractFileData",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractFileDataRequest"
+              },
+              "example": {
+                "file": {
+                  "type": "base64",
+                  "data": "JVBERi0xLjQKJeLjz9MK...",
+                  "name": "invoice.pdf"
+                },
+                "columns": [
+                  "Vendor Name",
+                  "Invoice Number",
+                  "Total Amount",
+                  "Due Date"
+                ],
+                "instructions": "Extract the main vendor information and financial details. Ensure amounts include currency symbols.",
+                "multiRow": false
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractFileDataMultipartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Extraction job created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractJobResponse"
+                },
+                "example": {
+                  "jobId": "c37e0a3b-0bd7-44d0-be7a-3cd1e2a70837"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests - Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/job-result": {
+      "get": {
+        "tags": [
+          "Job Management"
+        ],
+        "summary": "Get job result",
+        "description": "Retrieves the results of a data extraction job. Poll this endpoint to check the processing status and retrieve the extracted data once complete.",
+        "operationId": "getJobResult",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "query",
+            "required": true,
+            "description": "The unique identifier for the extraction job",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "c37e0a3b-0bd7-44d0-be7a-3cd1e2a70837"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job status retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobResultResponse"
+                },
+                "examples": {
+                  "running": {
+                    "summary": "Job still processing",
+                    "value": {
+                      "status": "running"
+                    }
+                  },
+                  "success": {
+                    "summary": "Job completed successfully",
+                    "value": {
+                      "status": "success",
+                      "data": [
+                        [
+                          "Acme Corp",
+                          "INV-2024-001",
+                          "$2,450.00",
+                          "2024-02-15"
+                        ]
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid job ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/extractor-usage": {
+      "get": {
+        "tags": [
+          "Usage"
+        ],
+        "summary": "Get extractor usage",
+        "description": "Checks the remaining API usage quota and optionally retrieves usage statistics for a specific date range or per user.",
+        "operationId": "getExtractorUsage",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "description": "Start date for usage query (ISO 8601 format)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2024-01-01T00:00:00Z"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "description": "End date for usage query (ISO 8601 format)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2024-12-31T23:59:59Z"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage information retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageResponse"
+                },
+                "examples": {
+                  "basic": {
+                    "summary": "Basic usage information",
+                    "value": {
+                      "pagesRemaining": 247
+                    }
+                  },
+                  "withUsed": {
+                    "summary": "Usage with pages used",
+                    "value": {
+                      "pagesRemaining": 247,
+                      "pagesUsed": 53
+                    }
+                  },
+                  "withUsers": {
+                    "summary": "Usage by user",
+                    "value": {
+                      "pagesRemaining": 247,
+                      "usageByUser": [
+                        {
+                          "userId": "user_abc123",
+                          "email": "alice@example.com",
+                          "pagesUsed": 30
+                        },
+                        {
+                          "userId": "user_def456",
+                          "email": "bob@example.com",
+                          "pagesUsed": 23
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid date parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API key authentication. Include your API key in the Authorization header: `Authorization: Bearer YOUR_API_KEY`. Get your API key from https://sheets.lido.app/settings/api-keys"
+      }
+    },
+    "schemas": {
+      "ExtractFileDataRequest": {
+        "type": "object",
+        "required": [
+          "file",
+          "columns"
+        ],
+        "properties": {
+          "file": {
+            "type": "object",
+            "required": [
+              "type",
+              "data",
+              "name"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "base64"
+                ],
+                "description": "File encoding type"
+              },
+              "data": {
+                "type": "string",
+                "description": "Base64-encoded file data"
+              },
+              "name": {
+                "type": "string",
+                "description": "Original filename"
+              }
+            }
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of column names to extract from the document"
+          },
+          "instructions": {
+            "type": "string",
+            "description": "Custom instructions for the extraction process"
+          },
+          "multiRow": {
+            "type": "boolean",
+            "description": "Whether to extract multiple rows of data",
+            "default": false
+          },
+          "pageRange": {
+            "type": "string",
+            "description": "Specific page range to extract (e.g., '2-5')"
+          }
+        }
+      },
+      "ExtractFileDataMultipartRequest": {
+        "type": "object",
+        "required": [
+          "file",
+          "config"
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "description": "The file to be processed"
+          },
+          "config": {
+            "type": "string",
+            "description": "JSON string containing extraction configuration (columns, instructions, multiRow, pageRange)"
+          }
+        }
+      },
+      "ExtractJobResponse": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the extraction job"
+          }
+        }
+      },
+      "JobResultResponse": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "success",
+              "failed"
+            ],
+            "description": "Current status of the extraction job"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Extracted data as a 2D array (only present when status is 'success')"
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message (only present when status is 'failed')"
+          }
+        }
+      },
+      "UsageResponse": {
+        "type": "object",
+        "properties": {
+          "pagesRemaining": {
+            "type": "integer",
+            "description": "Number of pages remaining in the quota"
+          },
+          "pagesUsed": {
+            "type": "integer",
+            "description": "Number of pages used"
+          },
+          "usageByUser": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserUsage"
+            },
+            "description": "Usage breakdown by user"
+          }
+        }
+      },
+      "UserUsage": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "User identifier"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "User email address"
+          },
+          "pagesUsed": {
+            "type": "integer",
+            "description": "Number of pages used by this user"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "message": {
+            "type": "string",
+            "description": "Detailed error description"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Data Extraction",
+      "description": "Endpoints for extracting structured data from documents"
+    },
+    {
+      "name": "Job Management",
+      "description": "Endpoints for managing extraction jobs and results"
+    },
+    {
+      "name": "Usage",
+      "description": "Endpoints for checking API usage and quotas"
+    }
+  ]
+}
