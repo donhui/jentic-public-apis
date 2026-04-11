@@ -1,0 +1,267 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Qryptal Secure Code System (QSCS) API",
+    "description": "Qryptal helps generate documents with secure, verifiable, tamper-proof, digitally signed QR codes. The QSCS API allows creating secure QR codes (PDC, EDC, and HDC types) with data, formatting, and optional file attachments.",
+    "version": "2.0.0",
+    "x-jentic-source-url": "https://gotoqr.com/qscs2api"
+  },
+  "servers": [
+    {
+      "url": "https://{qscs_host}:{port}",
+      "description": "QSCS Server",
+      "variables": {
+        "qscs_host": {
+          "default": "verify.yourco.site",
+          "description": "Hostname of your QSCS installation"
+        },
+        "port": {
+          "default": "9090",
+          "description": "Port where the QGEN server is running"
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "tokenAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "QR Codes",
+      "description": "Secure QR code generation and management"
+    }
+  ],
+  "paths": {
+    "/v2/Vqodes/": {
+      "post": {
+        "operationId": "createSecureQRCode",
+        "summary": "Create a Secure QR Code",
+        "description": "Generate a secure Qryptal QR code (PDC, EDC, or HDC type). The data and its corresponding format must be supplied. For EDC/HDC types with attachments, use multipart/form-data content type.",
+        "tags": ["QR Codes"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateQRCodeRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["payload"],
+                "properties": {
+                  "payload": {
+                    "type": "string",
+                    "description": "JSON string containing the QR code payload (data, format, scheme)"
+                  },
+                  "img1": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Image file attachment (e.g., profile photo)"
+                  },
+                  "file1": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "PDF or document file attachment"
+                  },
+                  "file2": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Additional PDF or document file attachment"
+                  },
+                  "s": {
+                    "type": "integer",
+                    "description": "Image size (1-12). Choose the size that works best for your needs.",
+                    "minimum": 1,
+                    "maximum": 12
+                  },
+                  "bg": {
+                    "type": "integer",
+                    "description": "Background setting. 1 for white background (default), 0 for transparent background.",
+                    "enum": [0, 1],
+                    "default": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "QR code generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateQRCodeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "tokenAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Token-based authentication. Format: 'Token <token_value>'. Tokens are available from the Qryptal Web Generator admin page. Both test and production tokens are provided."
+      }
+    },
+    "schemas": {
+      "CreateQRCodeRequest": {
+        "type": "object",
+        "required": ["data", "format", "scheme"],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "Key-value pairs of the data to encode in the QR code.",
+            "additionalProperties": true
+          },
+          "format": {
+            "$ref": "#/components/schemas/FormatObject"
+          },
+          "scheme": {
+            "type": "string",
+            "description": "The QR code scheme type.",
+            "enum": ["C02-PDC-S-B64PNG", "C02-EDC-S-B64PNG", "C02-HDC-S-B64PNG"]
+          },
+          "s": {
+            "type": "integer",
+            "description": "Image size (1-12).",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "bg": {
+            "type": "integer",
+            "description": "Background setting. 1 for white (default), 0 for transparent.",
+            "enum": [0, 1],
+            "default": 1
+          }
+        }
+      },
+      "FormatObject": {
+        "type": "object",
+        "required": ["fields", "version"],
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "Format version.",
+            "example": "2"
+          },
+          "fields": {
+            "type": "array",
+            "description": "Array of field format definitions controlling how data is displayed.",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/components/schemas/FieldFormat"
+              }
+            }
+          }
+        }
+      },
+      "FieldFormat": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Display type. Common types: t2 (key-value pair), f1 (file attachment), 4T1P (photocard row), 1l3-2l1 (3-column with text below).",
+            "enum": ["t2", "f1", "4T1P", "1l3-2l1", "kvt1"]
+          },
+          "kval": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Key value reference pointing to data fields."
+          },
+          "kvals": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Multiple key value references for multi-column display types."
+          },
+          "m": {
+            "type": "string",
+            "description": "Modifier. 'b' for bold.",
+            "enum": ["b"]
+          },
+          "dict": {
+            "type": "object",
+            "description": "Dictionary for file attachment fields.",
+            "properties": {
+              "file_type": {
+                "type": "string",
+                "description": "File type (e.g., jpg, png, pdf)."
+              },
+              "file_field": {
+                "type": "string",
+                "description": "The form field name containing the file data."
+              }
+            }
+          }
+        }
+      },
+      "CreateQRCodeResponse": {
+        "type": "object",
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "description": "API version.",
+            "example": "2.2"
+          },
+          "scheme": {
+            "type": "string",
+            "description": "The QR code scheme used.",
+            "example": "C02-PDC-S-B64PNG"
+          },
+          "status": {
+            "type": "string",
+            "description": "Status code. 'C' indicates success.",
+            "example": "C"
+          },
+          "msg": {
+            "type": "string",
+            "description": "Status message.",
+            "example": "success"
+          },
+          "vqtype": {
+            "type": "string",
+            "description": "QR code type (PDC, EDC, or HDC).",
+            "enum": ["PDC", "EDC", "HDC"]
+          },
+          "quuid": {
+            "type": "string",
+            "description": "Unique identifier for the generated QR code. Store this for revocation, tracking, and future updates."
+          },
+          "code_token": {
+            "type": "string",
+            "description": "Code token associated with this QR code generation."
+          },
+          "code_content": {
+            "type": "string",
+            "description": "Raw encoded content of the QR code."
+          },
+          "qr_b64": {
+            "type": "string",
+            "description": "Base64 encoded PNG image of the generated QR code."
+          },
+          "payload_id": {
+            "type": "string",
+            "description": "Hash identifier of the payload."
+          }
+        }
+      }
+    }
+  }
+}
