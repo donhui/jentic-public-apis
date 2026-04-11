@@ -1,0 +1,322 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Qryptal Secure QR Code API",
+    "version": "2.0.0",
+    "description": "Qryptal QSCS (QR Secure Code Service) API for generating, managing, and validating secure QR codes using PDC (Plain Data Code), EDC (Embedded Document Code), and HDC (Hosted Document Code) schemes.",
+    "x-jentic-source-url": "https://dash2.qryptal.com/docs/qscs-api/"
+  },
+  "servers": [
+    {
+      "url": "https://{qscs_host}:{port}",
+      "description": "QSCS Server",
+      "variables": {
+        "qscs_host": {
+          "default": "verify.yourco.site",
+          "description": "QSCS host domain"
+        },
+        "port": {
+          "default": "9090",
+          "description": "QSCS server port"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/v2/Vqodes/": {
+      "post": {
+        "operationId": "generatesecureqrcode",
+        "summary": "Generate a secure QR code",
+        "description": "Creates a secure QR code with specified data, format, and scheme type. Supports PDC (Plain Data Code), EDC (Embedded Document Code), and HDC (Hosted Document Code) schemes.",
+        "tags": [
+          "QR Codes"
+        ],
+        "parameters": [
+          {
+            "name": "s",
+            "in": "query",
+            "description": "Image size option (1-12)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            }
+          },
+          {
+            "name": "bg",
+            "in": "query",
+            "description": "Background color. 1 for white (default), 0 for transparent.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ],
+              "default": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QRCodeGenerateRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/QRCodeGenerateWithFileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "QR code generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QRCodeGenerateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters or data format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerToken": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "QRCodeGenerateRequest": {
+        "type": "object",
+        "required": [
+          "data",
+          "format",
+          "scheme"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "Key-value pairs of data to encode in the QR code",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "format": {
+            "$ref": "#/components/schemas/QRCodeFormat"
+          },
+          "scheme": {
+            "type": "string",
+            "description": "QR code scheme type",
+            "enum": [
+              "C02-PDC-S-B64PNG",
+              "C02-EDC-S-B64PNG",
+              "C02-HDC-S-B64PNG"
+            ]
+          }
+        }
+      },
+      "QRCodeGenerateWithFileRequest": {
+        "type": "object",
+        "required": [
+          "data",
+          "format",
+          "scheme"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "Key-value pairs of data to encode in the QR code",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "format": {
+            "$ref": "#/components/schemas/QRCodeFormat"
+          },
+          "scheme": {
+            "type": "string",
+            "description": "QR code scheme type for EDC or HDC",
+            "enum": [
+              "C02-EDC-S-B64PNG",
+              "C02-HDC-S-B64PNG"
+            ]
+          },
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "description": "File attachment for EDC/HDC schemes"
+          }
+        }
+      },
+      "QRCodeFormat": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "Format version",
+            "default": "2"
+          },
+          "fields": {
+            "type": "array",
+            "description": "Field definitions for the QR code",
+            "items": {
+              "$ref": "#/components/schemas/QRCodeField"
+            }
+          }
+        }
+      },
+      "QRCodeField": {
+        "type": "object",
+        "description": "Field definition mapping field names to display types and data keys",
+        "additionalProperties": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "Display type (e.g., t2 for text)"
+            },
+            "kval": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Data keys to map to this field"
+            }
+          }
+        }
+      },
+      "QRCodeGenerateResponse": {
+        "type": "object",
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "description": "API version used",
+            "example": "2.2"
+          },
+          "scheme": {
+            "type": "string",
+            "description": "QR code scheme used"
+          },
+          "status": {
+            "type": "string",
+            "description": "Status code",
+            "example": "C"
+          },
+          "msg": {
+            "type": "string",
+            "description": "Status message",
+            "example": "success"
+          },
+          "vqtype": {
+            "type": "string",
+            "description": "Type of QR code generated",
+            "enum": [
+              "PDC",
+              "EDC",
+              "HDC"
+            ]
+          },
+          "quuid": {
+            "type": "string",
+            "description": "Unique identifier for the QR code. Save for tracking and revocation."
+          },
+          "code_token": {
+            "type": "string",
+            "description": "Token for revocation and updates. Save securely."
+          },
+          "code_content": {
+            "type": "string",
+            "description": "Encoded data content of the QR code"
+          },
+          "qr_b64": {
+            "type": "string",
+            "description": "Base64-encoded PNG image of the QR code (data URI format)"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Error status code"
+          },
+          "msg": {
+            "type": "string",
+            "description": "Error message"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "description": "Error message"
+              },
+              "code": {
+                "type": "string",
+                "description": "Error code"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "QSCS token in format: Token [TQSCS:token_string]"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerToken": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "QR Codes",
+      "description": "Operations related to QR Codes"
+    }
+  ]
+}
