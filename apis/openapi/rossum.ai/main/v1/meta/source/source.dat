@@ -1,0 +1,910 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Rossum Document Processing API",
+    "version": "v1",
+    "description": "Rossum AI-powered document processing API for automated data extraction from invoices, receipts, and other documents. Provides intelligent document capture, classification, and data validation capabilities.",
+    "x-jentic-source-url": "https://elis.rossum.ai/api/docs/"
+  },
+  "servers": [
+    {
+      "url": "https://{domain}.rossum.app/api",
+      "description": "Rossum API endpoint",
+      "variables": {
+        "domain": {
+          "default": "example",
+          "description": "Your Rossum domain selected during account creation"
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    { "name": "Authentication", "description": "User authentication and token management" },
+    { "name": "Organizations", "description": "Organization management" },
+    { "name": "Workspaces", "description": "Workspace operations" },
+    { "name": "Queues", "description": "Document processing queues" },
+    { "name": "Schemas", "description": "Document schema definitions" },
+    { "name": "Documents", "description": "Document operations" },
+    { "name": "Annotations", "description": "Document annotations and data extraction" },
+    { "name": "Uploads", "description": "File upload operations" },
+    { "name": "Exports", "description": "Data export operations" },
+    { "name": "Users", "description": "User management" }
+  ],
+  "paths": {
+    "/v1/auth/login": {
+      "post": {
+        "operationId": "login",
+        "summary": "User Login",
+        "description": "Authenticate with username and password to obtain an access token. Token is valid for approximately 162 hours by default.",
+        "tags": ["Authentication"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": { "type": "string" },
+                  "password": { "type": "string" },
+                  "max_token_lifetime_s": { "type": "integer", "description": "Optional maximum token lifetime in seconds" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "key": { "type": "string", "description": "Access token" },
+                    "user": { "type": "string", "description": "User resource URL" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/v1/auth/token": {
+      "post": {
+        "operationId": "exchangeJwtToken",
+        "summary": "Exchange JWT Token",
+        "description": "Exchange a JWT token for a Rossum access token. Supports EdDSA and RS512 signatures with maximum 60-second validity.",
+        "tags": ["Authentication"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["token"],
+                "properties": {
+                  "token": { "type": "string", "description": "JWT token" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token exchanged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "key": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/v1/organizations": {
+      "get": {
+        "operationId": "listOrganizations",
+        "summary": "List Organizations",
+        "description": "Retrieve all organizations accessible to the current user.",
+        "tags": ["Organizations"],
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PageSizeParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of organizations",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PaginatedOrganizations" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/v1/organizations/{id}": {
+      "get": {
+        "operationId": "getOrganization",
+        "summary": "Get Organization",
+        "description": "Retrieve details of a specific organization.",
+        "tags": ["Organizations"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "Organization ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organization details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Organization" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/v1/workspaces": {
+      "get": {
+        "operationId": "listWorkspaces",
+        "summary": "List Workspaces",
+        "description": "Retrieve all workspaces with pagination support.",
+        "tags": ["Workspaces"],
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PageSizeParam" },
+          { "name": "organization", "in": "query", "schema": { "type": "integer" }, "description": "Filter by organization ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of workspaces",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PaginatedWorkspaces" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createWorkspace",
+        "summary": "Create Workspace",
+        "description": "Create a new workspace within an organization.",
+        "tags": ["Workspaces"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/WorkspaceInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Workspace created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Workspace" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/v1/workspaces/{id}": {
+      "get": {
+        "operationId": "getWorkspace",
+        "summary": "Get Workspace",
+        "description": "Retrieve details of a specific workspace.",
+        "tags": ["Workspaces"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "Workspace ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Workspace" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "patch": {
+        "operationId": "updateWorkspace",
+        "summary": "Update Workspace",
+        "description": "Update workspace configuration.",
+        "tags": ["Workspaces"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/WorkspaceInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Workspace updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Workspace" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteWorkspace",
+        "summary": "Delete Workspace",
+        "description": "Delete a workspace and its associated data.",
+        "tags": ["Workspaces"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "204": { "description": "Workspace deleted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/v1/queues": {
+      "get": {
+        "operationId": "listQueues",
+        "summary": "List Queues",
+        "description": "Retrieve all document processing queues.",
+        "tags": ["Queues"],
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PageSizeParam" },
+          { "name": "workspace", "in": "query", "schema": { "type": "integer" }, "description": "Filter by workspace ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of queues",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PaginatedQueues" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createQueue",
+        "summary": "Create Queue",
+        "description": "Create a new document processing queue.",
+        "tags": ["Queues"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/QueueInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Queue created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Queue" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/v1/queues/{id}": {
+      "get": {
+        "operationId": "getQueue",
+        "summary": "Get Queue",
+        "description": "Retrieve details of a specific queue.",
+        "tags": ["Queues"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "Queue ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Queue details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Queue" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/v1/documents": {
+      "get": {
+        "operationId": "listDocuments",
+        "summary": "List Documents",
+        "description": "Retrieve all documents with filtering and pagination.",
+        "tags": ["Documents"],
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PageSizeParam" },
+          { "name": "queue", "in": "query", "schema": { "type": "integer" }, "description": "Filter by queue ID" },
+          { "name": "status", "in": "query", "schema": { "type": "string" }, "description": "Filter by document status" },
+          { "name": "ordering", "in": "query", "schema": { "type": "string" }, "description": "Sort field (prefix with - for descending)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of documents",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PaginatedDocuments" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/v1/documents/{id}": {
+      "get": {
+        "operationId": "getDocument",
+        "summary": "Get Document",
+        "description": "Retrieve detailed information about a specific document.",
+        "tags": ["Documents"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "Document ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Document" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteDocument",
+        "summary": "Delete Document",
+        "description": "Delete a document from the system.",
+        "tags": ["Documents"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "204": { "description": "Document deleted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/v1/annotations": {
+      "get": {
+        "operationId": "listAnnotations",
+        "summary": "List Annotations",
+        "description": "Retrieve all document annotations with extracted data.",
+        "tags": ["Annotations"],
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PageSizeParam" },
+          { "name": "document", "in": "query", "schema": { "type": "integer" }, "description": "Filter by document ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of annotations",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PaginatedAnnotations" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/v1/annotations/{id}": {
+      "get": {
+        "operationId": "getAnnotation",
+        "summary": "Get Annotation",
+        "description": "Retrieve detailed annotation data including all extracted fields.",
+        "tags": ["Annotations"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "Annotation ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Annotation details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Annotation" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "patch": {
+        "operationId": "updateAnnotation",
+        "summary": "Update Annotation",
+        "description": "Update annotation data and field values.",
+        "tags": ["Annotations"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AnnotationUpdate" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Annotation updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Annotation" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/v1/uploads": {
+      "post": {
+        "operationId": "uploadDocument",
+        "summary": "Upload Document",
+        "description": "Upload a document file for processing. Supports PDF, PNG, JPEG, TIFF, XLSX, XLS, DOCX, DOC, HTML formats. Maximum file size: 40 MB.",
+        "tags": ["Uploads"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file", "queue"],
+                "properties": {
+                  "file": { "type": "string", "format": "binary", "description": "Document file to upload" },
+                  "queue": { "type": "integer", "description": "Queue ID for document processing" },
+                  "metadata": { "type": "string", "description": "JSON metadata (max 4 kB)" },
+                  "values": { "type": "string", "description": "JSON object with prefilled field values" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Document uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Upload" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/v1/exports": {
+      "post": {
+        "operationId": "exportDocumentData",
+        "summary": "Export Document Data",
+        "description": "Export document data in XML, CSV, XLSX, or JSON format.",
+        "tags": ["Exports"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["format", "annotation"],
+                "properties": {
+                  "format": { "type": "string", "enum": ["xml", "csv", "xlsx", "json"], "description": "Export format" },
+                  "annotation": { "type": "integer", "description": "Annotation ID to export" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Export created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Export" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/v1/users": {
+      "get": {
+        "operationId": "listUsers",
+        "summary": "List Users",
+        "description": "Retrieve all users in the organization.",
+        "tags": ["Users"],
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PageSizeParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of users",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PaginatedUsers" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/v1/users/{id}": {
+      "get": {
+        "operationId": "getUser",
+        "summary": "Get User",
+        "description": "Retrieve details of a specific user.",
+        "tags": ["Users"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "User ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "User details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Access token obtained via /v1/auth/login or JWT exchange"
+      }
+    },
+    "parameters": {
+      "PageParam": {
+        "name": "page",
+        "in": "query",
+        "schema": { "type": "integer", "minimum": 1 },
+        "description": "Page number"
+      },
+      "PageSizeParam": {
+        "name": "page_size",
+        "in": "query",
+        "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 },
+        "description": "Number of results per page (max 100)"
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "detail": { "type": "string" },
+          "code": { "type": "string" }
+        }
+      },
+      "PaginatedResponse": {
+        "type": "object",
+        "properties": {
+          "pagination": {
+            "type": "object",
+            "properties": {
+              "total": { "type": "integer" },
+              "next": { "type": "string", "nullable": true },
+              "previous": { "type": "string", "nullable": true }
+            }
+          }
+        }
+      },
+      "Organization": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "url": { "type": "string" },
+          "metadata": { "type": "object" }
+        }
+      },
+      "PaginatedOrganizations": {
+        "allOf": [
+          { "$ref": "#/components/schemas/PaginatedResponse" },
+          {
+            "type": "object",
+            "properties": {
+              "results": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Organization" }
+              }
+            }
+          }
+        ]
+      },
+      "Workspace": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "organization": { "type": "string" },
+          "url": { "type": "string" },
+          "metadata": { "type": "object" }
+        }
+      },
+      "WorkspaceInput": {
+        "type": "object",
+        "required": ["name", "organization"],
+        "properties": {
+          "name": { "type": "string" },
+          "organization": { "type": "integer" },
+          "metadata": { "type": "object" }
+        }
+      },
+      "PaginatedWorkspaces": {
+        "allOf": [
+          { "$ref": "#/components/schemas/PaginatedResponse" },
+          {
+            "type": "object",
+            "properties": {
+              "results": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Workspace" }
+              }
+            }
+          }
+        ]
+      },
+      "Queue": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "workspace": { "type": "string" },
+          "schema": { "type": "string" },
+          "url": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      },
+      "QueueInput": {
+        "type": "object",
+        "required": ["name", "workspace", "schema"],
+        "properties": {
+          "name": { "type": "string" },
+          "workspace": { "type": "integer" },
+          "schema": { "type": "integer" }
+        }
+      },
+      "PaginatedQueues": {
+        "allOf": [
+          { "$ref": "#/components/schemas/PaginatedResponse" },
+          {
+            "type": "object",
+            "properties": {
+              "results": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Queue" }
+              }
+            }
+          }
+        ]
+      },
+      "Document": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "queue": { "type": "string" },
+          "url": { "type": "string" },
+          "s3_name": { "type": "string" },
+          "status": { "type": "string" },
+          "metadata": { "type": "object" },
+          "annotations": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "created_at": { "type": "string", "format": "date-time" },
+          "modified_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PaginatedDocuments": {
+        "allOf": [
+          { "$ref": "#/components/schemas/PaginatedResponse" },
+          {
+            "type": "object",
+            "properties": {
+              "results": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Document" }
+              }
+            }
+          }
+        ]
+      },
+      "Annotation": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "document": { "type": "string" },
+          "queue": { "type": "string" },
+          "schema": { "type": "string" },
+          "url": { "type": "string" },
+          "content": {
+            "type": "array",
+            "description": "Extracted field data",
+            "items": { "type": "object" }
+          },
+          "status": { "type": "string" },
+          "metadata": { "type": "object" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "modified_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AnnotationUpdate": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": { "type": "object" }
+          },
+          "status": { "type": "string" },
+          "metadata": { "type": "object" }
+        }
+      },
+      "PaginatedAnnotations": {
+        "allOf": [
+          { "$ref": "#/components/schemas/PaginatedResponse" },
+          {
+            "type": "object",
+            "properties": {
+              "results": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Annotation" }
+              }
+            }
+          }
+        ]
+      },
+      "Upload": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "document": { "type": "string" },
+          "url": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      },
+      "Export": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "url": { "type": "string" },
+          "download_url": { "type": "string" },
+          "format": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "username": { "type": "string" },
+          "email": { "type": "string" },
+          "first_name": { "type": "string" },
+          "last_name": { "type": "string" },
+          "organization": { "type": "string" },
+          "url": { "type": "string" }
+        }
+      },
+      "PaginatedUsers": {
+        "allOf": [
+          { "$ref": "#/components/schemas/PaginatedResponse" },
+          {
+            "type": "object",
+            "properties": {
+              "results": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid request parameters",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Authentication required or invalid token",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      }
+    }
+  }
+}
