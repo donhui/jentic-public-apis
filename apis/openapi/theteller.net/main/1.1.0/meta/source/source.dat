@@ -1,0 +1,467 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "TheTeller Payment API",
+    "description": "TheTeller payment processing API for Ghana. Supports card payments, mobile money, fund transfers, and checkout payments.",
+    "version": "1.1.0",
+    "x-jentic-source-url": "https://theteller.net/documentation"
+  },
+  "servers": [
+    {
+      "url": "https://prod.theteller.net",
+      "description": "Production server"
+    },
+    {
+      "url": "https://test.theteller.net",
+      "description": "Test/Sandbox server"
+    }
+  ],
+  "paths": {
+    "/checkout/initiate": {
+      "post": {
+        "operationId": "initiateCheckoutPayment",
+        "summary": "Initiate Checkout Payment",
+        "description": "Initialize a payment and receive a checkout URL for redirecting the customer to complete the payment.",
+        "tags": ["Checkout"],
+        "security": [{"basicAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutInitiateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Checkout initiated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutInitiateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.1/users/transactions/{transaction_id}/status": {
+      "get": {
+        "operationId": "checkTransactionStatus",
+        "summary": "Check Transaction Status",
+        "description": "Verify the completion status of a transaction using its transaction ID.",
+        "tags": ["Transactions"],
+        "parameters": [
+          {
+            "name": "transaction_id",
+            "in": "path",
+            "required": true,
+            "description": "The 12-digit transaction identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Merchant-Id",
+            "in": "header",
+            "required": true,
+            "description": "Merchant identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction status retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.1/transaction/process": {
+      "post": {
+        "operationId": "processTransaction",
+        "summary": "Process Transaction",
+        "description": "Process various types of transactions including card payments, mobile money payments, and fund transfers. The type of transaction is determined by the processing_code and r-switch fields.",
+        "tags": ["Transactions"],
+        "security": [{"basicAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcessTransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transaction processed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessTransactionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.1/transaction/bank/ftc/authorize": {
+      "post": {
+        "operationId": "authorizeBankTransfer",
+        "summary": "Authorize Bank Transfer",
+        "description": "Complete bank transfer authorization after initiating a bank fund transfer.",
+        "tags": ["Fund Transfer"],
+        "security": [{"basicAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthorizeBankTransferRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bank transfer authorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorizeBankTransferResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rest/resources/card/reversal": {
+      "post": {
+        "operationId": "processCardReversal",
+        "summary": "Process Card Reversal",
+        "description": "Reverse a previously processed card transaction.",
+        "tags": ["Card Payments"],
+        "security": [{"basicAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CardReversalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Card reversal processed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardReversalResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Basic authentication using API Username and API Key encoded in base64"
+      }
+    },
+    "schemas": {
+      "CheckoutInitiateRequest": {
+        "type": "object",
+        "required": ["merchant_id", "transaction_id", "desc", "amount", "redirect_url", "email"],
+        "properties": {
+          "merchant_id": {
+            "type": "string",
+            "description": "Merchant identifier"
+          },
+          "transaction_id": {
+            "type": "string",
+            "description": "Unique 12-digit transaction identifier"
+          },
+          "desc": {
+            "type": "string",
+            "description": "Transaction description"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Payment amount"
+          },
+          "redirect_url": {
+            "type": "string",
+            "description": "URL to redirect customer after payment"
+          },
+          "email": {
+            "type": "string",
+            "description": "Customer email address"
+          }
+        }
+      },
+      "CheckoutInitiateResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Response status"
+          },
+          "code": {
+            "type": "string",
+            "description": "Response code"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Response reason"
+          },
+          "token": {
+            "type": "string",
+            "description": "Checkout session token"
+          },
+          "checkout_url": {
+            "type": "string",
+            "description": "URL to redirect customer to complete payment"
+          }
+        }
+      },
+      "TransactionStatusResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Response code"
+          },
+          "status": {
+            "type": "string",
+            "description": "Transaction status"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Status reason"
+          },
+          "transaction_id": {
+            "type": "string",
+            "description": "Transaction identifier"
+          },
+          "r_switch": {
+            "type": "string",
+            "description": "Payment switch/channel"
+          },
+          "subscriber_number": {
+            "type": "string",
+            "description": "Customer phone number"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Transaction amount"
+          }
+        }
+      },
+      "ProcessTransactionRequest": {
+        "type": "object",
+        "required": ["merchant_id", "transaction_id", "processing_code", "amount", "r-switch"],
+        "properties": {
+          "merchant_id": {
+            "type": "string",
+            "description": "Merchant identifier"
+          },
+          "transaction_id": {
+            "type": "string",
+            "description": "Unique 12-digit transaction identifier"
+          },
+          "processing_code": {
+            "type": "string",
+            "description": "Transaction type code. 000000=Card Payment, 000200=Mobile Money, 404000=Transfer to Mobile Money, 404020=Transfer to Bank",
+            "enum": ["000000", "000200", "404000", "404020"]
+          },
+          "r-switch": {
+            "type": "string",
+            "description": "Payment switch identifier. VIS=Visa, MAS=Mastercard, MTN=MTN, VDF=Vodafone, ATL=Airtel, TGO=Tigo, FLT=Float",
+            "enum": ["VIS", "MAS", "MTN", "VDF", "ATL", "TGO", "FLT"]
+          },
+          "amount": {
+            "type": "string",
+            "description": "Transaction amount"
+          },
+          "desc": {
+            "type": "string",
+            "description": "Transaction description"
+          },
+          "account_number": {
+            "type": "string",
+            "description": "Destination account number (for fund transfers)"
+          },
+          "account_issuer": {
+            "type": "string",
+            "description": "Account issuer code (e.g., GIP for bank transfers)"
+          },
+          "account_bank": {
+            "type": "string",
+            "description": "Bank code for bank transfers"
+          },
+          "subscriber_number": {
+            "type": "string",
+            "description": "Customer mobile number (for mobile money)"
+          },
+          "pan": {
+            "type": "string",
+            "description": "Card number (for card payments)"
+          },
+          "exp_month": {
+            "type": "string",
+            "description": "Card expiry month (for card payments)"
+          },
+          "exp_year": {
+            "type": "string",
+            "description": "Card expiry year (for card payments)"
+          },
+          "cvv": {
+            "type": "string",
+            "description": "Card CVV (for card payments)"
+          },
+          "3d_url_response": {
+            "type": "string",
+            "description": "3D Secure response URL (for card payments)"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency code"
+          },
+          "card_holder": {
+            "type": "string",
+            "description": "Cardholder name (for card payments)"
+          },
+          "customer_email": {
+            "type": "string",
+            "description": "Customer email"
+          },
+          "pass_code": {
+            "type": "string",
+            "description": "Pass code for fund transfers"
+          }
+        }
+      },
+      "ProcessTransactionResponse": {
+        "type": "object",
+        "properties": {
+          "transaction_id": {
+            "type": "string",
+            "description": "Transaction identifier"
+          },
+          "status": {
+            "type": "string",
+            "description": "Transaction status"
+          },
+          "code": {
+            "type": "string",
+            "description": "Response code"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Response reason"
+          },
+          "reference_id": {
+            "type": "string",
+            "description": "Reference ID (for bank transfers)"
+          },
+          "account_name": {
+            "type": "string",
+            "description": "Account holder name (for bank transfers)"
+          }
+        }
+      },
+      "AuthorizeBankTransferRequest": {
+        "type": "object",
+        "required": ["merchant_id", "reference_id"],
+        "properties": {
+          "merchant_id": {
+            "type": "string",
+            "description": "Merchant identifier"
+          },
+          "reference_id": {
+            "type": "string",
+            "description": "Reference ID from the bank transfer initiation"
+          }
+        }
+      },
+      "AuthorizeBankTransferResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Authorization status"
+          },
+          "code": {
+            "type": "string",
+            "description": "Response code"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Response reason"
+          }
+        }
+      },
+      "CardReversalRequest": {
+        "type": "object",
+        "required": ["merchant_id", "transaction_id", "amount"],
+        "properties": {
+          "merchant_id": {
+            "type": "string",
+            "description": "Merchant identifier"
+          },
+          "transaction_id": {
+            "type": "string",
+            "description": "Transaction identifier to reverse"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Amount to reverse"
+          }
+        }
+      },
+      "CardReversalResponse": {
+        "type": "object",
+        "properties": {
+          "transaction_id": {
+            "type": "string",
+            "description": "Transaction identifier"
+          },
+          "status": {
+            "type": "string",
+            "description": "Reversal status"
+          },
+          "code": {
+            "type": "string",
+            "description": "Response code"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Response reason"
+          }
+        }
+      }
+    }
+  }
+}
