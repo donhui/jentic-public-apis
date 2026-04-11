@@ -1,0 +1,681 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Rewiser API",
+    "description": "API for managing financial transactions and folders through Zapier integrations and third-party developers. Includes AI-powered data normalization, duplicate detection, and rate limiting.",
+    "version": "1.2.0",
+    "contact": {
+      "email": "hello@rewiser.io"
+    },
+    "x-jentic-source-url": "https://www.rewiser.io/api"
+  },
+  "servers": [
+    {
+      "url": "https://api.rewiser.io/functions/v1",
+      "description": "Production server"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/verify-auth": {
+      "post": {
+        "operationId": "verifyauth",
+        "summary": "Verify API Key",
+        "description": "Verifies the validity of an API key and returns user information.",
+        "tags": [
+          "Authentication"
+        ],
+        "responses": {
+          "200": {
+            "description": "Authentication verified successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthVerifyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Invalid or expired API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-recent-transactions": {
+      "get": {
+        "operationId": "getrecenttransactions",
+        "summary": "Get Recent Transactions",
+        "description": "Retrieves recent transactions optimized for Zapier triggers with automatic polling protection. Returns only transactions within a configured time window.",
+        "tags": [
+          "Transactions"
+        ],
+        "parameters": [
+          {
+            "name": "api_key",
+            "in": "query",
+            "description": "API key (alternative to Bearer token header)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "folder_mode",
+            "in": "query",
+            "description": "Filter mode for folders",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "single"
+              ],
+              "default": "all"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Transaction type filter",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Expense",
+                "Income"
+              ]
+            }
+          },
+          {
+            "name": "folder_id",
+            "in": "query",
+            "description": "Specific folder ID (required if folder_mode=single)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Response format",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "standard",
+                "zapier"
+              ],
+              "default": "standard"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transactions retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TransactionsStandardResponse"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TransactionZapier"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/create_multiple_transactions": {
+      "post": {
+        "operationId": "createmultipletransactions",
+        "summary": "Create Multiple Transactions",
+        "description": "Creates multiple transactions in a single request with AI-powered data normalization and advanced duplicate protection.",
+        "tags": [
+          "Transactions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTransactionsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transactions processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateTransactionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Duplicate request detected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-folders": {
+      "get": {
+        "operationId": "getfolders",
+        "summary": "Get Folders",
+        "description": "Retrieves accessible folders for the authenticated user in Zapier dropdown format.",
+        "tags": [
+          "Folders"
+        ],
+        "responses": {
+          "200": {
+            "description": "Folders retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Folder"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API key generated in the Rewiser application (format: rwsk_live_...)"
+      }
+    },
+    "schemas": {
+      "AuthVerifyResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "email": {
+                "type": "string",
+                "format": "email"
+              },
+              "full_name": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "Expense",
+              "Income"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "folder_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "is_paid": {
+            "type": "boolean"
+          },
+          "planned_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "TransactionZapier": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "transaction_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "Expense",
+              "Income"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "folder_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "is_paid": {
+            "type": "boolean"
+          },
+          "planned_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "note": {
+            "type": "string"
+          },
+          "transaction_name": {
+            "type": "string"
+          },
+          "amount_formatted": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "has_planned_date": {
+            "type": "boolean"
+          },
+          "_sync_timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "_zapier_dedup_key": {
+            "type": "string"
+          }
+        }
+      },
+      "TransactionsStandardResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Transaction"
+            }
+          }
+        }
+      },
+      "TransactionInput": {
+        "type": "object",
+        "required": [
+          "folder_id",
+          "type",
+          "name",
+          "amount",
+          "planned_date"
+        ],
+        "properties": {
+          "folder_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID of the target folder"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "Expense",
+              "Income"
+            ],
+            "description": "Transaction type"
+          },
+          "name": {
+            "type": "string",
+            "description": "Transaction description"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Transaction amount (positive)"
+          },
+          "planned_date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 date string"
+          },
+          "is_paid": {
+            "type": "boolean",
+            "description": "Payment status"
+          },
+          "paid_date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Payment date"
+          },
+          "note": {
+            "type": "string",
+            "description": "Additional notes"
+          },
+          "repeat_type": {
+            "type": "string",
+            "enum": [
+              "monthly",
+              "weekly",
+              "yearly",
+              "daily"
+            ],
+            "description": "Recurrence type"
+          }
+        }
+      },
+      "CreateTransactionsRequest": {
+        "type": "object",
+        "required": [
+          "transactions"
+        ],
+        "properties": {
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionInput"
+            }
+          }
+        }
+      },
+      "CreateTransactionsResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "inserted_count": {
+            "type": "integer"
+          },
+          "failed_count": {
+            "type": "integer"
+          },
+          "duplicate_count": {
+            "type": "integer"
+          },
+          "skipped_count": {
+            "type": "integer"
+          },
+          "total_processed": {
+            "type": "integer"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "inserted": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Transaction"
+            }
+          },
+          "duplicates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": {
+                  "type": "integer"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "duplicate_id": {
+                  "type": "string"
+                },
+                "transaction": {
+                  "$ref": "#/components/schemas/Transaction"
+                }
+              }
+            }
+          },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": {
+                  "type": "integer"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "transaction": {
+                  "$ref": "#/components/schemas/Transaction"
+                }
+              }
+            }
+          },
+          "rate_limit_info": {
+            "type": "object",
+            "properties": {
+              "remaining_requests": {
+                "type": "integer"
+              },
+              "reset_time": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      },
+      "Folder": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "attempted_ai_fix": {
+            "type": "boolean"
+          },
+          "details": {
+            "type": "string"
+          }
+        }
+      },
+      "DuplicateErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "last_request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "wait_seconds": {
+            "type": "integer"
+          }
+        }
+      },
+      "RateLimitErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "retry_after": {
+            "type": "integer"
+          },
+          "rate_limit_info": {
+            "type": "object",
+            "properties": {
+              "remaining_requests": {
+                "type": "integer"
+              },
+              "reset_time": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Operations related to Authentication"
+    },
+    {
+      "name": "Folders",
+      "description": "Operations related to Folders"
+    },
+    {
+      "name": "Transactions",
+      "description": "Operations related to Transactions"
+    }
+  ]
+}
