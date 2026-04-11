@@ -1,0 +1,855 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "PyPI API",
+    "version": "1.0.0",
+    "description": "The Python Package Index (PyPI) API provides read-only access to package metadata, release information, and download URLs for Python packages hosted on PyPI. The API includes a JSON API for structured metadata and a Simple API (PEP 503) for package file listings. All endpoints are publicly accessible and require no authentication.",
+    "x-jentic-source-url": "https://warehouse.pypa.io/api-reference/",
+    "contact": {
+      "name": "PyPI",
+      "url": "https://pypi.org"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://pypi.org",
+      "description": "PyPI production server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "JSON API",
+      "description": "Endpoints returning structured JSON metadata for projects and releases"
+    },
+    {
+      "name": "Simple API",
+      "description": "PEP 503 Simple Repository API for listing packages and their distribution files"
+    },
+    {
+      "name": "Search",
+      "description": "Package search functionality"
+    }
+  ],
+  "paths": {
+    "/pypi/{project}/json": {
+      "get": {
+        "operationId": "getProjectMetadata",
+        "summary": "Get project metadata",
+        "description": "Returns metadata for the latest version of a project, including package info, all releases, download URLs for the latest version, ownership details, and known vulnerabilities.",
+        "tags": ["JSON API"],
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "description": "The project name on PyPI (case-insensitive, hyphens and underscores are interchangeable).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "requests"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response containing complete project metadata for the latest release.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. The project name is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The specified project was not found on PyPI.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pypi/{project}/{version}/json": {
+      "get": {
+        "operationId": "getProjectVersionMetadata",
+        "summary": "Get version-specific project metadata",
+        "description": "Returns metadata for a specific version of a project, including package info, download URLs for that version, ownership details, and known vulnerabilities. Unlike the project-level endpoint, this does not include the full releases mapping.",
+        "tags": ["JSON API"],
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "description": "The project name on PyPI (case-insensitive, hyphens and underscores are interchangeable).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "requests"
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "description": "The version string of the release (must be a valid PEP 440 version).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2.31.0"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response containing project metadata for the specified version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. The project name or version is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The specified project or version was not found on PyPI.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/simple/": {
+      "get": {
+        "operationId": "listAllPackages",
+        "summary": "List all packages in the simple index",
+        "description": "Returns an HTML page listing all projects hosted on PyPI, following PEP 503 (Simple Repository API). Each project is linked to its simple project page. This endpoint can also return JSON when the appropriate Accept header is sent.",
+        "tags": ["Simple API"],
+        "parameters": [
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": false,
+            "description": "Set to 'application/vnd.pypi.simple.v1+json' to receive a JSON response instead of HTML.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "application/vnd.pypi.simple.v1+json",
+                "text/html"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A listing of all projects on PyPI. The format depends on the Accept header.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string",
+                  "description": "HTML page with anchor links to each project's simple page."
+                }
+              },
+              "application/vnd.pypi.simple.v1+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleIndex"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/simple/{project}/": {
+      "get": {
+        "operationId": "getProjectFiles",
+        "summary": "List distribution files for a project",
+        "description": "Returns a page listing all distribution files for a project, following PEP 503 (Simple Repository API). Each file entry includes the download URL and a SHA-256 hash digest. This endpoint can also return JSON when the appropriate Accept header is sent.",
+        "tags": ["Simple API"],
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "description": "The project name on PyPI (case-insensitive, normalized per PEP 503).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "requests"
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": false,
+            "description": "Set to 'application/vnd.pypi.simple.v1+json' to receive a JSON response instead of HTML.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "application/vnd.pypi.simple.v1+json",
+                "text/html"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A listing of all distribution files for the specified project.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string",
+                  "description": "HTML page with anchor links to each distribution file, including hash fragments."
+                }
+              },
+              "application/vnd.pypi.simple.v1+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleProjectDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The specified project was not found on PyPI.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search/": {
+      "get": {
+        "operationId": "searchPackages",
+        "summary": "Search for packages",
+        "description": "Searches for packages on PyPI matching the given query. Returns an HTML results page. Note: the PyPI search endpoint returns HTML, not JSON.",
+        "tags": ["Search"],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "The search query string.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "http client"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page containing search results.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string",
+                  "description": "HTML page with search results listing matching packages."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. The query parameter is missing or malformed.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ProjectResponse": {
+        "type": "object",
+        "description": "Complete project metadata for the latest release, including all historical releases.",
+        "properties": {
+          "info": {
+            "$ref": "#/components/schemas/ProjectInfo"
+          },
+          "last_serial": {
+            "type": "integer",
+            "description": "The most recent serial ID for any event on this project."
+          },
+          "urls": {
+            "type": "array",
+            "description": "Distribution files for the latest version.",
+            "items": {
+              "$ref": "#/components/schemas/ReleaseFile"
+            }
+          },
+          "releases": {
+            "type": "object",
+            "description": "Mapping of version strings to arrays of distribution files for every release of the project.",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ReleaseFile"
+              }
+            }
+          },
+          "vulnerabilities": {
+            "type": "array",
+            "description": "Known security vulnerabilities affecting this project.",
+            "items": {
+              "$ref": "#/components/schemas/Vulnerability"
+            }
+          },
+          "ownership": {
+            "$ref": "#/components/schemas/Ownership"
+          }
+        },
+        "required": ["info", "last_serial", "urls", "releases", "vulnerabilities"]
+      },
+      "VersionResponse": {
+        "type": "object",
+        "description": "Project metadata for a specific version. Does not include the full releases mapping.",
+        "properties": {
+          "info": {
+            "$ref": "#/components/schemas/ProjectInfo"
+          },
+          "last_serial": {
+            "type": "integer",
+            "description": "The most recent serial ID for any event on this project."
+          },
+          "urls": {
+            "type": "array",
+            "description": "Distribution files for the specified version.",
+            "items": {
+              "$ref": "#/components/schemas/ReleaseFile"
+            }
+          },
+          "vulnerabilities": {
+            "type": "array",
+            "description": "Known security vulnerabilities affecting this version.",
+            "items": {
+              "$ref": "#/components/schemas/Vulnerability"
+            }
+          },
+          "ownership": {
+            "$ref": "#/components/schemas/Ownership"
+          }
+        },
+        "required": ["info", "last_serial", "urls", "vulnerabilities"]
+      },
+      "ProjectInfo": {
+        "type": "object",
+        "description": "Core metadata for a Python package as defined in PEP 566 / PEP 643.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The canonical name of the project."
+          },
+          "version": {
+            "type": "string",
+            "description": "The version of the release this metadata refers to."
+          },
+          "summary": {
+            "type": "string",
+            "nullable": true,
+            "description": "A one-line summary of the project."
+          },
+          "description": {
+            "type": "string",
+            "description": "The full description / README of the project."
+          },
+          "description_content_type": {
+            "type": "string",
+            "nullable": true,
+            "description": "The content type of the description field (e.g., 'text/markdown', 'text/x-rst', 'text/plain')."
+          },
+          "author": {
+            "type": "string",
+            "nullable": true,
+            "description": "The author of the project."
+          },
+          "author_email": {
+            "type": "string",
+            "nullable": true,
+            "description": "The email address of the author."
+          },
+          "maintainer": {
+            "type": "string",
+            "nullable": true,
+            "description": "The maintainer of the project."
+          },
+          "maintainer_email": {
+            "type": "string",
+            "nullable": true,
+            "description": "The email address of the maintainer."
+          },
+          "license": {
+            "type": "string",
+            "nullable": true,
+            "description": "The license text or license identifier for the project."
+          },
+          "license_files": {
+            "type": "array",
+            "nullable": true,
+            "description": "List of license file paths included in the distribution.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "keywords": {
+            "type": "string",
+            "nullable": true,
+            "description": "Comma-separated list of keywords for the project."
+          },
+          "classifiers": {
+            "type": "array",
+            "description": "Trove classifiers for the project.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "platform": {
+            "type": "string",
+            "nullable": true,
+            "description": "The supported platform(s)."
+          },
+          "home_page": {
+            "type": "string",
+            "nullable": true,
+            "description": "The URL of the project's home page."
+          },
+          "download_url": {
+            "type": "string",
+            "nullable": true,
+            "description": "A URL to download the project."
+          },
+          "project_url": {
+            "type": "string",
+            "description": "The URL of the project page on PyPI."
+          },
+          "project_urls": {
+            "type": "object",
+            "nullable": true,
+            "description": "A mapping of label to URL for additional project-related links.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "package_url": {
+            "type": "string",
+            "description": "The URL of the project page on PyPI."
+          },
+          "release_url": {
+            "type": "string",
+            "description": "The URL of the specific release page on PyPI."
+          },
+          "bugtrack_url": {
+            "type": "string",
+            "nullable": true,
+            "description": "The URL of the project's bug tracker."
+          },
+          "requires_python": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Python version requirement specifier (PEP 440)."
+          },
+          "requires_dist": {
+            "type": "array",
+            "nullable": true,
+            "description": "A list of dependency specifiers (PEP 508) for the project.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "provides_extra": {
+            "type": "array",
+            "nullable": true,
+            "description": "A list of optional extra dependency groups provided by the project.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dynamic": {
+            "type": "array",
+            "nullable": true,
+            "description": "A list of metadata fields that are dynamically specified.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "downloads": {
+            "$ref": "#/components/schemas/DownloadCounts"
+          },
+          "yanked": {
+            "type": "boolean",
+            "description": "Whether this release has been yanked."
+          },
+          "yanked_reason": {
+            "type": "string",
+            "nullable": true,
+            "description": "The reason the release was yanked, if applicable."
+          }
+        },
+        "required": ["name", "version"]
+      },
+      "ReleaseFile": {
+        "type": "object",
+        "description": "Metadata about a single distribution file (sdist or wheel) for a release.",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "The filename of the distribution file."
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The direct download URL for the distribution file."
+          },
+          "size": {
+            "type": "integer",
+            "description": "The file size in bytes."
+          },
+          "md5_digest": {
+            "type": "string",
+            "description": "The MD5 hash digest of the file."
+          },
+          "digests": {
+            "$ref": "#/components/schemas/Digests"
+          },
+          "packagetype": {
+            "type": "string",
+            "description": "The type of distribution (e.g., 'sdist', 'bdist_wheel').",
+            "enum": ["sdist", "bdist_wheel", "bdist_egg", "bdist_wininst", "bdist_rpm", "bdist_msi", "bdist_dumb"]
+          },
+          "python_version": {
+            "type": "string",
+            "description": "The Python version tag for the distribution (e.g., 'source', 'py3', 'cp39')."
+          },
+          "requires_python": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Python version requirement for this specific file."
+          },
+          "has_sig": {
+            "type": "boolean",
+            "description": "Whether a PGP signature file exists for this distribution."
+          },
+          "upload_time": {
+            "type": "string",
+            "description": "The upload timestamp in legacy format (YYYY-MM-DDTHH:MM:SS)."
+          },
+          "upload_time_iso_8601": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The upload timestamp in ISO 8601 format."
+          },
+          "comment_text": {
+            "type": "string",
+            "nullable": true,
+            "description": "Optional comment text associated with the file upload."
+          },
+          "downloads": {
+            "type": "integer",
+            "description": "Download count for this file. Returns -1 as download stats are no longer tracked per file."
+          },
+          "yanked": {
+            "type": "boolean",
+            "description": "Whether this file has been yanked."
+          },
+          "yanked_reason": {
+            "type": "string",
+            "nullable": true,
+            "description": "The reason this file was yanked, if applicable."
+          }
+        },
+        "required": ["filename", "url", "size", "digests", "packagetype", "python_version", "upload_time_iso_8601"]
+      },
+      "Digests": {
+        "type": "object",
+        "description": "Cryptographic hash digests of a distribution file.",
+        "properties": {
+          "blake2b_256": {
+            "type": "string",
+            "description": "BLAKE2b-256 hash of the file."
+          },
+          "md5": {
+            "type": "string",
+            "description": "MD5 hash of the file."
+          },
+          "sha256": {
+            "type": "string",
+            "description": "SHA-256 hash of the file."
+          }
+        },
+        "required": ["sha256"]
+      },
+      "Vulnerability": {
+        "type": "object",
+        "description": "A known security vulnerability affecting the package.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier for the vulnerability (e.g., a GHSA or PYSEC ID)."
+          },
+          "source": {
+            "type": "string",
+            "description": "The source database reporting the vulnerability (e.g., 'osv')."
+          },
+          "summary": {
+            "type": "string",
+            "description": "A brief summary of the vulnerability."
+          },
+          "details": {
+            "type": "string",
+            "description": "A detailed description of the vulnerability."
+          },
+          "aliases": {
+            "type": "array",
+            "description": "Alternative identifiers for this vulnerability (e.g., CVE IDs).",
+            "items": {
+              "type": "string"
+            }
+          },
+          "fixed_in": {
+            "type": "array",
+            "description": "Versions of the package that include a fix for this vulnerability.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "link": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to the full vulnerability report."
+          },
+          "withdrawn": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Timestamp when the vulnerability advisory was withdrawn, if applicable."
+          }
+        },
+        "required": ["id", "source", "aliases", "fixed_in"]
+      },
+      "Ownership": {
+        "type": "object",
+        "description": "Ownership and role information for the project.",
+        "properties": {
+          "organization": {
+            "type": "string",
+            "nullable": true,
+            "description": "The PyPI organization that owns this project, if any."
+          },
+          "roles": {
+            "type": "array",
+            "description": "List of user roles for this project.",
+            "items": {
+              "$ref": "#/components/schemas/OwnershipRole"
+            }
+          }
+        },
+        "required": ["roles"]
+      },
+      "OwnershipRole": {
+        "type": "object",
+        "description": "A user's role on a project.",
+        "properties": {
+          "role": {
+            "type": "string",
+            "description": "The role type (e.g., 'Owner', 'Maintainer')."
+          },
+          "user": {
+            "type": "string",
+            "description": "The PyPI username."
+          }
+        },
+        "required": ["role", "user"]
+      },
+      "DownloadCounts": {
+        "type": "object",
+        "description": "Download count statistics. Note: these always return -1 as PyPI no longer provides per-project download stats through this API. Use the Google BigQuery dataset or pypistats.org instead.",
+        "properties": {
+          "last_day": {
+            "type": "integer",
+            "description": "Downloads in the last day (always -1)."
+          },
+          "last_week": {
+            "type": "integer",
+            "description": "Downloads in the last week (always -1)."
+          },
+          "last_month": {
+            "type": "integer",
+            "description": "Downloads in the last month (always -1)."
+          }
+        }
+      },
+      "SimpleIndex": {
+        "type": "object",
+        "description": "JSON response for the Simple Repository API index (PEP 691).",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "description": "Metadata about the response.",
+            "properties": {
+              "api-version": {
+                "type": "string",
+                "description": "The version of the Simple API being used."
+              }
+            }
+          },
+          "projects": {
+            "type": "array",
+            "description": "List of all projects on PyPI.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "The normalized project name."
+                }
+              },
+              "required": ["name"]
+            }
+          }
+        },
+        "required": ["meta", "projects"]
+      },
+      "SimpleProjectDetail": {
+        "type": "object",
+        "description": "JSON response for a project's Simple API page (PEP 691).",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "description": "Metadata about the response.",
+            "properties": {
+              "api-version": {
+                "type": "string",
+                "description": "The version of the Simple API being used."
+              }
+            }
+          },
+          "name": {
+            "type": "string",
+            "description": "The normalized project name."
+          },
+          "files": {
+            "type": "array",
+            "description": "List of all distribution files for the project.",
+            "items": {
+              "$ref": "#/components/schemas/SimpleFile"
+            }
+          }
+        },
+        "required": ["meta", "name", "files"]
+      },
+      "SimpleFile": {
+        "type": "object",
+        "description": "A distribution file entry in the Simple API response.",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "The filename of the distribution file."
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The download URL for the file."
+          },
+          "hashes": {
+            "type": "object",
+            "description": "Mapping of hash algorithm names to their hex-encoded digests.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "requires-python": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Python version requirement for this file."
+          },
+          "dist-info-metadata": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Whether PEP 658 metadata is available for this file."
+          },
+          "gpg-sig": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Whether a GPG signature is available for this file."
+          },
+          "yanked": {
+            "oneOf": [
+              { "type": "boolean" },
+              { "type": "string" }
+            ],
+            "description": "False if not yanked, or a string with the yank reason."
+          }
+        },
+        "required": ["filename", "url", "hashes"]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "description": "Error response returned when a request fails.",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "A human-readable error message."
+          }
+        },
+        "required": ["message"]
+      }
+    }
+  }
+}
