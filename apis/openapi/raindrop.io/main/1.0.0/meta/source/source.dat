@@ -1,0 +1,2290 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Raindrop.io API",
+    "description": "Raindrop.io is a bookmark manager that allows you to save, organize, and share web content. This API provides programmatic access to collections, bookmarks (raindrops), tags, user data, highlights, filters, imports, and backups.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://developer.raindrop.io/"
+  },
+  "servers": [
+    {
+      "url": "https://api.raindrop.io/rest/v1"
+    }
+  ],
+  "security": [
+    {
+      "oauth2": []
+    },
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    { "name": "Collections", "description": "Manage bookmark collections" },
+    { "name": "Sharing", "description": "Collection sharing and collaboration" },
+    { "name": "Raindrops", "description": "Manage individual bookmarks (raindrops)" },
+    { "name": "Multiple Raindrops", "description": "Bulk operations on bookmarks" },
+    { "name": "Tags", "description": "Manage tags" },
+    { "name": "Highlights", "description": "Manage highlights" },
+    { "name": "Filters", "description": "Get filter/facet counts" },
+    { "name": "User", "description": "User account management" },
+    { "name": "Import", "description": "Import bookmarks and parse URLs" },
+    { "name": "Backups", "description": "Backup and export data" }
+  ],
+  "paths": {
+    "/collections": {
+      "get": {
+        "operationId": "getRootCollections",
+        "summary": "Get root collections",
+        "tags": ["Collections"],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "items": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Collection" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "reorderAllCollections",
+        "summary": "Reorder all collections",
+        "tags": ["Collections"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sort": {
+                    "type": "string",
+                    "enum": ["title", "-title", "-count"]
+                  },
+                  "expanded": {
+                    "type": "boolean",
+                    "description": "Expand or collapse all collections"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeMultipleCollections",
+        "summary": "Remove multiple collections",
+        "tags": ["Collections"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": { "type": "integer" }
+                  }
+                },
+                "required": ["ids"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/collections/childrens": {
+      "get": {
+        "operationId": "getChildCollections",
+        "summary": "Get child collections",
+        "tags": ["Collections"],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "items": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Collection" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/collections/merge": {
+      "put": {
+        "operationId": "mergeCollections",
+        "summary": "Merge collections",
+        "tags": ["Collections"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "to": {
+                    "type": "integer",
+                    "description": "Target collection ID"
+                  },
+                  "ids": {
+                    "type": "array",
+                    "items": { "type": "integer" },
+                    "description": "Collection IDs to merge"
+                  }
+                },
+                "required": ["to", "ids"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/collections/clean": {
+      "put": {
+        "operationId": "removeEmptyCollections",
+        "summary": "Remove all empty collections",
+        "tags": ["Collections"],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "count": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/collection": {
+      "post": {
+        "operationId": "createCollection",
+        "summary": "Create collection",
+        "tags": ["Collections"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "view": { "type": "string", "enum": ["list", "simple", "grid", "masonry"] },
+                  "title": { "type": "string" },
+                  "sort": { "type": "integer" },
+                  "public": { "type": "boolean" },
+                  "parent": {
+                    "type": "object",
+                    "properties": {
+                      "$id": { "type": "integer" }
+                    }
+                  },
+                  "cover": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                },
+                "required": ["title"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "item": { "$ref": "#/components/schemas/Collection" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/collection/{id}": {
+      "get": {
+        "operationId": "getCollection",
+        "summary": "Get collection",
+        "tags": ["Collections"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collection ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "item": { "$ref": "#/components/schemas/Collection" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateCollection",
+        "summary": "Update collection",
+        "tags": ["Collections"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collection ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expanded": { "type": "boolean" },
+                  "view": { "type": "string", "enum": ["list", "simple", "grid", "masonry"] },
+                  "title": { "type": "string" },
+                  "sort": { "type": "integer" },
+                  "public": { "type": "boolean" },
+                  "parent": {
+                    "type": "object",
+                    "properties": {
+                      "$id": { "type": "integer" }
+                    }
+                  },
+                  "cover": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "item": { "$ref": "#/components/schemas/Collection" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeCollection",
+        "summary": "Remove collection",
+        "tags": ["Collections"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collection ID. Use -99 to empty trash."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/collection/{id}/cover": {
+      "put": {
+        "operationId": "uploadCollectionCover",
+        "summary": "Upload collection cover",
+        "tags": ["Collections"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collection ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "cover": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": ["cover"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "item": { "$ref": "#/components/schemas/Collection" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/collection/{id}/sharing": {
+      "post": {
+        "operationId": "shareCollection",
+        "summary": "Share collection",
+        "tags": ["Sharing"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collection ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": ["member", "viewer"]
+                  },
+                  "emails": {
+                    "type": "array",
+                    "items": { "type": "string", "format": "email" },
+                    "maxItems": 10
+                  }
+                },
+                "required": ["role", "emails"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "emails": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Empty emails array or exceeds 10 limit" },
+          "403": { "description": "Too many pending invitations or insufficient permissions" }
+        }
+      },
+      "get": {
+        "operationId": "getCollaborators",
+        "summary": "Get collaborators of a collection",
+        "tags": ["Sharing"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collection ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "items": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Collaborator" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "unshareCollection",
+        "summary": "Unshare or leave collection",
+        "tags": ["Sharing"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collection ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/collection/{id}/sharing/{userId}": {
+      "put": {
+        "operationId": "changeCollaboratorAccessLevel",
+        "summary": "Change collaborator access level",
+        "tags": ["Sharing"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collection ID"
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collaborator user ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": ["member", "viewer"]
+                  }
+                },
+                "required": ["role"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeCollaborator",
+        "summary": "Remove a collaborator",
+        "tags": ["Sharing"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collection ID"
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collaborator user ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/collection/{id}/join": {
+      "post": {
+        "operationId": "acceptInvitation",
+        "summary": "Accept an invitation to join a collection",
+        "tags": ["Sharing"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collection ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "description": "Secret token from invitation email"
+                  }
+                },
+                "required": ["token"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "role": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "403": { "description": "Incorrect/expired token, collection not found, or user already owns collection" }
+        }
+      }
+    },
+    "/raindrop": {
+      "post": {
+        "operationId": "createRaindrop",
+        "summary": "Create raindrop",
+        "tags": ["Raindrops"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "link": { "type": "string", "format": "uri" },
+                  "title": { "type": "string", "maxLength": 1000 },
+                  "excerpt": { "type": "string", "maxLength": 10000 },
+                  "note": { "type": "string", "maxLength": 10000 },
+                  "type": { "type": "string", "enum": ["link", "article", "image", "video", "document", "audio"] },
+                  "tags": { "type": "array", "items": { "type": "string" } },
+                  "cover": { "type": "string", "format": "uri" },
+                  "important": { "type": "boolean" },
+                  "order": { "type": "integer" },
+                  "pleaseParse": { "type": "object", "description": "Set to empty object to auto-parse metadata from the link" },
+                  "created": { "type": "string", "format": "date-time" },
+                  "lastUpdate": { "type": "string", "format": "date-time" },
+                  "media": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/Media" }
+                  },
+                  "collection": {
+                    "type": "object",
+                    "properties": {
+                      "$id": { "type": "integer" }
+                    }
+                  },
+                  "highlights": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/Highlight" }
+                  },
+                  "reminder": {
+                    "type": "object",
+                    "properties": {
+                      "date": { "type": "string", "format": "date-time" }
+                    }
+                  }
+                },
+                "required": ["link"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "item": { "$ref": "#/components/schemas/Raindrop" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/raindrop/{id}": {
+      "get": {
+        "operationId": "getRaindrop",
+        "summary": "Get raindrop",
+        "tags": ["Raindrops"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Raindrop ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "item": { "$ref": "#/components/schemas/Raindrop" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateRaindrop",
+        "summary": "Update raindrop",
+        "tags": ["Raindrops"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Raindrop ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "link": { "type": "string", "format": "uri" },
+                  "title": { "type": "string", "maxLength": 1000 },
+                  "excerpt": { "type": "string", "maxLength": 10000 },
+                  "note": { "type": "string", "maxLength": 10000 },
+                  "type": { "type": "string", "enum": ["link", "article", "image", "video", "document", "audio"] },
+                  "tags": { "type": "array", "items": { "type": "string" } },
+                  "cover": { "type": "string", "format": "uri" },
+                  "important": { "type": "boolean" },
+                  "order": { "type": "integer" },
+                  "pleaseParse": { "type": "object" },
+                  "created": { "type": "string", "format": "date-time" },
+                  "lastUpdate": { "type": "string", "format": "date-time" },
+                  "media": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/Media" }
+                  },
+                  "collection": {
+                    "type": "object",
+                    "properties": {
+                      "$id": { "type": "integer" }
+                    }
+                  },
+                  "highlights": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/Highlight" }
+                  },
+                  "reminder": {
+                    "type": "object",
+                    "properties": {
+                      "date": { "type": "string", "format": "date-time" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "item": { "$ref": "#/components/schemas/Raindrop" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeRaindrop",
+        "summary": "Remove raindrop",
+        "description": "Moves raindrop to Trash. If already in Trash, removes permanently.",
+        "tags": ["Raindrops"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Raindrop ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/raindrop/file": {
+      "put": {
+        "operationId": "uploadFile",
+        "summary": "Upload file as raindrop",
+        "tags": ["Raindrops"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "collectionId": {
+                    "type": "string",
+                    "description": "Target collection ID"
+                  }
+                },
+                "required": ["file"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "item": { "$ref": "#/components/schemas/Raindrop" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "No file provided, invalid format, or size limit exceeded" }
+        }
+      }
+    },
+    "/raindrop/{id}/cover": {
+      "put": {
+        "operationId": "uploadRaindropCover",
+        "summary": "Upload raindrop cover image",
+        "tags": ["Raindrops"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Raindrop ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "cover": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "PNG, GIF, or JPEG image"
+                  }
+                },
+                "required": ["cover"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "item": { "$ref": "#/components/schemas/Raindrop" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid image format or size" }
+        }
+      }
+    },
+    "/raindrop/{id}/cache": {
+      "get": {
+        "operationId": "getPermanentCopy",
+        "summary": "Get permanent copy of a raindrop",
+        "description": "Returns a redirect to the permanent copy. Requires PRO plan.",
+        "tags": ["Raindrops"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Raindrop ID"
+          }
+        ],
+        "responses": {
+          "307": {
+            "description": "Redirect to permanent copy location"
+          }
+        }
+      }
+    },
+    "/raindrop/suggest": {
+      "post": {
+        "operationId": "suggestForNewBookmark",
+        "summary": "Suggest collections and tags for a new bookmark URL",
+        "tags": ["Raindrops"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "link": { "type": "string", "format": "uri" }
+                },
+                "required": ["link"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "collections": {
+                      "type": "array",
+                      "items": { "type": "integer" }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/raindrop/{id}/suggest": {
+      "get": {
+        "operationId": "suggestForExistingBookmark",
+        "summary": "Suggest collections and tags for an existing bookmark",
+        "tags": ["Raindrops"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Raindrop ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "collections": {
+                      "type": "array",
+                      "items": { "type": "integer" }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/raindrops/{collectionId}": {
+      "get": {
+        "operationId": "getRaindrops",
+        "summary": "Get raindrops from a collection",
+        "description": "Use collectionId 0 for all, -1 for Unsorted, -99 for Trash.",
+        "tags": ["Multiple Raindrops"],
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collection ID. 0 for all, -1 for Unsorted, -99 for Trash."
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Sort order"
+          },
+          {
+            "name": "perpage",
+            "in": "query",
+            "schema": { "type": "integer", "maximum": 50, "default": 25 },
+            "description": "Items per page (max 50)"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 0 },
+            "description": "Page number"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Search query"
+          },
+          {
+            "name": "nested",
+            "in": "query",
+            "schema": { "type": "boolean" },
+            "description": "Include raindrops from child collections"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "items": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Raindrop" }
+                    },
+                    "count": { "type": "integer" },
+                    "collectionId": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateManyRaindrops",
+        "summary": "Update many raindrops",
+        "tags": ["Multiple Raindrops"],
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collection ID"
+          },
+          {
+            "name": "nested",
+            "in": "query",
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": { "type": "integer" }
+                  },
+                  "important": { "type": "boolean" },
+                  "tags": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "media": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/Media" }
+                  },
+                  "cover": { "type": "string" },
+                  "collection": {
+                    "type": "object",
+                    "properties": {
+                      "$id": { "type": "integer" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeManyRaindrops",
+        "summary": "Remove many raindrops",
+        "tags": ["Multiple Raindrops"],
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collection ID. Use -99 for permanent deletion from Trash."
+          },
+          {
+            "name": "nested",
+            "in": "query",
+            "schema": { "type": "boolean" }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "modified": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/raindrops": {
+      "post": {
+        "operationId": "createManyRaindrops",
+        "summary": "Create many raindrops",
+        "tags": ["Multiple Raindrops"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/RaindropCreate" },
+                    "maxItems": 100
+                  }
+                },
+                "required": ["items"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "items": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Raindrop" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tags/{collectionId}": {
+      "get": {
+        "operationId": "getTags",
+        "summary": "Get tags",
+        "description": "When collectionId is 0, returns all tags from all collections.",
+        "tags": ["Tags"],
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collection ID. Use 0 for all collections."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": { "type": "string" },
+                          "count": { "type": "integer" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "renameTag",
+        "summary": "Rename or merge tags",
+        "tags": ["Tags"],
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collection ID. Use 0 for all collections."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tags": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "Tag name(s) to rename/merge"
+                  },
+                  "replace": {
+                    "type": "string",
+                    "description": "New tag name"
+                  }
+                },
+                "required": ["tags", "replace"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeTags",
+        "summary": "Remove tags",
+        "tags": ["Tags"],
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collection ID. Use 0 for all collections."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tags": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                },
+                "required": ["tags"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/highlights": {
+      "get": {
+        "operationId": "getAllHighlights",
+        "summary": "Get all highlights",
+        "tags": ["Highlights"],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 0 }
+          },
+          {
+            "name": "perpage",
+            "in": "query",
+            "schema": { "type": "integer", "maximum": 50, "default": 25 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "items": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/HighlightItem" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/highlights/{collectionId}": {
+      "get": {
+        "operationId": "getHighlightsInCollection",
+        "summary": "Get highlights in a collection",
+        "tags": ["Highlights"],
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collection ID"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 0 }
+          },
+          {
+            "name": "perpage",
+            "in": "query",
+            "schema": { "type": "integer", "maximum": 50, "default": 25 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "items": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/HighlightItem" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/filters/{collectionId}": {
+      "get": {
+        "operationId": "getFilters",
+        "summary": "Get filters for a collection",
+        "tags": ["Filters"],
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Collection ID. Use 0 for all."
+          },
+          {
+            "name": "tagsSort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["-count", "_id"],
+              "default": "-count"
+            },
+            "description": "Sort tags by count or name"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Search query to filter results"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "broken": {
+                      "type": "object",
+                      "properties": { "count": { "type": "integer" } }
+                    },
+                    "duplicates": {
+                      "type": "object",
+                      "properties": { "count": { "type": "integer" } }
+                    },
+                    "important": {
+                      "type": "object",
+                      "properties": { "count": { "type": "integer" } }
+                    },
+                    "notag": {
+                      "type": "object",
+                      "properties": { "count": { "type": "integer" } }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": { "type": "string" },
+                          "count": { "type": "integer" }
+                        }
+                      }
+                    },
+                    "types": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": { "type": "string" },
+                          "count": { "type": "integer" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user": {
+      "get": {
+        "operationId": "getAuthenticatedUser",
+        "summary": "Get authenticated user",
+        "tags": ["User"],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "user": { "$ref": "#/components/schemas/User" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateUser",
+        "summary": "Update user",
+        "tags": ["User"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fullName": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "newpassword": { "type": "string" },
+                  "oldpassword": { "type": "string" },
+                  "config": {
+                    "type": "object",
+                    "properties": {
+                      "broken_level": { "type": "string" },
+                      "font_color": { "type": "string" },
+                      "font_size": { "type": "integer" },
+                      "lang": { "type": "string" },
+                      "last_collection": { "type": "integer" },
+                      "raindrops_sort": { "type": "string" },
+                      "raindrops_view": { "type": "string" }
+                    }
+                  },
+                  "groups": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/Group" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "user": { "$ref": "#/components/schemas/User" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation error" }
+        }
+      }
+    },
+    "/user/{name}": {
+      "get": {
+        "operationId": "getUserByName",
+        "summary": "Get user by name",
+        "tags": ["User"],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Username"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "_id": { "type": "integer" },
+                        "email_MD5": { "type": "string" },
+                        "fullName": { "type": "string" },
+                        "pro": { "type": "boolean" },
+                        "registered": { "type": "string", "format": "date-time" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "User not found" }
+        }
+      }
+    },
+    "/user/stats": {
+      "get": {
+        "operationId": "getSystemCollectionsCount",
+        "summary": "Get system collections count",
+        "tags": ["User"],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": { "type": "integer" },
+                          "count": { "type": "integer" }
+                        }
+                      }
+                    },
+                    "meta": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/connect/{provider}": {
+      "get": {
+        "operationId": "connectSocialNetwork",
+        "summary": "Connect social network account",
+        "tags": ["User"],
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["facebook", "google", "twitter", "vkontakte", "dropbox", "gdrive"]
+            },
+            "description": "Social network provider"
+          }
+        ],
+        "responses": {
+          "307": {
+            "description": "Redirect to provider authorization URL"
+          }
+        }
+      }
+    },
+    "/user/connect/{provider}/revoke": {
+      "get": {
+        "operationId": "disconnectSocialNetwork",
+        "summary": "Disconnect social network account",
+        "tags": ["User"],
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["facebook", "google", "twitter", "vkontakte", "dropbox", "gdrive"]
+            },
+            "description": "Social network provider"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/import/url/parse": {
+      "get": {
+        "operationId": "parseUrl",
+        "summary": "Parse and extract info from any URL",
+        "tags": ["Import"],
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "uri" },
+            "description": "URL to parse"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "item": {
+                      "type": "object",
+                      "properties": {
+                        "title": { "type": "string" },
+                        "excerpt": { "type": "string" },
+                        "type": { "type": "string" },
+                        "media": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Media" }
+                        },
+                        "meta": { "type": "object" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/import/url/exists": {
+      "post": {
+        "operationId": "checkUrlExistence",
+        "summary": "Check if URLs are already saved",
+        "tags": ["Import"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "urls": {
+                    "type": "array",
+                    "items": { "type": "string", "format": "uri" }
+                  }
+                },
+                "required": ["urls"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "ids": {
+                      "type": "array",
+                      "items": { "type": "integer" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/import/file": {
+      "post": {
+        "operationId": "importHtmlFile",
+        "summary": "Parse HTML bookmark import file",
+        "description": "Supports Netscape, Pocket, and Instapaper file formats.",
+        "tags": ["Import"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "import": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "HTML bookmark file"
+                  }
+                },
+                "required": ["import"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "items": {
+                      "type": "array",
+                      "items": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/backups": {
+      "get": {
+        "operationId": "getAllBackups",
+        "summary": "Get all backups",
+        "tags": ["Backups"],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": { "type": "boolean" },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": { "type": "string" },
+                          "created": { "type": "string", "format": "date-time" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/backup": {
+      "get": {
+        "operationId": "generateBackup",
+        "summary": "Generate a new backup",
+        "description": "Triggers backup generation. An email with the export file will be sent when ready.",
+        "tags": ["Backups"],
+        "responses": {
+          "200": {
+            "description": "Backup generation initiated"
+          }
+        }
+      }
+    },
+    "/backup/{id}.{format}": {
+      "get": {
+        "operationId": "downloadBackup",
+        "summary": "Download a backup file",
+        "tags": ["Backups"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Backup ID"
+          },
+          {
+            "name": "format",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["html", "csv"]
+            },
+            "description": "Export format"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Backup file download",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://raindrop.io/oauth/authorize",
+            "tokenUrl": "https://raindrop.io/oauth/access_token",
+            "scopes": {}
+          }
+        }
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Use a test token or OAuth2 access token"
+      }
+    },
+    "schemas": {
+      "ResultResponse": {
+        "type": "object",
+        "properties": {
+          "result": { "type": "boolean" }
+        }
+      },
+      "Collection": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "integer", "description": "Collection ID" },
+          "access": {
+            "type": "object",
+            "properties": {
+              "level": { "type": "integer", "minimum": 1, "maximum": 4 },
+              "draggable": { "type": "boolean" }
+            }
+          },
+          "collaborators": { "type": "object" },
+          "color": { "type": "string", "description": "HEX color value" },
+          "count": { "type": "integer", "description": "Number of raindrops" },
+          "cover": {
+            "type": "array",
+            "items": { "type": "string", "format": "uri" }
+          },
+          "created": { "type": "string", "format": "date-time" },
+          "expanded": { "type": "boolean" },
+          "lastUpdate": { "type": "string", "format": "date-time" },
+          "parent": {
+            "type": "object",
+            "properties": {
+              "$id": { "type": "integer" }
+            }
+          },
+          "public": { "type": "boolean" },
+          "sort": { "type": "integer" },
+          "title": { "type": "string" },
+          "user": {
+            "type": "object",
+            "properties": {
+              "$id": { "type": "integer" }
+            }
+          },
+          "view": {
+            "type": "string",
+            "enum": ["list", "simple", "grid", "masonry"]
+          }
+        }
+      },
+      "Raindrop": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "integer" },
+          "collection": {
+            "type": "object",
+            "properties": {
+              "$id": { "type": "integer" }
+            }
+          },
+          "cover": { "type": "string", "format": "uri" },
+          "created": { "type": "string", "format": "date-time" },
+          "domain": { "type": "string" },
+          "excerpt": { "type": "string", "maxLength": 10000 },
+          "note": { "type": "string", "maxLength": 10000 },
+          "lastUpdate": { "type": "string", "format": "date-time" },
+          "link": { "type": "string", "format": "uri" },
+          "media": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Media" }
+          },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "title": { "type": "string", "maxLength": 1000 },
+          "type": {
+            "type": "string",
+            "enum": ["link", "article", "image", "video", "document", "audio"]
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "$id": { "type": "integer" }
+            }
+          },
+          "broken": { "type": "boolean" },
+          "cache": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["ready", "retry", "failed", "invalid-origin", "invalid-timeout", "invalid-size"]
+              },
+              "size": { "type": "integer" },
+              "created": { "type": "string", "format": "date-time" }
+            }
+          },
+          "creatorRef": {
+            "type": "object",
+            "properties": {
+              "_id": { "type": "integer" },
+              "fullName": { "type": "string" }
+            }
+          },
+          "file": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "size": { "type": "integer" },
+              "type": { "type": "string" }
+            }
+          },
+          "important": { "type": "boolean" },
+          "highlights": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Highlight" }
+          },
+          "reminder": {
+            "type": "object",
+            "properties": {
+              "date": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      },
+      "RaindropCreate": {
+        "type": "object",
+        "properties": {
+          "link": { "type": "string", "format": "uri" },
+          "title": { "type": "string" },
+          "excerpt": { "type": "string" },
+          "note": { "type": "string" },
+          "type": { "type": "string", "enum": ["link", "article", "image", "video", "document", "audio"] },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "cover": { "type": "string", "format": "uri" },
+          "important": { "type": "boolean" },
+          "order": { "type": "integer" },
+          "pleaseParse": { "type": "object" },
+          "created": { "type": "string", "format": "date-time" },
+          "lastUpdate": { "type": "string", "format": "date-time" },
+          "media": { "type": "array", "items": { "$ref": "#/components/schemas/Media" } },
+          "collection": {
+            "type": "object",
+            "properties": {
+              "$id": { "type": "integer" }
+            }
+          },
+          "highlights": { "type": "array", "items": { "$ref": "#/components/schemas/Highlight" } },
+          "reminder": {
+            "type": "object",
+            "properties": {
+              "date": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "required": ["link"]
+      },
+      "Media": {
+        "type": "object",
+        "properties": {
+          "link": { "type": "string", "format": "uri" }
+        }
+      },
+      "Highlight": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "text": { "type": "string" },
+          "color": { "type": "string" },
+          "note": { "type": "string" },
+          "created": { "type": "string", "format": "date-time" }
+        }
+      },
+      "HighlightItem": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "text": { "type": "string" },
+          "title": { "type": "string" },
+          "color": { "type": "string" },
+          "note": { "type": "string" },
+          "created": { "type": "string", "format": "date-time" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "link": { "type": "string", "format": "uri" }
+        }
+      },
+      "Collaborator": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "integer" },
+          "email": { "type": "string", "format": "email" },
+          "email_MD5": { "type": "string" },
+          "fullName": { "type": "string" },
+          "registered": { "type": "string", "format": "date-time" },
+          "role": { "type": "string", "enum": ["member", "viewer"] }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "integer" },
+          "config": {
+            "type": "object",
+            "properties": {
+              "broken_level": { "type": "string" },
+              "font_color": { "type": "string" },
+              "font_size": { "type": "integer" },
+              "lang": { "type": "string" },
+              "last_collection": { "type": "integer" },
+              "raindrops_sort": { "type": "string" },
+              "raindrops_view": { "type": "string" }
+            }
+          },
+          "email": { "type": "string", "format": "email" },
+          "email_MD5": { "type": "string" },
+          "files": {
+            "type": "object",
+            "properties": {
+              "used": { "type": "integer" },
+              "size": { "type": "integer" },
+              "lastCheckPoint": { "type": "string", "format": "date-time" }
+            }
+          },
+          "fullName": { "type": "string" },
+          "groups": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Group" }
+          },
+          "password": { "type": "boolean", "description": "Whether user has a password set" },
+          "pro": { "type": "boolean" },
+          "proExpire": { "type": "string", "format": "date-time" },
+          "registered": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Group": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "hidden": { "type": "boolean" },
+          "sort": { "type": "integer" },
+          "collections": {
+            "type": "array",
+            "items": { "type": "integer" }
+          }
+        }
+      }
+    }
+  }
+}
