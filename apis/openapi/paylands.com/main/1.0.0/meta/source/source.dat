@@ -1,0 +1,307 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Paylands Payment API",
+    "description": "Paylands payment processing API supporting various payment methods including Bizum, card payments, and alternative payment methods.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://docs.paylands.com/en/docs/apm/apm-bizum/"
+  },
+  "servers": [
+    {
+      "url": "https://api.paylands.com/v1",
+      "description": "Production server"
+    },
+    {
+      "url": "https://api.paylands.com/v1/sandbox",
+      "description": "Sandbox server"
+    }
+  ],
+  "paths": {
+    "/payment": {
+      "post": {
+        "operationId": "createPaymentOrder",
+        "summary": "Create Payment Order",
+        "description": "Create a new payment order. Returns an order UUID and token for processing the payment through the selected payment method.",
+        "tags": ["Payments"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment order created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/payment/bizum/{token}": {
+      "get": {
+        "operationId": "redirectBizumPayment",
+        "summary": "Redirect to Bizum Payment",
+        "description": "Redirect the customer to the Bizum payment gateway using the token obtained from the payment order creation.",
+        "tags": ["Bizum"],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "Payment order token from create payment response",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to Bizum payment page"
+          },
+          "400": {
+            "description": "Invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreatePaymentRequest": {
+        "type": "object",
+        "required": ["signature", "amount", "operative", "service", "customer_ext_id"],
+        "properties": {
+          "signature": {
+            "type": "string",
+            "description": "Request signature for validation"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Amount in cents (e.g., 100 = 1.00 EUR)"
+          },
+          "operative": {
+            "type": "string",
+            "enum": ["AUTHORIZATION", "DEFERRED"],
+            "description": "Payment operative type"
+          },
+          "secure": {
+            "type": "boolean",
+            "description": "Whether to use 3D Secure"
+          },
+          "customer_ext_id": {
+            "type": "string",
+            "description": "External customer identifier"
+          },
+          "service": {
+            "type": "string",
+            "description": "Service UUID identifying the payment method"
+          },
+          "description": {
+            "type": "string",
+            "description": "Payment description"
+          },
+          "additional": {
+            "type": "string",
+            "nullable": true,
+            "description": "Additional data"
+          },
+          "url_post": {
+            "type": "string",
+            "description": "Webhook URL for payment notifications"
+          },
+          "url_ok": {
+            "type": "string",
+            "description": "Redirect URL on successful payment"
+          },
+          "url_ko": {
+            "type": "string",
+            "description": "Redirect URL on failed payment"
+          },
+          "source_uuid": {
+            "type": "string",
+            "nullable": true,
+            "description": "Source card UUID for tokenized payments"
+          },
+          "save_card": {
+            "type": "boolean",
+            "description": "Whether to save the card for future use"
+          },
+          "reference": {
+            "type": "string",
+            "description": "Merchant payment reference"
+          },
+          "dynamic_descriptor": {
+            "type": "string",
+            "description": "Dynamic descriptor shown on card statement (e.g., PNP*MerchantName)"
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Payment order expiry time in seconds"
+          },
+          "extra_data": {
+            "$ref": "#/components/schemas/ExtraData"
+          }
+        }
+      },
+      "ExtraData": {
+        "type": "object",
+        "properties": {
+          "profile": {
+            "$ref": "#/components/schemas/CustomerProfile"
+          }
+        }
+      },
+      "CustomerProfile": {
+        "type": "object",
+        "properties": {
+          "first_name": {
+            "type": "string",
+            "description": "Customer first name"
+          },
+          "last_name": {
+            "type": "string",
+            "description": "Customer last name"
+          },
+          "phone": {
+            "$ref": "#/components/schemas/Phone"
+          }
+        }
+      },
+      "Phone": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "string",
+            "description": "Phone number"
+          },
+          "prefix": {
+            "type": "string",
+            "description": "Country code prefix (e.g., 34 for Spain)"
+          }
+        }
+      },
+      "CreatePaymentResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Response message"
+          },
+          "code": {
+            "type": "integer",
+            "description": "Response code"
+          },
+          "order": {
+            "$ref": "#/components/schemas/OrderDetails"
+          },
+          "token": {
+            "type": "string",
+            "description": "Payment token for redirecting to payment page"
+          }
+        }
+      },
+      "OrderDetails": {
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Order UUID"
+          },
+          "created": {
+            "type": "string",
+            "description": "Order creation timestamp"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Amount in cents"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency code"
+          },
+          "status": {
+            "type": "string",
+            "description": "Order status"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "code": {
+            "type": "integer",
+            "description": "Error code"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API key passed as Bearer token in Authorization header"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}
