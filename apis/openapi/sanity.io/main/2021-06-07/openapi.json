@@ -1,0 +1,560 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Sanity HTTP API",
+    "version": "2021-06-07",
+    "description": "REST API for the Sanity headless CMS platform. Query, mutate, and manage documents and datasets via GROQ queries and mutations.",
+    "x-jentic-source-url": "https://www.sanity.io/docs/http-api"
+  },
+  "servers": [
+    {
+      "url": "https://{projectId}.api.sanity.io/v2021-06-07",
+      "variables": {
+        "projectId": {
+          "description": "Your Sanity project ID",
+          "default": "your-project-id"
+        }
+      }
+    },
+    {
+      "url": "https://{projectId}.apicdn.sanity.io/v2021-06-07",
+      "description": "CDN edge-cached endpoint for read queries",
+      "variables": {
+        "projectId": {
+          "description": "Your Sanity project ID",
+          "default": "your-project-id"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/data/query/{dataset}": {
+      "get": {
+        "operationId": "queryGet",
+        "tags": [
+          "Query"
+        ],
+        "summary": "Execute a GROQ query via GET",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "apiTokenAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dataset",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Dataset name (e.g. production)"
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "GROQ query string"
+          },
+          {
+            "name": "explain",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false",
+                "only"
+              ]
+            },
+            "description": "Include query execution plan"
+          },
+          {
+            "name": "resultSourceMap",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Include content source map metadata"
+          },
+          {
+            "name": "perspective",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "drafts",
+                "published",
+                "raw"
+              ]
+            },
+            "description": "Query perspective"
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Request tag for filtering logs"
+          },
+          {
+            "name": "returnQuery",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "Include submitted query in response"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Query results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid GROQ query"
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing token"
+          }
+        }
+      },
+      "post": {
+        "operationId": "queryPost",
+        "tags": [
+          "Query"
+        ],
+        "summary": "Execute a GROQ query via POST (for queries exceeding 11KB URL limit)",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "apiTokenAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dataset",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/data/mutate/{dataset}": {
+      "post": {
+        "operationId": "mutate",
+        "tags": [
+          "Mutations"
+        ],
+        "summary": "Apply mutations to documents in a dataset",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dataset",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "returnIds",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "returnDocuments",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "autoGenerateArrayKeys",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "transactionId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "skipCrossDatasetReferenceValidation",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "visibility",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sync",
+                "async",
+                "deferred"
+              ],
+              "default": "sync"
+            }
+          },
+          {
+            "name": "dryRun",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MutationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mutations applied successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid mutations"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/data/doc/{dataset}/{documentIds}": {
+      "get": {
+        "operationId": "getDocuments",
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Get documents by ID, bypassing caching",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "apiTokenAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dataset",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "documentIds",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated document IDs (no spaces)"
+          },
+          {
+            "name": "includeAllVersions",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Include drafts and all versions"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Documents retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "documents": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Document"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Sanity API token passed as Bearer token"
+      },
+      "apiTokenAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Sanity API token"
+      }
+    },
+    "schemas": {
+      "QueryRequest": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "GROQ query string"
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Query parameters"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "QueryResponse": {
+        "type": "object",
+        "properties": {
+          "ms": {
+            "type": "integer",
+            "description": "Processing time in milliseconds"
+          },
+          "query": {
+            "type": "string",
+            "description": "Submitted query"
+          },
+          "result": {
+            "description": "Query result (varies based on query)"
+          },
+          "syncTags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "MutationRequest": {
+        "type": "object",
+        "properties": {
+          "mutations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Mutation"
+            },
+            "description": "Array of mutation operations"
+          }
+        },
+        "required": [
+          "mutations"
+        ]
+      },
+      "Mutation": {
+        "type": "object",
+        "description": "A single mutation operation. Only one key should be present.",
+        "properties": {
+          "create": {
+            "$ref": "#/components/schemas/Document"
+          },
+          "createOrReplace": {
+            "$ref": "#/components/schemas/Document"
+          },
+          "createIfNotExists": {
+            "$ref": "#/components/schemas/Document"
+          },
+          "delete": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "patch": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "set": {
+                "type": "object"
+              },
+              "unset": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "inc": {
+                "type": "object"
+              },
+              "dec": {
+                "type": "object"
+              },
+              "ifRevisionID": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      },
+      "MutationResponse": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "operation": {
+                  "type": "string"
+                },
+                "document": {
+                  "$ref": "#/components/schemas/Document"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Document": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "_type": {
+            "type": "string"
+          },
+          "_rev": {
+            "type": "string"
+          },
+          "_createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "_updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}
