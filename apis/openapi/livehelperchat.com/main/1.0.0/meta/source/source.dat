@@ -1,0 +1,873 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Live Helper Chat API",
+    "description": "REST API for Live Helper Chat, an open-source live support chat application for managing customer conversations, operators, and departments.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://api.livehelperchat.com"
+  },
+  "servers": [
+    {
+      "url": "https://{instance}",
+      "variables": {
+        "instance": {
+          "default": "demo.livehelperchat.com",
+          "description": "Live Helper Chat instance hostname"
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "apiKeyAuth": []
+    }
+  ],
+  "tags": [
+    { "name": "Authentication", "description": "Login and session management" },
+    { "name": "Chats", "description": "Chat management" },
+    { "name": "Messages", "description": "Chat messaging" },
+    { "name": "Users", "description": "User/operator management" },
+    { "name": "Departments", "description": "Department management" },
+    { "name": "Online Status", "description": "Operator online status" },
+    { "name": "Files", "description": "File management" },
+    { "name": "Bots", "description": "Bot management" },
+    { "name": "Conversations", "description": "Mail conversations" },
+    { "name": "System", "description": "System information" }
+  ],
+  "paths": {
+    "/restapi/login": {
+      "post": {
+        "operationId": "login",
+        "tags": ["Authentication"],
+        "summary": "Authenticate user with credentials",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LoginResponse" }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/restapi/logout": {
+      "post": {
+        "operationId": "logout",
+        "tags": ["Authentication"],
+        "summary": "Revoke session tokens",
+        "responses": {
+          "200": { "description": "Logged out successfully" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/chats": {
+      "get": {
+        "operationId": "listChats",
+        "tags": ["Chats"],
+        "summary": "Fetch chats list with optional filtering",
+        "parameters": [
+          { "name": "department_id", "in": "query", "schema": { "type": "integer" } },
+          { "name": "user_id", "in": "query", "schema": { "type": "integer" } },
+          { "name": "status", "in": "query", "schema": { "type": "integer", "enum": [0, 1, 2, 3, 4, 5] }, "description": "Chat status filter" },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of chats",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Chat" }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/fetchchat": {
+      "get": {
+        "operationId": "fetchChat",
+        "tags": ["Chats"],
+        "summary": "Retrieve individual chat information",
+        "parameters": [
+          { "name": "chat_id", "in": "query", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chat details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Chat" }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/fetchchatmessages": {
+      "get": {
+        "operationId": "fetchChatMessages",
+        "tags": ["Messages"],
+        "summary": "Retrieve chat message history",
+        "parameters": [
+          { "name": "chat_id", "in": "query", "required": true, "schema": { "type": "integer" } },
+          { "name": "system_messages", "in": "query", "schema": { "type": "boolean" } },
+          { "name": "html", "in": "query", "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chat messages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Message" }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/setchatstatus": {
+      "post": {
+        "operationId": "setChatStatus",
+        "tags": ["Chats"],
+        "summary": "Modify chat status",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["chat_id", "status"],
+                "properties": {
+                  "chat_id": { "type": "integer" },
+                  "status": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Status updated" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/chat/{chat_id}": {
+      "put": {
+        "operationId": "updateChat",
+        "tags": ["Chats"],
+        "summary": "Update chat attributes",
+        "parameters": [
+          { "name": "chat_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ChatUpdate" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Chat updated" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteChat",
+        "tags": ["Chats"],
+        "summary": "Delete a chat record",
+        "parameters": [
+          { "name": "chat_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Chat deleted" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/addmsguser": {
+      "post": {
+        "operationId": "addUserMessage",
+        "tags": ["Messages"],
+        "summary": "Submit a user-side message",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserMessageInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Message added" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/addmsgadmin": {
+      "post": {
+        "operationId": "addAdminMessage",
+        "tags": ["Messages"],
+        "summary": "Submit an operator/system message",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AdminMessageInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Message added" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/getuser": {
+      "get": {
+        "operationId": "getUser",
+        "tags": ["Users"],
+        "summary": "Fetch and verify user credentials",
+        "parameters": [
+          { "name": "username", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "User details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/getusers": {
+      "get": {
+        "operationId": "listUsers",
+        "tags": ["Users"],
+        "summary": "List system users with filtering",
+        "responses": {
+          "200": {
+            "description": "List of users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/User" }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/user/{user_id}": {
+      "get": {
+        "operationId": "getUserById",
+        "tags": ["Users"],
+        "summary": "Retrieve a specific user",
+        "parameters": [
+          { "name": "user_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "User details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateUser",
+        "tags": ["Users"],
+        "summary": "Update a user",
+        "parameters": [
+          { "name": "user_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "User updated" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteUser",
+        "tags": ["Users"],
+        "summary": "Delete a user",
+        "parameters": [
+          { "name": "user_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "User deleted" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/user": {
+      "post": {
+        "operationId": "createUser",
+        "tags": ["Users"],
+        "summary": "Create a new user account",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/departments": {
+      "get": {
+        "operationId": "listDepartments",
+        "tags": ["Departments"],
+        "summary": "List departments",
+        "responses": {
+          "200": {
+            "description": "List of departments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Department" }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/department/{department_id}": {
+      "get": {
+        "operationId": "getDepartment",
+        "tags": ["Departments"],
+        "summary": "Retrieve a specific department",
+        "parameters": [
+          { "name": "department_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Department details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Department" }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "put": {
+        "operationId": "updateDepartment",
+        "tags": ["Departments"],
+        "summary": "Update a department",
+        "parameters": [
+          { "name": "department_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DepartmentInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Department updated" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteDepartment",
+        "tags": ["Departments"],
+        "summary": "Delete a department",
+        "parameters": [
+          { "name": "department_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Department deleted" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/department": {
+      "post": {
+        "operationId": "createDepartment",
+        "tags": ["Departments"],
+        "summary": "Create a new department",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DepartmentInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Department created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Department" }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/isonline": {
+      "get": {
+        "operationId": "isOnline",
+        "tags": ["Online Status"],
+        "summary": "Check global operator availability",
+        "responses": {
+          "200": {
+            "description": "Online status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "online": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/isonlinedepartment/{department_id}": {
+      "get": {
+        "operationId": "isDepartmentOnline",
+        "tags": ["Online Status"],
+        "summary": "Check department-level operator availability",
+        "parameters": [
+          { "name": "department_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Department online status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "online": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/onlineusers": {
+      "get": {
+        "operationId": "listOnlineUsers",
+        "tags": ["Online Status"],
+        "summary": "List online operators",
+        "parameters": [
+          { "name": "include_offline", "in": "query", "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of online users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/User" }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/bots": {
+      "get": {
+        "operationId": "listBots",
+        "tags": ["Bots"],
+        "summary": "List available bots",
+        "responses": {
+          "200": {
+            "description": "List of bots",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Bot" }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/bot": {
+      "post": {
+        "operationId": "createBot",
+        "tags": ["Bots"],
+        "summary": "Create a new bot configuration",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BotInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bot created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Bot" }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/file": {
+      "post": {
+        "operationId": "uploadFile",
+        "tags": ["Files"],
+        "summary": "Upload a file",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": { "type": "string", "format": "binary" },
+                  "name": { "type": "string" },
+                  "chat_id": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "File uploaded",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/File" }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/file/{file_id}": {
+      "get": {
+        "operationId": "getFile",
+        "tags": ["Files"],
+        "summary": "Retrieve file metadata",
+        "parameters": [
+          { "name": "file_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "File details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/File" }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteFile",
+        "tags": ["Files"],
+        "summary": "Delete a file",
+        "parameters": [
+          { "name": "file_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "File deleted" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/conversations": {
+      "get": {
+        "operationId": "listConversations",
+        "tags": ["Conversations"],
+        "summary": "Retrieve mail conversation threads",
+        "parameters": [
+          { "name": "department_id", "in": "query", "schema": { "type": "integer" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["pending", "active", "closed"] } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of conversations",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "type": "object" } }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restapi/extensions": {
+      "get": {
+        "operationId": "listExtensions",
+        "tags": ["System"],
+        "summary": "List activated extensions",
+        "responses": {
+          "200": {
+            "description": "List of extensions",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "type": "object" } }
+              }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "API key authentication using operator username and API key"
+      }
+    },
+    "schemas": {
+      "LoginInput": {
+        "type": "object",
+        "required": ["username", "password"],
+        "properties": {
+          "username": { "type": "string" },
+          "password": { "type": "string" },
+          "generate_token": { "type": "boolean" },
+          "device_token": { "type": "string" }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "token": { "type": "string" },
+          "user_id": { "type": "integer" }
+        }
+      },
+      "Chat": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "nick": { "type": "string" },
+          "email": { "type": "string" },
+          "status": { "type": "integer" },
+          "department_id": { "type": "integer" },
+          "user_id": { "type": "integer" },
+          "time": { "type": "integer" },
+          "ip": { "type": "string" },
+          "country_code": { "type": "string" }
+        }
+      },
+      "ChatUpdate": {
+        "type": "object",
+        "properties": {
+          "nick": { "type": "string" },
+          "email": { "type": "string" },
+          "status": { "type": "integer" },
+          "department_id": { "type": "integer" },
+          "user_id": { "type": "integer" }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "msg": { "type": "string" },
+          "time": { "type": "integer" },
+          "user_id": { "type": "integer" },
+          "name_support": { "type": "string" }
+        }
+      },
+      "UserMessageInput": {
+        "type": "object",
+        "required": ["chat_id", "msg"],
+        "properties": {
+          "chat_id": { "type": "integer" },
+          "msg": { "type": "string" },
+          "hash": { "type": "string" }
+        }
+      },
+      "AdminMessageInput": {
+        "type": "object",
+        "required": ["chat_id", "msg"],
+        "properties": {
+          "chat_id": { "type": "integer" },
+          "msg": { "type": "string" },
+          "user_id": { "type": "integer" }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "username": { "type": "string" },
+          "email": { "type": "string" },
+          "name": { "type": "string" },
+          "surname": { "type": "string" },
+          "disabled": { "type": "boolean" }
+        }
+      },
+      "UserInput": {
+        "type": "object",
+        "properties": {
+          "username": { "type": "string" },
+          "email": { "type": "string" },
+          "password": { "type": "string" },
+          "name": { "type": "string" },
+          "surname": { "type": "string" }
+        }
+      },
+      "Department": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "identifier": { "type": "string" },
+          "disabled": { "type": "boolean" }
+        }
+      },
+      "DepartmentInput": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "identifier": { "type": "string" },
+          "disabled": { "type": "boolean" }
+        }
+      },
+      "Bot": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "configuration": { "type": "object" }
+        }
+      },
+      "BotInput": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "configuration": { "type": "object" }
+        }
+      },
+      "File": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "upload_name": { "type": "string" },
+          "size": { "type": "integer" },
+          "type": { "type": "string" },
+          "chat_id": { "type": "integer" }
+        }
+      }
+    }
+  }
+}
