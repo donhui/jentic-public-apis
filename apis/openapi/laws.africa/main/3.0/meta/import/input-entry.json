@@ -1,0 +1,691 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Laws.Africa Content API",
+    "description": "API for accessing machine-readable African legislation. Provides access to legislative works in Akoma Ntoso XML, HTML, ePUB, and PDF formats, along with rich JSON metadata including publication details, amendments, commencements, and tables of contents.",
+    "version": "3.0",
+    "x-jentic-source-url": "https://laws.africa/api/"
+  },
+  "servers": [
+    {
+      "url": "https://api.laws.africa/v3",
+      "description": "Production API v3"
+    }
+  ],
+  "paths": {
+    "/work-expressions": {
+      "get": {
+        "operationId": "listallworkexpressions",
+        "summary": "List all work expressions",
+        "description": "Fetch all work expressions your subscription has access to, across all places.",
+        "tags": [
+          "Work Expressions"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of work expressions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer"
+                    },
+                    "next": {
+                      "type": "string",
+                      "format": "uri",
+                      "nullable": true
+                    },
+                    "previous": {
+                      "type": "string",
+                      "format": "uri",
+                      "nullable": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/WorkExpression"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/akn/{country}/{docType}/{date}/{number}": {
+      "get": {
+        "operationId": "getworkexpression",
+        "summary": "Get a specific work expression",
+        "description": "Retrieve a specific legislative work expression by its FRBR URI. Supports JSON, HTML, PDF, ePub, and zip formats.",
+        "tags": [
+          "Work Expressions"
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Country code (e.g., za, ke, ug)",
+            "example": "za"
+          },
+          {
+            "name": "docType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Document type (e.g., act, bill, si)",
+            "example": "act"
+          },
+          {
+            "name": "date",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Year of the work",
+            "example": "1998"
+          },
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Number of the work",
+            "example": "55"
+          },
+          {
+            "name": "coverpage",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1"
+              ]
+            },
+            "description": "Include a generated coverpage (HTML format only)"
+          },
+          {
+            "name": "media-url",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "URL prefix for embedded media links"
+          },
+          {
+            "name": "resolver",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "URL for resolving references to other Akoma Ntoso documents"
+          },
+          {
+            "name": "standalone",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1"
+              ]
+            },
+            "description": "Return complete HTML document with CSS"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Work expression content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkExpression"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/epub+zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Work not found"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/akn/{country}/{docType}/{date}/{number}/{language}@{expressionDate}": {
+      "get": {
+        "operationId": "getworkexpressionatdate",
+        "summary": "Get a specific point-in-time expression",
+        "description": "Retrieve a specific expression of a work at a given date. Use @ for the first expression, @YYYY-MM-DD for an exact date.",
+        "tags": [
+          "Work Expressions"
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "docType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Language code (e.g., eng, fra)",
+            "example": "eng"
+          },
+          {
+            "name": "expressionDate",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Expression date (YYYY-MM-DD or empty for first expression)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Work expression at the specified date",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkExpression"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Expression not found"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/taxonomy-topics": {
+      "get": {
+        "operationId": "listtaxonomytopics",
+        "summary": "List all taxonomy topics",
+        "description": "Retrieve all available taxonomy topics used to categorize and group works.",
+        "tags": [
+          "Taxonomy"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of taxonomy topics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TaxonomyTopic"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/taxonomy-topics/{slug}": {
+      "get": {
+        "operationId": "gettaxonomytopic",
+        "summary": "Get a specific taxonomy topic",
+        "tags": [
+          "Taxonomy"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique topic slug"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Taxonomy topic details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxonomyTopic"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Topic not found"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/taxonomy-topics/{slug}/work-expressions": {
+      "get": {
+        "operationId": "listworkexpressionsbytaxonomy",
+        "summary": "List work expressions by taxonomy topic",
+        "description": "Retrieve all work expressions associated with a particular taxonomy topic.",
+        "tags": [
+          "Taxonomy"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Work expressions for the taxonomy topic",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer"
+                    },
+                    "next": {
+                      "type": "string",
+                      "format": "uri",
+                      "nullable": true
+                    },
+                    "previous": {
+                      "type": "string",
+                      "format": "uri",
+                      "nullable": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/WorkExpression"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "tokenAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Token-based authentication. Format: Token YOUR_AUTH_TOKEN"
+      }
+    },
+    "schemas": {
+      "WorkExpression": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string"
+          },
+          "frbr_uri": {
+            "type": "string"
+          },
+          "expression_frbr_uri": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "locality": {
+            "type": "string",
+            "nullable": true
+          },
+          "nature": {
+            "type": "string"
+          },
+          "subtype": {
+            "type": "string",
+            "nullable": true
+          },
+          "year": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "expression_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "publication_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "publication_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "publication_number": {
+            "type": "string",
+            "nullable": true
+          },
+          "assent_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "commencement_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "repeal": {
+            "type": "object",
+            "nullable": true
+          },
+          "amendments": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "points_in_time": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "expressions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          },
+          "taxonomy_topics": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rel": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "href": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "mediaType": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "TaxonomyTopic": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "description": "Error message"
+              },
+              "code": {
+                "type": "string",
+                "description": "Error code"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "tokenAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Work Expressions",
+      "description": "Legislative work expressions"
+    },
+    {
+      "name": "Places",
+      "description": "Countries and localities"
+    },
+    {
+      "name": "Taxonomy",
+      "description": "Taxonomy topics for categorizing works"
+    }
+  ]
+}
