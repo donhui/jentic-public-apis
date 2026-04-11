@@ -1,0 +1,352 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "YCS Connectivity Portal API",
+    "version": "1.0",
+    "description": "eZee Technosys YCS Connectivity Portal API for hotel property management. Provides endpoints for hotel authentication, room information, reservations, inventory, rates, and booking engine operations.",
+    "x-jentic-source-url": "https://api.ezeetechnosys.com/"
+  },
+  "servers": [
+    {
+      "url": "https://live.ipms247.com",
+      "description": "Production server"
+    }
+  ],
+  "security": [
+    {
+      "basicAuth": []
+    }
+  ],
+  "tags": [
+    { "name": "Authentication", "description": "Hotel authentication and validation" },
+    { "name": "Hotel Info", "description": "Hotel information and amenities" },
+    { "name": "Room Info", "description": "Room types and availability" },
+    { "name": "Reference Data", "description": "Salutations, countries, currencies, payment methods" },
+    { "name": "Booking Engine", "description": "Extras, travel agents, payment gateways" },
+    { "name": "Kiosk", "description": "Kiosk connectivity endpoints for currencies, payment methods, identity types, and room availability" }
+  ],
+  "paths": {
+    "/index.php/page/service.pos2pms": {
+      "post": {
+        "operationId": "checkHotelAuthentication",
+        "summary": "Check Hotel Authentication",
+        "description": "Validates credentials and retrieves hotel information.",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/xml": {
+              "schema": {
+                "type": "string",
+                "description": "XML body with auth and operation nodes"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication result",
+            "content": {
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/HotelAuthResponse"
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/pmsinterface/pms_connectivity.php": {
+      "post": {
+        "operationId": "retrieveRoomInformation",
+        "summary": "Retrieve Room Information",
+        "description": "Provides room types, rate types, and rate plans for a hotel property.",
+        "tags": ["Room Info"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomInfoRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Room information retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomInfoResponse"
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/booking/reservation_api/listing.php": {
+      "get": {
+        "operationId": "getHotelListings",
+        "summary": "Retrieve Hotel Information",
+        "description": "Lists hotel data for chains or individual properties. Supports multiple request types via the request_type parameter.",
+        "tags": ["Hotel Info"],
+        "parameters": [
+          {
+            "name": "request_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["HotelList", "HotelAmenity", "RoomTypeList", "ConfiguredDetails", "CalculateExtraCharge", "VerifyUser", "ConfiguredPGList"]
+            },
+            "description": "Type of request: HotelList, HotelAmenity, RoomTypeList, ConfiguredDetails, CalculateExtraCharge, VerifyUser, or ConfiguredPGList"
+          },
+          {
+            "name": "HotelCode",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Hotel code identifier"
+          },
+          {
+            "name": "GroupCode",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Group code for chain properties"
+          },
+          {
+            "name": "APIKey",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "API key for authentication"
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "schema": { "type": "string", "default": "en" },
+            "description": "Language code"
+          },
+          {
+            "name": "publishtoweb",
+            "in": "query",
+            "schema": { "type": "integer", "enum": [0, 1] },
+            "description": "Filter by publish to web status"
+          },
+          {
+            "name": "check_in_date",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Check-in date (YYYY-MM-DD) for extras rate calculation"
+          },
+          {
+            "name": "check_out_date",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Check-out date (YYYY-MM-DD) for extras rate calculation"
+          },
+          {
+            "name": "ExtraChargeId",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Extra charge identifier"
+          },
+          {
+            "name": "Total_ExtraItem",
+            "in": "query",
+            "schema": { "type": "integer" },
+            "description": "Total number of extra items"
+          },
+          {
+            "name": "username",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Travel agent username (for VerifyUser)"
+          },
+          {
+            "name": "password",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Base64-encoded travel agent password (for VerifyUser)"
+          },
+          {
+            "name": "groupcode",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Group code for travel agent verification"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with requested data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response varies based on request_type parameter"
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/index.php/page/service.kioskconnectivity": {
+      "post": {
+        "operationId": "kioskConnectivity",
+        "summary": "Kiosk Connectivity Operations",
+        "description": "Provides kiosk-related operations including currency retrieval, payment methods, identity types, and room availability.",
+        "tags": ["Kiosk"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KioskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kiosk operation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response varies based on Request_Type"
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "HTTP Basic Authentication using Hotel Code and Authentication Token"
+      }
+    },
+    "schemas": {
+      "HotelAuthResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" },
+          "msg": { "type": "string" },
+          "hotelname": { "type": "string" },
+          "hotelcode": { "type": "string" }
+        }
+      },
+      "RoomInfoRequest": {
+        "type": "object",
+        "required": ["Request_Type", "HotelCode", "AuthCode"],
+        "properties": {
+          "Request_Type": { "type": "string", "example": "RoomInfo" },
+          "HotelCode": { "type": "integer" },
+          "AuthCode": { "type": "string" },
+          "NeedPhysicalRooms": { "type": "integer", "description": "Optional flag to include physical rooms" }
+        }
+      },
+      "RoomInfoResponse": {
+        "type": "object",
+        "properties": {
+          "RoomTypes": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/RoomType" }
+          },
+          "RateTypes": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/RateType" }
+          },
+          "RatePlans": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/RatePlan" }
+          }
+        }
+      },
+      "RoomType": {
+        "type": "object",
+        "properties": {
+          "roomtypeunkid": { "type": "string" },
+          "roomtype": { "type": "string" },
+          "base_adult_occupancy": { "type": "integer" },
+          "max_occupancy": { "type": "integer" }
+        }
+      },
+      "RateType": {
+        "type": "object",
+        "properties": {
+          "ratetypeunkid": { "type": "string" },
+          "ratetype": { "type": "string" }
+        }
+      },
+      "RatePlan": {
+        "type": "object",
+        "properties": {
+          "rateplanunkid": { "type": "string" },
+          "rateplan": { "type": "string" }
+        }
+      },
+      "KioskRequest": {
+        "type": "object",
+        "required": ["HotelCode", "AuthCode", "Request_Type"],
+        "properties": {
+          "HotelCode": { "type": "string" },
+          "AuthCode": { "type": "string" },
+          "Request_Type": {
+            "type": "string",
+            "enum": ["RetrieveCurrency", "RetrievePayMethods", "RetrieveIdentityType", "RoomAvailability"]
+          },
+          "RoomData": {
+            "type": "object",
+            "properties": {
+              "from_date": { "type": "string", "format": "date" },
+              "to_date": { "type": "string", "format": "date" }
+            }
+          },
+          "RoomID": { "type": "string" },
+          "RoomTypeID": { "type": "string" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error_code": { "type": "integer", "description": "Error code (301=Unauthorized, 302=Integration not allowed, 303=Auth inactive)" },
+          "error_message": { "type": "string" }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid request parameters",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Authentication failed",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      }
+    }
+  }
+}
