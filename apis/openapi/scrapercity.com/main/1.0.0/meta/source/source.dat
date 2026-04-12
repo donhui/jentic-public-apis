@@ -1,0 +1,292 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ScraperCity API",
+    "description": "ScraperCity is a lead generation platform with APIs for finding B2B contacts, business emails, phone numbers, and local business data. The API follows a polling workflow: submit a scrape job, poll for status, then download results.",
+    "version": "1.0.0",
+    "x-jentic-source-url": "https://scrapercity.com/api-docs"
+  },
+  "servers": [
+    {
+      "url": "https://app.scrapercity.com/api/v1",
+      "description": "Production API server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Scraping",
+      "description": "Submit and manage scraping jobs"
+    },
+    {
+      "name": "Results",
+      "description": "Retrieve and download scraping results"
+    }
+  ],
+  "paths": {
+    "/scrape/apollo": {
+      "post": {
+        "operationId": "scrapeApollo",
+        "summary": "Scrape Apollo leads",
+        "description": "Start a scraping job to extract leads from Apollo using the provided Apollo URL.",
+        "tags": ["Scraping"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScrapeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Scrape job started successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScrapeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scrape/{runId}/status": {
+      "get": {
+        "operationId": "getScrapeStatus",
+        "summary": "Get scrape job status",
+        "description": "Poll the status of a previously submitted scraping job.",
+        "tags": ["Scraping"],
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "description": "The run ID returned when the scrape job was started",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current status of the scrape job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScrapeStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scrape/{runId}/download": {
+      "get": {
+        "operationId": "downloadScrapeResults",
+        "summary": "Download scrape results",
+        "description": "Download the results of a completed scraping job. Results are stored for 48 hours.",
+        "tags": ["Results"],
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "description": "The run ID returned when the scrape job was started",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scrape results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScrapeResultsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or results not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "API key for authentication"
+      }
+    },
+    "schemas": {
+      "ScrapeRequest": {
+        "type": "object",
+        "required": ["url", "count"],
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The source URL to scrape (e.g., an Apollo search URL)"
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of contacts to scrape",
+            "example": 1000
+          }
+        }
+      },
+      "ScrapeResponse": {
+        "type": "object",
+        "properties": {
+          "runId": {
+            "type": "string",
+            "description": "Unique identifier for the scrape job",
+            "example": "ABC123"
+          },
+          "message": {
+            "type": "string",
+            "description": "Status message",
+            "example": "Apollo scrape started for 1000 contacts"
+          }
+        }
+      },
+      "ScrapeStatusResponse": {
+        "type": "object",
+        "properties": {
+          "runId": {
+            "type": "string",
+            "description": "Unique identifier for the scrape job"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "running", "completed", "failed"],
+            "description": "Current status of the scrape job"
+          },
+          "progress": {
+            "type": "integer",
+            "description": "Number of contacts scraped so far"
+          },
+          "total": {
+            "type": "integer",
+            "description": "Total contacts requested"
+          }
+        }
+      },
+      "ScrapeResultsResponse": {
+        "type": "object",
+        "properties": {
+          "runId": {
+            "type": "string"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contact"
+            }
+          }
+        }
+      },
+      "Contact": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ]
+}
