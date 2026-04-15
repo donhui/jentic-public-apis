@@ -1,0 +1,55 @@
+overlay: 1.1.0
+info:
+  title: "Reconcile newsapi.org main 1.0.0 spec against live API responses"
+  version: "1.0.0"
+actions:
+  - target: "$.paths['/everything'].get"
+    description: "Add 'Articles' tag to getEverything for Jentic discoverability (INGEST-005)"
+    update:
+      tags:
+        - Articles
+
+  - target: "$.paths['/top-headlines'].get"
+    description: "Add 'Headlines' tag to getTopHeadlines for Jentic discoverability (INGEST-005)"
+    update:
+      tags:
+        - Headlines
+
+  - target: "$.paths['/top-headlines/sources'].get"
+    description: "Add 'Sources' tag to getSources for Jentic discoverability (INGEST-005)"
+    update:
+      tags:
+        - Sources
+
+  - target: "$.components.schemas.Article.properties.source.properties.id"
+    description: "Mark source.id as nullable — real API returns null for sources without a canonical ID (e.g. BBC News, NPR, TMZ)"
+    update:
+      type: string
+      nullable: true
+
+  - target: "$.components.schemas.Article.properties.author"
+    description: "Mark author as nullable — real API returns null when article author is unknown (e.g. Bloomberg wire stories)"
+    update:
+      type: string
+      nullable: true
+
+  - target: "$.paths['/top-headlines'].get.parameters[?(@.name=='country')].schema"
+    description: "Remove overly restrictive enum ['us'] from country parameter — real API accepts all ISO 3166-1 codes (confirmed with country=gb returning 200)"
+    update:
+      type: string
+
+  - target: "$.paths['/top-headlines'].get.responses"
+    description: "Add missing 400 and 401 response codes to getTopHeadlines — observed when required country param is omitted; consistent with getEverything and getSources"
+    update:
+      "400":
+        description: "Bad request"
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ErrorResponse"
+      "401":
+        description: "Unauthorized"
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ErrorResponse"
