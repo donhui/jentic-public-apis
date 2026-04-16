@@ -1,0 +1,69 @@
+overlay: 1.1.0
+info:
+  title: "Reconcile nytimes.com article_search 1.0.0 spec against live API responses"
+  version: "1.0.0"
+actions:
+  - target: "$.paths['/articlesearch.json'].get.responses['200'].content['application/json'].schema.properties.response.properties"
+    description: "Remove stale 'response' properties (had wrong key 'meta' instead of 'metadata')"
+    remove: true
+  - target: "$.paths['/articlesearch.json'].get.responses['200'].content['application/json'].schema.properties.response"
+    description: "Set response properties with correct 'metadata' key matching real API response"
+    update:
+      properties:
+        docs:
+          type: array
+          items:
+            $ref: "#/components/schemas/Doc"
+        metadata:
+          type: object
+          properties:
+            hits:
+              type: integer
+            offset:
+              type: integer
+            time:
+              type: integer
+  - target: "$.components.schemas.Doc.properties.keywords"
+    description: "Fix 'keywords' from single object to array of keyword objects; fix 'rank' type from string to integer"
+    update:
+      type: array
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+          rank:
+            type: integer
+          value:
+            type: string
+  - target: "$.components.schemas.Doc.properties.multimedia"
+    description: "Fix 'multimedia' from array of flat image items to object with 'default' and 'thumbnail' sub-objects matching real API structure"
+    update:
+      type: object
+      properties:
+        caption:
+          type: string
+        credit:
+          type: string
+        default:
+          type: object
+          properties:
+            url:
+              type: string
+            height:
+              type: integer
+            width:
+              type: integer
+        thumbnail:
+          type: object
+          properties:
+            url:
+              type: string
+            height:
+              type: integer
+            width:
+              type: integer
+  - target: "$.components.schemas.Doc.properties.word_count"
+    description: "Fix 'word_count' type from string to integer — real API returns numeric value (e.g. 1113)"
+    update:
+      type: integer
