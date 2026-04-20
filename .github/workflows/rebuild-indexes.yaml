@@ -1,4 +1,4 @@
-name: Rebuild apis.json and scores.json
+name: Rebuild indexes
 
 # Hybrid trigger: event-driven on relevant pushes + scheduled safety net.
 # The concurrency group ensures only one rebuild runs at a time. When multiple
@@ -13,8 +13,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apis/openapi/**/apis.json'
-      - 'apis/openapi/**/scorecard.json'
+      - 'apis/openapi/**'
   schedule:
     # Safety net: rebuild every 6 hours in case a push-triggered run failed
     # or files were modified without matching the paths filter.
@@ -36,18 +35,12 @@ jobs:
       GITHUB_REPO_URL: "https://github.com/${{ github.repository }}"
 
     steps:
-      - name: Sparse checkout (apis.json + scorecard.json only)
+      - name: Checkout (blobless clone)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git clone --no-checkout --depth 1 --filter=blob:none \
+          git clone --filter=blob:none \
             "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" .
-          git sparse-checkout set --no-cone \
-            'apis/openapi/**/apis.json' \
-            'apis/openapi/**/scorecard.json' \
-            'apis/openapi/apis.json' \
-            'apis/openapi/scores.json'
-          git checkout main
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -68,6 +61,10 @@ jobs:
         run: |
           jentic-apitools rebuild-scores-json . \
             --base-dir apis/openapi
+
+      - name: Rebuild API browsing index
+        run: ./.github/scripts/generate-apis-index.sh
+
       - name: Create PR and merge
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -75,7 +72,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add apis/openapi/apis.json apis/openapi/scores.json
+          git add apis/openapi/apis.json apis/openapi/scores.json index/apis/openapi/
 
           # Exit early if nothing actually changed (idempotent rebuild).
           if git diff --cached --quiet; then
@@ -87,7 +84,7 @@ jobs:
           git checkout -b "$BRANCH"
 
           git commit -m "$(cat <<'EOF'
-          Rebuild apis.json and scores.json indexes
+          Rebuild apis.json, scores.json, and API browsing indexes
           EOF
           )"
 
@@ -96,8 +93,8 @@ jobs:
           PR_URL=$(gh pr create \
             --base main \
             --head "$BRANCH" \
-            --title "Rebuild apis.json and scores.json indexes" \
-            --body "Automated rebuild of root index files triggered by changes in \`apis/openapi/\`.")
+            --title "Rebuild apis.json, scores.json, and API browsing indexes" \
+            --body "Automated rebuild of index files triggered by changes in \`apis/openapi/\`.")
 
           echo "Created PR: $PR_URL"
 
